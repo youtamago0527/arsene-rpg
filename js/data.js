@@ -82,7 +82,36 @@ window.ARSENE_DATA = {
     bossBlueprints: [{ id: 'noelJudgementStaff', bossId: 'noelFirstEncounter', name: 'ノエルの審判杖', slot: 'rightHand', status: 'awaitingSecondEncounter' }]
   },
   dungeons: [
-    { id: 'dungeon1', name: 'ダンジョン1', enName: 'DUNGEON I' }
+    {
+      id: 'dungeon1', name: 'ダンジョン1', enName: 'DUNGEON I',
+      background: 'assets/bg/dungeon-battle-01.png',
+      thumbnail: 'assets/bg/dungeon-battle-01.png',
+      description: '怪異の気配が漂う闇のダンジョン。怪盗団最初の潜入先。',
+      recommendedLevel: 1,
+      unlockCondition: null,
+      encounterProgression: [
+        { minWins: 0, count: [2, 2], pool: [{ id: 'shadowSlime', weight: 1 }] },
+        { minWins: 1, count: [2, 2], pool: [{ id: 'shadowSlime', weight: 3 }, { id: 'soulMage', weight: 1 }, { id: 'goblin', weight: 1 }] },
+        { minWins: 2, count: [2, 3], pool: [{ id: 'shadowSlime', weight: 2 }, { id: 'soulMage', weight: 2 }, { id: 'goblin', weight: 2 }, { id: 'nightBat', weight: 1 }] },
+        { minWins: 3, count: [2, 3], pool: [{ id: 'shadowSlime', weight: 2 }, { id: 'soulMage', weight: 2 }, { id: 'ratThief', weight: 1 }, { id: 'goblin', weight: 2 }, { id: 'nightBat', weight: 2 }, { id: 'ghostBone', weight: 1 }] },
+        { minWins: 5, count: [3, 3], pool: [{ id: 'shadowSlime', weight: 1 }, { id: 'soulMage', weight: 2 }, { id: 'ratThief', weight: 2 }, { id: 'goblin', weight: 2 }, { id: 'nightBat', weight: 2 }, { id: 'ghostBone', weight: 2 }] }
+      ]
+    },
+    {
+      id: 'dungeon2', name: '沈黙の楽殿', nameEn: 'THE HALL OF SILENCE',
+      background: 'assets/bg/dungeon-battle-02.png',
+      thumbnail: 'assets/bg/dungeon-battle-02.png',
+      description: 'かつて七奏卿の一人が築いた、音なき楽園。音を奪われた者たちの残響が、今もこの殿堂に漂っている。',
+      recommendedLevel: 10,
+      unlockCondition: 'dungeon1Clear',
+      encounterProgression: [
+        { minWins: 0, count: [1, 2], pool: [{ id: 'reverbSlime', weight: 3 }, { id: 'echoWraith', weight: 1 }] },
+        { minWins: 2, count: [2, 2], pool: [{ id: 'reverbSlime', weight: 2 }, { id: 'echoWraith', weight: 2 }, { id: 'nocturneBanshee', weight: 1 }] },
+        { minWins: 4, count: [2, 3], pool: [{ id: 'echoWraith', weight: 2 }, { id: 'silentHarmonist', weight: 2 }, { id: 'nocturneBanshee', weight: 2 }, { id: 'reverbSlime', weight: 1 }] },
+        { minWins: 7, count: [2, 3], pool: [{ id: 'silentHarmonist', weight: 2 }, { id: 'nocturneChandelier', weight: 1 }, { id: 'silentKnight', weight: 1 }, { id: 'muteGargoyle', weight: 1 }, { id: 'echoWraith', weight: 2 }] },
+        { minWins: 10, count: [2, 3], pool: [{ id: 'silentKnight', weight: 2 }, { id: 'muteGargoyle', weight: 1 }, { id: 'nocturneChandelier', weight: 2 }, { id: 'nocturneBanshee', weight: 2 }, { id: 'silentHarmonist', weight: 1 }] }
+      ]
+    }
   ],
   foodMenu: {
     comingSoon: [
@@ -217,6 +246,13 @@ window.ARSENE_DATA = {
     oldBone: { id: 'oldBone', name: '古びた骨', category: 'material', rarity: 'common', description: '朽ちかけた古い骨。加工素材になる。' },
     darkSoulStone: { id: 'darkSoulStone', name: '闇の魂石', category: 'material', rarity: 'rare', description: '闇の魂が凝縮した石。禍々しい気配を纏う。' },
     resentmentCrystal: { id: 'resentmentCrystal', name: '怨念の結晶', category: 'material', rarity: 'rare', description: '強い怨念が結晶化したもの。触れると微かに疼く。' },
+    silentNote: { id: 'silentNote', name: '無音の楽譜', category: 'material', rarity: 'uncommon', description: '音を封じ込めた楽譜の切れ端。静寂が染みついている。' },
+    echoShard: { id: 'echoShard', name: 'エコーの欠片', category: 'material', rarity: 'uncommon', description: '消えかけた音の残響が結晶化した欠片。' },
+    stoneShard: { id: 'stoneShard', name: '石像の破片', category: 'material', rarity: 'common', description: '石像から砕け落ちた欠片。魔力を帯びている。' },
+    violinString: { id: 'violinString', name: '亡霊のヴァイオリン弦', category: 'material', rarity: 'uncommon', description: '音を奪われた楽器から抜き取った弦。かすかに振動する。' },
+    spectralDust: { id: 'spectralDust', name: '霊幻の粉塵', category: 'material', rarity: 'rare', description: '精霊が消滅する際に生じる粉塵。淡い紫色に輝く。' },
+    reverbJelly: { id: 'reverbJelly', name: 'リバーブゼリー', category: 'material', rarity: 'common', description: '残響スライムの体液が固まったゼリー状の物質。' },
+    silentArmor: { id: 'silentArmor', name: '静寂の装甲片', category: 'material', rarity: 'rare', description: 'サイレント・ナイトの甲冑から剥がれた欠片。音を吸収する。' },
     cursedNecklace: { id: 'cursedNecklace', name: '呪われた首飾り', category: 'equipment', slot: 'accessory', rarity: 'epic', description: '呪いを宿す首飾り。身につける者に力を与えるという。' },
     zenacad_core: { id: 'zenacad_core', name: '独奏卿の魔核', nameEn: 'ZENACAD CORE', category: 'material', rarity: 'legendary', bossId: 'zenacad', description: '独奏卿の魔力と旋律が凝縮した魔核。ゼナカドシリーズの中核素材。' },
     cadenza_fragment: { id: 'cadenza_fragment', name: '魔奏の欠片', nameEn: 'CADENZA FRAGMENT', category: 'material', rarity: 'epic', bossId: 'zenacad', description: '魔力へ変換された音の欠片。ボス装備の製作・再構成に使う。' },
@@ -361,6 +397,62 @@ window.ARSENE_DATA = {
       ],
       stealTable: [{ itemId: 'darkSoulStone', chance: .25 }],
       ai: [{ id: 'spiritBolt', name: '霊弾', kind: 'magic', weight: .65 }, { id: 'attack', name: '体当たり', kind: 'physical', weight: .35 }]
+    },
+    silentHarmonist: {
+      id: 'silentHarmonist', name: 'サイレント・ハーモニスト', enName: 'SILENT HARMONIST', dungeonId: 'dungeon2',
+      element: '闇', weaknesses: ['光', '雷'], resistances: ['闇'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.1,
+      stats: { maxHp: 90, atk: 14, def: 8, mag: 16, mnd: 10, spd: 10 }, exp: 30, gold: { min: 18, max: 32 },
+      dropTable: [{ itemId: 'silentNote', chance: .40 }, { itemId: 'echoShard', chance: .20 }, { itemId: 'magicPowder', chance: .15 }],
+      ai: [{ id: 'soulBolt', name: 'サイレントノート', kind: 'magic', weight: .55 }, { id: 'attack', name: '音なき一撃', kind: 'physical', weight: .45 }]
+    },
+    echoWraith: {
+      id: 'echoWraith', name: 'エコー・レイス', enName: 'ECHO WRAITH', dungeonId: 'dungeon2',
+      element: '闇', weaknesses: ['聖', '打'], resistances: ['闇', '毒'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.0,
+      stats: { maxHp: 70, atk: 12, def: 7, mag: 13, mnd: 8, spd: 12 }, exp: 26, gold: { min: 14, max: 26 },
+      dropTable: [{ itemId: 'echoShard', chance: .45 }, { itemId: 'spectralDust', chance: .20 }, { itemId: 'manaDrop', chance: .20 }],
+      ai: [{ id: 'soulBolt', name: 'エコーボルト', kind: 'magic', weight: .60 }, { id: 'attack', name: '残響拡散', kind: 'magic', weight: .40 }]
+    },
+    muteGargoyle: {
+      id: 'muteGargoyle', name: 'ムート・ガーゴイル', enName: 'MUTE GARGOYLE', dungeonId: 'dungeon2',
+      element: '闇', weaknesses: ['打', '風'], resistances: ['闇', '毒', '物理'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.3,
+      stats: { maxHp: 120, atk: 18, def: 15, mag: 8, mnd: 12, spd: 7 }, exp: 38, gold: { min: 20, max: 38 },
+      dropTable: [{ itemId: 'stoneShard', chance: .50 }, { itemId: 'silentNote', chance: .15 }, { itemId: 'oldBone', chance: .20 }],
+      ai: [{ id: 'attack', name: 'サイレントバイト', kind: 'physical', weight: .50 }, { id: 'clubSmash', name: '無音の咆哮', kind: 'physical', weight: .35 }, { id: 'attack', name: 'スタンプレス', kind: 'physical', weight: .15 }]
+    },
+    nocturneChandelier: {
+      id: 'nocturneChandelier', name: 'ノクターン・シャンデリア', enName: 'NOCTURNE CHANDELIER', dungeonId: 'dungeon2',
+      element: '闇', weaknesses: ['炎', '光'], resistances: ['闇', '魔法'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.1,
+      stats: { maxHp: 80, atk: 9, def: 10, mag: 14, mnd: 12, spd: 5 }, exp: 32, gold: { min: 16, max: 30 },
+      dropTable: [{ itemId: 'violinString', chance: .35 }, { itemId: 'spectralDust', chance: .25 }, { itemId: 'moonstone', chance: .15 }],
+      ai: [{ id: 'shadowBolt', name: '紫炎の旋律', kind: 'magic', weight: .50 }, { id: 'soulBolt', name: '楽壇の檻', kind: 'magic', weight: .35 }, { id: 'attack', name: '沈黙の天罰', kind: 'magic', weight: .15 }]
+    },
+    silentKnight: {
+      id: 'silentKnight', name: 'サイレント・ナイト', enName: 'SILENT KNIGHT', dungeonId: 'dungeon2',
+      element: '闇', weaknesses: ['炎', '聖'], resistances: ['闇', '物理'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.2,
+      stats: { maxHp: 110, atk: 20, def: 13, mag: 9, mnd: 10, spd: 11 }, exp: 40, gold: { min: 22, max: 40 },
+      dropTable: [{ itemId: 'silentArmor', chance: .35 }, { itemId: 'stoneShard', chance: .25 }, { itemId: 'silentNote', chance: .15 }],
+      ai: [{ id: 'attack', name: '無音の突き', kind: 'physical', weight: .40 }, { id: 'ratBite', name: 'サイレントスラッシュ', kind: 'physical', weight: .40 }, { id: 'attack', name: '恐怖の強制', kind: 'physical', weight: .20 }]
+    },
+    reverbSlime: {
+      id: 'reverbSlime', name: 'リバーブ・スライム', enName: 'REVERB SLIME', dungeonId: 'dungeon2',
+      element: '闇', weaknesses: ['火', '斬'], resistances: ['闇'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 0.85,
+      stats: { maxHp: 55, atk: 10, def: 5, mag: 12, mnd: 6, spd: 6 }, exp: 22, gold: { min: 10, max: 20 },
+      dropTable: [{ itemId: 'reverbJelly', chance: .55 }, { itemId: 'echoShard', chance: .20 }, { itemId: 'slimeJelly', chance: .15 }],
+      ai: [{ id: 'shadowBolt', name: 'エコースプラッシュ', kind: 'magic', weight: .45 }, { id: 'attack', name: '残響増殖', kind: 'physical', weight: .35 }, { id: 'attack', name: '静寂の粘液', kind: 'physical', weight: .20 }]
+    },
+    nocturneBanshee: {
+      id: 'nocturneBanshee', name: 'ノクターン・バンシー', enName: 'NOCTURNE BANSHEE', dungeonId: 'dungeon2',
+      element: '闇', weaknesses: ['雷', '光'], resistances: ['闇', '精神'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.0,
+      stats: { maxHp: 80, atk: 11, def: 7, mag: 16, mnd: 8, spd: 10 }, exp: 28, gold: { min: 14, max: 28 },
+      dropTable: [{ itemId: 'spectralDust', chance: .40 }, { itemId: 'violinString', chance: .25 }, { itemId: 'manaDrop', chance: .20 }],
+      ai: [{ id: 'soulBolt', name: 'サイレントクライ', kind: 'magic', weight: .50 }, { id: 'shadowBolt', name: 'MPドレインノート', kind: 'magic', weight: .30 }, { id: 'attack', name: '絶望の終曲', kind: 'magic', weight: .20 }]
     }
   }
 };

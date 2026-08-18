@@ -79,3 +79,37 @@
 .ren.zenacad-six-set:before{content:"♪  ♫  ♪";position:absolute;z-index:-1;left:50%;top:48%;width:175px;height:175px;translate:-50% -50%;display:grid;place-items:center;border:2px solid #b663ff88;border-radius:50%;color:#d69cff;font:900 23px Cinzel;letter-spacing:.3em;text-shadow:0 0 10px #a73fff;box-shadow:0 0 0 10px #7b2be522,0 0 35px #8e31ef66;opacity:.38;animation:cadenzaCircle 4.8s linear infinite}.ren.zenacad-six-set.set-intro:before{animation:cadenzaIntro 1.8s ease-out both}
 @keyframes cadenzaCircle{to{rotate:360deg}}@keyframes cadenzaIntro{0%{scale:.25;rotate:-90deg;opacity:0}35%{scale:1.15;opacity:.9}100%{scale:1;rotate:180deg;opacity:.38}}
 @media(max-width:760px){.enemy-ghostBone .slime[style*="background-image"]{left:3px;bottom:6px;width:112px;height:126px}.ren.zenacad-six-set:before{width:125px;height:125px;font-size:17px}}
+
+/* ── Dungeon 2 enemy sprites ─────────────────────────────────────────── */
+.enemy-silentHarmonist .slime[style*="background-image"],
+.enemy-echoWraith .slime[style*="background-image"],
+.enemy-muteGargoyle .slime[style*="background-image"],
+.enemy-nocturneChandelier .slime[style*="background-image"],
+.enemy-silentKnight .slime[style*="background-image"],
+.enemy-reverbSlime .slime[style*="background-image"],
+.enemy-nocturneBanshee .slime[style*="background-image"]{border:0;border-radius:0;clip-path:none;box-shadow:none;background-repeat:no-repeat;background-color:transparent;mix-blend-mode:screen;position:absolute}
+.enemy-silentHarmonist .slime[style*="background-image"]:before,.enemy-silentHarmonist .slime[style*="background-image"]:after,
+.enemy-echoWraith .slime[style*="background-image"]:before,.enemy-echoWraith .slime[style*="background-image"]:after,
+.enemy-muteGargoyle .slime[style*="background-image"]:before,.enemy-muteGargoyle .slime[style*="background-image"]:after,
+.enemy-nocturneChandelier .slime[style*="background-image"]:before,.enemy-nocturneChandelier .slime[style*="background-image"]:after,
+.enemy-silentKnight .slime[style*="background-image"]:before,.enemy-silentKnight .slime[style*="background-image"]:after,
+.enemy-reverbSlime .slime[style*="background-image"]:before,.enemy-reverbSlime .slime[style*="background-image"]:after,
+.enemy-nocturneBanshee .slime[style*="background-image"]:before,.enemy-nocturneBanshee .slime[style*="background-image"]:after{display:none}
+/* Row 1 of sheet (3 cols): silentHarmonist / echoWraith / muteGargoyle */
+.enemy-silentHarmonist .slime[style*="background-image"]{left:0;bottom:8px;width:120px;height:136px;background-size:300% auto;background-position:0% 30%;filter:drop-shadow(0 0 8px #9b6aff) drop-shadow(0 0 18px #4a20a0);animation:soulMageIdle 2s ease-in-out infinite}
+.enemy-echoWraith .slime[style*="background-image"]{left:2px;bottom:10px;width:118px;height:128px;background-size:300% auto;background-position:50% 30%;filter:drop-shadow(0 0 7px #7a8fff) drop-shadow(0 0 16px #2c3a8a);animation:soulMageIdle 1.8s ease-in-out infinite}
+.enemy-muteGargoyle .slime[style*="background-image"]{left:-4px;bottom:6px;width:130px;height:150px;background-size:300% auto;background-position:100% 30%;filter:drop-shadow(0 0 9px #8855cc) drop-shadow(0 0 20px #3a1870);animation:idle 2.4s ease-in-out infinite}
+/* Row 2 of sheet (4 cols): nocturneChandelier / silentKnight / reverbSlime / nocturneBanshee */
+.enemy-nocturneChandelier .slime[style*="background-image"]{left:2px;bottom:8px;width:118px;height:132px;background-size:400% auto;background-position:0% 100%;filter:drop-shadow(0 0 10px #c0a0ff) drop-shadow(0 0 22px #5c30c0);animation:soulMageIdle 2.2s ease-in-out infinite}
+.enemy-silentKnight .slime[style*="background-image"]{left:-2px;bottom:6px;width:128px;height:148px;background-size:400% auto;background-position:33.3% 100%;filter:drop-shadow(0 0 8px #6688bb) drop-shadow(0 0 18px #223366);animation:idle 1.9s ease-in-out infinite}
+.enemy-reverbSlime .slime[style*="background-image"]{left:4px;bottom:10px;width:108px;height:118px;background-size:400% auto;background-position:66.6% 100%;filter:drop-shadow(0 0 7px #88ccff) drop-shadow(0 0 14px #2255aa);animation:slimeIdle 1.6s ease-in-out infinite}
+.enemy-nocturneBanshee .slime[style*="background-image"]{left:0;bottom:12px;width:118px;height:134px;background-size:400% auto;background-position:100% 100%;filter:drop-shadow(0 0 9px #bb77ff) drop-shadow(0 0 20px #4a1d9e);animation:soulMageIdle 1.9s ease-in-out infinite}
+@media(max-width:760px){
+  .enemy-silentHarmonist .slime[style*="background-image"]{width:100px;height:116px}
+  .enemy-echoWraith .slime[style*="background-image"]{width:98px;height:110px}
+  .enemy-muteGargoyle .slime[style*="background-image"]{width:110px;height:130px}
+  .enemy-nocturneChandelier .slime[style*="background-image"]{width:100px;height:114px}
+  .enemy-silentKnight .slime[style*="background-image"]{width:108px;height:128px}
+  .enemy-reverbSlime .slime[style*="background-image"]{width:90px;height:100px}
+  .enemy-nocturneBanshee .slime[style*="background-image"]{width:98px;height:114px}
+}

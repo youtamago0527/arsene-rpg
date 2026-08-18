@@ -16,6 +16,8 @@
       this.returnAfterOpening = 'title';
       this.settingsReturn = 'title';
       this.confirmYes = null;
+      this.transferMode = null;
+      this.transferExportCode = '';
     }
 
     async init() {
@@ -84,6 +86,9 @@
         if (event.target.closest('[data-settings-back]')) { this.leaveSettings(); return; }
         if (event.target.closest('[data-watch-opening]')) { this.watchOpening(this.settingsReturn); return; }
         if (event.target.closest('[data-reset-data]')) { this.confirmReset(); return; }
+        if (event.target.closest('[data-export-save]')) { this.transferMode = this.transferMode === 'export' ? null : 'export'; if (this.transferMode === 'export') { this.transferExportCode = this.game.encodeSaveTransferCode(); navigator.clipboard?.writeText(this.transferExportCode).then(() => this.toast('コードをコピーしました')).catch(() => {}); } this.showSettings(this.settingsReturn); return; }
+        if (event.target.closest('[data-import-save]')) { this.transferMode = this.transferMode === 'import' ? null : 'import'; this.showSettings(this.settingsReturn); return; }
+        if (event.target.closest('[data-import-save-confirm]')) { const input = $('[data-transfer-input]', this.root), payload = this.game.decodeSaveTransferCode(input?.value); if (!payload) { this.toast('コードを読み取れませんでした'); return; } this.openConfirm('現在のセーブデータを上書きして読み込みますか？', () => this.game.applySaveTransfer(payload), true); return; }
         if (event.target.closest('[data-confirm-no]')) { this.closeConfirm(); return; }
         if (event.target.closest('[data-confirm-yes]')) { const action = this.confirmYes; this.closeConfirm(); await action?.(); return; }
         const locked = event.target.closest('.character-card.locked');
@@ -246,7 +251,7 @@
       this.setScreen('settings');
       const values = this.game.audio.getVolumes();
       const row = (id, label, note, badge = '') => `<label class="volume-row"><span><b>${label}</b><small>${note}</small></span><input type="range" min="0" max="100" value="${values[id]}" data-flow-volume="${id}"><output data-flow-volume-value="${id}">${values[id]}%</output>${badge ? `<em>${badge}</em>` : ''}</label>`;
-      $('.flow-settings', this.root).innerHTML = `<small>AUDIO & DATA</small><h1>SETTINGS</h1>${row('bgm', 'BGM', '音楽')}${row('sfx', 'SE', '効果音')}${row('voice', 'VOICE', 'ボイス用予約設定', 'COMING SOON')}<div class="flow-settings-actions"><button data-watch-opening>WATCH OPENING<span>零時侵蝕を再生</span></button><button class="danger" data-reset-data>DATA RESET<span>セーブデータを消去</span></button></div><button class="settings-back" data-settings-back>BACK</button>`;
+      $('.flow-settings', this.root).innerHTML = `<small>AUDIO & DATA</small><h1>SETTINGS</h1>${row('bgm', 'BGM', '音楽')}${row('sfx', 'SE', '効果音')}${row('voice', 'VOICE', 'ボイス用予約設定', 'COMING SOON')}<div class="flow-settings-actions"><button data-watch-opening>WATCH OPENING<span>零時侵蝕を再生</span></button><button class="danger" data-reset-data>DATA RESET<span>セーブデータを消去</span></button></div><section class="sound-settings save-transfer"><header><b>セーブデータの引き継ぎ</b><span>別ブラウザ・別URLでも復元できます</span></header><p class="save-transfer-note">「コードを書き出す」の文字列をコピーし、別のブラウザのこの画面で「コードを読み込む」に貼り付けてください。</p><div class="flow-settings-actions"><button data-export-save>コードを書き出す<span>EXPORT CODE</span></button><button data-import-save>コードを読み込む<span>IMPORT CODE</span></button></div>${this.transferMode === 'export' ? `<div class="save-transfer-box"><textarea readonly rows="4" data-transfer-output onclick="this.select()">${this.transferExportCode || ''}</textarea><small>自動でコピーしました。コピーされない場合は上の文字列を選択してコピーしてください。</small></div>` : ''}${this.transferMode === 'import' ? `<div class="save-transfer-box"><textarea rows="4" placeholder="ここにコードを貼り付け" data-transfer-input></textarea><button data-import-save-confirm>この内容で読み込む</button></div>` : ''}</section><button class="settings-back" data-settings-back>BACK</button>`;
     }
 
     leaveSettings() { if (this.settingsReturn === 'game') { this.root.hidden = true; this.game.showMenu('system'); } else this.showTitle(); }
