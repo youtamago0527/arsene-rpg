@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>或世盗RPG Data Editor</title>
+<script src="../../js/data.js" onerror="console.warn('data.js を読み込めませんでした。スキル/アイテムIDの入力補完は無効になります。')"></script>
+<style>
+  :root{ --bg:#12131a; --panel:#1b1d29; --panel2:#232636; --line:#33364a; --text:#e8e9f2; --sub:#9598b0; --accent:#7c8cff; --danger:#ff6b7a; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:"Segoe UI","Hiragino Kaku Gothic ProN",sans-serif; font-size:14px; }
+  header{ display:flex; align-items:center; gap:12px; padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  header h1{ font-size:16px; margin:0; }
+  .tabs{ display:flex; gap:6px; margin-right:auto; flex-wrap:wrap; }
+  .tabs button{ background:transparent; }
+  .tabs button.active{ background:var(--accent); color:#0c0d14; border-color:var(--accent); font-weight:600; }
+  button{ background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:6px 12px; cursor:pointer; font-size:13px; }
+  button:hover{ border-color:var(--accent); }
+  button.primary{ background:var(--accent); border-color:var(--accent); color:#0c0d14; font-weight:600; }
+  button.danger{ border-color:var(--danger); color:var(--danger); }
+  button.small{ padding:3px 8px; font-size:12px; }
+  main{ display:flex; height:calc(100vh - 49px); }
+  aside{ width:220px; border-right:1px solid var(--line); overflow-y:auto; background:var(--panel); flex-shrink:0; }
+  aside .item{ padding:8px 12px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; justify-content:space-between; gap:6px; }
+  aside .item:hover{ background:var(--panel2); }
+  aside .item.active{ background:var(--panel2); border-left:3px solid var(--accent); }
+  aside .item .id{ color:var(--sub); font-size:11px; }
+  #newBtn{ width:100%; border-radius:0; }
+  section#form{ flex:1; overflow-y:auto; padding:18px 24px; }
+  fieldset{ border:1px solid var(--line); border-radius:8px; margin-bottom:16px; padding:12px 14px; }
+  legend{ padding:0 6px; color:var(--accent); font-weight:600; font-size:13px; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+  .field{ display:flex; flex-direction:column; gap:3px; }
+  .field label{ font-size:11px; color:var(--sub); }
+  .field input[type=text], .field input[type=number], .field select, .field textarea{
+    background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:5px; padding:5px 7px; font-size:13px; min-width:110px;
+  }
+  .stat-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+  .stat-grid .field{ min-width:0; }
+  .checks{ display:flex; flex-wrap:wrap; gap:8px; }
+  .checks label{ display:flex; align-items:center; gap:4px; font-size:12px; background:var(--bg); border:1px solid var(--line); border-radius:5px; padding:4px 8px; cursor:pointer; }
+  table.rep{ width:100%; border-collapse:collapse; margin-bottom:6px; }
+  table.rep th{ text-align:left; font-size:11px; color:var(--sub); padding:2px 6px; }
+  table.rep td{ padding:2px 6px; }
+  table.rep select{ background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:5px; padding:5px 7px; font-size:13px; }
+  .empty{ color:var(--sub); padding:24px; text-align:center; }
+  .imgprev{ max-width:120px; max-height:120px; border:1px solid var(--line); border-radius:6px; display:block; margin:6px 0; background:#000; }
+  .hint{ color:var(--sub); font-size:11px; margin-top:2px; }
+  .idbadge{ font-size:11px; color:var(--sub); }
+
+  @media (max-width: 780px){
+    header{ padding:8px 10px; gap:8px; }
+    header h1{ font-size:14px; }
+    body{ font-size:13px; }
+    main{ flex-direction:column; height:auto; }
+    aside{ width:100%; max-height:38vh; border-right:none; border-bottom:1px solid var(--line); }
+    section#form{ padding:14px 12px; }
+    .stat-grid{ grid-template-columns:repeat(3,1fr); }
+    .field input[type=text], .field input[type=number], .field select, .field textarea{ min-width:0; width:100%; }
+    .field{ flex:1 1 130px; }
+    table.rep td input, table.rep td select{ width:100%; }
+    button{ padding:8px 12px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>或世盗RPG Data Editor</h1>
+  <div class="tabs">
+    <button id="tab_monster" class="active" onclick="switchTab('monster')">モンスター</button>
+    <button id="tab_weapon" onclick="switchTab('weapon')">武器</button>
+    <button id="tab_skill" onclick="switchTab('skill')">スキル</button>
+    <button id="tab_item" onclick="switchTab('item')">アイテム/装備</button>
+    <button id="tab_craft" onclick="switchTab('craft')">クラフト</button>
+  </div>
+  <span class="idbadge" id="dataStatus"></span>
+  <input type="file" id="importFile" accept="application/json" style="display:none">
+  <button onclick="document.getElementById('importFile').click()">JSON Import</button>
+  <button onclick="exportJSON()">JSON Export</button>
+  <button onclick="exportCSV()">CSV Export</button>
+</header>
+<main>
+  <aside>
+    <button id="newBtn" onclick="newEntry()">+ 新規モンスター</button>
+    <div id="list"></div>
+  </aside>
+  <section id="form"></section>
+</main>
+
+<script>
+/* ===================== 定数 ===================== */
+const ELEMENTS = [
+  { id:'none', name:'無属性' }, { id:'light', name:'光' }, { id:'dark', name:'闇' },
+  { id:'fire', name:'火' }, { id:'water', name:'水' }, { id:'thunder', name:'雷' },
+  { id:'wind', name:'風' }, { id:'earth', name:'土' }
+];
+const VARIANT_OPTIONS = [
+  { id:'standard', name:'標準' }, { id:'rare', name:'レア' }, { id:'stray', name:'はぐれ' }
+];
+const EQUIP_SLOTS = [
+  { id:'rightHand', name:'右手（武器）' }, { id:'leftHand', name:'盾（左手）' }, { id:'head', name:'頭' }, { id:'body', name:'体' },
+  { id:'arms', name:'手' }, { id:'feet', name:'足' }, { id:'accessory', name:'アクセ' }
+];
+const SKILL_OPTIONS = (window.ARSENE_DATA && window.ARSENE_DATA.skills) ? Object.values(window.ARSENE_DATA.skills) : [];
+const ITEM_OPTIONS = (window.ARSENE_DATA && window.ARSENE_DATA.items) ? Object.values(window.ARSENE_DATA.items) : [];
+const WEAPON_OPTIONS = (window.ARSENE_DATA && window.ARSENE_DATA.weapons) ? Object.values(window.ARSENE_DATA.weapons) : [];
+const KNOWN_WEAPON_TYPES = Array.from(new Set(['staff','sword', ...WEAPON_OPTIONS.map(w => w.weaponType)].filter(Boolean)));
+const KNOWN_ATTACK_MOTIONS = Array.from(new Set(['staffCast','slash', ...WEAPON_OPTIONS.map(w => w.attackMotion)].filter(Boolean)));
+const STAT_KEYS = ['maxHp','maxMp','str','vit','mag','mnd','agi','dex','luk'];
+
+document.getElementById('dataStatus').textContent = window.ARSENE_DATA
+  ? `data.js 読込OK（スキル${SKILL_OPTIONS.length}件 / アイテム${ITEM_OPTIONS.length}件 / 武器${WEAPON_OPTIONS.length}件）`
+  : 'data.js 未読込（IDは手入力してください）';
+
+const SKILL_COLS    = [{ key:'skillId', type:'text', datalist:'skillIds' }, { key:'weight', type:'number' }];
+const DROP_COLS     = [{ key:'itemId',  type:'text', datalist:'itemIds'  }, { key:'chance', type:'number' }];
+const BONUS_COLS    = [{ key:'stat', type:'select', options:STAT_KEYS }, { key:'value', type:'number' }];
+const MATERIAL_COLS = [{ key:'itemId', type:'text', datalist:'craftItemIds' }, { key:'count', type:'number' }];
+
+/* ===================== 共通ヘルパー ===================== */
+function optionsDatalist(id, options, labelKey='name', idKey='id'){
+  return `<datalist id="${id}">${options.map(o => `<option value="${o[idKey]}">${o[labelKey] || ''}</option>`).join('')}</datalist>`;
+}
+
+function addRow(tableId, entry, columns){
+  const tbody = document.querySelector(`#${tableId} tbody`);
+  const tr = document.createElement('tr');
+  tr.innerHTML = columns.map(col => {
+    if(col.type === 'select'){
+      return `<td><select data-key="${col.key}">${col.options.map(o => `<option value="${o}" ${entry[col.key]===o?'selected':''}>${o}</option>`).join('')}</select></td>`;
+    }
+    const isNum = col.type === 'number';
+    const listAttr = col.datalist ? `list="${col.datalist}"` : '';
+    return `<td><input type="${isNum?'number':'text'}" ${isNum?'step="0.01"':''} ${listAttr} data-key="${col.key}" value="${entry[col.key] ?? (isNum?0:'')}" style="width:${col.width || (isNum?'70px':'140px')}"></td>`;
+  }).join('') + `<td><button class="small danger" onclick="this.closest('tr').remove()">×</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function readRows(tableId, columns){
+  const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+  return Array.from(rows).map(tr => {
+    const obj = {};
+    columns.forEach(col => {
+      const el = tr.querySelector(`[data-key="${col.key}"]`);
+      obj[col.key] = col.type === 'number' ? parseFloat(el.value || 0) : el.value;
+    });
+    return obj;
+  });
+}
+
+function dotGet(obj, path){
+  return path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
+}
+
+function buildCsv(cols, data){
+  const rows = data.map(obj => cols.map(c => {
+    let v = dotGet(obj, c);
+    if(v !== null && typeof v === 'object') v = JSON.stringify(v);
+    return `"${String(v ?? '').replace(/"/g,'""')}"`;
+  }).join(','));
+  return { cols, rows };
+}
+
+function downloadBlob(blob, name){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* ---------- 画像インポート＋IDリネーム保存(モンスター/武器 共通) ---------- */
+let pendingSpriteFile = null;
+
+function onSpriteSelected(ev, kind){
+  const file = ev.target.files[0];
+  if(!file) return;
+  pendingSpriteFile = file;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const prev = document.getElementById('spritePreview');
+    prev.src = reader.result;
+    prev.style.display = '';
+  };
+  reader.readAsDataURL(file);
+  const id = document.getElementById('f_id').value.trim() || (kind === 'monster' ? 'monster' : 'weapon');
+  const ext = file.name.split('.').pop();
+  let suggested;
+  if(kind === 'monster'){
+    suggested = `assets/enemy-characters/${id}/${id}.${ext}`;
+  }else{
+    const type = (document.getElementById('f_weaponType').value.trim()) || 'misc';
+    suggested = `assets/weapons/${type}/${id}.${ext}`;
+  }
+  document.getElementById('f_spritePath').value = suggested;
+}
+
+async function saveSpriteWithIdName(kind){
+  if(!pendingSpriteFile){ alert('先に画像ファイルを選択してください。'); return; }
+  const id = document.getElementById('f_id').value.trim() || (kind === 'monster' ? 'monster' : 'weapon');
+  const ext = pendingSpriteFile.name.split('.').pop();
+  const suggestedName = `${id}.${ext}`;
+  if(window.showSaveFilePicker){
+    try{
+      const handle = await window.showSaveFilePicker({ suggestedName });
+      const writable = await handle.createWritable();
+      await writable.write(pendingSpriteFile);
+      await writable.close();
+      alert(`${suggestedName} として保存しました。`);
+      return;
+    }catch(e){ if(e.name === 'AbortError') return; console.warn(e); }
+  }
+  const url = URL.createObjectURL(pendingSpriteFile);
+  const a = document.createElement('a');
+  a.href = url; a.download = suggestedName;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* ===================== モンスター ===================== */
+function emptyMonster(){
+  return {
+    id:'', name:'', enName:'', kind:'normal', title:'',
+    variant:'standard', baseMonsterId:'',
+    stats:{ maxHp:0, maxMp:0, atk:0, def:0, mag:0, mnd:0, spd:0, dex:0, luk:0 },
+    exp:0, jobExp:0, gold:{ min:0, max:0 },
+    elementId:'none', weaknessIds:[], resistanceIds:[],
+    appearance:{ dungeonIds:[], encounterRate:1, minLevel:1, maxLevel:1, spritePath:'' },
+    skills:[], dropTable:[], stealTable:[]
+  };
+}
+
+function renderMonsterForm(m){
+  const f = document.getElementById('form');
+  f.innerHTML = `
+  <fieldset>
+    <legend>基本情報</legend>
+    <div class="row">
+      <div class="field"><label>ID（一意・英数字推奨）</label><input type="text" id="f_id" value="${m.id}"></div>
+      <div class="field"><label>名前</label><input type="text" id="f_name" value="${m.name}"></div>
+      <div class="field"><label>英語名</label><input type="text" id="f_enName" value="${m.enName}"></div>
+      <div class="field"><label>種別</label><select id="f_kind">
+        <option value="normal" ${m.kind==='normal'?'selected':''}>normal</option>
+        <option value="boss" ${m.kind==='boss'?'selected':''}>boss</option>
+      </select></div>
+      <div class="field"><label>二つ名（ボス用）</label><input type="text" id="f_title" value="${m.title || ''}"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>亜種タイプ（標準/レア/はぐれ 等・自由入力可）</label><input type="text" id="f_variant" list="variantTypes" value="${m.variant || 'standard'}"></div>
+      ${optionsDatalist('variantTypes', VARIANT_OPTIONS)}
+      <div class="field"><label>元モンスターID（色違い等の場合）</label><input type="text" id="f_baseMonsterId" list="baseMonsterIds" value="${m.baseMonsterId || ''}"></div>
+      ${optionsDatalist('baseMonsterIds', STATE.monster.data.filter(x => x.id && x.id !== m.id))}
+    </div>
+    <div class="hint">レアやはぐれのような色違い・強化版は、種別(kind)はnormalのまま「亜種タイプ」で区別できます。元になったモンスターのIDを「元モンスターID」に入れておくと、後で見返したときに関係がわかります。</div>
+  </fieldset>
+
+  <fieldset>
+    <legend>ステータス</legend>
+    <div class="stat-grid">
+      ${['maxHp','maxMp','atk','def','mag','mnd','spd','dex','luk'].map(k =>
+        `<div class="field"><label>${k}</label><input type="number" id="f_stat_${k}" value="${m.stats[k] ?? 0}"></div>`
+      ).join('')}
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>報酬</legend>
+    <div class="row">
+      <div class="field"><label>EXP</label><input type="number" id="f_exp" value="${m.exp}"></div>
+      <div class="field"><label>JobEXP</label><input type="number" id="f_jobExp" value="${m.jobExp}"></div>
+      <div class="field"><label>GOLD 最小</label><input type="number" id="f_goldMin" value="${m.gold.min}"></div>
+      <div class="field"><label>GOLD 最大</label><input type="number" id="f_goldMax" value="${m.gold.max}"></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>属性</legend>
+    <div class="row">
+      <div class="field"><label>属性</label><select id="f_element">
+        ${ELEMENTS.map(e => `<option value="${e.id}" ${m.elementId===e.id?'selected':''}>${e.name}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="field"><label>弱点</label><div class="checks" id="f_weak">
+      ${ELEMENTS.map(e => `<label><input type="checkbox" value="${e.id}" ${m.weaknessIds.includes(e.id)?'checked':''}>${e.name}</label>`).join('')}
+    </div></div>
+    <div class="field" style="margin-top:8px;"><label>耐性</label><div class="checks" id="f_resist">
+      ${ELEMENTS.map(e => `<label><input type="checkbox" value="${e.id}" ${m.resistanceIds.includes(e.id)?'checked':''}>${e.name}</label>`).join('')}
+    </div></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>出現情報</legend>
+    <div class="row">
+      <div class="field"><label>出現ダンジョンID（カンマ区切り）</label><input type="text" id="f_dungeons" value="${m.appearance.dungeonIds.join(',')}"></div>
+      <div class="field"><label>出現率</label><input type="number" step="0.01" id="f_encRate" value="${m.appearance.encounterRate}"></div>
+      <div class="field"><label>最小Lv</label><input type="number" id="f_minLv" value="${m.appearance.minLevel}"></div>
+      <div class="field"><label>最大Lv</label><input type="number" id="f_maxLv" value="${m.appearance.maxLevel}"></div>
+    </div>
+    <div class="field">
+      <label>画像（スプライト）</label>
+      <input type="file" id="f_spriteFile" accept="image/*" onchange="onSpriteSelected(event,'monster')">
+      <img id="spritePreview" class="imgprev" style="${m.appearance.spritePath ? '' : 'display:none;'}" src="">
+      <input type="text" id="f_spritePath" value="${m.appearance.spritePath}" placeholder="assets/enemy-characters/xxx/xxx.png">
+      <div class="row" style="margin-top:4px;">
+        <button class="small" onclick="saveSpriteWithIdName('monster')">IDでリネームして保存</button>
+      </div>
+      <div class="hint">画像を選ぶとモンスターIDを使ったファイル名を提案します。「IDでリネームして保存」でその名前のまま保存できます（対応ブラウザでは保存先を選択、非対応ブラウザではダウンロードフォルダに保存されます）。</div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>スキル</legend>
+    ${optionsDatalist('skillIds', skillOptions())}
+    <table class="rep" id="f_skills"><thead><tr><th>skillId</th><th>weight</th><th></th></tr></thead><tbody></tbody></table>
+    <button class="small" onclick="addRow('f_skills', {skillId:'', weight:0}, SKILL_COLS)">+ スキル追加</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>DROP</legend>
+    ${optionsDatalist('itemIds', ITEM_OPTIONS)}
+    <table class="rep" id="f_drop"><thead><tr><th>itemId</th><th>chance</th><th></th></tr></thead><tbody></tbody></table>
+    <button class="small" onclick="addRow('f_drop', {itemId:'', chance:0}, DROP_COLS)">+ DROP追加</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>STEAL</legend>
+    <table class="rep" id="f_steal"><thead><tr><th>itemId</th><th>chance</th><th></th></tr></thead><tbody></tbody></table>
+    <button class="small" onclick="addRow('f_steal', {itemId:'', chance:0}, DROP_COLS)">+ STEAL追加</button>
+  </fieldset>
+  `;
+
+  m.skills.forEach(s => addRow('f_skills', s, SKILL_COLS));
+  m.dropTable.forEach(d => addRow('f_drop', d, DROP_COLS));
+  m.stealTable.forEach(d => addRow('f_steal', d, DROP_COLS));
+
+  if(m.appearance.spritePath){
+    document.getElementById('spritePreview').src = m.appearance.spritePath;
+    document.getElementById('spritePreview').style.display = '';
+  }
+}
+
+function collectMonsterForm(){
+  const g = id => document.getElementById(id);
+  if(!g('f_id')) return STATE.monster.data[STATE.monster.current] || emptyMonster();
+  const weak = Array.from(document.querySelectorAll('#f_weak input:checked')).map(c => c.value);
+  const resist = Array.from(document.querySelectorAll('#f_resist input:checked')).map(c => c.value);
+  const stats = {};
+  ['maxHp','maxMp','atk','def','mag','mnd','spd','dex','luk'].forEach(k => stats[k] = parseFloat(g(`f_stat_${k}`).value || 0));
+  return {
+    id: g('f_id').value.trim(),
+    name: g('f_name').value.trim(),
+    enName: g('f_enName').value.trim(),
+    kind: g('f_kind').value,
+    title: g('f_title').value.trim(),
+    variant: g('f_variant').value.trim() || 'standard',
+    baseMonsterId: g('f_baseMonsterId').value.trim(),
+    stats,
+    exp: parseFloat(g('f_exp').value || 0),
+    jobExp: parseFloat(g('f_jobExp').value || 0),
+    gold: { min: parseFloat(g('f_goldMin').value || 0), max: parseFloat(g('f_goldMax').value || 0) },
+    elementId: g('f_element').value,
+    weaknessIds: weak,
+    resistanceIds: resist,
+    appearance: {
+      dungeonIds: g('f_dungeons').value.split(',').map(s => s.trim()).filter(Boolean),
+      encounterRate: parseFloat(g('f_encRate').value || 0),
+      minLevel: parseFloat(g('f_minLv').value || 0),
+      maxLevel: parseFloat(g('f_maxLv').value || 0),
+      spritePath: g('f_spritePath').value.trim()
+    },
+    skills: readRows('f_skills', SKILL_COLS),
+    dropTable: readRows('f_drop', DROP_COLS),
+    stealTable: readRows('f_steal', DROP_COLS)
+  };
+}
+
+function normalizeMonster(m){
+  return Object.assign(emptyMonster(), m, {
+    stats: Object.assign(emptyMonster().stats, m.stats),
+    gold: Object.assign({min:0,max:0}, m.gold),
+    appearance: Object.assign(emptyMonster().appearance, m.appearance)
+  });
+}
+
+function monsterCsv(data){
+  return buildCsv(['id','name','enName','kind','title','variant','baseMonsterId',
+    'stats.maxHp','stats.maxMp','stats.atk','stats.def','stats.mag','stats.mnd','stats.spd','stats.dex','stats.luk',
+    'exp','jobExp','gold.min','gold.max','elementId','weaknessIds','resistanceIds',
+    'appearance.dungeonIds','appearance.encounterRate','appearance.minLevel','appearance.maxLevel','appearance.spritePath',
+    'skills','dropTable','stealTable'], data);
+}
+
+/* ===================== 武器 ===================== */
+function emptyWeapon(){
+  return { id:'', name:'', weaponType:'', weaponSprite:'', battleSprite:'', attackMotion:'', damageStat:'str', power:1, bonuses:{}, grantsSkillId:'' };
+}
+
+function renderWeaponForm(w){
+  const f = document.getElementById('form');
+  f.innerHTML = `
+  <fieldset>
+    <legend>基本情報</legend>
+    <div class="row">
+      <div class="field"><label>ID（一意・英数字推奨）</label><input type="text" id="f_id" value="${w.id}"></div>
+      <div class="field"><label>名前</label><input type="text" id="f_name" value="${w.name}"></div>
+      <div class="field"><label>武器タイプ</label><input type="text" id="f_weaponType" list="weaponTypeIds" value="${w.weaponType}"></div>
+      <div class="field"><label>weaponSprite（キー）</label><input type="text" id="f_weaponSprite" value="${w.weaponSprite}"></div>
+    </div>
+    <datalist id="weaponTypeIds">${KNOWN_WEAPON_TYPES.map(t => `<option value="${t}">`).join('')}</datalist>
+  </fieldset>
+
+  <fieldset>
+    <legend>戦闘性能・演出</legend>
+    <div class="row">
+      <div class="field"><label>attackMotion</label><input type="text" id="f_attackMotion" list="attackMotionIds" value="${w.attackMotion}"></div>
+      <datalist id="attackMotionIds">${KNOWN_ATTACK_MOTIONS.map(a => `<option value="${a}">`).join('')}</datalist>
+      <div class="field"><label>damageStat</label><select id="f_damageStat">
+        ${['str','vit','mag','mnd','agi','dex','luk'].map(s => `<option value="${s}" ${w.damageStat===s?'selected':''}>${s}</option>`).join('')}
+      </select></div>
+      <div class="field"><label>power</label><input type="number" step="0.01" id="f_power" value="${w.power}"></div>
+    </div>
+    <div class="field">
+      <label>画像（battleSprite）</label>
+      <input type="file" id="f_spriteFile" accept="image/*" onchange="onSpriteSelected(event,'weapon')">
+      <img id="spritePreview" class="imgprev" style="${w.battleSprite ? '' : 'display:none;'}" src="">
+      <input type="text" id="f_spritePath" value="${w.battleSprite}" placeholder="assets/weapons/xxx/xxx.png">
+      <div class="row" style="margin-top:4px;">
+        <button class="small" onclick="saveSpriteWithIdName('weapon')">IDでリネームして保存</button>
+      </div>
+      <div class="hint">画像を選ぶと「武器タイプのフォルダ＋ID」のファイル名を提案します（例: assets/weapons/staff/xxx.png）。「武器タイプ」欄を先に入れておくとフォルダ分けが正しくなります。</div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>ステータス補正（bonuses）</legend>
+    <table class="rep" id="f_bonuses"><thead><tr><th>stat</th><th>value</th><th></th></tr></thead><tbody></tbody></table>
+    <button class="small" onclick="addRow('f_bonuses', {stat:'str', value:0}, BONUS_COLS)">+ 補正追加</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>習得スキル（任意）</legend>
+    <div class="row">
+      <div class="field"><label>装備すると使えるようになるスキルID</label><input type="text" id="f_grantsSkillId" list="grantSkillIds" value="${w.grantsSkillId || ''}"></div>
+      ${optionsDatalist('grantSkillIds', skillOptions())}
+    </div>
+    <div class="hint">現状game.js側はプレイヤーの「skills」配列を動的に見ておらず、コマンド欄もクイックスラッシュ固定で表示しています。この項目を実際に機能させるには、武器装備時にスキルを解放する処理と、スキル一覧を動的表示する処理の実装が別途必要です。</div>
+  </fieldset>
+  `;
+
+  Object.entries(w.bonuses || {}).forEach(([stat, value]) => addRow('f_bonuses', { stat, value }, BONUS_COLS));
+
+  if(w.battleSprite){
+    document.getElementById('spritePreview').src = w.battleSprite;
+    document.getElementById('spritePreview').style.display = '';
+  }
+}
+
+function collectWeaponForm(){
+  const g = id => document.getElementById(id);
+  if(!g('f_id')) return STATE.weapon.data[STATE.weapon.current] || emptyWeapon();
+  const bonuses = {};
+  readRows('f_bonuses', BONUS_COLS).forEach(r => { if(r.stat) bonuses[r.stat] = r.value; });
+  return {
+    id: g('f_id').value.trim(),
+    name: g('f_name').value.trim(),
+    weaponType: g('f_weaponType').value.trim(),
+    weaponSprite: g('f_weaponSprite').value.trim(),
+    battleSprite: g('f_spritePath').value.trim(),
+    attackMotion: g('f_attackMotion').value.trim(),
+    grantsSkillId: g('f_grantsSkillId').value.trim(),
+    damageStat: g('f_damageStat').value,
+    power: parseFloat(g('f_power').value || 0),
+    bonuses
+  };
+}
+
+function normalizeWeapon(w){
+  return Object.assign(emptyWeapon(), w, { bonuses: Object.assign({}, w.bonuses) });
+}
+
+function weaponCsv(data){
+  return buildCsv(['id','name','weaponType','weaponSprite','battleSprite','attackMotion','damageStat','power','bonuses','grantsSkillId'], data);
+}
+
+function skillOptions(){
+  const fromSession = (STATE.skill ? STATE.skill.data : []).filter(x => x.id).map(x => ({ id:x.id, name:x.name }));
+  const map = new Map();
+  [...SKILL_OPTIONS, ...fromSession].forEach(o => map.set(o.id, o));
+  return Array.from(map.values());
+}
+
+/* ===================== スキル ===================== */
+function emptySkill(){
+  return { id:'', name:'', mp:0, kind:'physical', power:1, agiScale:0, elementId:'none', target:'single' };
+}
+
+function renderSkillForm(sk){
+  const f = document.getElementById('form');
+  f.innerHTML = `
+  <fieldset>
+    <legend>基本情報</legend>
+    <div class="row">
+      <div class="field"><label>ID（一意・英数字推奨）</label><input type="text" id="f_id" value="${sk.id}"></div>
+      <div class="field"><label>名前</label><input type="text" id="f_name" value="${sk.name}"></div>
+      <div class="field"><label>種別</label><select id="f_kind">
+        <option value="weapon" ${sk.kind==='weapon'?'selected':''}>weapon（通常攻撃）</option>
+        <option value="physical" ${sk.kind==='physical'?'selected':''}>physical（物理）</option>
+        <option value="magical" ${sk.kind==='magical'?'selected':''}>magical（魔法）</option>
+      </select></div>
+      <div class="field"><label>対象</label><select id="f_target">
+        <option value="single" ${sk.target==='single'?'selected':''}>single（単体）</option>
+        <option value="all" ${sk.target==='all'?'selected':''}>all（全体）</option>
+      </select></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>性能</legend>
+    <div class="row">
+      <div class="field"><label>MP消費</label><input type="number" id="f_mp" value="${sk.mp}"></div>
+      <div class="field"><label>威力係数(power)</label><input type="number" step="0.01" id="f_power" value="${sk.power}"></div>
+      <div class="field"><label>AGI補正(agiScale)</label><input type="number" step="0.01" id="f_agiScale" value="${sk.agiScale}"></div>
+      <div class="field"><label>属性</label><select id="f_element">
+        ${ELEMENTS.map(e => `<option value="${e.id}" ${sk.elementId===e.id?'selected':''}>${e.name}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="hint">現状game.jsのダメージ計算は、通常攻撃(kind:weapon)以外のスキルは全てSTR基準で計算しています。magical種別をMAG基準にしたり、対象(target)がallの場合に敵全体へ処理を回す実装は別途必要です。</div>
+  </fieldset>
+  `;
+}
+
+function collectSkillForm(){
+  const g = id => document.getElementById(id);
+  if(!g('f_id')) return STATE.skill.data[STATE.skill.current] || emptySkill();
+  return {
+    id: g('f_id').value.trim(),
+    name: g('f_name').value.trim(),
+    kind: g('f_kind').value,
+    target: g('f_target').value,
+    mp: parseFloat(g('f_mp').value || 0),
+    power: parseFloat(g('f_power').value || 0),
+    agiScale: parseFloat(g('f_agiScale').value || 0),
+    elementId: g('f_element').value
+  };
+}
+
+function normalizeSkill(sk){
+  return Object.assign(emptySkill(), sk);
+}
+
+function skillCsv(data){
+  return buildCsv(['id','name','kind','target','mp','power','agiScale','elementId'], data);
+}
+
+/* ===================== アイテム/装備 ===================== */
+function emptyItem(){
+  return { id:'', name:'', category:'consumable', rarity:'common', description:'', effect:{ hp:0, mp:0 }, slot:'head', bonuses:{} };
+}
+
+function renderItemForm(it){
+  const f = document.getElementById('form');
+  f.innerHTML = `
+  <fieldset>
+    <legend>基本情報</legend>
+    <div class="row">
+      <div class="field"><label>ID（一意・英数字推奨）</label><input type="text" id="f_id" value="${it.id}"></div>
+      <div class="field"><label>名前</label><input type="text" id="f_name" value="${it.name}"></div>
+      <div class="field"><label>カテゴリ</label><select id="f_category" onchange="onItemCategoryChange()">
+        <option value="consumable" ${it.category==='consumable'?'selected':''}>consumable（消耗品）</option>
+        <option value="material" ${it.category==='material'?'selected':''}>material（素材）</option>
+        <option value="equipment" ${it.category==='equipment'?'selected':''}>equipment（装備）</option>
+      </select></div>
+      <div class="field"><label>レア度</label><input type="text" id="f_rarity" list="rarityIds" value="${it.rarity}"></div>
+      <datalist id="rarityIds"><option value="common"><option value="rare"><option value="epic"></datalist>
+    </div>
+    <div class="field"><label>説明</label><input type="text" id="f_description" value="${it.description || ''}" style="min-width:300px;"></div>
+  </fieldset>
+
+  ${it.category === 'consumable' ? `
+  <fieldset>
+    <legend>回復効果</legend>
+    <div class="row">
+      <div class="field"><label>HP回復</label><input type="number" id="f_effectHp" value="${it.effect?.hp ?? 0}"></div>
+      <div class="field"><label>MP回復</label><input type="number" id="f_effectMp" value="${it.effect?.mp ?? 0}"></div>
+    </div>
+  </fieldset>` : ''}
+
+  ${it.category === 'equipment' ? `
+  <fieldset>
+    <legend>装備情報</legend>
+    <div class="row">
+      <div class="field"><label>装備スロット</label><select id="f_slot">
+        ${EQUIP_SLOTS.map(s => `<option value="${s.id}" ${it.slot===s.id?'selected':''}>${s.name}</option>`).join('')}
+      </select></div>
+    </div>
+    <table class="rep" id="f_bonuses"><thead><tr><th>stat</th><th>value</th><th></th></tr></thead><tbody></tbody></table>
+    <button class="small" onclick="addRow('f_bonuses', {stat:'str', value:0}, BONUS_COLS)">+ 補正追加</button>
+    <div class="hint">右手（武器）を選んだ場合、ここで作れるのは名前・説明・レア度などの表示用データだけです。威力やステータス補正など戦闘用の数値は、同じIDで「武器」タブ側にも登録してください。</div>
+  </fieldset>` : ''}
+  `;
+
+  if(it.category === 'equipment'){
+    Object.entries(it.bonuses || {}).forEach(([stat, value]) => addRow('f_bonuses', { stat, value }, BONUS_COLS));
+  }
+}
+
+function onItemCategoryChange(){
+  const merged = collectItemForm();
+  merged.category = document.getElementById('f_category').value;
+  renderItemForm(merged);
+}
+
+function collectItemForm(){
+  const g = id => document.getElementById(id);
+  if(!g('f_id')) return STATE.item.data[STATE.item.current] || emptyItem();
+  const category = g('f_category').value;
+  const result = {
+    id: g('f_id').value.trim(),
+    name: g('f_name').value.trim(),
+    category,
+    rarity: g('f_rarity').value.trim(),
+    description: g('f_description').value.trim(),
+    effect: { hp:0, mp:0 },
+    slot: 'head',
+    bonuses: {}
+  };
+  if(category === 'consumable' && g('f_effectHp')){
+    result.effect = { hp: parseFloat(g('f_effectHp').value || 0), mp: parseFloat(g('f_effectMp').value || 0) };
+  }
+  if(category === 'equipment' && g('f_slot')){
+    result.slot = g('f_slot').value;
+    const bonuses = {};
+    readRows('f_bonuses', BONUS_COLS).forEach(r => { if(r.stat) bonuses[r.stat] = r.value; });
+    result.bonuses = bonuses;
+  }
+  return result;
+}
+
+function normalizeItem(it){
+  return Object.assign(emptyItem(), it, {
+    effect: Object.assign({ hp:0, mp:0 }, it.effect),
+    bonuses: Object.assign({}, it.bonuses)
+  });
+}
+
+function itemCsv(data){
+  return buildCsv(['id','name','category','rarity','description','effect.hp','effect.mp','slot','bonuses'], data);
+}
+
+/* ===================== クラフト ===================== */
+function emptyRecipe(){
+  return { id:'', name:'', resultItemId:'', resultCount:1, goldCost:0, unlockFlag:'', materials:[] };
+}
+
+function craftTargetOptions(){
+  const fromItems = STATE.item.data.filter(x => x.id).map(x => ({ id:x.id, name:x.name }));
+  const fromWeapons = STATE.weapon.data.filter(x => x.id).map(x => ({ id:x.id, name:x.name }));
+  const map = new Map();
+  [...ITEM_OPTIONS, ...WEAPON_OPTIONS, ...fromItems, ...fromWeapons].forEach(o => map.set(o.id, o));
+  return Array.from(map.values());
+}
+
+function renderRecipeForm(r){
+  const f = document.getElementById('form');
+  const options = craftTargetOptions();
+  f.innerHTML = `
+  <fieldset>
+    <legend>基本情報</legend>
+    <div class="row">
+      <div class="field"><label>ID（一意・英数字推奨）</label><input type="text" id="f_id" value="${r.id}"></div>
+      <div class="field"><label>レシピ名</label><input type="text" id="f_name" value="${r.name}"></div>
+      <div class="field"><label>完成品ID</label><input type="text" id="f_resultItemId" list="craftTargetIds" value="${r.resultItemId}"></div>
+      ${optionsDatalist('craftTargetIds', options)}
+      <div class="field"><label>完成数</label><input type="number" id="f_resultCount" value="${r.resultCount}"></div>
+      <div class="field"><label>GOLDコスト</label><input type="number" id="f_goldCost" value="${r.goldCost}"></div>
+      <div class="field"><label>解放フラグ（任意）</label><input type="text" id="f_unlockFlag" value="${r.unlockFlag || ''}" placeholder="noelFirstEncounterCleared"></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>必要素材</legend>
+    ${optionsDatalist('craftItemIds', options)}
+    <table class="rep" id="f_materials"><thead><tr><th>itemId</th><th>count</th><th></th></tr></thead><tbody></tbody></table>
+    <button class="small" onclick="addRow('f_materials', {itemId:'', count:1}, MATERIAL_COLS)">+ 素材追加</button>
+  </fieldset>
+
+  <div class="hint" style="padding:0 4px;">現状 game.js には工房クラフトを実際に実行する処理がまだありません（工房のクラフトタブは準備中の表示のみ）。ここで作るデータは、その機能を実装するときにそのまま使えるように準備しておくものです。</div>
+  `;
+  r.materials.forEach(mt => addRow('f_materials', mt, MATERIAL_COLS));
+}
+
+function collectRecipeForm(){
+  const g = id => document.getElementById(id);
+  if(!g('f_id')) return STATE.craft.data[STATE.craft.current] || emptyRecipe();
+  return {
+    id: g('f_id').value.trim(),
+    name: g('f_name').value.trim(),
+    resultItemId: g('f_resultItemId').value.trim(),
+    resultCount: parseFloat(g('f_resultCount').value || 1),
+    goldCost: parseFloat(g('f_goldCost').value || 0),
+    unlockFlag: g('f_unlockFlag').value.trim(),
+    materials: readRows('f_materials', MATERIAL_COLS)
+  };
+}
+
+function normalizeRecipe(r){
+  return Object.assign(emptyRecipe(), r, { materials: Array.isArray(r.materials) ? r.materials : [] });
+}
+
+function recipeCsv(data){
+  return buildCsv(['id','name','resultItemId','resultCount','goldCost','unlockFlag','materials'], data);
+}
+
+/* ===================== タブ状態(共通エンジン) ===================== */
+const STATE = {
+  monster: { data:[], current:-1, label:'モンスター',   jsonKey:'monsters', file:'monsters.json', empty:emptyMonster, render:renderMonsterForm, collect:collectMonsterForm, normalize:normalizeMonster, csv:monsterCsv },
+  weapon:  { data:[], current:-1, label:'武器',         jsonKey:'weapons',  file:'weapons.json',  empty:emptyWeapon,  render:renderWeaponForm,  collect:collectWeaponForm,  normalize:normalizeWeapon,  csv:weaponCsv },
+  skill:   { data:[], current:-1, label:'スキル',       jsonKey:'skills',   file:'skills.json',   empty:emptySkill,   render:renderSkillForm,   collect:collectSkillForm,   normalize:normalizeSkill,   csv:skillCsv },
+  item:    { data:[], current:-1, label:'アイテム/装備', jsonKey:'items',    file:'items.json',    empty:emptyItem,    render:renderItemForm,    collect:collectItemForm,    normalize:normalizeItem,    csv:itemCsv },
+  craft:   { data:[], current:-1, label:'クラフト',      jsonKey:'recipes',  file:'recipes.json',  empty:emptyRecipe,  render:renderRecipeForm,  collect:collectRecipeForm,  normalize:normalizeRecipe,  csv:recipeCsv }
+};
+const TAB_ORDER = ['monster','weapon','skill','item','craft'];
+let activeTab = 'monster';
+
+function switchTab(tab){
+  saveCurrentForm();
+  activeTab = tab;
+  TAB_ORDER.forEach(t => document.getElementById('tab_' + t).classList.toggle('active', t === tab));
+  document.getElementById('newBtn').textContent = '+ 新規' + STATE[tab].label;
+  renderList();
+  renderCurrentForm();
+}
+
+function emptyPromptHTML(){
+  const s = STATE[activeTab];
+  return `<div class="empty">左のリストから${s.label}を選択、または「+ 新規${s.label}」で追加してください。<br>既存データがある場合は上の「JSON Import」で ${s.file} を読み込めます。</div>`;
+}
+
+function renderCurrentForm(){
+  const s = STATE[activeTab];
+  if(s.current >= 0) s.render(s.data[s.current]);
+  else document.getElementById('form').innerHTML = emptyPromptHTML();
+}
+
+function renderList(){
+  const s = STATE[activeTab];
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  s.data.forEach((m, i) => {
+    const div = document.createElement('div');
+    div.className = 'item' + (i === s.current ? ' active' : '');
+    div.innerHTML = `<span>${m.name || '(無名)'} <span class="id">${m.id || '-'}</span></span>
+      <button class="small danger" onclick="event.stopPropagation();deleteEntry(${i})">×</button>`;
+    div.onclick = () => selectEntry(i);
+    list.appendChild(div);
+  });
+}
+
+function newEntry(){
+  saveCurrentForm();
+  const s = STATE[activeTab];
+  s.data.push(s.empty());
+  s.current = s.data.length - 1;
+  renderList();
+  renderCurrentForm();
+}
+
+function deleteEntry(i){
+  const s = STATE[activeTab];
+  if(!confirm(`「${s.data[i].name || s.data[i].id}」を削除しますか？`)) return;
+  saveCurrentForm();
+  s.data.splice(i, 1);
+  if(s.current === i) s.current = -1;
+  else if(s.current > i) s.current -= 1;
+  renderList();
+  renderCurrentForm();
+}
+
+function selectEntry(i){
+  saveCurrentForm();
+  STATE[activeTab].current = i;
+  renderList();
+  renderCurrentForm();
+}
+
+function saveCurrentForm(){
+  const s = STATE[activeTab];
+  if(s.current < 0) return;
+  s.data[s.current] = s.collect();
+}
+
+/* ===================== Import / Export（アクティブタブのみ対象） ===================== */
+function exportJSON(){
+  saveCurrentForm();
+  const s = STATE[activeTab];
+  const payload = {}; payload[s.jsonKey] = s.data;
+  downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' }), s.file);
+}
+
+function exportCSV(){
+  saveCurrentForm();
+  const s = STATE[activeTab];
+  const { cols, rows } = s.csv(s.data);
+  const csv = [cols.join(','), ...rows].join('\n');
+  downloadBlob(new Blob([csv], { type:'text/csv' }), s.file.replace('.json', '.csv'));
+}
+
+document.getElementById('importFile').addEventListener('change', ev => {
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      const s = STATE[activeTab];
+      const raw = Array.isArray(data) ? data : (data[s.jsonKey] || []);
+      s.data = raw.map(entry => s.normalize(entry));
+      s.current = -1;
+      renderList();
+      document.getElementById('form').innerHTML = emptyPromptHTML();
+    }catch(e){ alert('JSONの読み込みに失敗しました: ' + e.message); }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+});
+
+/* ---------- 初期表示 ---------- */
+renderList();
+document.getElementById('form').innerHTML = emptyPromptHTML();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+[
+  {"id":"ren","name":"雨宮 蓮","nameEn":"AMAMIYA REN","available":true,"initialJob":"mage","initialJobName":"魔導士","style":"MAGIC / TECHNICAL","description":"青い魔力を操る魔導士。魔法と装備を組み合わせて戦う。","image":"assets/playable-characters/amamiya-ren/body-no-weapon.png","battleSprite":"assets/playable-characters/amamiya-ren/body-no-weapon.png","voice":null,"skills":["quickSlash"],"equipment":{"rightHand":"mageStaff"}},
+  {"id":"character_02","name":"??????????","nameEn":"PHANTOM // 02","available":false,"initialJob":null,"style":"COMING SOON","description":"このPHANTOMはまだ選択できません。","image":null},
+  {"id":"character_03","name":"??????????","nameEn":"PHANTOM // 03","available":false,"initialJob":null,"style":"COMING SOON","description":"このPHANTOMはまだ選択できません。","image":null},
+  {"id":"character_04","name":"??????????","nameEn":"PHANTOM // 04","available":false,"initialJob":null,"style":"COMING SOON","description":"このPHANTOMはまだ選択できません。","image":null}
+]

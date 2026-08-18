@@ -1,0 +1,84 @@
+{
+  "monsters": [
+    {
+      "id": "shadowSlime",
+      "name": "シャドウスライム",
+      "enName": "SHADOW SLIME",
+      "kind": "normal",
+      "title": "",
+      "stats": {
+        "maxHp": 12,
+        "maxMp": 0,
+        "atk": 4,
+        "def": 2,
+        "mag": 5,
+        "mnd": 0,
+        "spd": 6,
+        "dex": 0,
+        "luk": 0
+      },
+      "exp": 10,
+      "jobExp": 0,
+      "gold": { "min": 5, "max": 10 },
+      "elementId": "dark",
+      "weaknessIds": ["light", "fire"],
+      "resistanceIds": [],
+      "appearance": {
+        "dungeonIds": ["dungeon1"],
+        "encounterRate": 1,
+        "minLevel": 1,
+        "maxLevel": 3,
+        "spritePath": "assets/enemy-characters/shadow-slime/battle-idle.png"
+      },
+      "skills": [
+        { "skillId": "shadowBolt", "weight": 0.28 },
+        { "skillId": "attack", "weight": 0.72 }
+      ],
+      "dropTable": [
+        { "itemId": "slimeJelly", "chance": 0.40 },
+        { "itemId": "manaPotion", "chance": 0.20 },
+        { "itemId": "shadowWand", "chance": 0.10 },
+        { "itemId": "slimeRing", "chance": 0.08 },
+        { "itemId": "darkCore", "chance": 0.03 }
+      ],
+      "stealTable": []
+    },
+    {
+      "id": "noelFirstEncounter",
+      "name": "ノエル",
+      "enName": "NOËL — THE ETERNAL JUDGE",
+      "kind": "boss",
+      "title": "永遠の裁定者",
+      "stats": {
+        "maxHp": 0,
+        "maxMp": 0,
+        "atk": 0,
+        "def": 0,
+        "mag": 0,
+        "mnd": 0,
+        "spd": 0,
+        "dex": 0,
+        "luk": 0
+      },
+      "exp": 0,
+      "jobExp": 0,
+      "gold": { "min": 0, "max": 0 },
+      "elementId": "dark",
+      "weaknessIds": [],
+      "resistanceIds": [],
+      "appearance": {
+        "dungeonIds": ["dungeon1"],
+        "encounterRate": 0,
+        "minLevel": 1,
+        "maxLevel": 1,
+        "spritePath": "assets/enemy-characters/noel/battle-first-encounter.png"
+      },
+      "skills": [
+        { "skillId": "eternalJudgement", "weight": 1 }
+      ],
+      "dropTable": [],
+      "stealTable": [],
+      "notes": "dynamicScale: 100 / cannotDefeat: true は data.js 側の特殊フラグ。新スキーマに専用フィールドを設けるか要検討"
+    }
+  ]
+}
