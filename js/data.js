@@ -46,22 +46,22 @@ window.ARSENE_DATA = {
   jobs: {
     warrior: {
       id: 'warrior', name: '戦士', nameEn: 'WARRIOR', description: '力と耐久力で正面から怪異を打ち破る。',
-      growth: { 1: { str: 1 }, 2: { maxHp: 2 }, 4: { vit: 1 }, 5: { str: 1 }, 7: { maxHp: 3 }, 8: { str: 1 }, 10: { str: 2 } },
+      growth: { 1: { str: 2 }, 2: { maxHp: 5 }, 3: { vit: 1 }, 4: { str: 2, vit: 1 }, 5: { maxHp: 8 }, 6: { str: 2 }, 7: { maxHp: 8, vit: 2 }, 8: { str: 3 }, 9: { vit: 2 }, 10: { str: 4, maxHp: 12 } },
       skillUnlocks: { 3: 'powerStrike', 6: 'breakEdge', 9: 'recklessEdge' }
     },
     mage: {
       id: 'mage', name: '魔導士', nameEn: 'MAGE', description: '魔力を操り、単体・全体魔法を使い分ける。',
-      growth: { 1: { mag: 1 }, 2: { maxMp: 2 }, 4: { mag: 1 }, 5: { maxMp: 3 }, 7: { mag: 1 }, 8: { maxMp: 3 }, 10: { mag: 2 } },
+      growth: { 1: { mag: 2 }, 2: { maxMp: 5 }, 3: { mag: 2 }, 4: { maxMp: 6 }, 5: { mag: 2 }, 6: { maxMp: 8 }, 7: { mag: 3 }, 8: { maxMp: 8 }, 9: { mag: 3 }, 10: { mag: 4, maxMp: 12 } },
       skillUnlocks: { 3: 'blueFlame', 6: 'manaBurst', 9: 'astralRay' }
     },
     martialArtist: {
       id: 'martialArtist', name: '武道家', nameEn: 'MARTIAL ARTIST', description: '速度と多段攻撃でクリティカルを狙う。',
-      growth: { 1: { agi: 1 }, 2: { maxHp: 2 }, 4: { str: 1 }, 5: { agi: 1 }, 7: { critBonus: .01 }, 8: { agi: 1 }, 10: { critBonus: .02 } },
+      growth: { 1: { agi: 2 }, 2: { str: 2, maxHp: 4 }, 3: { agi: 2 }, 4: { str: 2 }, 5: { agi: 3 }, 6: { str: 2 }, 7: { critBonus: .02 }, 8: { agi: 3, str: 2 }, 9: { critBonus: .03 }, 10: { critBonus: .05, agi: 3 } },
       skillUnlocks: { 3: 'doubleStrike', 6: 'breakFist', 9: 'shadowRush' }
     },
     priest: {
       id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。',
-      growth: { 1: { mnd: 1 }, 2: { maxMp: 2 }, 4: { mnd: 1 }, 5: { maxHp: 2 }, 7: { maxMp: 3 }, 8: { mnd: 1 }, 10: { mnd: 2 } },
+      growth: { 1: { mnd: 2 }, 2: { maxMp: 5 }, 3: { mnd: 2 }, 4: { maxMp: 6 }, 5: { mnd: 2, maxHp: 5 }, 6: { maxMp: 8 }, 7: { mnd: 3 }, 8: { maxMp: 8 }, 9: { mnd: 3 }, 10: { mnd: 4, maxMp: 12 } },
       skillUnlocks: { 3: 'heal', 6: 'holyLight', 9: 'regenerate' }
     }
   },
@@ -185,24 +185,24 @@ window.ARSENE_DATA = {
   },
   skills: {
     attack: { id: 'attack', name: 'たたかう', mp: 0, kind: 'weapon', target: 'single', power: 2, agiScale: 0 },
-    quickSlash: { id: 'quickSlash', name: 'クイックスラッシュ', nameEn: 'QUICK SLASH', source: 'character', type: 'ACTIVE', mp: 5, kind: 'physical', target: 'single', power: 2.5, agiScale: 0.5, powerText: 'ATK×2.5＋AGI×0.5', effectText: '素早さも威力へ加算', description: '素早い踏み込みから放つ斬撃。力と素早さを参照して敵単体へダメージを与える。' },
+    quickSlash: { id: 'quickSlash', name: 'クイックスラッシュ', nameEn: 'QUICK SLASH', source: 'character', type: 'ACTIVE', mp: 5, kind: 'physical', target: 'single', power: 3.5, agiScale: 0.8, powerText: 'ATK×3.5＋AGI×0.8', effectText: '素早さも威力へ加算', description: '素早い踏み込みから放つ斬撃。力と素早さを参照して敵単体へダメージを与える。' },
     flame: { id: 'flame', name: 'フラム', mp: 6, kind: 'magical', target: 'all', power: 0.8, agiScale: 0, elementId: 'fire' },
     fireball: { id: 'fireball', name: 'ファイアボール', mp: 5, kind: 'magical', target: 'single', power: 1.4, agiScale: 0, elementId: 'fire' },
-    blueNote: { id: 'blueNote', name: 'ブルーノート', nameEn: 'BLUE NOTE', source: 'character', unlockLevel: 1, type: 'ACTIVE', kind: 'hybrid', target: 'single', mp: 5, power: 1, strScale: 1.15, magScale: 1.15, agiScale: 0, powerText: 'ATK×1.15＋MAG×1.15', effectText: '物理攻撃力と魔力の双方を参照', description: '青い魔力を武器へ纏わせて敵を攻撃する。物理攻撃力と魔力の双方を参照してダメージを与える。' },
+    blueNote: { id: 'blueNote', name: 'ブルーノート', nameEn: 'BLUE NOTE', source: 'character', unlockLevel: 1, type: 'ACTIVE', kind: 'hybrid', target: 'single', mp: 5, power: 1, strScale: 1.7, magScale: 1.7, agiScale: 0, powerText: 'ATK×1.7＋MAG×1.7', effectText: '物理攻撃力と魔力の双方を参照', description: '青い魔力を武器へ纏わせて敵を攻撃する。物理攻撃力と魔力の双方を参照してダメージを与える。' },
     blueEcho: { id: 'blueEcho', name: '蒼の残響', nameEn: 'BLUE ECHO', source: 'character', unlockLevel: 3, type: 'PASSIVE', kind: 'passive', target: 'self', mp: 0, powerText: '－', effectText: 'ターン開始時20%でMAG +10%／2ターン。重複せず残り時間を更新', description: '戦いの中で魔力の波長を捉え、自らの魔力を高める。' },
     meditation: { id: 'meditation', name: '精神集中', nameEn: 'MEDITATION', source: 'character', unlockLevel: 5, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 3, powerText: '最大MPの10%', effect: { type: 'mpRecover', maxMpRate: .10 }, effectText: '最大MPの10%回復／クールタイム3ターン', description: '呼吸を整え、乱れた魔力を収束させる。自身のMPを回復する。' },
-    powerStrike: { id: 'powerStrike', name: '強撃', nameEn: 'POWER STRIKE', source: 'job', jobId: 'warrior', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 4, power: 3, agiScale: 0, powerText: 'ATK×3.0', effectText: '通常攻撃より高威力', description: '力を込めた一撃。ATKを参照して敵単体へ物理ダメージを与える。' },
-    breakEdge: { id: 'breakEdge', name: 'ブレイクエッジ', nameEn: 'BREAK EDGE', source: 'job', jobId: 'warrior', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 7, power: 2.2, agiScale: 0, effect: { type: 'enemyDefDown', rate: .15, turns: 2 }, powerText: 'ATK×2.2', effectText: '敵DEF -15%／2ターン', description: '防御を断つ斬撃。物理ダメージと同時に敵のDEFを低下させる。' },
-    recklessEdge: { id: 'recklessEdge', name: '捨て身斬り', nameEn: 'RECKLESS EDGE', source: 'job', jobId: 'warrior', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 10, power: 3.8, agiScale: 0, effect: { type: 'selfDefDown', rate: .20, turns: 2 }, powerText: 'ATK×3.8', effectText: '使用後、自身のDEF -20%／2ターン', description: '守りを捨てて放つ高威力の斬撃。' },
-    blueFlame: { id: 'blueFlame', name: '蒼炎弾', nameEn: 'BLUE FLAME', source: 'job', jobId: 'mage', unlockJobLevel: 3, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 6, power: 1.8, agiScale: 0, powerText: 'MAG×1.8', effectText: '敵単体へ魔法ダメージ', description: '蒼い炎を凝縮し、敵単体へ撃ち出す魔法。' },
-    manaBurst: { id: 'manaBurst', name: '魔力炸裂', nameEn: 'MANA BURST', source: 'job', jobId: 'mage', unlockJobLevel: 6, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 12, power: 1.15, agiScale: 0, powerText: 'MAG×1.15', effectText: '敵全体へ魔法ダメージ', description: '周囲へ魔力を炸裂させ、敵全体を攻撃する。' },
-    astralRay: { id: 'astralRay', name: 'アストラルレイ', nameEn: 'ASTRAL RAY', source: 'job', jobId: 'mage', unlockJobLevel: 9, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 15, power: 3, agiScale: 0, powerText: 'MAG×3.0', effectText: '敵単体へ高威力魔法攻撃', description: '大量のMPを収束した星幽の光線で敵を貫く。' },
-    doubleStrike: { id: 'doubleStrike', name: '連撃', nameEn: 'DOUBLE STRIKE', source: 'job', jobId: 'martialArtist', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 6, power: 1.25, hits: 2, agiScale: 0, powerText: 'ATK×1.25×2回', effectText: '2回攻撃／各攻撃で個別クリティカル判定', description: '間を置かず二撃を叩き込む。' },
-    breakFist: { id: 'breakFist', name: '崩拳', nameEn: 'BREAK FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 8, power: 2.2, ignoreDef: .35, agiScale: 0, powerText: 'ATK×2.2', effectText: '敵DEFを35%無視', description: '防御の隙間へ衝撃を通し、敵DEFの一部を無視する。' },
-    shadowRush: { id: 'shadowRush', name: '無影連舞', nameEn: 'SHADOW RUSH', source: 'job', jobId: 'martialArtist', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 1, hits: 3, agiScale: 0, powerText: 'ATK×1.0×3回', effectText: '3回攻撃／各攻撃で個別クリティカル判定', description: '影すら残さない三連撃。' },
-    heal: { id: 'heal', name: 'ヒール', nameEn: 'HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 3, type: 'ACTIVE', kind: 'support', target: 'self', mp: 6, powerText: 'MND×2.0＋10', effect: { type: 'hpRecover', mndScale: 2, base: 10 }, effectText: 'MND参照で自身のHP回復', description: '精神力を癒やしの力へ変え、自身のHPを回復する。' },
-    holyLight: { id: 'holyLight', name: 'ホーリーライト', nameEn: 'HOLY LIGHT', source: 'job', jobId: 'priest', unlockJobLevel: 6, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 8, power: 2.1, agiScale: 0, elementId: 'light', powerText: 'MAG×2.1', effectText: '敵単体へ光属性魔法攻撃', description: '聖なる光を放ち、敵単体へ魔法ダメージを与える。' },
-    regenerate: { id: 'regenerate', name: 'リジェネレート', nameEn: 'REGENERATE', source: 'job', jobId: 'priest', unlockJobLevel: 9, type: 'ACTIVE', kind: 'support', target: 'self', mp: 10, powerText: '最大HPの8%×3回', effect: { type: 'regenerate', maxHpRate: .08, turns: 3 }, effectText: '3ターン、ターン開始時にHP回復', description: '継続する癒やしの力を自身へ付与する。' }
+    powerStrike: { id: 'powerStrike', name: '強撃', nameEn: 'POWER STRIKE', source: 'job', jobId: 'warrior', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 4, power: 4.2, agiScale: 0, powerText: 'ATK×4.2', effectText: '通常攻撃より高威力', description: '力を込めた一撃。ATKを参照して敵単体へ物理ダメージを与える。' },
+    breakEdge: { id: 'breakEdge', name: 'ブレイクエッジ', nameEn: 'BREAK EDGE', source: 'job', jobId: 'warrior', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 7, power: 3.5, agiScale: 0, effect: { type: 'enemyDefDown', rate: .20, turns: 2 }, powerText: 'ATK×3.5', effectText: '敵DEF -20%／2ターン', description: '防御を断つ斬撃。物理ダメージと同時に敵のDEFを低下させる。' },
+    recklessEdge: { id: 'recklessEdge', name: '捨て身斬り', nameEn: 'RECKLESS EDGE', source: 'job', jobId: 'warrior', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 10, power: 6.0, agiScale: 0, effect: { type: 'selfDefDown', rate: .20, turns: 2 }, powerText: 'ATK×6.0', effectText: '使用後、自身のDEF -20%／2ターン', description: '守りを捨てて放つ高威力の斬撃。' },
+    blueFlame: { id: 'blueFlame', name: '蒼炎弾', nameEn: 'BLUE FLAME', source: 'job', jobId: 'mage', unlockJobLevel: 3, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 6, power: 4.2, agiScale: 0, powerText: 'MAG×4.2', effectText: '敵単体へ魔法ダメージ', description: '蒼い炎を凝縮し、敵単体へ撃ち出す魔法。' },
+    manaBurst: { id: 'manaBurst', name: '魔力炸裂', nameEn: 'MANA BURST', source: 'job', jobId: 'mage', unlockJobLevel: 6, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 12, power: 2.8, agiScale: 0, powerText: 'MAG×2.8', effectText: '敵全体へ魔法ダメージ', description: '周囲へ魔力を炸裂させ、敵全体を攻撃する。' },
+    astralRay: { id: 'astralRay', name: 'アストラルレイ', nameEn: 'ASTRAL RAY', source: 'job', jobId: 'mage', unlockJobLevel: 9, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 15, power: 6.5, agiScale: 0, powerText: 'MAG×6.5', effectText: '敵単体へ高威力魔法攻撃', description: '大量のMPを収束した星幽の光線で敵を貫く。' },
+    doubleStrike: { id: 'doubleStrike', name: '連撃', nameEn: 'DOUBLE STRIKE', source: 'job', jobId: 'martialArtist', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 6, power: 2.0, hits: 2, agiScale: 0, powerText: 'ATK×2.0×2回', effectText: '2回攻撃／各攻撃で個別クリティカル判定', description: '間を置かず二撃を叩き込む。' },
+    breakFist: { id: 'breakFist', name: '崩拳', nameEn: 'BREAK FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 8, power: 3.8, ignoreDef: .40, agiScale: 0, powerText: 'ATK×3.8', effectText: '敵DEFを40%無視', description: '防御の隙間へ衝撃を通し、敵DEFの一部を無視する。' },
+    shadowRush: { id: 'shadowRush', name: '無影連舞', nameEn: 'SHADOW RUSH', source: 'job', jobId: 'martialArtist', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 3, agiScale: 0, powerText: 'ATK×2.0×3回', effectText: '3回攻撃／各攻撃で個別クリティカル判定', description: '影すら残さない三連撃。' },
+    heal: { id: 'heal', name: 'ヒール', nameEn: 'HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 3, type: 'ACTIVE', kind: 'support', target: 'self', mp: 6, powerText: 'MND×3.0＋20', effect: { type: 'hpRecover', mndScale: 3, base: 20 }, effectText: 'MND参照で自身のHP回復', description: '精神力を癒やしの力へ変え、自身のHPを回復する。' },
+    holyLight: { id: 'holyLight', name: 'ホーリーライト', nameEn: 'HOLY LIGHT', source: 'job', jobId: 'priest', unlockJobLevel: 6, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 8, power: 4.0, agiScale: 0, elementId: 'light', powerText: 'MAG×4.0', effectText: '敵単体へ光属性魔法攻撃', description: '聖なる光を放ち、敵単体へ魔法ダメージを与える。' },
+    regenerate: { id: 'regenerate', name: 'リジェネレート', nameEn: 'REGENERATE', source: 'job', jobId: 'priest', unlockJobLevel: 9, type: 'ACTIVE', kind: 'support', target: 'self', mp: 10, powerText: '最大HPの12%×3回', effect: { type: 'regenerate', maxHpRate: .12, turns: 3 }, effectText: '3ターン、ターン開始時にHP回復', description: '継続する癒やしの力を自身へ付与する。' }
   },
   items: {
     potion: { id: 'potion', name: '回復薬', category: 'consumable', rarity: 'common', description: 'HPを30回復する。', effect: { hp: 30 } },
