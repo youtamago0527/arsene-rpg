@@ -69,6 +69,7 @@
         case 'defeat': this.tone(280,.6,'triangle',.16,.18); this.noise(.45,.1,.08,180); break;
         case 'victory': chord([523,659,784,1047],.12); break;
         case 'escape': this.tone(760,.3,'sine',.12,2); break;
+        case 'rareDrop': chord([659,880,1109,1319],.075); this.tone(1760,.5,'sine',.09,1,.3); break;
       }
     }
   }
