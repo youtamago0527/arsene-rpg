@@ -25,6 +25,14 @@
 .dungeon-progress{font:700 9px Cinzel;letter-spacing:.15em;color:#3a7acc;margin-top:2px;display:block}
 .dungeon-new{display:inline-block;background:#ff4466;color:#fff;font:900 9px Cinzel;letter-spacing:.2em;padding:2px 6px;margin-top:3px;clip-path:polygon(4px 0,100% 0,calc(100% - 4px) 100%,0 100%)}
 @media(max-width:600px){.dungeon-card{grid-template-columns:72px 1fr}.dungeon-thumb{width:72px;height:72px}.dungeon-info strong{font-size:13px}.dungeon-info span{font-size:9px}}
+/* Recipe NEW badge & unlock notification */
+.recipe-new{display:inline-block;background:#ff4466;color:#fff;font:900 8px Cinzel;letter-spacing:.2em;padding:1px 5px;margin-left:6px;vertical-align:middle;clip-path:polygon(3px 0,100% 0,calc(100% - 3px) 100%,0 100%)}
+.recipe-newly-unlocked{border-color:#ff4466!important;box-shadow:0 0 14px #ff446644!important}
+.new-recipe-unlock{background:#0a0d1e;border:1px solid #ff4466;padding:10px 14px;margin-top:10px;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.new-recipe-unlock small{display:block;font:700 9px Cinzel;letter-spacing:.2em;color:#ff4466;margin-bottom:3px}
+.new-recipe-unlock b{display:block;font:700 15px serif;color:#ffddee;margin-bottom:2px}
+.new-recipe-unlock span{display:block;font-size:9px;color:#cc8899;letter-spacing:.12em}
+.new-recipe-unlock em{display:block;font-style:normal;font-size:9px;color:#ff4466;margin-top:4px;letter-spacing:.1em}
 /* ─────────────────────────────────────────────────────────────────────── */
 .food-copy em{font-style:normal;font-size:10px;color:#f2bf79}.food-copy em b{display:inline;color:#ffd26d;font:900 12px Cinzel}
 .food-bowl{width:140px;height:140px;border-radius:50%;overflow:hidden;background:#050912 url("../assets/ui/food/kazu-makanai-v2.png") center/128% no-repeat;box-shadow:0 8px 12px #000b,0 0 12px #188cff55;filter:none}
