@@ -53,7 +53,7 @@
               <figure data-op-frame="7" style="--op-bg:url('assets/op/op-03-phantoms-assemble.webp')"><img src="assets/op/op-03-phantoms-assemble.webp" alt=""><figcaption><small>STEAL IT BACK</small><b>奪われた未来を、盗り返す。</b></figcaption></figure>
               <figure data-op-frame="8" style="--op-bg:url('assets/op/op-04-boundary-rescue.webp')"><img src="assets/op/op-04-boundary-rescue.webp" alt=""><figcaption><small>BREAK THE BOUNDARY</small><b>夜を駆け、ルナのもとへ。</b></figcaption></figure>
               <figure data-op-frame="9" style="--op-bg:url('assets/op/op-05-dawn-reunion.webp')"><img src="assets/op/op-05-dawn-reunion.webp" alt=""><figcaption><small>OUR PARADISE</small><b>その夜明けを、もう一度。</b></figcaption></figure>
-              <div class="opening-title-card"><div class="flow-emblem"></div><small>OPENING // 零時侵蝕</small><strong>或世盗 -ARSÈNE-</strong><span>PHANTOM THIEF RPG</span></div>
+              <div class="opening-title-card"><div class="flow-emblem"></div><small>OPENING // 零時侵蝕</small><strong>或世盗&nbsp;<span class="nowrap">-ARSÈNE-</span></strong><span>PHANTOM THIEF RPG</span></div>
               <div class="opening-flash"></div><div class="opening-grain"></div><div class="opening-progress"><i></i></div>
             </div>
             <div class="opening-content">
@@ -63,7 +63,7 @@
           </div>
         </section>
         <section class="flow-screen title-screen" data-flow-screen="title">
-          <div class="flow-frame"><div class="title-content"><div class="flow-emblem" aria-hidden="true"></div><small>THE PHANTOM HOUR BEGINS</small><h1>或世盗 -ARSÈNE-</h1><p>PHANTOM THIEF RPG</p><nav class="title-menu"><button data-title-new>NEW GAME<span>新たな物語を始める</span></button><button data-title-continue>CONTINUE<span>セーブデータから再開</span></button><button data-title-settings>SETTINGS<span>音量・データ設定</span></button></nav></div><div class="flow-version">VER.0.3</div></div>
+          <div class="flow-frame"><div class="title-content"><div class="flow-emblem" aria-hidden="true"></div><small>THE PHANTOM HOUR BEGINS</small><h1>或世盗&nbsp;<span class="nowrap">-ARSÈNE-</span></h1><p>PHANTOM THIEF RPG</p><nav class="title-menu"><button data-title-new>NEW GAME<span>新たな物語を始める</span></button><button data-title-continue>CONTINUE<span>セーブデータから再開</span></button><button data-title-settings>SETTINGS<span>音量・データ設定</span></button></nav></div><div class="flow-version">VER.0.3</div></div>
         </section>
         <section class="flow-screen prologue-screen" data-flow-screen="prologue"><div class="prologue-stage"></div><button class="prologue-skip" data-prologue-skip>SKIP</button><div class="prologue-copy"><b class="prologue-time"></b><div class="prologue-text"></div></div><span class="prologue-next">CLICK / TAP / ENTER</span><div class="prologue-progress"><i></i></div></section>
         <section class="flow-screen select-screen" data-flow-screen="select"><div class="select-wrap"><header class="select-heading"><small>CHARACTER SELECT</small><h1>今宵の主役を選べ</h1></header><div class="character-grid"></div></div></section>

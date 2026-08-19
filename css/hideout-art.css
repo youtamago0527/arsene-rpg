@@ -15,8 +15,8 @@
 .hideout-art-shell .hideout-progress>small{left:2%!important;top:0!important;height:50%!important;width:auto;font-size:clamp(8px,1.3vw,16px)!important;letter-spacing:.1em!important}
 .hideout-art-shell .hideout-progress>small.jexp-label{left:52%!important}
 .hideout-art-shell .hideout-progress>small:before{display:none}
-.hideout-art-shell .hideout-progress>strong{position:absolute!important;left:auto!important;right:54%!important;top:52%!important;height:44%!important;min-width:0!important;display:flex!important;align-items:center!important;justify-content:flex-end!important;padding:0 4px!important;background:transparent!important;font-size:clamp(9px,1.45vw,18px)!important;line-height:1!important;text-shadow:0 1px 3px #000,0 0 7px #000!important;z-index:2;pointer-events:none}
-.hideout-art-shell .hideout-progress>strong#menu-jexp-text{right:2%!important}
+.hideout-art-shell .hideout-progress>strong{position:absolute!important;left:2%!important;right:53%!important;top:52%!important;height:44%!important;min-width:0!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:0!important;background:transparent!important;font-size:clamp(9px,1.45vw,18px)!important;line-height:1!important;text-shadow:0 1px 3px #000,0 0 7px #000!important;z-index:2;pointer-events:none}
+.hideout-art-shell .hideout-progress>strong#menu-jexp-text{left:52%!important;right:2%!important}
 .hideout-art-shell .hideout-exp{display:block!important;position:absolute;left:2%;top:52%;width:45%;height:44%;background:#080b12;border:1px solid #2a3648;overflow:hidden;z-index:1}
 .hideout-art-shell .hideout-exp.hideout-jexp{left:52%;width:46%;border-color:#4a3a5e}
 .hideout-art-shell .hideout-exp>em{display:block;height:100%;background:linear-gradient(90deg,#0f7ad8,#4fd8ff)}
