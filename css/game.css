@@ -161,3 +161,5 @@
 }
 
 .meter.exp i{background:linear-gradient(90deg,#2ea84f,#7bff9a)}.exp-row output{font:700 9px Cinzel;text-align:right}
+
+.meter.jexp i{background:linear-gradient(90deg,#8b3fd4,#d98cff)}.jexp-row output{font:700 9px Cinzel;text-align:right}
