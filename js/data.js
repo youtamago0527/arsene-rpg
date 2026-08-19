@@ -676,7 +676,7 @@ window.ARSENE_DATA = {
     myrthi: {
       id: 'myrthi', name: 'ミルティ', enName: 'MYRTHI', kind: 'boss', encounter: 1,
       title: '黒紅の双刃戦姫', element: '物理', weaknesses: ['魔法'],
-      sprite: null, spriteClass: 'myrthi-sprite',
+      sprite: 'assets/enemy-characters/myrthi/battle-idle-v1.jpg', spriteClass: 'myrthi-sprite',
       stats: { maxHp: 450, atk: 38, def: 14, mag: 8, mnd: 10, spd: 26 },
       exp: 200, gold: { min: 150, max: 200 },
       dropTable: [
