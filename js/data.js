@@ -1,5 +1,6 @@
 window.ARSENE_DATA = {
   settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01' },
+  dualBladeOffHandRate: 0.70,
   battleProgression: { noelEncounterWins: 3, zenakadoEncounterWins: 7 },
   expTable: { 1: 50, 2: 120, 3: 220 },
   jobExpTable: { 1: 25, 2: 45, 3: 70, 4: 100, 5: 135, 6: 175, 7: 220, 8: 270, 9: 330, 10: 400, 11: 480, 12: 570, 13: 670, 14: 780, 15: 900, 16: 1040, 17: 1190, 18: 1360, 19: 1550 },
@@ -64,6 +65,18 @@ window.ARSENE_DATA = {
       id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。',
       growth: { 1: { mnd: 2 }, 2: { maxMp: 5 }, 3: { mnd: 2 }, 4: { maxMp: 6 }, 5: { mnd: 2, maxHp: 5 }, 6: { maxMp: 8 }, 7: { mnd: 3 }, 8: { maxMp: 8 }, 9: { mnd: 3 }, 10: { mnd: 4, maxMp: 12 }, 11: { mnd: 3 }, 12: { maxMp: 14, maxHp: 5 }, 13: { mnd: 4 }, 14: { maxMp: 12 }, 15: { mnd: 4 }, 16: { maxMp: 16 }, 17: { mnd: 5 }, 18: { maxMp: 14 }, 19: { mnd: 5 }, 20: { mnd: 6, maxMp: 20, maxHp: 8 } },
       skillUnlocks: { 3: 'heal', 6: 'holyLight', 9: 'regenerate', 12: 'greatHeal', 16: 'divineSmite' }
+    },
+    arcaneMaestro: {
+      id: 'arcaneMaestro', name: '魔奏士', nameEn: 'ARCANE MAESTRO', description: '魔法と回復を極めた上位職。ゼナカド撃破後、魔導士と僧侶をLv20にすると解放。',
+      unlockCondition: { bossDefeated: 'zenacad', jobLevels: { mage: 20, priest: 20 } },
+      growth: { 1: { mag: 3 }, 2: { mnd: 3 }, 3: { mag: 3, maxMp: 8 }, 4: { mnd: 3 }, 5: { mag: 4, maxMp: 8 }, 6: { mnd: 4 }, 7: { mag: 4 }, 8: { mnd: 4, maxMp: 10 }, 9: { mag: 5 }, 10: { mnd: 5, maxMp: 12 }, 11: { mag: 4 }, 12: { mnd: 4, maxMp: 12 }, 13: { mag: 5 }, 14: { mnd: 5 }, 15: { mag: 6, maxMp: 14 }, 16: { mnd: 6 }, 17: { mag: 6 }, 18: { mnd: 6, maxMp: 16 }, 19: { mag: 7 }, 20: { mag: 8, mnd: 8, maxMp: 24 } },
+      skillUnlocks: { 3: 'resonantSpell', 6: 'celestialNote', 9: 'divineMelody', 12: 'grandOrchestra', 16: 'cosmicAria' }
+    },
+    dualBlade: {
+      id: 'dualBlade', name: '双刃士', nameEn: 'DUAL BLADE', description: '速度と多段クリティカルを極めた上位職。ミルティ撃破後、戦士と武道家をLv20にすると解放。',
+      unlockCondition: { bossDefeated: 'myrthi', jobLevels: { warrior: 20, martialArtist: 20 } },
+      growth: { 1: { str: 3, agi: 2 }, 2: { critBonus: .02 }, 3: { str: 3, agi: 2 }, 4: { critBonus: .02 }, 5: { str: 4, agi: 3 }, 6: { critBonus: .03 }, 7: { str: 3, agi: 3 }, 8: { critBonus: .03 }, 9: { str: 4, agi: 3 }, 10: { critBonus: .05, str: 5, agi: 3 }, 11: { str: 4, agi: 3 }, 12: { critBonus: .03, str: 4 }, 13: { agi: 4, str: 3 }, 14: { critBonus: .03, agi: 4 }, 15: { str: 5, agi: 5 }, 16: { critBonus: .04 }, 17: { str: 5, agi: 4 }, 18: { critBonus: .04, str: 4 }, 19: { str: 6, agi: 5 }, 20: { critBonus: .08, str: 7, agi: 6, maxHp: 15 } },
+      skillUnlocks: { 3: 'twistingEdge', 6: 'sunderDance', 9: 'crimsonRush', 12: 'dualEdgeBarrage', 16: 'battleDance' }
     }
   },
   equipmentSlots: [
@@ -79,7 +92,7 @@ window.ARSENE_DATA = {
     unlockFlag: 'noelFirstEncounterCleared',
     tabs: [{ id: 'weapon', name: '武器', enName: 'WEAPON' }, { id: 'armor', name: '防具', enName: 'ARMOR' }, { id: 'disassemble', name: '分解', enName: 'DISASSEMBLE' }, { id: 'materials', name: '素材一覧', enName: 'MATERIALS' }, { id: 'catalog', name: '図鑑', enName: 'CATALOG' }],
     armorTabs: [{ id: 'leftHand', name: '盾', enName: 'SHIELD' }, { id: 'head', name: '頭', enName: 'HEAD' }, { id: 'body', name: '体', enName: 'BODY' }, { id: 'arms', name: '腕', enName: 'ARMS' }, { id: 'feet', name: '足', enName: 'FEET' }, { id: 'accessory', name: 'アクセ', enName: 'ACCESSORY' }],
-    materialIds: ['slimeJelly', 'darkCore', 'manaDrop', 'stardustShard', 'magicPowder', 'moonstone', 'tatteredRobe', 'gnawedBag', 'ratWhisker', 'stolenCoin', 'ratTail', 'rustedKnife', 'tornCloth', 'goblinMedicine', 'batFang', 'tornWingMembrane', 'beastBlood', 'obsidianFang', 'spiritFragment', 'oldBone', 'darkSoulStone', 'resentmentCrystal', 'zenacad_core', 'cadenza_fragment', 'reverbJelly', 'echoShard', 'stoneShard', 'violinString', 'spectralDust', 'silentNote', 'silentArmor', 'voidShard', 'darkIron', 'chaosDust', 'phantomCore', 'voidEssence'],
+    materialIds: ['slimeJelly', 'darkCore', 'manaDrop', 'stardustShard', 'magicPowder', 'moonstone', 'tatteredRobe', 'gnawedBag', 'ratWhisker', 'stolenCoin', 'ratTail', 'rustedKnife', 'tornCloth', 'goblinMedicine', 'batFang', 'tornWingMembrane', 'beastBlood', 'obsidianFang', 'spiritFragment', 'oldBone', 'darkSoulStone', 'resentmentCrystal', 'zenacad_core', 'cadenza_fragment', 'reverbJelly', 'echoShard', 'stoneShard', 'violinString', 'spectralDust', 'silentNote', 'silentArmor', 'voidShard', 'darkIron', 'chaosDust', 'phantomCore', 'voidEssence', 'myrthi_core', 'myrthi_fragment'],
     bossBlueprints: [{ id: 'noelJudgementStaff', bossId: 'noelFirstEncounter', name: 'ノエルの審判杖', slot: 'rightHand', status: 'awaitingSecondEncounter' }]
   },
   materialUnlockMap: {
@@ -165,6 +178,18 @@ window.ARSENE_DATA = {
         4: { id: 'maestro', name: 'MAESTRO', description: '魔法使用時10%でMP消費なし', effect: { freeMagicMpChance: .10 } },
         6: { id: 'cadenza', name: 'CADENZA', description: '魔法使用時5%で追加発動', effect: { magicRepeatChance: .05 } }
       }
+    },
+    myrthi: {
+      id: 'myrthi', name: 'MYRTHI SERIES', nameJa: 'ミルティシリーズ', stars: 5,
+      unlockCondition: { bossDefeated: 'myrthi' },
+      equipment: ['myrthi_blade', 'myrthi_headband', 'myrthi_coat', 'myrthi_bangle', 'myrthi_boots', 'myrthi_metro'],
+      recipes: ['myrthi_blade_recipe', 'myrthi_headband_recipe', 'myrthi_coat_recipe', 'myrthi_bangle_recipe', 'myrthi_boots_recipe', 'myrthi_metro_recipe'],
+      dismantle: { materialId: 'myrthi_fragment', count: 3 },
+      setBonuses: {
+        2: { id: 'beat', name: 'BEAT', description: 'クリティカル率 +3%', effect: { critBonusFlat: .03 } },
+        4: { id: 'accelerando', name: 'ACCELERANDO', description: 'クリティカル率さらに +5%', effect: { critBonusFlat: .05 } },
+        6: { id: 'deadlyRhythm', name: 'DEADLY RHYTHM', description: '物理攻撃後5%で追加発動', effect: { physicalRepeatChance: .05 } }
+      }
     }
   },
   recipes: {
@@ -208,7 +233,13 @@ window.ARSENE_DATA = {
     soloist_coat_recipe: { id: 'soloist_coat_recipe', seriesId: 'zenacad', craftCategory: 'boss', resultItemId: 'soloist_coat', resultCount: 1, gold: 780, materials: [{ itemId: 'zenacad_core', count: 2 }, { itemId: 'cadenza_fragment', count: 7 }, { itemId: 'tatteredRobe', count: 5 }] },
     maestro_gloves_recipe: { id: 'maestro_gloves_recipe', seriesId: 'zenacad', craftCategory: 'boss', resultItemId: 'maestro_gloves', resultCount: 1, gold: 560, materials: [{ itemId: 'zenacad_core', count: 1 }, { itemId: 'cadenza_fragment', count: 5 }, { itemId: 'magicPowder', count: 5 }] },
     finale_boots_recipe: { id: 'finale_boots_recipe', seriesId: 'zenacad', craftCategory: 'boss', resultItemId: 'finale_boots', resultCount: 1, gold: 560, materials: [{ itemId: 'zenacad_core', count: 1 }, { itemId: 'cadenza_fragment', count: 5 }, { itemId: 'stolenCoin', count: 6 }] },
-    maestri_baton_recipe: { id: 'maestri_baton_recipe', seriesId: 'zenacad', craftCategory: 'boss', resultItemId: 'maestri_baton', resultCount: 1, gold: 700, materials: [{ itemId: 'zenacad_core', count: 2 }, { itemId: 'cadenza_fragment', count: 6 }, { itemId: 'stardustShard', count: 5 }] }
+    maestri_baton_recipe: { id: 'maestri_baton_recipe', seriesId: 'zenacad', craftCategory: 'boss', resultItemId: 'maestri_baton', resultCount: 1, gold: 700, materials: [{ itemId: 'zenacad_core', count: 2 }, { itemId: 'cadenza_fragment', count: 6 }, { itemId: 'stardustShard', count: 5 }] },
+    myrthi_blade_recipe: { id: 'myrthi_blade_recipe', seriesId: 'myrthi', craftCategory: 'boss', resultItemId: 'myrthi_blade', resultCount: 1, gold: 1000, materials: [{ itemId: 'myrthi_core', count: 2 }, { itemId: 'myrthi_fragment', count: 8 }, { itemId: 'silentNote', count: 6 }] },
+    myrthi_headband_recipe: { id: 'myrthi_headband_recipe', seriesId: 'myrthi', craftCategory: 'boss', resultItemId: 'myrthi_headband', resultCount: 1, gold: 700, materials: [{ itemId: 'myrthi_core', count: 1 }, { itemId: 'myrthi_fragment', count: 6 }, { itemId: 'violinString', count: 4 }] },
+    myrthi_coat_recipe: { id: 'myrthi_coat_recipe', seriesId: 'myrthi', craftCategory: 'boss', resultItemId: 'myrthi_coat', resultCount: 1, gold: 900, materials: [{ itemId: 'myrthi_core', count: 2 }, { itemId: 'myrthi_fragment', count: 7 }, { itemId: 'silentArmor', count: 5 }] },
+    myrthi_bangle_recipe: { id: 'myrthi_bangle_recipe', seriesId: 'myrthi', craftCategory: 'boss', resultItemId: 'myrthi_bangle', resultCount: 1, gold: 650, materials: [{ itemId: 'myrthi_core', count: 1 }, { itemId: 'myrthi_fragment', count: 5 }, { itemId: 'stoneShard', count: 6 }] },
+    myrthi_boots_recipe: { id: 'myrthi_boots_recipe', seriesId: 'myrthi', craftCategory: 'boss', resultItemId: 'myrthi_boots', resultCount: 1, gold: 650, materials: [{ itemId: 'myrthi_core', count: 1 }, { itemId: 'myrthi_fragment', count: 5 }, { itemId: 'echoShard', count: 6 }] },
+    myrthi_metro_recipe: { id: 'myrthi_metro_recipe', seriesId: 'myrthi', craftCategory: 'boss', resultItemId: 'myrthi_metro', resultCount: 1, gold: 800, materials: [{ itemId: 'myrthi_core', count: 2 }, { itemId: 'myrthi_fragment', count: 6 }, { itemId: 'spectralDust', count: 5 }] }
   },
   skills: {
     attack: { id: 'attack', name: 'たたかう', mp: 0, kind: 'weapon', target: 'single', power: 2, agiScale: 0 },
@@ -237,7 +268,17 @@ window.ARSENE_DATA = {
     swiftBarrage: { id: 'swiftBarrage', name: '迅雷四連撃', nameEn: 'SWIFT BARRAGE', source: 'job', jobId: 'martialArtist', unlockJobLevel: 12, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 4, agiScale: 0, powerText: 'ATK×2.0×4回', effectText: '4回攻撃／各攻撃で個別クリティカル判定', description: '稲妻のような四連撃。体術の極みが生み出す怒涛の連打。' },
     shadowSeven: { id: 'shadowSeven', name: '幻影七閃', nameEn: 'SHADOW SEVEN', source: 'job', jobId: 'martialArtist', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 18, power: 2.5, hits: 5, agiScale: 0, powerText: 'ATK×2.5×5回', effectText: '5回攻撃／各攻撃で個別クリティカル判定', description: '影を七つに見せる五連閃。武道家の至高の多段技。' },
     greatHeal: { id: 'greatHeal', name: 'グレートヒール', nameEn: 'GREAT HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 12, type: 'ACTIVE', kind: 'support', target: 'self', mp: 12, powerText: 'MND×5.0＋40', effect: { type: 'hpRecover', mndScale: 5, base: 40 }, effectText: 'MND参照で大量HP回復', description: '精神力のすべてを傾けた大回復術。大きく傷を癒やし、戦場への帰還を可能にする。' },
-    divineSmite: { id: 'divineSmite', name: '神裁の一閃', nameEn: 'DIVINE SMITE', source: 'job', jobId: 'priest', unlockJobLevel: 16, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 22, power: 7.0, agiScale: 0, elementId: 'light', powerText: 'MAG×7.0', effectText: '敵単体へ極大光属性魔法攻撃', description: '神の裁定を下す一閃。光を凝縮した究極の聖魔法。' }
+    divineSmite: { id: 'divineSmite', name: '神裁の一閃', nameEn: 'DIVINE SMITE', source: 'job', jobId: 'priest', unlockJobLevel: 16, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 22, power: 7.0, agiScale: 0, elementId: 'light', powerText: 'MAG×7.0', effectText: '敵単体へ極大光属性魔法攻撃', description: '神の裁定を下す一閃。光を凝縮した究極の聖魔法。' },
+    resonantSpell: { id: 'resonantSpell', name: '共鳴魔法', nameEn: 'RESONANT SPELL', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 3, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 14, power: 3.2, agiScale: 0, powerText: 'MAG×3.2', effectText: '敵全体へ魔法攻撃', description: '魔奏士の共鳴する魔力を解き放ち、敵全体を攻撃する。' },
+    celestialNote: { id: 'celestialNote', name: '天韻の一節', nameEn: 'CELESTIAL NOTE', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 6, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 18, power: 8.0, agiScale: 0, powerText: 'MAG×8.0', effectText: '敵単体へ強力な魔法攻撃', description: '天上の旋律を一音に凝縮した、高威力の魔法弾。' },
+    divineMelody: { id: 'divineMelody', name: '神癒の律動', nameEn: 'DIVINE MELODY', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 9, type: 'ACTIVE', kind: 'support', target: 'self', mp: 16, powerText: 'MND×6.0＋50', effect: { type: 'hpRecover', mndScale: 6, base: 50 }, effectText: 'MND参照で大量HP回復', description: '神聖な旋律の加護により、大量のHPを回復する。' },
+    grandOrchestra: { id: 'grandOrchestra', name: '大演奏', nameEn: 'GRAND ORCHESTRA', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 12, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 22, power: 4.5, agiScale: 0, powerText: 'MAG×4.5', effectText: '敵全体へ高威力魔法攻撃', description: '全ての魔力を交響曲として解き放つ。敵全体を薙ぎ払う大魔法。' },
+    cosmicAria: { id: 'cosmicAria', name: '宇宙の詠唱', nameEn: 'COSMIC ARIA', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 16, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 28, power: 11.0, agiScale: 0, powerText: 'MAG×11.0', effectText: '敵単体へ極大魔法攻撃', description: '宇宙の律動を一点に収束させた究極魔法。魔奏士の境地。' },
+    twistingEdge: { id: 'twistingEdge', name: '連刃突き', nameEn: 'TWISTING EDGE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 8, power: 2.5, hits: 2, agiScale: 0, powerText: 'ATK×2.5×2回', effectText: '2回物理攻撃', description: '双刃を連続して突き込む。' },
+    sunderDance: { id: 'sunderDance', name: '乱舞斬', nameEn: 'SUNDER DANCE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 3, ignoreDef: .20, agiScale: 0, powerText: 'ATK×2.0×3回', effectText: '3回攻撃 / DEF20%無視', description: '舞うように放つ三連斬。防御を部分的に無視する。' },
+    crimsonRush: { id: 'crimsonRush', name: '黒紅突進', nameEn: 'CRIMSON RUSH', source: 'job', jobId: 'dualBlade', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 15, power: 7.0, ignoreDef: .30, agiScale: 0, powerText: 'ATK×7.0', effectText: 'DEF30%無視の高威力突進', description: '黒紅の軌跡を描きながら敵へ一直線に突進する。' },
+    dualEdgeBarrage: { id: 'dualEdgeBarrage', name: '双刃乱打', nameEn: 'DUAL EDGE BARRAGE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 12, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 16, power: 1.8, hits: 5, agiScale: 0, powerText: 'ATK×1.8×5回', effectText: '5回物理攻撃', description: '双刃を猛烈に振り回す五連打。各攻撃が個別にクリティカルを狙う。' },
+    battleDance: { id: 'battleDance', name: '戦姫乱舞', nameEn: 'BATTLE DANCE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 24, power: 2.0, hits: 7, agiScale: 0, powerText: 'ATK×2.0×7回', effectText: '7回物理攻撃 // 双刃士の頂点', description: '戦場を舞台に踊るような七連撃。双刃士の奥義。' }
   },
   items: {
     potion: { id: 'potion', name: '回復薬', category: 'consumable', rarity: 'common', description: 'HPを30回復する。', effect: { hp: 30 } },
@@ -326,7 +367,15 @@ window.ARSENE_DATA = {
     soloist_coat: { id: 'soloist_coat', name: '独奏卿の燕尾服', nameEn: 'SOLOIST COAT', category: 'equipment', slot: 'body', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: '黒・紫・金で仕立てられた独奏卿の燕尾服。魔力と精神を守る。' },
     maestro_gloves: { id: 'maestro_gloves', name: '指揮者の白手袋', nameEn: 'MAESTRO GLOVES', category: 'equipment', slot: 'arms', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: '精緻な魔法制御を可能にする、指揮者の白手袋。' },
     finale_boots: { id: 'finale_boots', name: '終演の革靴', nameEn: 'FINALE BOOTS', category: 'equipment', slot: 'feet', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: '終演まで歩みを止めない、高速連続行動のための革靴。' },
-    maestri_baton: { id: 'maestri_baton', name: '七奏のタクト', nameEn: 'MAESTRI BATON', category: 'equipment', slot: 'accessory', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: '七つの音を束ねる者の証。正体不明の旋律が微かに脈打つ。' }
+    maestri_baton: { id: 'maestri_baton', name: '七奏のタクト', nameEn: 'MAESTRI BATON', category: 'equipment', slot: 'accessory', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: '七つの音を束ねる者の証。正体不明の旋律が微かに脈打つ。' },
+    myrthi_core: { id: 'myrthi_core', name: '双刃戦姫の魔核', nameEn: 'MYRTHI CORE', category: 'material', rarity: 'legendary', bossId: 'myrthi', description: 'ミルティの踊るような戦闘から生まれた魔核。ミルティシリーズの中核素材。' },
+    myrthi_fragment: { id: 'myrthi_fragment', name: '黒紅の欠片', nameEn: 'CRIMSON FRAGMENT', category: 'material', rarity: 'epic', bossId: 'myrthi', description: '双刃が砕け散った黒紅の結晶片。ボス装備の製作に使う。' },
+    myrthi_blade: { id: 'myrthi_blade', name: '黒紅刃ミルティア', nameEn: 'MYRTHI BLADE', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, seriesId: 'myrthi', description: 'ミルティが舞い踊るように振るう漆黒と深紅の双刃。武道家・双刃士が装備できる。' },
+    myrthi_headband: { id: 'myrthi_headband', name: '律動の髪飾り', nameEn: 'RHYTHM HEADBAND', category: 'equipment', slot: 'head', rarity: 'legendary', stars: 5, seriesId: 'myrthi', description: 'ミルティが舞う際に軽やかに揺れる漆黒の髪飾り。素早さとクリティカルを高める。' },
+    myrthi_coat: { id: 'myrthi_coat', name: '黒紅の戦舞装', nameEn: 'CRIMSON BATTLE SUIT', category: 'equipment', slot: 'body', rarity: 'legendary', stars: 5, seriesId: 'myrthi', description: '動きを一切阻まない、戦場を舞台とした戦姫の戦闘衣。' },
+    myrthi_bangle: { id: 'myrthi_bangle', name: '拍動のバングル', nameEn: 'BEAT BANGLE', category: 'equipment', slot: 'arms', rarity: 'legendary', stars: 5, seriesId: 'myrthi', description: 'リズムを刻むように脈打つバングル。攻撃の勢いを増幅する。' },
+    myrthi_boots: { id: 'myrthi_boots', name: '加速の舞踏靴', nameEn: 'ACCELERANDO BOOTS', category: 'equipment', slot: 'feet', rarity: 'legendary', stars: 5, seriesId: 'myrthi', description: 'ミルティが超高速で踏み込む際の舞踏靴。限界を超えた機動力を秘める。' },
+    myrthi_metro: { id: 'myrthi_metro', name: '第二奏のメトロノーム', nameEn: 'SECOND BEAT METRO', category: 'equipment', slot: 'accessory', rarity: 'legendary', stars: 5, seriesId: 'myrthi', description: '正確なリズムを刻み続けるメトロノーム。着けた者のあらゆる動作を研ぎ澄ます。' }
   },
   weapons: {
     mageStaff: { id: 'mageStaff', name: '魔導士の杖', weaponType: 'staff', weaponSprite: 'staff_01', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.2, bonuses: {} },
@@ -338,7 +387,8 @@ window.ARSENE_DATA = {
     cadenza_staff: { id: 'cadenza_staff', name: '魔杖カデンツァ', seriesId: 'zenacad', weaponType: 'staff', weaponSprite: 'staff_cadenza', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.05, bonuses: { mag: 11, maxMp: 8 } },
     lunaEdge: { id: 'lunaEdge', name: '月影剣ルナエッジ', dungeonId: 'dungeon2', weaponType: 'sword', weaponSprite: 'sword_luna', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 2.8, bonuses: { str: 14, dex: 4, critBonus: 0.05 } },
     voidBlade: { id: 'voidBlade', name: '虚空刃ヴォイドブレード', nameEn: 'VOID BLADE', dungeonId: 'dungeon3', weaponType: 'sword', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 3.4, bonuses: { str: 18, agi: 6, critBonus: 0.06 } },
-    chaosRod: { id: 'chaosRod', name: '混沌の魔杖カオスロッド', nameEn: 'CHAOS ROD', dungeonId: 'dungeon3', weaponType: 'staff', weaponSprite: 'staff_chaos', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.6, bonuses: { mag: 20, maxMp: 10 } }
+    chaosRod: { id: 'chaosRod', name: '混沌の魔杖カオスロッド', nameEn: 'CHAOS ROD', dungeonId: 'dungeon3', weaponType: 'staff', weaponSprite: 'staff_chaos', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.6, bonuses: { mag: 20, maxMp: 10 } },
+    myrthi_blade: { id: 'myrthi_blade', name: '黒紅刃ミルティア', nameEn: 'MYRTHI BLADE', seriesId: 'myrthi', dungeonId: 'dungeon2', weaponType: 'sword', weaponSprite: 'sword_myrthi', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 3.0, bonuses: { str: 16, agi: 8, critBonus: .06 } }
   },
   accessories: {
     slimeRing: { id: 'slimeRing', name: 'スライムリング', bonuses: { vit: 2, luk: 2 } },
@@ -350,7 +400,8 @@ window.ARSENE_DATA = {
     cursedNecklace: { id: 'cursedNecklace', name: '呪われた首飾り', bonuses: { mag: 3, luk: -1 } },
     maestri_baton: { id: 'maestri_baton', name: '七奏のタクト', seriesId: 'zenacad', bonuses: { mag: 4, maxMp: 12 } },
     echoPendant: { id: 'echoPendant', name: '残響のペンダント', dungeonId: 'dungeon2', bonuses: { maxMp: 16, mag: 5 } },
-    voidRing: { id: 'voidRing', name: '虚無の指輪', dungeonId: 'dungeon3', bonuses: { str: 5, mag: 5, agi: 5, vit: 5, mnd: 5, maxHp: 20, maxMp: 15 } }
+    voidRing: { id: 'voidRing', name: '虚無の指輪', dungeonId: 'dungeon3', bonuses: { str: 5, mag: 5, agi: 5, vit: 5, mnd: 5, maxHp: 20, maxMp: 15 } },
+    myrthi_metro: { id: 'myrthi_metro', name: '第二奏のメトロノーム', seriesId: 'myrthi', bonuses: { agi: 6, critBonus: .05 } }
   },
   armors: {
     roughHood: { id: 'roughHood', name: '粗削りフード', slot: 'head', bonuses: { vit: 1, mnd: 1 } },
@@ -383,7 +434,11 @@ window.ARSENE_DATA = {
     nightwalkerBoots: { id: 'nightwalkerBoots', name: '夜渡りのブーツ', slot: 'feet', dungeonId: 'dungeon2', bonuses: { agi: 7, dex: 3 } },
     voidHelm: { id: 'voidHelm', name: '虚空の兜', slot: 'head', dungeonId: 'dungeon3', bonuses: { mnd: 8, vit: 7, maxHp: 16 } },
     abyssalArmor: { id: 'abyssalArmor', name: '深淵の鎧', slot: 'body', dungeonId: 'dungeon3', bonuses: { vit: 12, maxHp: 30, mnd: 5 } },
-    phantomGauntlet: { id: 'phantomGauntlet', name: '幻影拳甲', slot: 'arms', dungeonId: 'dungeon3', bonuses: { str: 8, agi: 6, dex: 4 } }
+    phantomGauntlet: { id: 'phantomGauntlet', name: '幻影拳甲', slot: 'arms', dungeonId: 'dungeon3', bonuses: { str: 8, agi: 6, dex: 4 } },
+    myrthi_headband: { id: 'myrthi_headband', name: '律動の髪飾り', seriesId: 'myrthi', slot: 'head', bonuses: { agi: 8, critBonus: .04 } },
+    myrthi_coat: { id: 'myrthi_coat', name: '黒紅の戦舞装', seriesId: 'myrthi', slot: 'body', bonuses: { maxHp: 20, vit: 8, agi: 5 } },
+    myrthi_bangle: { id: 'myrthi_bangle', name: '拍動のバングル', seriesId: 'myrthi', slot: 'arms', bonuses: { str: 10, agi: 4 } },
+    myrthi_boots: { id: 'myrthi_boots', name: '加速の舞踏靴', seriesId: 'myrthi', slot: 'feet', bonuses: { agi: 12, dex: 4 } }
   },
   enemies: {
     shadowSlime: {
@@ -609,6 +664,28 @@ window.ARSENE_DATA = {
         { itemId: 'manaDrop',     chance: .15 }
       ],
       ai: [{ id: 'soulBolt', name: 'サイレントクライ', kind: 'magic', weight: .50 }, { id: 'shadowBolt', name: 'MPドレインノート', kind: 'magic', weight: .30 }, { id: 'attack', name: '絶望の終曲', kind: 'magic', weight: .20 }]
+    },
+    myrthi: {
+      id: 'myrthi', name: 'ミルティ', enName: 'MYRTHI', kind: 'boss', encounter: 1,
+      title: '黒紅の双刃戦姫', element: '物理', weaknesses: ['魔法'],
+      sprite: null, spriteClass: 'myrthi-sprite',
+      stats: { maxHp: 450, atk: 38, def: 14, mag: 8, mnd: 10, spd: 26 },
+      exp: 200, gold: { min: 150, max: 200 },
+      dropTable: [
+        { itemId: 'myrthi_fragment', chance: 1.0 },
+        { itemId: 'myrthi_core', chance: .45 },
+        { itemId: 'myrthi_blade', chance: .03 },
+        { itemId: 'myrthi_headband', chance: .03 },
+        { itemId: 'myrthi_coat', chance: .03 },
+        { itemId: 'myrthi_bangle', chance: .03 },
+        { itemId: 'myrthi_boots', chance: .03 },
+        { itemId: 'myrthi_metro', chance: .03 }
+      ],
+      ai: [
+        { id: 'attack', name: '双刃連撃', kind: 'physical', weight: .50 },
+        { id: 'clubSmash', name: '乱舞の踏み込み', kind: 'physical', weight: .30 },
+        { id: 'ratBite', name: '黒紅の一閃', kind: 'physical', weight: .20 }
+      ]
     }
   }
 };
