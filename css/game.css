@@ -159,3 +159,5 @@
   .enemy-reverbSlime .slime[style*="background-image"]{width:90px;height:100px}
   .enemy-nocturneBanshee .slime[style*="background-image"]{width:98px;height:114px}
 }
+
+.meter.exp i{background:linear-gradient(90deg,#2ea84f,#7bff9a)}.exp-row output{font:700 9px Cinzel;text-align:right}
