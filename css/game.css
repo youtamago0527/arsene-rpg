@@ -165,3 +165,17 @@
 
 
 .xp-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:5px 0 2px}.xp-cell{display:grid;gap:2px;min-width:0}.xp-cell>small{font:700 8px/1 Cinzel;letter-spacing:.12em;color:#8fb6d8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.xp-cell .meter{position:relative;height:11px;overflow:visible}.xp-cell .meter i{overflow:hidden}.xp-cell .meter output{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 9px/1 Cinzel;color:#fff;text-shadow:0 1px 3px #000,0 0 6px #000;pointer-events:none;z-index:2}.meter.exp i{background:linear-gradient(90deg,#c98a1a,#ffd76a)}.meter.jexp i{background:linear-gradient(90deg,#8b3fd4,#d98cff)}
+
+/* ══ 閃き演出 ══════════════════════════════════════════════ */
+@keyframes sparkFlash{0%{opacity:0}12%{opacity:.92}30%{opacity:.15}42%{opacity:.7}100%{opacity:0}}
+@keyframes sparkCutIn{0%{opacity:0;transform:translate(-50%,-50%) scale(.7) rotate(-4deg)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.06) rotate(0)}28%{transform:translate(-50%,-50%) scale(1)}82%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.12)}}
+@keyframes sparkRay{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes sparkGlow{0%,100%{filter:drop-shadow(0 0 9px #118fff)}50%{filter:drop-shadow(0 0 26px #ffe27a) drop-shadow(0 0 44px #ffb43a)}}
+.spark-flash{position:absolute;inset:0;z-index:14;pointer-events:none;background:radial-gradient(circle at 50% 46%,#fff8dd,#ffd76a 24%,#ff9c2e55 46%,transparent 70%);animation:sparkFlash 1.4s ease-out forwards;mix-blend-mode:screen}
+.spark-cutin{position:absolute;z-index:15;left:50%;top:44%;translate:0 0;display:grid;justify-items:center;gap:2px;padding:14px 30px;pointer-events:none;background:linear-gradient(#1a1204f2,#0a0702f2);border:2px solid #ffd76a;box-shadow:0 0 34px #ffb43a88,inset 0 0 26px #6b4a0a;clip-path:polygon(14px 0,100% 0,calc(100% - 14px) 100%,0 100%);animation:sparkCutIn 1.4s ease-out forwards;transform:translate(-50%,-50%)}
+.spark-cutin::before{content:"";position:absolute;z-index:-1;left:50%;top:50%;width:340px;height:340px;background:conic-gradient(from 0deg,#ffd76a55 0 6deg,transparent 6deg 30deg,#ffd76a44 30deg 36deg,transparent 36deg 60deg);animation:sparkRay 3.4s linear infinite;transform:translate(-50%,-50%)}
+.spark-cutin small{font:700 10px/1 Cinzel;letter-spacing:.3em;color:#ffe9a8}
+.spark-cutin b{font-size:26px;color:#fff;text-shadow:0 0 12px #ffb43a,0 2px 5px #000}
+.spark-cutin span{font:700 8px/1 Cinzel;letter-spacing:.24em;color:#ffc766}
+.ren.sparking .ren-sprite{animation:sparkGlow .5s ease-in-out infinite}
+@media(max-width:480px){.spark-cutin{padding:11px 20px}.spark-cutin b{font-size:20px}.spark-cutin::before{width:240px;height:240px}}

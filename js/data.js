@@ -8,7 +8,44 @@ window.ARSENE_DATA = {
     { id: 'staff', name: '杖', nameEn: 'STAFF', description: '魔力を導く杖。魔法主体で戦う。', damageStats: ['mag'], starterWeaponId: 'mageStaff' },
     { id: 'martial', name: '体術', nameEn: 'MARTIAL', description: '爪や籠手を使う徒手格闘。速さで手数を稼ぐ。', damageStats: ['str', 'agi'], starterWeaponId: 'ironClaw' }
   ],
+  // 武器種ごとの通常攻撃。未定義の武器種は 'attack'（剣と同じ物理攻撃）にフォールバック。
+  basicAttackByWeaponType: { sword: 'attack', staff: 'staffFireball', martial: 'martialStrike' },
+  // 武器種ごとの技コマンド名。閃いた技はここに集約される。
+  weaponArtsCommand: {
+    sword: { name: '剣技', nameEn: 'SWORD ARTS' },
+    staff: { name: '魔法', nameEn: 'MAGIC' },
+    martial: { name: '拳技', nameEn: 'FIST ARTS' }
+  },
   startingJobIds: ['warrior', 'martialArtist', 'mage', 'priest'],
+
+  // ══════════════════════════════════════════════════════════════
+  // 成長バランス設定：テストプレイ調整はすべてここを触れば済む
+  // ══════════════════════════════════════════════════════════════
+  growthBalance: {
+    // ── 武器学 ──────────────────────────────────────────────
+    weaponMasteryMaxLevel: 999,
+    // 敵から得たEXP × この倍率 が武器学へ入る（敵データは変更しない）
+    weaponExpMultiplier: 1.0,
+    // 必要EXP = base + growth * (lv-1)^curve （小数は切り上げ）
+    weaponExpTable: { base: 40, growth: 18, curve: 1.35 },
+
+    // ── HP / MP 成長（戦闘終了時の確率判定）──────────────────
+    baseHpGrowthRate: 0.15,
+    baseMpGrowthRate: 0.08,
+    hpGrowthAmount: { min: 3, max: 6 },
+    mpGrowthAmount: { min: 1, max: 3 },
+    jobHpGrowthBonus: { warrior: 0.10, martialArtist: 0.07, mage: 0.00, priest: 0.05 },
+    jobMpGrowthBonus: { warrior: 0.00, martialArtist: 0.02, mage: 0.10, priest: 0.08 },
+
+    // ── 閃き ────────────────────────────────────────────────
+    sparkBaseRate: 0.05,
+    // キャラクター固有特性 "small" が何倍になるか（characters.json 側は記号のみ保持）
+    traitBonusScale: { small: { weaponExp: 1.15, spark: 1.5, mpGrowth: 1.3, heal: 1.15, critical: 0.03 } },
+
+    // ── 成長しないジョブ ────────────────────────────────────
+    noGrowthJobs: ['phantomThief']
+  },
+
   battleProgression: { noelEncounterWins: 3, zenakadoEncounterWins: 7 },
   expTable: { 1: 50, 2: 120, 3: 220 },
   jobExpTable: { 1: 25, 2: 45, 3: 70, 4: 100, 5: 135, 6: 175, 7: 220, 8: 270, 9: 330, 10: 400, 11: 480, 12: 570, 13: 670, 14: 780, 15: 900, 16: 1040, 17: 1190, 18: 1360, 19: 1550 },
@@ -259,13 +296,46 @@ window.ARSENE_DATA = {
   },
   skills: {
     attack: { id: 'attack', name: 'たたかう', mp: 0, kind: 'weapon', target: 'single', power: 2, agiScale: 0 },
+
+    // ══ 武器カテゴリ別の通常攻撃 ══════════════════════════════
+    // 装備武器の weaponType から basicAttackByWeaponType で引かれる。
+    // 剣は既存 attack をそのまま使用（力依存の物理攻撃）。
+    // powerScale は武器のpowerに掛かる倍率。力に加えて素早さも参照する体術の通常攻撃。
+    martialStrike: { id: 'martialStrike', name: 'たたかう', nameEn: 'MARTIAL STRIKE', mp: 0, kind: 'weapon', weaponType: 'martial', target: 'single', powerScale: 0.82, agiScale: 0.45, damageType: 'physical', powerText: 'ATK×0.82＋AGI×0.45', description: '拳と爪による打撃。力と素早さを参照する。' },
+    staffFireball: { id: 'staffFireball', name: 'ファイアーボール', nameEn: 'FIREBALL', mp: 0, kind: 'magical', weaponType: 'staff', target: 'single', power: 2.1, agiScale: 0, damageType: 'magical', element: 'fire', powerText: 'MAG×2.1', effectText: '炎属性／MP消費なし', description: '杖に灯した炎弾を撃ち出す。杖の通常攻撃。' },
+
+    // ══ 閃き技（対応する攻撃の使用中に閃く）═══════════════════
+    // weaponType / prerequisiteSkill / requiredWeaponLevel / sparkRate で
+    // 派生ツリーを構成する。戦闘コードに技ごとの条件は書かない。
+    doubleSlash: {
+      id: 'doubleSlash', name: '二段斬り', nameEn: 'DOUBLE SLASH', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'sword', prerequisiteSkill: 'attack', requiredWeaponLevel: 3, sparkRate: null,
+      mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
+      power: 0.7, hitCount: 2, hits: 2, agiScale: 0, criticalModifier: 0,
+      powerText: 'ATK×0.7×2回', effectText: '2連撃／合計1.4倍', description: '踏み込みから返す刃で二度斬りつける。'
+    },
+    doubleClaw: {
+      id: 'doubleClaw', name: 'ダブルクロー', nameEn: 'DOUBLE CLAW', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'martial', prerequisiteSkill: 'martialStrike', requiredWeaponLevel: 3, sparkRate: null,
+      mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
+      power: 0.65, hitCount: 2, hits: 2, agiScale: 0.2, criticalModifier: 0.08,
+      powerText: 'ATK×0.65×2回', effectText: '2連撃／各撃で会心判定＋会心率上昇', description: '両の爪で切り裂く連撃。会心を狙いやすい。'
+    },
+    fireStorm: {
+      id: 'fireStorm', name: 'ファイアストーム', nameEn: 'FIRE STORM', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'staff', prerequisiteSkill: 'staffFireball', requiredWeaponLevel: 3, sparkRate: null,
+      mp: 5, kind: 'magical', damageType: 'magical', element: 'fire', target: 'all',
+      power: 0.7, hitCount: 1, agiScale: 0, criticalModifier: 0,
+      powerText: 'MAG×0.7（全体）', effectText: '敵全体へ炎属性魔法', description: '渦巻く業火が戦場を包む。'
+    },
+
     quickSlash: { id: 'quickSlash', name: 'クイックスラッシュ', nameEn: 'QUICK SLASH', source: 'character', type: 'ACTIVE', mp: 5, kind: 'physical', target: 'single', power: 3.5, agiScale: 0.8, powerText: 'ATK×3.5＋AGI×0.8', effectText: '素早さも威力へ加算', description: '素早い踏み込みから放つ斬撃。力と素早さを参照して敵単体へダメージを与える。' },
     flame: { id: 'flame', name: 'フラム', mp: 6, kind: 'magical', target: 'all', power: 0.8, agiScale: 0, elementId: 'fire' },
     fireball: { id: 'fireball', name: 'ファイアボール', mp: 5, kind: 'magical', target: 'single', power: 1.4, agiScale: 0, elementId: 'fire' },
     blueNote: { id: 'blueNote', name: 'ブルーノート', nameEn: 'BLUE NOTE', source: 'character', unlockLevel: 1, type: 'ACTIVE', kind: 'hybrid', target: 'single', mp: 5, power: 1, strScale: 1.7, magScale: 1.7, agiScale: 0, powerText: 'ATK×1.7＋MAG×1.7', effectText: '物理攻撃力と魔力の双方を参照', description: '青い魔力を武器へ纏わせて敵を攻撃する。物理攻撃力と魔力の双方を参照してダメージを与える。' },
     blueEcho: { id: 'blueEcho', name: '蒼の残響', nameEn: 'BLUE ECHO', source: 'character', unlockLevel: 3, type: 'PASSIVE', kind: 'passive', target: 'self', mp: 0, powerText: '－', effectText: 'ターン開始時20%でMAG +10%／2ターン。重複せず残り時間を更新', description: '戦いの中で魔力の波長を捉え、自らの魔力を高める。' },
     meditation: { id: 'meditation', name: '精神集中', nameEn: 'MEDITATION', source: 'character', unlockLevel: 5, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 3, powerText: '最大MPの10%', effect: { type: 'mpRecover', maxMpRate: .10 }, effectText: '最大MPの10%回復／クールタイム3ターン', description: '呼吸を整え、乱れた魔力を収束させる。自身のMPを回復する。' },
-    powerCharge: { id: 'powerCharge', name: 'ちからため', nameEn: 'POWER CHARGE', source: 'job', jobId: 'warrior', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 3, powerText: '次の物理攻撃 ×1.8', effect: { type: 'selfAtkCharge', rate: .8 }, effectText: '次に使う物理攻撃の威力+80%／クールタイム3ターン', description: '全身に力を溜める。次に使用する物理攻撃の威力を大きく高める。' },
+    powerCharge: { id: 'powerCharge', name: 'ちからため', nameEn: 'POWER CHARGE', source: 'job', jobId: 'warrior', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 3, powerText: '次の物理攻撃 ×3.5', effect: { type: 'selfAtkCharge', rate: 2.5 }, effectText: '次に使う物理攻撃の威力+250%／クールタイム3ターン', description: '全身に力を溜める。次に使用する物理攻撃の威力を大きく高める。' },
     burstFist: { id: 'burstFist', name: 'ばくれつけん', nameEn: 'BURST FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 1, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 4, power: 1.5, hits: 3, agiScale: 0, powerText: 'ATK×1.5×3回', effectText: '3回連続攻撃／各攻撃で個別クリティカル判定', description: '目にも留まらぬ拳の連打を叩き込む。' },
     powerStrike: { id: 'powerStrike', name: '強撃', nameEn: 'POWER STRIKE', source: 'job', jobId: 'warrior', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 4, power: 4.2, agiScale: 0, powerText: 'ATK×4.2', effectText: '通常攻撃より高威力', description: '力を込めた一撃。ATKを参照して敵単体へ物理ダメージを与える。' },
     breakEdge: { id: 'breakEdge', name: 'ブレイクエッジ', nameEn: 'BREAK EDGE', source: 'job', jobId: 'warrior', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 7, power: 3.5, agiScale: 0, effect: { type: 'enemyDefDown', rate: .20, turns: 2 }, powerText: 'ATK×3.5', effectText: '敵DEF -20%／2ターン', description: '防御を断つ斬撃。物理ダメージと同時に敵のDEFを低下させる。' },

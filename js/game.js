@@ -105,12 +105,12 @@
     }
 
     freshProfile() {
-      const p = D.player; return { version: 11, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), musicScores: {}, bossDefeated: { zenacad: false, myrthi: false }, currentJob: 'mage', jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], subCommand: null, passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, dungeon3BattleWins: 0, dungeon3NewSeen: false, lastBattleResult: null, consecutiveDefeats: 0 }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
+      const p = D.player; return { version: 11, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), musicScores: {}, bossDefeated: { zenacad: false, myrthi: false }, currentJob: 'mage', jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], subCommand: null, passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 } }, learnedWeaponSkills: [], playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0 }, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, dungeon3BattleWins: 0, dungeon3NewSeen: false, lastBattleResult: null, consecutiveDefeats: 0 }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
     }
     loadProfile() {
       try {
         const saved = JSON.parse(localStorage.getItem(D.settings.saveKey)); if (!saved) return this.freshProfile();
-        const base = this.freshProfile(), jobs = clone(base.jobs); Object.keys(jobs).forEach(id => jobs[id] = { ...jobs[id], ...(saved.jobs?.[id] || {}) }); const profile = { ...base, ...saved, baseStats: { ...base.baseStats, ...saved.baseStats }, currentVitals: { ...base.currentVitals, ...saved.currentVitals }, equipment: { ...base.equipment, ...saved.equipment }, inventory: { ...base.inventory, ...saved.inventory }, musicScores: { ...base.musicScores, ...saved.musicScores }, bossDefeated: { ...base.bossDefeated, ...saved.bossDefeated }, jobs, learnedJobSkills: Array.isArray(saved.learnedJobSkills) ? saved.learnedJobSkills : [], learnedCharacterSkills: Array.isArray(saved.learnedCharacterSkills) ? saved.learnedCharacterSkills : [], activeSkills: Array.isArray(saved.activeSkills) ? saved.activeSkills.slice(0, 4) : base.activeSkills, flags: { ...base.flags, ...saved.flags }, armorEnchants: { ...(saved.armorEnchants || {}) }, bossRematchAt: { ...(saved.bossRematchAt || {}) }, preferredWeaponType: saved.preferredWeaponType || null, kazuSeenOnce: Array.isArray(saved.kazuSeenOnce) ? saved.kazuSeenOnce : [], discoveredMaterials: Array.isArray(saved.discoveredMaterials) ? saved.discoveredMaterials : [], unlockedRecipes: Array.isArray(saved.unlockedRecipes) ? saved.unlockedRecipes : [], newlyUnlockedRecipes: Array.isArray(saved.newlyUnlockedRecipes) ? saved.newlyUnlockedRecipes : [] };
+        const base = this.freshProfile(), jobs = clone(base.jobs); Object.keys(jobs).forEach(id => jobs[id] = { ...jobs[id], ...(saved.jobs?.[id] || {}) }); const profile = { ...base, ...saved, baseStats: { ...base.baseStats, ...saved.baseStats }, currentVitals: { ...base.currentVitals, ...saved.currentVitals }, equipment: { ...base.equipment, ...saved.equipment }, inventory: { ...base.inventory, ...saved.inventory }, musicScores: { ...base.musicScores, ...saved.musicScores }, bossDefeated: { ...base.bossDefeated, ...saved.bossDefeated }, jobs, learnedJobSkills: Array.isArray(saved.learnedJobSkills) ? saved.learnedJobSkills : [], learnedCharacterSkills: Array.isArray(saved.learnedCharacterSkills) ? saved.learnedCharacterSkills : [], activeSkills: Array.isArray(saved.activeSkills) ? saved.activeSkills.slice(0, 4) : base.activeSkills, flags: { ...base.flags, ...saved.flags }, armorEnchants: { ...(saved.armorEnchants || {}) }, bossRematchAt: { ...(saved.bossRematchAt || {}) }, preferredWeaponType: saved.preferredWeaponType || null, weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 }, ...(saved.weaponMastery || {}) }, learnedWeaponSkills: Array.isArray(saved.learnedWeaponSkills) ? saved.learnedWeaponSkills : [], playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0, ...(saved.playtest || {}) }, kazuSeenOnce: Array.isArray(saved.kazuSeenOnce) ? saved.kazuSeenOnce : [], discoveredMaterials: Array.isArray(saved.discoveredMaterials) ? saved.discoveredMaterials : [], unlockedRecipes: Array.isArray(saved.unlockedRecipes) ? saved.unlockedRecipes : [], newlyUnlockedRecipes: Array.isArray(saved.newlyUnlockedRecipes) ? saved.newlyUnlockedRecipes : [] };
         if ((saved.version || 0) < 3 || !saved.currentVitals) { const bonuses = {}; Object.values(profile.equipment).forEach(id => Object.entries((D.weapons[id] || D.accessories[id] || D.armors?.[id] || D.equipment?.[id])?.bonuses || {}).forEach(([key, value]) => bonuses[key] = (bonuses[key] || 0) + value)); profile.currentVitals = { hp: profile.baseStats.maxHp + (bonuses.maxHp || 0), mp: profile.baseStats.maxMp + (bonuses.maxMp || 0) }; }
         if ((saved.version || 0) < 4) { const oldWins = Math.max(0, Number(saved.flags?.normalBattleWins) || 0), oldNoel = !!saved.flags?.noelFirstEncounterCleared; profile.flags.preNoelBattleWins = Number.isFinite(saved.flags?.preNoelBattleWins) ? saved.flags.preNoelBattleWins : (oldNoel ? D.battleProgression.noelEncounterWins : Math.min(oldWins, D.battleProgression.noelEncounterWins)); profile.flags.postNoelBattleWins = Number.isFinite(saved.flags?.postNoelBattleWins) ? saved.flags.postNoelBattleWins : (oldNoel ? oldWins : 0); profile.flags.zenakadoDefeated = false; profile.flags.zenakadoScoreClaimed = false; profile.flags.temporaryBossCompleted = false; }
         if (profile.flags.zenakadoDefeated) profile.bossDefeated.zenacad = true;
@@ -130,7 +130,7 @@
         return profile;
       } catch { return this.freshProfile(); }
     }
-    saveProfile() { localStorage.setItem(D.settings.saveKey, JSON.stringify(this.profile)); }
+    saveProfile() { const pt = this.profile.playtest; if (pt) { const now = Date.now(); pt.playMs = (pt.playMs || 0) + Math.min(now - (this._lastSaveAt || now), 600000); this._lastSaveAt = now; } localStorage.setItem(D.settings.saveKey, JSON.stringify(this.profile)); }
     saveTransferMetaKey() { return window.arseneStartFlow?.metaKey || 'arsene-rpg-start-flow-v01'; }
     encodeSaveTransferCode() { const save = localStorage.getItem(D.settings.saveKey), meta = localStorage.getItem(this.saveTransferMetaKey()), payload = { app: 'arsene-rpg', v: 1, exportedAt: new Date().toISOString(), save: save ? JSON.parse(save) : this.profile, meta: meta ? JSON.parse(meta) : null }; return btoa(unescape(encodeURIComponent(JSON.stringify(payload)))); }
     decodeSaveTransferCode(code) { try { const payload = JSON.parse(decodeURIComponent(escape(atob(String(code || '').trim())))); if (!payload || typeof payload !== 'object' || !payload.save) return null; return payload; } catch { return null; } }
@@ -161,6 +161,121 @@
       return this.applyCharacterTheme(entry?.theme);
     }
     setCharacterList(list) { this.characterList = Array.isArray(list) ? list : []; this.applyThemeForCharacter(this.profile?.selectedCharacter); }
+    // ══ 武器学 / 成長 / 閃き ═══════════════════════════════════
+    gb() { return D.growthBalance || {}; }
+    equippedWeaponType() { return this.equippedWeapon()?.weaponType || 'sword'; }
+    masteryOf(type = this.equippedWeaponType()) { this.profile.weaponMastery ||= {}; return (this.profile.weaponMastery[type] ||= { level: 1, exp: 0 }); }
+    masteryExpNeeded(level) { const t = this.gb().weaponExpTable || { base: 40, growth: 18, curve: 1.35 }; return Math.ceil(t.base + t.growth * Math.pow(Math.max(0, level - 1), t.curve)); }
+    isNoGrowthJob(jobId = this.profile.currentJob) { return (this.gb().noGrowthJobs || []).includes(jobId); }
+    // キャラ固有特性。characters.json は "small" 等の記号のみ保持し、実倍率は growthBalance 側で決まる
+    characterTrait() { return (this.characterList || []).find(c => c.id === this.profile.selectedCharacter)?.trait || null; }
+    traitScale(key) { return (this.gb().traitBonusScale || {})[key] || {}; }
+    traitWeaponExpMult(type) { const b = this.characterTrait()?.bonuses?.weaponGrowthBonus?.[type]; return b ? (this.traitScale(b).weaponExp ?? 1) : 1; }
+    traitSparkMult(type) { const b = this.characterTrait()?.bonuses?.techLearnBonus?.[type]; return b ? (this.traitScale(b).spark ?? 1) : 1; }
+    traitMpGrowthMult() { const b = this.characterTrait()?.bonuses?.mpGrowthBonus; return b ? (this.traitScale(b).mpGrowth ?? 1) : 1; }
+    traitHealMult() { const b = this.characterTrait()?.bonuses?.healBonus; return b ? (this.traitScale(b).heal ?? 1) : 1; }
+    traitCriticalBonus() { const b = this.characterTrait()?.bonuses?.criticalBonus; return b ? (this.traitScale(b).critical ?? 0) : 0; }
+
+    // 戦闘終了時：装備中カテゴリの武器学だけEXPを加算
+    grantWeaponExp(baseExp) {
+      if (this.isNoGrowthJob() || !(baseExp > 0)) return null;
+      const type = this.equippedWeaponType(), m = this.masteryOf(type), gb = this.gb();
+      const gain = Math.max(1, Math.round(baseExp * (gb.weaponExpMultiplier ?? 1) * this.traitWeaponExpMult(type)));
+      const before = m.level; m.exp += gain;
+      const max = gb.weaponMasteryMaxLevel ?? 999;
+      while (m.level < max && m.exp >= this.masteryExpNeeded(m.level)) { m.exp -= this.masteryExpNeeded(m.level); m.level++; }
+      if (m.level >= max) m.exp = 0;
+      return { type, gain, before, after: m.level, leveled: m.level > before };
+    }
+
+    // 戦闘終了時：HP/MP を独立した確率判定で成長
+    rollVitalGrowth() {
+      if (this.isNoGrowthJob()) return null;
+      const gb = this.gb(), job = this.profile.currentJob, out = { hp: 0, mp: 0 };
+      const hpRate = (gb.baseHpGrowthRate ?? 0) + ((gb.jobHpGrowthBonus || {})[job] ?? 0);
+      const mpRate = ((gb.baseMpGrowthRate ?? 0) + ((gb.jobMpGrowthBonus || {})[job] ?? 0)) * this.traitMpGrowthMult();
+      const amt = r => Math.floor(Math.random() * ((r?.max ?? 1) - (r?.min ?? 1) + 1)) + (r?.min ?? 1);
+      if (Math.random() < hpRate) out.hp = amt(gb.hpGrowthAmount);
+      if (Math.random() < mpRate) out.mp = amt(gb.mpGrowthAmount);
+      if (!out.hp && !out.mp) return null;
+      const b = this.profile.baseStats; this.profile.currentVitals ||= { hp: b.maxHp, mp: b.maxMp };
+      if (out.hp) { b.maxHp += out.hp; this.profile.currentVitals.hp += out.hp; if (this.player) { this.player.stats.maxHp += out.hp; this.player.hp += out.hp; } }
+      if (out.mp) { b.maxMp += out.mp; this.profile.currentVitals.mp += out.mp; if (this.player) { this.player.stats.maxMp += out.mp; this.player.mp += out.mp; } }
+      const pt = this.profile.playtest;
+      if (pt) { if (out.hp) { pt.hpGrowthCount++; pt.hpGrowthTotal += out.hp; } if (out.mp) { pt.mpGrowthCount++; pt.mpGrowthTotal += out.mp; } }
+      return out;
+    }
+
+    // 攻撃発動時：この攻撃から派生する未習得技を抽選
+    learnedWeaponSkillIds() { return this.profile.learnedWeaponSkills ||= []; }
+    hasWeaponSkill(id) { return this.learnedWeaponSkillIds().includes(id); }
+    rollSpark(sourceSkillId) {
+      if (this.isNoGrowthJob()) return null;
+      const gb = this.gb();
+      const candidates = Object.values(D.skills).filter(s => s.prerequisiteSkill === sourceSkillId && !this.hasWeaponSkill(s.id));
+      for (const skill of candidates) {
+        const type = skill.weaponType;
+        if (type && this.equippedWeaponType() !== type) continue;
+        if ((this.masteryOf(type).level || 1) < (skill.requiredWeaponLevel ?? 1)) continue;
+        const rate = (skill.sparkRate ?? gb.sparkBaseRate ?? 0) * this.traitSparkMult(type);
+        if (Math.random() < rate) {
+          this.learnedWeaponSkillIds().push(skill.id);
+          const pt = this.profile.playtest;
+          if (pt) { pt.sparkLog ||= []; pt.sparkLog.push({ skillId: skill.id, name: skill.name, battle: (pt.battles || 0) + 1 }); }
+          this.saveProfile();
+          return skill;
+        }
+      }
+      return null;
+    }
+    // 装備中カテゴリの通常攻撃
+    basicAttackSkill() { const map = D.basicAttackByWeaponType || {}; return D.skills[map[this.equippedWeaponType()]] || D.skills.attack; }
+    weaponTypeName(id) { return (D.weaponTypes || []).find(t => t.id === id)?.name || id; }
+    // ステータス画面：3武器学の一覧と習得済み武器技
+    masterySectionHTML() {
+      const cur = this.equippedWeaponType();
+      const rows = (D.weaponTypes || []).map(t => {
+        const m = this.masteryOf(t.id), need = this.masteryExpNeeded(m.level), pct = Math.min(100, 100 * m.exp / need);
+        const skills = this.learnedWeaponSkills().filter(s => s.weaponType === t.id);
+        return `<div class="mst-row${cur === t.id ? ' current' : ''}"><div class="mst-head"><span>${t.name}</span><b>Lv.${m.level}</b>${cur === t.id ? '<em>装備中</em>' : ''}</div><i class="mst-bar"><em style="width:${pct}%"></em></i><small>${m.exp} / ${need}（${pct.toFixed(2)}%）</small>${skills.length ? `<div class="mst-skills">${skills.map(s => `<mark>${s.name}</mark>`).join('')}</div>` : ''}</div>`;
+      }).join('');
+      return `<div class="st-section"><h3>武器学 <span>WEAPON MASTERY</span></h3><div class="mst-list">${rows}</div></div>`;
+    }
+    // テストプレイ用の集計。コンソールから arseneGame.playtestReport() で確認できる。
+    playtestReport() {
+      const pt = this.profile.playtest || {}, m = this.profile.weaponMastery || {};
+      const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {};
+      const report = {
+        総プレイ時間: `${Math.floor((pt.playMs || (Date.now() - (pt.startedAt || Date.now()))) / 60000)}分`,
+        総戦闘回数: pt.battles || 0,
+        剣: `Lv${m.sword?.level ?? 1} / EXP ${m.sword?.exp ?? 0}`,
+        杖: `Lv${m.staff?.level ?? 1} / EXP ${m.staff?.exp ?? 0}`,
+        体術: `Lv${m.martial?.level ?? 1} / EXP ${m.martial?.exp ?? 0}`,
+        使用回数: pt.weaponUse || {},
+        閃き履歴: (pt.sparkLog || []).map(s => `${s.name}（${s.battle}戦目）`),
+        HP成長: `${pt.hpGrowthCount || 0}回 / 累計+${pt.hpGrowthTotal || 0}`,
+        MP成長: `${pt.mpGrowthCount || 0}回 / 累計+${pt.mpGrowthTotal || 0}`,
+        現在ジョブ: `${D.jobs[jid]?.name || jid} Lv.${jst.level || 1}`,
+        習得武器技: this.learnedWeaponSkills().map(s => s.name)
+      };
+      console.table ? console.table(report) : console.log(report);
+      return report;
+    }
+    // 戦闘結果画面の成長表示
+    growthResultHTML(mastery, vitals, sparks = []) {
+      if (!mastery && !vitals && !sparks.length) return '';
+      const rows = [];
+      if (mastery) {
+        const name = this.weaponTypeName(mastery.type);
+        rows.push(`<div class="growth-row"><span>${name} 熟練度</span><b>+${mastery.gain}</b></div>`);
+        if (mastery.leveled) rows.push(`<div class="growth-row levelup"><span>${name} 武器学</span><b>Lv${mastery.before} → Lv${mastery.after}</b></div>`);
+      }
+      if (vitals?.hp) rows.push(`<div class="growth-row status"><span>最大HP</span><b>+${vitals.hp}</b></div>`);
+      if (vitals?.mp) rows.push(`<div class="growth-row status"><span>最大MP</span><b>+${vitals.mp}</b></div>`);
+      const sparkHtml = sparks.map(s => `<div class="growth-spark"><small>NEW TECH</small><b>${s.name}</b><span>${s.nameEn || ''}</span></div>`).join('');
+      return `<div class="growth-result"><header><small>GROWTH</small><b>成長</b></header>${rows.join('')}${sparkHtml}</div>`;
+    }
+    learnedWeaponSkills() { return this.learnedWeaponSkillIds().map(id => D.skills[id]).filter(Boolean); }
     weaponTypeList() { return D.weaponTypes || []; }
     weaponTypeDef(id) { return this.weaponTypeList().find(t => t.id === id) || null; }
     startingJobList() { return (D.startingJobIds || []).map(id => D.jobs[id]).filter(Boolean); }
@@ -175,7 +290,8 @@
       if (job) { profile.currentJob = job.id; profile.jobs ||= {}; profile.jobs[job.id] ||= { level: 1, exp: 0 }; }
       return profile;
     }
-    personalSkills() { return (D.characterSkillProgression || []).filter(e => this.profile.level >= e.level && D.skills[e.skillId]?.type === 'ACTIVE').map(e => D.skills[e.skillId]).filter(Boolean); }
+    // 固有技＝現在ジョブの固有スキル（戦士→ちからため、武道家→ばくれつけん等）
+    personalSkills() { const sig = D.skills[D.jobs[this.profile.currentJob]?.signatureSkillId]; return sig && sig.type !== 'PASSIVE' ? [sig] : []; }
     jobLearnedActiveSkills(jobId) { const job = D.jobs[jobId]; if (!job) return []; const jlv = this.profile.jobs[jobId]?.level || 0; const list = Object.entries(job.skillUnlocks || {}).filter(([lv]) => Number(lv) <= jlv).map(([, id]) => D.skills[id]).filter(s => s && s.type !== 'PASSIVE'); const sig = D.skills[job.signatureSkillId]; if (sig && sig.type !== 'PASSIVE' && !list.some(s => s.id === sig.id)) list.unshift(sig); return list; }
     allLearnedPassives() { const ids = [...(this.profile.learnedJobSkills || []), ...(this.profile.learnedCharacterSkills || [])]; return [...new Set(ids)].map(id => D.skills[id]).filter(s => s?.type === 'PASSIVE'); }
     setSubCommand(jobId) { this.profile.subCommand = (jobId && jobId !== this.profile.currentJob) ? jobId : null; this.saveProfile(); this.audio.sfx('heal'); if (this.jobUI) this.jobUI.modal = null; this.renderMenuPanel('job'); }
@@ -302,7 +418,7 @@
     }
     applySetBattleVisual() { const ren = $('#ren'), active = this.equippedSeriesCount('zenacad') >= 6; ren.classList.toggle('zenacad-six-set', active); if (active) { ren.classList.add('set-intro'); setTimeout(() => ren.classList.remove('set-intro'), 1800); } }
     updateHUD() {
-      const p = this.player, expNeed = this.expNeeded(); $('#player-hp').textContent = `${p.hp} / ${p.stats.maxHp}`; $('#player-mp').textContent = `${p.mp} / ${p.stats.maxMp}`; $('#player-hp-bar').style.width = `${100 * p.hp / p.stats.maxHp}%`; $('#player-mp-bar').style.width = `${100 * p.mp / p.stats.maxMp}%`; const expBar = $('#player-exp-bar'), expPct = Math.min(100, 100 * this.profile.exp / expNeed); if (expBar) { expBar.style.width = `${expPct}%`; $('#player-exp-label').textContent = `${expPct.toFixed(2)}%`; } const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {}, jlv = jst.level || 1, jneed = this.jobExpNeeded(jlv), jexp = jst.exp || 0, jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100, jexpBar = $('#player-jexp-bar'), jexpName = $('#player-jexp-name'); if (jexpName) jexpName.textContent = `${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}`; if (jexpBar) { jexpBar.style.width = `${jpct}%`; $('#player-jexp-label').textContent = jneed ? `${jpct.toFixed(2)}%` : 'MASTER'; } $('#level').textContent = this.profile.level; $('#turn-label').textContent = `TURN ${String(this.turn).padStart(2, '0')}`;
+      const p = this.player, expNeed = this.expNeeded(); $('#player-hp').textContent = `${p.hp} / ${p.stats.maxHp}`; $('#player-mp').textContent = `${p.mp} / ${p.stats.maxMp}`; $('#player-hp-bar').style.width = `${100 * p.hp / p.stats.maxHp}%`; $('#player-mp-bar').style.width = `${100 * p.mp / p.stats.maxMp}%`; const expBar = $('#player-exp-bar'), mType = this.equippedWeaponType(), m = this.masteryOf(mType), mNeed = this.masteryExpNeeded(m.level), expPct = Math.min(100, 100 * m.exp / mNeed); if (expBar) { expBar.style.width = `${expPct}%`; $('#player-exp-label').textContent = `${expPct.toFixed(2)}%`; } const mName = $('#player-exp-name'); if (mName) mName.textContent = `${this.weaponTypeName(mType)} Lv.${m.level}`; const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {}, jlv = jst.level || 1, jneed = this.jobExpNeeded(jlv), jexp = jst.exp || 0, jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100, jexpBar = $('#player-jexp-bar'), jexpName = $('#player-jexp-name'); if (jexpName) jexpName.textContent = `${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}`; if (jexpBar) { jexpBar.style.width = `${jpct}%`; $('#player-jexp-label').textContent = jneed ? `${jpct.toFixed(2)}%` : 'MASTER'; } $('#level').textContent = this.profile.level; $('#turn-label').textContent = `TURN ${String(this.turn).padStart(2, '0')}`;
       this.enemies.forEach(e => { const el = document.getElementById(e.uid); if (el) $('.enemy-hud i', el).style.width = `${100 * e.hp / e.stats.maxHp}%`; });
     }
     setLog(text) { $('#log').innerHTML = `<p>${text}</p>`; }
@@ -317,14 +433,20 @@
       const curJobId = this.profile.currentJob, mainCmd = this.jobCommand(curJobId);
       const subJobId = this.profile.subCommand, subCmd = subJobId ? this.jobCommand(subJobId) : null;
       const personal = this.personalSkills();
-      let html = this.button('たたかう', 'ATTACK', 'attack');
+      const basic = this.basicAttackSkill(), wType = this.equippedWeaponType();
+      const artsCmd = (D.weaponArtsCommand || {})[wType] || { name: '武器技', nameEn: 'WEAPON ARTS' };
+      const arts = this.learnedWeaponSkills().filter(s => s.weaponType === wType);
+      let html = this.button(basic.name, basic.nameEn || 'ATTACK', 'attack');
+      if (arts.length) html += this.button(artsCmd.name, `${artsCmd.nameEn} ▶`, 'weaponArts');
       if (personal.length) html += this.button('固有技', 'PERSONAL ▶', 'personal');
-      html += this.button(mainCmd.cmd, `${mainCmd.cmdEn} ▶`, 'mainCmd');
-      if (subCmd) html += this.button(subCmd.cmd, `${subCmd.cmdEn} ▶`, 'subCmd');
+      // ジョブ習得スキルが残っている場合のみジョブコマンドを出す（武器技とは別枠）
+      const jobSkills = this.jobLearnedActiveSkills(curJobId).filter(s => s.id !== D.jobs[curJobId]?.signatureSkillId);
+      if (jobSkills.length) html += this.button(mainCmd.cmd, `${mainCmd.cmdEn} ▶`, 'mainCmd');
+      if (subCmd && this.jobLearnedActiveSkills(subJobId).length) html += this.button(subCmd.cmd, `${subCmd.cmdEn} ▶`, 'subCmd');
       html += this.button('アイテム', `ITEM ×${itemCount}`, 'item') + this.button('にげる', 'ESCAPE', 'escape');
       html += `<button class="auto-battle-btn${this.autoBattle ? ' active' : ''}" data-action="auto-toggle"><i></i><strong>${this.autoBattle ? 'AUTO ON' : 'AUTO OFF'}</strong><span>BATTLE MODE</span></button>`;
       this.panel(html);
-      this.bindActions({ attack: () => this.chooseTarget('attack'), personal: () => this.showPersonalSkills(), mainCmd: () => this.showCommandSkills(curJobId), subCmd: () => subJobId && this.showCommandSkills(subJobId), item: () => this.showBattleItems(), escape: () => this.tryEscape(), 'auto-toggle': () => { this.autoBattle = !this.autoBattle; this.showMainCommands(); } });
+      this.bindActions({ attack: () => this.chooseTarget(basic.id), weaponArts: () => this.showWeaponArts(), personal: () => this.showPersonalSkills(), mainCmd: () => this.showCommandSkills(curJobId), subCmd: () => subJobId && this.showCommandSkills(subJobId), item: () => this.showBattleItems(), escape: () => this.tryEscape(), 'auto-toggle': () => { this.autoBattle = !this.autoBattle; this.showMainCommands(); } });
       if (this.autoBattle && !this.locked) setTimeout(() => this.autoPickAction(), 700);
     }
     autoPickAction() { if (!this.autoBattle || this.locked || this.finished) return; const maxHp = this.player.stats.maxHp, maxMp = this.player.stats.maxMp, hpPct = this.player.hp / maxHp; if (hpPct < 0.4 && (this.profile.inventory.potion || 0) > 0) { this.useConsumable('potion'); return; } if (this.player.mp < maxMp * 0.2 && (this.profile.inventory.manaPotion || 0) > 0) { this.useConsumable('manaPotion'); return; } const aliveEnemies = this.enemies.filter(e => e.alive); const skills = this.availableSkills().filter(s => this.player.mp >= s.mp && this.cooldownRemaining(s) === 0); const weapon = this.equippedWeapon(); const atkScore = weapon?.power || 1; let best = { type: 'attack', score: atkScore }; for (const s of skills) { let score = 0; if (s.kind === 'support') { if (s.effect?.type === 'hpRecover') score = hpPct < 0.75 ? (1 - hpPct) * 200 : 0; else if (s.effect?.type === 'mpRecover') score = this.player.mp < maxMp * 0.5 ? 45 : 0; else if (s.effect?.type === 'regenerate') score = hpPct < 0.8 ? 35 : 0; } else if (s.kind === 'hybrid') { score = (s.strScale + s.magScale) * 12; } else { const multi = s.target === 'all' ? Math.min(aliveEnemies.length, 3) * 0.7 : 1; score = (s.power || 1) * (s.hits || 1) * multi; } if (score > best.score) best = { type: 'skill', skill: s, score }; } if (best.type === 'skill') { const s = best.skill; if (s.target === 'all' || s.target === 'self') { this.executeRound(s.id, -1); } else { this.executeRound(s.id, this.enemies.findIndex(e => e.alive)); } } else { this.executeRound('attack', this.enemies.findIndex(e => e.alive)); } }
@@ -332,8 +454,9 @@
     availableSkills() { const skills = [...this.personalSkills(), ...this.jobLearnedActiveSkills(this.profile.currentJob)]; if (this.profile.subCommand) skills.push(...this.jobLearnedActiveSkills(this.profile.subCommand)); const grant = this.equippedWeapon()?.grantsSkillId; if (grant && D.skills[grant]) skills.push(D.skills[grant]); return [...new Map(skills.map(s => [s.id, s])).values()]; }
     cooldownRemaining(skill) { return Math.max(0, (this.player.cooldowns?.[skill.id] || 0) - this.turn); }
     showSkills() { this.showMainCommands(); }
+    showWeaponArts() { const wt = this.equippedWeaponType(); const skills = this.learnedWeaponSkills().filter(s => s.weaponType === wt); this.panel(skills.map(s => this.button(s.name, s.mp ? `MP ${s.mp}` : (s.nameEn || 'ARTS'), s.id, this.player.mp < (s.mp || 0))).join('') + this.button('もどる', 'BACK', 'back')); const actions = { back: () => this.showMainCommands() }; skills.forEach(s => { actions[s.id] = () => this.chooseTarget(s.id); }); this.bindActions(actions); }
     showPersonalSkills() { const skills = this.personalSkills(); this.panel(skills.map(s => { const cd = this.cooldownRemaining(s); return this.button(s.name, cd ? `CT ${cd}` : `MP ${s.mp}`, s.id, this.player.mp < s.mp || cd > 0); }).join('') + this.button('もどる', 'BACK', 'back')); const actions = { back: () => this.showMainCommands() }; skills.forEach(s => { actions[s.id] = () => this.chooseTarget(s.id); }); this.bindActions(actions); }
-    showCommandSkills(jobId) { const skills = this.jobLearnedActiveSkills(jobId); if (!skills.length) { this.setLog('このコマンドの習得済みスキルがありません。'); return; } this.panel(skills.map(s => { const cd = this.cooldownRemaining(s); return this.button(s.name, cd ? `CT ${cd}` : `MP ${s.mp}`, s.id, this.player.mp < s.mp || cd > 0); }).join('') + this.button('もどる', 'BACK', 'back')); const actions = { back: () => this.showMainCommands() }; skills.forEach(s => { actions[s.id] = () => this.chooseTarget(s.id); }); this.bindActions(actions); }
+    showCommandSkills(jobId) { const skills = this.jobLearnedActiveSkills(jobId).filter(s => s.id !== D.jobs[jobId]?.signatureSkillId); if (!skills.length) { this.setLog('このコマンドの習得済みスキルがありません。'); return; } this.panel(skills.map(s => { const cd = this.cooldownRemaining(s); return this.button(s.name, cd ? `CT ${cd}` : `MP ${s.mp}`, s.id, this.player.mp < s.mp || cd > 0); }).join('') + this.button('もどる', 'BACK', 'back')); const actions = { back: () => this.showMainCommands() }; skills.forEach(s => { actions[s.id] = () => this.chooseTarget(s.id); }); this.bindActions(actions); }
     chooseTarget(skillId) { const skill = D.skills[skillId]; if (skill?.target === 'all' || skill?.target === 'self') { this.executeRound(skillId, -1); return; } $('#phase-label').textContent = 'SELECT TARGET'; this.setLog('攻撃する敵を選択'); this.enemies.forEach((e, i) => { const el = document.getElementById(e.uid); if (e.alive) { el.classList.add('targetable'); el.onclick = () => this.executeRound(skillId, i); } }); this.panel(this.button('もどる', 'BACK', 'back')); this.bindActions({ back: () => { this.clearTargets(); this.showMainCommands(); } }); }
     clearTargets() { this.enemies.forEach(e => { const el = document.getElementById(e.uid); if (el) { el.classList.remove('targetable'); el.onclick = null; } }); }
 
@@ -341,7 +464,7 @@
       const skill = D.skills[skillId]; const aoe = skill?.target === 'all', self = skill?.target === 'self';
       if (this.locked || !skill || this.cooldownRemaining(skill) > 0 || (!self && (aoe ? !this.enemies.some(e => e.alive) : !this.enemies[targetIndex]?.alive))) return;
       this.locked = true; this.clearTargets(); this.panel(''); $('#phase-label').textContent = 'ACTION'; await this.beginPlayerTurn(); const setEffects = this.activeSetEffects(), freeMp = skill.kind === 'magical' && skill.mp > 0 && Math.random() < (setEffects.freeMagicMpChance || 0); if (!freeMp) this.player.mp -= skill.mp; else this.flashTitle('MAESTRO', 'MP COST 0'); if (skill.cooldown) this.player.cooldowns[skill.id] = this.turn + skill.cooldown; this.persistVitals(); this.updateHUD();
-      const actors = [{ type: 'player', speed: this.player.stats.agi + roll(0, 4), act: () => this.playerAction(skill, targetIndex) }]; this.enemies.filter(e => e.alive).forEach(e => actors.push({ type: 'enemy', enemy: e, speed: e.stats.spd + roll(0, 4), act: () => this.enemyAttack(e) })); actors.sort((a, b) => b.speed - a.speed);
+      const actors = [{ type: 'player', speed: this.player.stats.agi + roll(0, 4), act: () => this.playerActionWithSpark(skill, targetIndex) }]; this.enemies.filter(e => e.alive).forEach(e => actors.push({ type: 'enemy', enemy: e, speed: e.stats.spd + roll(0, 4), act: () => this.enemyAttack(e) })); actors.sort((a, b) => b.speed - a.speed);
       for (const actor of actors) { if (this.finished || this.player.hp <= 0) break; if (actor.type === 'enemy' && !actor.enemy.alive) continue; await actor.act(); await this.battleSleep(300); if (!this.enemies.some(e => e.alive)) { await this.victory(); return; } }
       if (this.player.hp <= 0) { await this.defeat(); return; } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands();
     }
@@ -349,13 +472,37 @@
     async beginPlayerTurn() { if (this.characterHasSkill('blueEcho') && Math.random() < .20) { this.player.buffs.blueEcho = 2; this.flashTitle('BLUE ECHO', 'MAG +10% // 2 TURNS'); this.setLog('蒼の残響が魔力を高める！'); await this.battleSleep(260); } if ((this.player.buffs.regenerate || 0) > 0) { const heal = Math.max(1, Math.ceil(this.player.stats.maxHp * .08)), gained = Math.min(heal, this.player.stats.maxHp - this.player.hp); this.player.hp += gained; if (gained) { this.audio.sfx('heal'); this.floating($('#ren'), `+${gained}`, 'heal'); this.setLog(`リジェネレートでHPが${gained}回復！`); this.updateHUD(); await this.battleSleep(220); } } }
     endPlayerTurn() { if ((this.player.buffs.blueEcho || 0) > 0) this.player.buffs.blueEcho--; if ((this.player.buffs.regenerate || 0) > 0) this.player.buffs.regenerate--; if (this.player.buffs.defUp && this.turn > this.player.buffs.defUp.until) delete this.player.buffs.defUp; }
     damageFor(skill, enemy) {
-      const s = this.player.stats, w = this.equippedWeapon(), balance = D.combatBalance, weaponAttack = skill.id === 'attack', statKey = weaponAttack ? w.damageStat : (skill.kind === 'magical' ? 'mag' : 'str'), stat = this.effectivePlayerStat(statKey), enchLv = weaponAttack ? ((this.profile.weaponEnchants || {})[this.profile.equipment.rightHand] || 0) : 0, basePower = weaponAttack ? w.power : skill.power, power = basePower * (1 + enchLv * 0.10), defDown = this.turn <= (enemy.defDownUntil || 0) ? .15 : 0, effectiveDef = enemy.stats.def * (1 - defDown) * (1 - (skill.ignoreDef || 0));
+      const s = this.player.stats, w = this.equippedWeapon(), balance = D.combatBalance, weaponAttack = skill.kind === 'weapon' || skill.id === 'attack', statKey = weaponAttack ? w.damageStat : (skill.kind === 'magical' ? 'mag' : 'str'), stat = this.effectivePlayerStat(statKey), enchLv = weaponAttack ? ((this.profile.weaponEnchants || {})[this.profile.equipment.rightHand] || 0) : 0, basePower = weaponAttack ? w.power * (skill.powerScale ?? 1) : skill.power, power = basePower * (1 + enchLv * 0.10), defDown = this.turn <= (enemy.defDownUntil || 0) ? .15 : 0, effectiveDef = enemy.stats.def * (1 - defDown) * (1 - (skill.ignoreDef || 0));
       let value = skill.kind === 'hybrid' ? this.effectivePlayerStat('str') * skill.strScale + this.effectivePlayerStat('mag') * skill.magScale - effectiveDef : stat * power + s.agi * (skill.agiScale || 0) - effectiveDef;
-      const charge = (skill.kind === 'physical' || skill.id === 'attack') ? (this.player.buffs?.atkCharge?.rate || 0) : 0;
+      const charge = (skill.kind === 'physical' || skill.kind === 'weapon') ? (this.player.buffs?.atkCharge?.rate || 0) : 0;
       if (charge) value *= (1 + charge);
       value += roll(balance.playerVariance.min, balance.playerVariance.max);
-      const critical = Math.random() < clamp(balance.critical.base + s.luk * balance.critical.luckRate + (s.critBonus || 0), balance.critical.base, balance.critical.max + (s.critBonus || 0));
+      const critExtra = (skill.criticalModifier || 0) + this.traitCriticalBonus();
+      const critical = Math.random() < clamp(balance.critical.base + s.luk * balance.critical.luckRate + (s.critBonus || 0) + critExtra, balance.critical.base, balance.critical.max + (s.critBonus || 0) + critExtra);
       if (critical) value *= balance.critical.multiplier; return { value: Math.max(1, Math.round(value)), critical };
+    }
+    // 閃き演出：画面フラッシュ＋効果音＋カットインを見せてから技を発動する
+    async sparkPresentation(skill) {
+      const ren = $('#ren');
+      const flash = document.createElement('div'); flash.className = 'spark-flash';
+      const cut = document.createElement('div'); cut.className = 'spark-cutin';
+      cut.innerHTML = `<small>閃いた！</small><b>${skill.name}</b><span>${skill.nameEn || ''}</span>`;
+      document.getElementById('battlefield')?.append(flash, cut);
+      ren.classList.add('sparking');
+      this.audio.sfx('critical'); this.setLog(`💡 閃いた！ 《${skill.name}》`);
+      await this.battleSleep(260);
+      this.audio.sfx('heal');
+      await this.battleSleep(1150);
+      flash.remove(); cut.remove(); ren.classList.remove('sparking');
+    }
+    // 攻撃が実際に発動するタイミングで閃きを判定し、成功したらその場で技を差し替える
+    async playerActionWithSpark(skill, targetIndex) {
+      const sparked = this.rollSpark(skill.id);
+      if (!sparked) { await this.playerAction(skill, targetIndex); return; }
+      // 閃いたターンはMP未消費のまま発動する（executeRound は元の通常攻撃のMP0しか引いていない）
+      await this.sparkPresentation(sparked);
+      this.battleSparks ||= []; this.battleSparks.push(sparked);
+      await this.playerAction(sparked, targetIndex);
     }
     async playerAction(skill, targetIndex) { await this.playerAttack(skill, targetIndex); const setFx = this.activeSetEffects(); const repeatChance = setFx.magicRepeatChance || 0; if (skill.kind === 'magical' && this.enemies.some(e => e.alive) && Math.random() < repeatChance) { this.flashTitle('《独奏曲》', 'CADENZA // ENCORE'); this.setLog('ゼナカドの旋律が魔法を再演する！'); await this.battleSleep(360); await this.playerAttack(skill, targetIndex); } const physRepeatChance = setFx.physicalRepeatChance || 0; if (skill.kind === 'physical' && this.enemies.some(e => e.alive) && Math.random() < physRepeatChance) { this.flashTitle('DEADLY RHYTHM', 'MYRTHI // EXTRA BEAT'); this.setLog('鼓動が刻む追加連撃！'); await this.battleSleep(360); await this.playerAttack(skill, targetIndex); } }
     async playerAttack(skill, targetIndex) {
@@ -450,7 +597,8 @@
           });
         }
       });
-      while (this.profile.exp >= this.expNeeded()) { const beforeLevel = this.profile.level, before = clone(this.profile.baseStats); this.profile.exp -= this.expNeeded(); this.profile.level++; Object.entries(D.player.growth).forEach(([k, v]) => this.profile.baseStats[k] += v); levels.push({ from: beforeLevel, to: this.profile.level, before, after: clone(this.profile.baseStats) }); }
+      // キャラクターLvは廃止。強さは武器学・ジョブLv・HP/MP成長で表現する。
+      // profile.exp / profile.level はセーブ互換のため残すが、レベルアップ処理は行わない。
       this.syncSkillUnlocks();
       if (levels.length) { const stats = this.totalStats(); this.profile.currentVitals = { hp: stats.maxHp, mp: stats.maxMp }; if (this.player) { this.player.stats = stats; this.player.hp = stats.maxHp; this.player.mp = stats.maxMp; } } else this.persistVitals();
       this.saveProfile(); return levels;
@@ -469,15 +617,25 @@
       this.finished = true; this.audio.stopMusic(650); this.audio.sfx('victory'); this.flashTitle('VICTORY', 'ALL SHADOWS ELIMINATED'); $('#ren').classList.add('victory'); await this.battleSleep(1100);
       const reward = { exp: this.battleRewards.exp, gold: this.battleRewards.gold, drops: this.battleRewards.drops }, levels = this.battleRewards.levels, jobResult = this.grantJobExp(this.battleRewards.exp);
       const newRecipeHTML = (this.battleRewards.newRecipes || []).map(rid => { const r = D.recipes[rid], item = D.items[r?.resultItemId]; return r && item ? `<div class="new-recipe-unlock"><small>NEW RECIPE</small><b>${item.name}</b><span>${item.nameEn || ''}</span><em>工房で製作可能になった</em></div>` : ''; }).join('');
-      const rewardBlock = `${this.rewardHTML(reward, levels)}${this.jobResultHTML(jobResult)}${newRecipeHTML}`;
+      // 武器学EXP・HP/MP成長は戦闘終了時に判定する（装備中カテゴリのみ加算）
+      const masteryResult = this.grantWeaponExp(this.battleRewards.exp);
+      const vitalResult = this.rollVitalGrowth();
+      const pt = this.profile.playtest; if (pt) { pt.battles = (pt.battles || 0) + 1; if (masteryResult) pt.weaponUse[masteryResult.type] = (pt.weaponUse[masteryResult.type] || 0) + 1; }
+      const sparks = this.battleSparks || []; this.battleSparks = [];
+      this.saveProfile(); this.persistVitals(); this.updateHUD();
+      const rewardBlock = `${this.rewardHTML(reward, levels)}${this.growthResultHTML(masteryResult, vitalResult, sparks)}${this.jobResultHTML(jobResult)}${newRecipeHTML}`;
       if (this.battleMode === 'slime') { if (this.currentDungeonId === 'dungeon3') { this.profile.flags.dungeon3BattleWins = (this.profile.flags.dungeon3BattleWins || 0) + 1; } else if (this.currentDungeonId === 'dungeon2') { this.profile.flags.dungeon2BattleWins = (this.profile.flags.dungeon2BattleWins || 0) + 1; } else { if (this.profile.flags.noelFirstEncounterCleared) this.profile.flags.postNoelBattleWins = (this.profile.flags.postNoelBattleWins || 0) + 1; else this.profile.flags.preNoelBattleWins = (this.profile.flags.preNoelBattleWins || 0) + 1; this.profile.flags.normalBattleWins = (this.profile.flags.normalBattleWins || 0) + 1; } this.saveProfile(); }
       if (this.battleMode === 'zenakado') { const firstClear = !this.isBossDefeated('zenacad'), firstScore = !this.profile.flags.zenakadoScoreClaimed; this.markBossDefeated('zenacad'); this.profile.flags.zenakadoDefeated = false; this.profile.flags.postNoelBattleWins = 0; this.profile.flags.temporaryBossCompleted = true; this.noteBossRematchSnapshot('zenakado'); if (firstScore) { this.profile.musicScores.cadenzaLoot = true; this.profile.flags.zenakadoScoreClaimed = true; } this.saveProfile(); const stolen = firstClear ? '<div class="boss-recipe-unlock"><small>PHANTOM STEAL</small><b>NEW RECIPES STOLEN</b><strong>《ZENACAD SERIES》</strong><span>工房に BOSS EQUIPMENT と JOB SYSTEM が追加された！</span></div>' : ''; this.showResult('VICTORY', '独奏卿ゼナカドを打ち倒し、禁断の楽譜と装備製法を盗み出した！', 'BOSS CLEARED', `${rewardBlock}${firstScore ? this.scoreGetHTML('cadenzaLoot') : ''}${stolen}`); return; }
       if (this.battleMode === 'myrthi') { this.markBossDefeated('myrthi'); this.profile.flags.dungeon2BattleWins = (this.profile.flags.dungeon2BattleWins || 0) + 1; this.profile.flags.dungeon2Clear = true; this.noteBossRematchSnapshot('myrthi'); this.saveProfile(); this.showResult('VICTORY', '黒紅の双刃戦姫ミルティを打ち倒した！ ミルティシリーズの製法を奪い取った！', 'BOSS CLEARED', `${rewardBlock}<div class="boss-recipe-unlock"><small>PHANTOM STEAL</small><b>NEW RECIPES STOLEN</b><strong>《MYRTHI SERIES》</strong><span>工房にMYRTHI SERIESが追加された！</span></div>`); return; }
-      const progress = this.progressState(); if (this.battleMode === 'slime' && progress.ready) { const label = progress.phase === 'noel' ? '永遠の裁定者ノエル' : '独奏卿ゼナカド'; this.showResult('VICTORY', '闇を切り裂き、戦利品を獲得した。', 'BATTLE COMPLETE', `${rewardBlock}<div class="workshop-unlock boss-signal"><b>BOSS SIGNAL</b><strong>${label}の反応を確認！</strong><span>拠点からボス遭遇へ進めます。</span></div>`); } else { await this.showBattleClear(reward, levels, jobResult); }
+      const progress = this.progressState(); if (this.battleMode === 'slime' && progress.ready) { const label = progress.phase === 'noel' ? '永遠の裁定者ノエル' : '独奏卿ゼナカド'; this.showResult('VICTORY', '闇を切り裂き、戦利品を獲得した。', 'BATTLE COMPLETE', `${rewardBlock}<div class="workshop-unlock boss-signal"><b>BOSS SIGNAL</b><strong>${label}の反応を確認！</strong><span>拠点からボス遭遇へ進めます。</span></div>`); } else { await this.showBattleClear(reward, levels, jobResult, { mastery: masteryResult, vitals: vitalResult, sparks }); }
     }
-    async showBattleClear(reward, levels, jobResult) {
+    async showBattleClear(reward, levels, jobResult, growth = null) {
       this.locked = false;
       const drops = Object.entries(reward.drops), parts = [`EXP <b>+${reward.exp}</b>`, `GOLD <b>+${reward.gold}</b>`];
+      if (growth?.mastery) { const n = this.weaponTypeName(growth.mastery.type); parts.push(`${n}熟練度 <b>+${growth.mastery.gain}</b>${growth.mastery.leveled ? ` / ${n}武器学 Lv.${growth.mastery.before}→<b>Lv.${growth.mastery.after}</b>` : ''}`); }
+      if (growth?.vitals?.hp) parts.push(`最大HP <b>+${growth.vitals.hp}</b>`);
+      if (growth?.vitals?.mp) parts.push(`最大MP <b>+${growth.vitals.mp}</b>`);
+      (growth?.sparks || []).forEach(s => parts.push(`NEW TECH <b>${s.name}</b>`));
       if (drops.length) parts.push(drops.map(([id, n]) => `${D.items[id]?.name || id} ×${n}`).join(' / '));
       if (levels.length) parts.push(`LEVEL UP! → LV.${levels[levels.length - 1].to}`);
       if (jobResult) parts.push(`JEXP <b>+${jobResult.exp}</b>${jobResult.to > jobResult.from ? ` / ${jobResult.jobName} Lv.${jobResult.to}` : ''}`);
@@ -495,7 +653,7 @@
     showResult(title, copy, kicker, html) { $('#result-title').textContent = title; $('#result-copy').textContent = copy; $('#result-kicker').textContent = kicker; $('#rewards').innerHTML = html; $('#result-menu').innerHTML = '拠点へ <span>HIDEOUT</span>'; $('#result').hidden = false; $('#result').style.display = 'grid'; }
 
     showMenu(panel = 'home') { if (this.player) this.persistVitals(); const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
-    renderMenuSummary() { const t = this.totalStats(), v = this.storedVitals(t), need = this.expNeeded(), workshopUnlocked = !!this.profile.flags.noelFirstEncounterCleared, buff = !!this.profile.flags.ramenBuffActive, progress = this.progressState(); $('#menu-level').textContent = `LV.${String(this.profile.level).padStart(2,'0')}`; $('#menu-hp').textContent = `${v.hp} / ${t.maxHp}`; $('#menu-mp').textContent = `${v.mp} / ${t.maxMp}`; $('#hideout-hp-bar').style.width = `${100 * v.hp / t.maxHp}%`; $('#hideout-mp-bar').style.width = `${100 * v.mp / t.maxMp}%`; $('#menu-gold').textContent = this.profile.gold.toLocaleString('ja-JP'); const expPct = Math.min(100, 100 * this.profile.exp / need); $('#menu-exp-text').textContent = `${expPct.toFixed(2)}%`; $('#menu-exp-bar').style.width = `${expPct}%`; const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {}, jlv = jst.level || 1, jneed = this.jobExpNeeded(jlv), jexp = jst.exp || 0, jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100; const jexpLabel = $('#menu-jexp-label'), jexpText = $('#menu-jexp-text'), jexpBar = $('#menu-jexp-bar'); if (jexpLabel) jexpLabel.textContent = `${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}`; if (jexpText) jexpText.textContent = jneed ? `${jpct.toFixed(2)}%` : 'MASTER'; if (jexpBar) jexpBar.style.width = `${jpct}%`; $('#workshop-nav').hidden = !workshopUnlocked; const bossButton = $('#menu-screen [data-menu="boss"]'); const d2Wins = this.profile.flags.dungeon2BattleWins || 0, myrthiReady = d2Wins >= 10 && !this.isBossDefeated('myrthi'); if (myrthiReady) { bossButton.hidden = false; bossButton.firstChild.textContent = '黒紅の双刃を追う'; bossButton.querySelector('span').textContent = `MYRTHI // BATTLE ${Math.min(d2Wins, 10)} / 10`; } else { bossButton.hidden = !progress.ready; bossButton.firstChild.textContent = progress.phase === 'noel' ? 'ノエルの反応を追う' : 'ゼナカドの旋律を追う'; bossButton.querySelector('span').textContent = `${progress.bossName} // BATTLE ${Math.min(progress.wins, progress.goal)} / ${progress.goal}`; } const buffEl = $('#hideout-buff'); buffEl.classList.toggle('active', buff); buffEl.querySelector('strong').textContent = buff ? '最大HP ＋3%' : '効果なし'; buffEl.querySelector('span').textContent = buff ? '効果：次のダンジョン1回のみ' : 'カズのまかないで次の潜入を強化'; }
+    renderMenuSummary() { const t = this.totalStats(), v = this.storedVitals(t), need = this.expNeeded(), workshopUnlocked = !!this.profile.flags.noelFirstEncounterCleared, buff = !!this.profile.flags.ramenBuffActive, progress = this.progressState(); $('#menu-level').textContent = `LV.${String(this.profile.level).padStart(2,'0')}`; $('#menu-hp').textContent = `${v.hp} / ${t.maxHp}`; $('#menu-mp').textContent = `${v.mp} / ${t.maxMp}`; $('#hideout-hp-bar').style.width = `${100 * v.hp / t.maxHp}%`; $('#hideout-mp-bar').style.width = `${100 * v.mp / t.maxMp}%`; $('#menu-gold').textContent = this.profile.gold.toLocaleString('ja-JP'); const mType = this.equippedWeaponType(), mst = this.masteryOf(mType), mNeed = this.masteryExpNeeded(mst.level), expPct = Math.min(100, 100 * mst.exp / mNeed); $('#menu-exp-text').textContent = `${expPct.toFixed(2)}%`; $('#menu-exp-bar').style.width = `${expPct}%`; const mLabel = $('#menu-exp-label'); if (mLabel) mLabel.textContent = `${this.weaponTypeName(mType)} Lv.${mst.level}`; const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {}, jlv = jst.level || 1, jneed = this.jobExpNeeded(jlv), jexp = jst.exp || 0, jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100; const jexpLabel = $('#menu-jexp-label'), jexpText = $('#menu-jexp-text'), jexpBar = $('#menu-jexp-bar'); if (jexpLabel) jexpLabel.textContent = `${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}`; if (jexpText) jexpText.textContent = jneed ? `${jpct.toFixed(2)}%` : 'MASTER'; if (jexpBar) jexpBar.style.width = `${jpct}%`; $('#workshop-nav').hidden = !workshopUnlocked; const bossButton = $('#menu-screen [data-menu="boss"]'); const d2Wins = this.profile.flags.dungeon2BattleWins || 0, myrthiReady = d2Wins >= 10 && !this.isBossDefeated('myrthi'); if (myrthiReady) { bossButton.hidden = false; bossButton.firstChild.textContent = '黒紅の双刃を追う'; bossButton.querySelector('span').textContent = `MYRTHI // BATTLE ${Math.min(d2Wins, 10)} / 10`; } else { bossButton.hidden = !progress.ready; bossButton.firstChild.textContent = progress.phase === 'noel' ? 'ノエルの反応を追う' : 'ゼナカドの旋律を追う'; bossButton.querySelector('span').textContent = `${progress.bossName} // BATTLE ${Math.min(progress.wins, progress.goal)} / ${progress.goal}`; } const buffEl = $('#hideout-buff'); buffEl.classList.toggle('active', buff); buffEl.querySelector('strong').textContent = buff ? '最大HP ＋3%' : '効果なし'; buffEl.querySelector('span').textContent = buff ? '効果：次のダンジョン1回のみ' : 'カズのまかないで次の潜入を強化'; }
     renderMenuPanel(name) {
       [...$('#menu-nav').querySelectorAll('button')].forEach(b => b.classList.toggle('active', b.dataset.menu === name)); const panel = $('#menu-panel'); panel.hidden = name === 'home'; panel.classList.toggle('panel-tall', name === 'equipment'); if (name === 'home') { panel.innerHTML = ''; return; }
       if (name === 'status') { this.renderStatusPanel(panel); return; }
@@ -719,7 +877,7 @@
         <div class="st-head"><div class="st-portrait" aria-hidden="true"></div><div class="st-id"><strong>雨宮 蓮</strong><span>AMAMIYA REN</span><b>LV.${String(this.profile.level).padStart(2,'0')}</b><em>${D.jobs[jid]?.name || ''} Lv.${jlv}</em></div></div>
         <div class="st-meters"><div class="st-meter hp"><span>HP</span><i style="width:${100*vitals.hp/total.maxHp}%"></i><output>${vitals.hp} / ${total.maxHp}</output></div><div class="st-meter mp"><span>MP</span><i style="width:${100*vitals.mp/total.maxMp}%"></i><output>${vitals.mp} / ${total.maxMp}</output></div><div class="st-meter exp"><span>EXP</span><i style="width:${expPct}%"></i><output>${expPct.toFixed(2)}%</output></div><div class="st-meter jexp"><span>JEXP</span><i style="width:${jpct}%"></i><output>${jneed ? jpct.toFixed(2)+'%' : 'MASTER'}</output></div></div>
         <div class="st-section"><h3>装備 <span>EQUIPMENT</span></h3><div class="st-eq">${eqRows}</div></div>
-        <div class="st-section"><h3>能力値 <span>STATS</span></h3><div class="stat-grid">${statRows}</div></div>${jobHtml}${passiveHtml}`;
+        <div class="st-section"><h3>能力値 <span>STATS</span></h3><div class="stat-grid">${statRows}</div></div>${this.masterySectionHTML()}${jobHtml}${passiveHtml}`;
     }
     enchantLevel(id) { return (D.weapons[id] ? (this.profile.weaponEnchants || {})[id] : (this.profile.armorEnchants || {})[id]) || 0; }
     enchantSuffix(id) { const lv = this.enchantLevel(id); return lv > 0 ? `<em class="ench-lv">+${lv}</em>` : ''; }
