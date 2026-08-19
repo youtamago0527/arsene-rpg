@@ -2,8 +2,9 @@ window.ARSENE_DATA = {
   settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01' },
   battleProgression: { noelEncounterWins: 3, zenakadoEncounterWins: 7 },
   expTable: { 1: 50, 2: 120, 3: 220 },
-  jobExpTable: { 1: 25, 2: 45, 3: 70, 4: 100, 5: 135, 6: 175, 7: 220, 8: 270, 9: 330 },
-  jobLevelCap: 10,
+  jobExpTable: { 1: 25, 2: 45, 3: 70, 4: 100, 5: 135, 6: 175, 7: 220, 8: 270, 9: 330, 10: 400, 11: 480, 12: 570, 13: 670, 14: 780, 15: 900, 16: 1040, 17: 1190, 18: 1360, 19: 1550 },
+  jobLevelCap: 20,
+  enchantTable: { successRates: [1.00, 1.00, 1.00, 0.97, 0.93, 0.88, 0.82, 0.75, 0.66, 0.55], goldCosts: [100, 200, 300, 500, 700, 1000, 1400, 1800, 2500, 3500], maxLevel: 10, statBonus: 5 },
   combatBalance: {
     playerVariance: { min: -2, max: 2 },
     critical: { base: .06, luckRate: .008, max: .28, multiplier: 1.65 },
@@ -46,23 +47,23 @@ window.ARSENE_DATA = {
   jobs: {
     warrior: {
       id: 'warrior', name: '戦士', nameEn: 'WARRIOR', description: '力と耐久力で正面から怪異を打ち破る。',
-      growth: { 1: { str: 2 }, 2: { maxHp: 5 }, 3: { vit: 1 }, 4: { str: 2, vit: 1 }, 5: { maxHp: 8 }, 6: { str: 2 }, 7: { maxHp: 8, vit: 2 }, 8: { str: 3 }, 9: { vit: 2 }, 10: { str: 4, maxHp: 12 } },
-      skillUnlocks: { 3: 'powerStrike', 6: 'breakEdge', 9: 'recklessEdge' }
+      growth: { 1: { str: 2 }, 2: { maxHp: 5 }, 3: { vit: 1 }, 4: { str: 2, vit: 1 }, 5: { maxHp: 8 }, 6: { str: 2 }, 7: { maxHp: 8, vit: 2 }, 8: { str: 3 }, 9: { vit: 2 }, 10: { str: 4, maxHp: 12 }, 11: { str: 2 }, 12: { maxHp: 10, vit: 2 }, 13: { str: 3 }, 14: { vit: 3, maxHp: 8 }, 15: { str: 4 }, 16: { maxHp: 12, vit: 3 }, 17: { str: 4 }, 18: { vit: 4 }, 19: { str: 5 }, 20: { str: 6, maxHp: 18, vit: 5 } },
+      skillUnlocks: { 3: 'powerStrike', 6: 'breakEdge', 9: 'recklessEdge', 12: 'warCry', 16: 'titanBlow' }
     },
     mage: {
       id: 'mage', name: '魔導士', nameEn: 'MAGE', description: '魔力を操り、単体・全体魔法を使い分ける。',
-      growth: { 1: { mag: 2 }, 2: { maxMp: 5 }, 3: { mag: 2 }, 4: { maxMp: 6 }, 5: { mag: 2 }, 6: { maxMp: 8 }, 7: { mag: 3 }, 8: { maxMp: 8 }, 9: { mag: 3 }, 10: { mag: 4, maxMp: 12 } },
-      skillUnlocks: { 3: 'blueFlame', 6: 'manaBurst', 9: 'astralRay' }
+      growth: { 1: { mag: 2 }, 2: { maxMp: 5 }, 3: { mag: 2 }, 4: { maxMp: 6 }, 5: { mag: 2 }, 6: { maxMp: 8 }, 7: { mag: 3 }, 8: { maxMp: 8 }, 9: { mag: 3 }, 10: { mag: 4, maxMp: 12 }, 11: { mag: 3 }, 12: { maxMp: 14 }, 13: { mag: 4 }, 14: { maxMp: 12 }, 15: { mag: 4 }, 16: { maxMp: 16 }, 17: { mag: 5 }, 18: { maxMp: 14 }, 19: { mag: 5 }, 20: { mag: 6, maxMp: 20 } },
+      skillUnlocks: { 3: 'blueFlame', 6: 'manaBurst', 9: 'astralRay', 12: 'arcaneExplosion', 16: 'voidNova' }
     },
     martialArtist: {
       id: 'martialArtist', name: '武道家', nameEn: 'MARTIAL ARTIST', description: '速度と多段攻撃でクリティカルを狙う。',
-      growth: { 1: { agi: 2 }, 2: { str: 2, maxHp: 4 }, 3: { agi: 2 }, 4: { str: 2 }, 5: { agi: 3 }, 6: { str: 2 }, 7: { critBonus: .02 }, 8: { agi: 3, str: 2 }, 9: { critBonus: .03 }, 10: { critBonus: .05, agi: 3 } },
-      skillUnlocks: { 3: 'doubleStrike', 6: 'breakFist', 9: 'shadowRush' }
+      growth: { 1: { agi: 2 }, 2: { str: 2, maxHp: 4 }, 3: { agi: 2 }, 4: { str: 2 }, 5: { agi: 3 }, 6: { str: 2 }, 7: { critBonus: .02 }, 8: { agi: 3, str: 2 }, 9: { critBonus: .03 }, 10: { critBonus: .05, agi: 3 }, 11: { agi: 3 }, 12: { str: 3, critBonus: .02 }, 13: { agi: 4 }, 14: { str: 3 }, 15: { agi: 4, critBonus: .03 }, 16: { str: 4 }, 17: { agi: 4 }, 18: { str: 4, critBonus: .03 }, 19: { agi: 5 }, 20: { critBonus: .07, agi: 5, str: 4 } },
+      skillUnlocks: { 3: 'doubleStrike', 6: 'breakFist', 9: 'shadowRush', 12: 'swiftBarrage', 16: 'shadowSeven' }
     },
     priest: {
       id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。',
-      growth: { 1: { mnd: 2 }, 2: { maxMp: 5 }, 3: { mnd: 2 }, 4: { maxMp: 6 }, 5: { mnd: 2, maxHp: 5 }, 6: { maxMp: 8 }, 7: { mnd: 3 }, 8: { maxMp: 8 }, 9: { mnd: 3 }, 10: { mnd: 4, maxMp: 12 } },
-      skillUnlocks: { 3: 'heal', 6: 'holyLight', 9: 'regenerate' }
+      growth: { 1: { mnd: 2 }, 2: { maxMp: 5 }, 3: { mnd: 2 }, 4: { maxMp: 6 }, 5: { mnd: 2, maxHp: 5 }, 6: { maxMp: 8 }, 7: { mnd: 3 }, 8: { maxMp: 8 }, 9: { mnd: 3 }, 10: { mnd: 4, maxMp: 12 }, 11: { mnd: 3 }, 12: { maxMp: 14, maxHp: 5 }, 13: { mnd: 4 }, 14: { maxMp: 12 }, 15: { mnd: 4 }, 16: { maxMp: 16 }, 17: { mnd: 5 }, 18: { maxMp: 14 }, 19: { mnd: 5 }, 20: { mnd: 6, maxMp: 20, maxHp: 8 } },
+      skillUnlocks: { 3: 'heal', 6: 'holyLight', 9: 'regenerate', 12: 'greatHeal', 16: 'divineSmite' }
     }
   },
   equipmentSlots: [
@@ -78,7 +79,7 @@ window.ARSENE_DATA = {
     unlockFlag: 'noelFirstEncounterCleared',
     tabs: [{ id: 'weapon', name: '武器', enName: 'WEAPON' }, { id: 'armor', name: '防具', enName: 'ARMOR' }, { id: 'disassemble', name: '分解', enName: 'DISASSEMBLE' }, { id: 'materials', name: '素材一覧', enName: 'MATERIALS' }, { id: 'catalog', name: '図鑑', enName: 'CATALOG' }],
     armorTabs: [{ id: 'leftHand', name: '盾', enName: 'SHIELD' }, { id: 'head', name: '頭', enName: 'HEAD' }, { id: 'body', name: '体', enName: 'BODY' }, { id: 'arms', name: '腕', enName: 'ARMS' }, { id: 'feet', name: '足', enName: 'FEET' }, { id: 'accessory', name: 'アクセ', enName: 'ACCESSORY' }],
-    materialIds: ['slimeJelly', 'darkCore', 'manaDrop', 'stardustShard', 'magicPowder', 'moonstone', 'tatteredRobe', 'gnawedBag', 'ratWhisker', 'stolenCoin', 'ratTail', 'rustedKnife', 'tornCloth', 'goblinMedicine', 'batFang', 'tornWingMembrane', 'beastBlood', 'obsidianFang', 'spiritFragment', 'oldBone', 'darkSoulStone', 'resentmentCrystal', 'zenacad_core', 'cadenza_fragment', 'reverbJelly', 'echoShard', 'stoneShard', 'violinString', 'spectralDust', 'silentNote', 'silentArmor'],
+    materialIds: ['slimeJelly', 'darkCore', 'manaDrop', 'stardustShard', 'magicPowder', 'moonstone', 'tatteredRobe', 'gnawedBag', 'ratWhisker', 'stolenCoin', 'ratTail', 'rustedKnife', 'tornCloth', 'goblinMedicine', 'batFang', 'tornWingMembrane', 'beastBlood', 'obsidianFang', 'spiritFragment', 'oldBone', 'darkSoulStone', 'resentmentCrystal', 'zenacad_core', 'cadenza_fragment', 'reverbJelly', 'echoShard', 'stoneShard', 'violinString', 'spectralDust', 'silentNote', 'silentArmor', 'voidShard', 'darkIron', 'chaosDust', 'phantomCore', 'voidEssence'],
     bossBlueprints: [{ id: 'noelJudgementStaff', bossId: 'noelFirstEncounter', name: 'ノエルの審判杖', slot: 'rightHand', status: 'awaitingSecondEncounter' }]
   },
   materialUnlockMap: {
@@ -87,7 +88,11 @@ window.ARSENE_DATA = {
     stoneShard:   ['abyssCoatRecipe'],
     violinString: ['silentHoodRecipe'],
     spectralDust: ['echoPendantRecipe'],
-    silentNote:   ['lunaEdgeRecipe']
+    silentNote:   ['lunaEdgeRecipe'],
+    voidShard:    ['voidBladeRecipe'],
+    chaosDust:    ['chaosRodRecipe'],
+    darkIron:     ['voidHelmRecipe', 'abyssalArmorRecipe'],
+    phantomCore:  ['phantomGauntletRecipe', 'voidRingRecipe']
   },
   dungeons: [
     {
@@ -119,6 +124,22 @@ window.ARSENE_DATA = {
         { minWins: 5,  count: [2, 2], pool: [{ id: 'echoWraith', weight: 4 }, { id: 'nocturneBanshee', weight: 3 }, { id: 'nocturneChandelier', weight: 2 }, { id: 'reverbSlime', weight: 2 }, { id: 'silentHarmonist', weight: 1 }] },
         { minWins: 8,  count: [2, 3], pool: [{ id: 'nocturneChandelier', weight: 3 }, { id: 'silentKnight', weight: 2 }, { id: 'muteGargoyle', weight: 2 }, { id: 'echoWraith', weight: 2 }, { id: 'silentHarmonist', weight: 1 }] },
         { minWins: 12, count: [2, 3], pool: [{ id: 'silentKnight', weight: 3 }, { id: 'muteGargoyle', weight: 2 }, { id: 'nocturneChandelier', weight: 2 }, { id: 'nocturneBanshee', weight: 2 }, { id: 'silentHarmonist', weight: 1 }] }
+      ]
+    },
+    {
+      id: 'dungeon3', name: '崩界の深廊', nameEn: 'DEPTHS OF THE VOID',
+      background: 'assets/bg/dungeon-battle-03.png',
+      thumbnail: 'assets/bg/dungeon-battle-03.png',
+      music: encodeURI('音楽系/ダンジョン/零時侵蝕ダンジョン3Version.mp3'),
+      description: 'かつて怪盗団の先人が封じた「崩界の門」の深部。混沌と虚無が渦巻く、最深層への試練。',
+      recommendedLevel: 20,
+      unlockCondition: 'dungeon2Clear',
+      encounterProgression: [
+        { minWins: 0,  count: [1, 2], pool: [{ id: 'voidWatcher', weight: 7 }, { id: 'abyssalKnight', weight: 3 }, { id: 'voidOrchestra', weight: 1 }] },
+        { minWins: 3,  count: [1, 2], pool: [{ id: 'voidWatcher', weight: 5 }, { id: 'abyssalKnight', weight: 4 }, { id: 'chaosWitch', weight: 3 }, { id: 'voidOrchestra', weight: 1 }] },
+        { minWins: 6,  count: [2, 2], pool: [{ id: 'chaosWitch', weight: 4 }, { id: 'voidGargoyle', weight: 3 }, { id: 'abyssalKnight', weight: 3 }, { id: 'voidWatcher', weight: 2 }, { id: 'voidOrchestra', weight: 1 }] },
+        { minWins: 10, count: [2, 3], pool: [{ id: 'phantomEmperor', weight: 3 }, { id: 'voidGargoyle', weight: 3 }, { id: 'chaosWitch', weight: 3 }, { id: 'abyssalKnight', weight: 2 }, { id: 'voidOrchestra', weight: 1 }] },
+        { minWins: 15, count: [2, 3], pool: [{ id: 'phantomEmperor', weight: 4 }, { id: 'chaosWitch', weight: 3 }, { id: 'voidGargoyle', weight: 3 }, { id: 'voidOrchestra', weight: 2 }] }
       ]
     }
   ],
@@ -176,6 +197,12 @@ window.ARSENE_DATA = {
     abyssGlovesRecipe: { id: 'abyssGlovesRecipe', name: '魔蝕のグローブ', craftCategory: 'armor', dungeonId: 'dungeon2', materialUnlockId: 'reverbJelly', resultItemId: 'abyssGloves', resultCount: 1, gold: 360, materials: [{ itemId: 'reverbJelly', count: 5 }, { itemId: 'echoShard', count: 3 }, { itemId: 'stoneShard', count: 3 }] },
     nightwalkerBootsRecipe: { id: 'nightwalkerBootsRecipe', name: '夜渡りのブーツ', craftCategory: 'armor', dungeonId: 'dungeon2', materialUnlockId: 'echoShard', resultItemId: 'nightwalkerBoots', resultCount: 1, gold: 360, materials: [{ itemId: 'echoShard', count: 5 }, { itemId: 'reverbJelly', count: 3 }, { itemId: 'violinString', count: 2 }] },
     echoPendantRecipe: { id: 'echoPendantRecipe', name: '残響のペンダント', craftCategory: 'armor', dungeonId: 'dungeon2', materialUnlockId: 'spectralDust', resultItemId: 'echoPendant', resultCount: 1, gold: 420, materials: [{ itemId: 'spectralDust', count: 4 }, { itemId: 'violinString', count: 3 }, { itemId: 'silentNote', count: 2 }] },
+    voidBladeRecipe: { id: 'voidBladeRecipe', name: '虚空刃ヴォイドブレード', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'voidShard', resultItemId: 'voidBlade', resultCount: 1, gold: 800, materials: [{ itemId: 'voidShard', count: 6 }, { itemId: 'darkIron', count: 4 }, { itemId: 'phantomCore', count: 2 }] },
+    chaosRodRecipe: { id: 'chaosRodRecipe', name: '混沌の魔杖カオスロッド', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'chaosDust', resultItemId: 'chaosRod', resultCount: 1, gold: 900, materials: [{ itemId: 'chaosDust', count: 6 }, { itemId: 'voidShard', count: 4 }, { itemId: 'voidEssence', count: 2 }] },
+    voidHelmRecipe: { id: 'voidHelmRecipe', name: '虚空の兜', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'darkIron', resultItemId: 'voidHelm', resultCount: 1, gold: 550, materials: [{ itemId: 'darkIron', count: 5 }, { itemId: 'voidShard', count: 4 }, { itemId: 'phantomCore', count: 1 }] },
+    abyssalArmorRecipe: { id: 'abyssalArmorRecipe', name: '深淵の鎧', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'darkIron', resultItemId: 'abyssalArmor', resultCount: 1, gold: 750, materials: [{ itemId: 'darkIron', count: 8 }, { itemId: 'voidShard', count: 5 }, { itemId: 'voidEssence', count: 1 }] },
+    phantomGauntletRecipe: { id: 'phantomGauntletRecipe', name: '幻影拳甲', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'phantomCore', resultItemId: 'phantomGauntlet', resultCount: 1, gold: 600, materials: [{ itemId: 'phantomCore', count: 4 }, { itemId: 'darkIron', count: 4 }, { itemId: 'chaosDust', count: 3 }] },
+    voidRingRecipe: { id: 'voidRingRecipe', name: '虚無の指輪', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'phantomCore', resultItemId: 'voidRing', resultCount: 1, gold: 1000, materials: [{ itemId: 'voidEssence', count: 4 }, { itemId: 'phantomCore', count: 4 }, { itemId: 'chaosDust', count: 3 }] },
     cadenza_staff_recipe: { id: 'cadenza_staff_recipe', seriesId: 'zenacad', craftCategory: 'boss', resultItemId: 'cadenza_staff', resultCount: 1, gold: 850, materials: [{ itemId: 'zenacad_core', count: 2 }, { itemId: 'cadenza_fragment', count: 8 }, { itemId: 'manaDrop', count: 6 }] },
     soloist_mask_recipe: { id: 'soloist_mask_recipe', seriesId: 'zenacad', craftCategory: 'boss', resultItemId: 'soloist_mask', resultCount: 1, gold: 620, materials: [{ itemId: 'zenacad_core', count: 1 }, { itemId: 'cadenza_fragment', count: 6 }, { itemId: 'moonstone', count: 3 }] },
     soloist_coat_recipe: { id: 'soloist_coat_recipe', seriesId: 'zenacad', craftCategory: 'boss', resultItemId: 'soloist_coat', resultCount: 1, gold: 780, materials: [{ itemId: 'zenacad_core', count: 2 }, { itemId: 'cadenza_fragment', count: 7 }, { itemId: 'tatteredRobe', count: 5 }] },
@@ -202,7 +229,15 @@ window.ARSENE_DATA = {
     shadowRush: { id: 'shadowRush', name: '無影連舞', nameEn: 'SHADOW RUSH', source: 'job', jobId: 'martialArtist', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 3, agiScale: 0, powerText: 'ATK×2.0×3回', effectText: '3回攻撃／各攻撃で個別クリティカル判定', description: '影すら残さない三連撃。' },
     heal: { id: 'heal', name: 'ヒール', nameEn: 'HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 3, type: 'ACTIVE', kind: 'support', target: 'self', mp: 6, powerText: 'MND×3.0＋20', effect: { type: 'hpRecover', mndScale: 3, base: 20 }, effectText: 'MND参照で自身のHP回復', description: '精神力を癒やしの力へ変え、自身のHPを回復する。' },
     holyLight: { id: 'holyLight', name: 'ホーリーライト', nameEn: 'HOLY LIGHT', source: 'job', jobId: 'priest', unlockJobLevel: 6, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 8, power: 4.0, agiScale: 0, elementId: 'light', powerText: 'MAG×4.0', effectText: '敵単体へ光属性魔法攻撃', description: '聖なる光を放ち、敵単体へ魔法ダメージを与える。' },
-    regenerate: { id: 'regenerate', name: 'リジェネレート', nameEn: 'REGENERATE', source: 'job', jobId: 'priest', unlockJobLevel: 9, type: 'ACTIVE', kind: 'support', target: 'self', mp: 10, powerText: '最大HPの12%×3回', effect: { type: 'regenerate', maxHpRate: .12, turns: 3 }, effectText: '3ターン、ターン開始時にHP回復', description: '継続する癒やしの力を自身へ付与する。' }
+    regenerate: { id: 'regenerate', name: 'リジェネレート', nameEn: 'REGENERATE', source: 'job', jobId: 'priest', unlockJobLevel: 9, type: 'ACTIVE', kind: 'support', target: 'self', mp: 10, powerText: '最大HPの12%×3回', effect: { type: 'regenerate', maxHpRate: .12, turns: 3 }, effectText: '3ターン、ターン開始時にHP回復', description: '継続する癒やしの力を自身へ付与する。' },
+    warCry: { id: 'warCry', name: '雄叫び', nameEn: 'WAR CRY', source: 'job', jobId: 'warrior', unlockJobLevel: 12, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 4, powerText: '自身DEF +35%／3T', effect: { type: 'selfDefUp', rate: .35, turns: 3 }, effectText: '自身のDEF +35%／3ターン、CT4', description: '魂の底から放つ雄叫び。一時的に防御力を大幅に高める。' },
+    titanBlow: { id: 'titanBlow', name: '天地崩拳', nameEn: 'TITAN BLOW', source: 'job', jobId: 'warrior', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 14, power: 8.0, agiScale: 0, powerText: 'ATK×8.0', effectText: '極大物理ダメージ', description: '全身の力を一点に凝縮した、天地を砕く究極の一撃。' },
+    arcaneExplosion: { id: 'arcaneExplosion', name: '魔力爆発', nameEn: 'ARCANE EXPLOSION', source: 'job', jobId: 'mage', unlockJobLevel: 12, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 16, power: 3.8, agiScale: 0, powerText: 'MAG×3.8', effectText: '敵全体へ高威力魔法攻撃', description: '体内に蓄えた魔力を一気に爆発させ、周囲の敵すべてを薙ぎ払う。' },
+    voidNova: { id: 'voidNova', name: '虚空の星霊', nameEn: 'VOID NOVA', source: 'job', jobId: 'mage', unlockJobLevel: 16, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 20, power: 9.0, agiScale: 0, powerText: 'MAG×9.0', effectText: '敵単体へ極大魔法攻撃', description: '虚空から星霊の力を引き出した究極魔法。魔導士の到達点。' },
+    swiftBarrage: { id: 'swiftBarrage', name: '迅雷四連撃', nameEn: 'SWIFT BARRAGE', source: 'job', jobId: 'martialArtist', unlockJobLevel: 12, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 4, agiScale: 0, powerText: 'ATK×2.0×4回', effectText: '4回攻撃／各攻撃で個別クリティカル判定', description: '稲妻のような四連撃。体術の極みが生み出す怒涛の連打。' },
+    shadowSeven: { id: 'shadowSeven', name: '幻影七閃', nameEn: 'SHADOW SEVEN', source: 'job', jobId: 'martialArtist', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 18, power: 2.5, hits: 5, agiScale: 0, powerText: 'ATK×2.5×5回', effectText: '5回攻撃／各攻撃で個別クリティカル判定', description: '影を七つに見せる五連閃。武道家の至高の多段技。' },
+    greatHeal: { id: 'greatHeal', name: 'グレートヒール', nameEn: 'GREAT HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 12, type: 'ACTIVE', kind: 'support', target: 'self', mp: 12, powerText: 'MND×5.0＋40', effect: { type: 'hpRecover', mndScale: 5, base: 40 }, effectText: 'MND参照で大量HP回復', description: '精神力のすべてを傾けた大回復術。大きく傷を癒やし、戦場への帰還を可能にする。' },
+    divineSmite: { id: 'divineSmite', name: '神裁の一閃', nameEn: 'DIVINE SMITE', source: 'job', jobId: 'priest', unlockJobLevel: 16, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 22, power: 7.0, agiScale: 0, elementId: 'light', powerText: 'MAG×7.0', effectText: '敵単体へ極大光属性魔法攻撃', description: '神の裁定を下す一閃。光を凝縮した究極の聖魔法。' }
   },
   items: {
     potion: { id: 'potion', name: '回復薬', category: 'consumable', rarity: 'common', description: 'HPを30回復する。', effect: { hp: 30 } },
@@ -277,6 +312,15 @@ window.ARSENE_DATA = {
     echoPendant: { id: 'echoPendant', name: '残響のペンダント', nameEn: 'ECHO PENDANT', category: 'equipment', slot: 'accessory', rarity: 'epic', dungeonId: 'dungeon2', description: '失われた旋律の残響を封じ込めたペンダント。最大MPと魔力を高める。' },
     zenacad_core: { id: 'zenacad_core', name: '独奏卿の魔核', nameEn: 'ZENACAD CORE', category: 'material', rarity: 'legendary', bossId: 'zenacad', description: '独奏卿の魔力と旋律が凝縮した魔核。ゼナカドシリーズの中核素材。' },
     cadenza_fragment: { id: 'cadenza_fragment', name: '魔奏の欠片', nameEn: 'CADENZA FRAGMENT', category: 'material', rarity: 'epic', bossId: 'zenacad', description: '魔力へ変換された音の欠片。ボス装備の製作・再構成に使う。' },
+    voidShard: { id: 'voidShard', name: '虚空の欠片', nameEn: 'VOID SHARD', category: 'material', rarity: 'uncommon', dungeonId: 'dungeon3', description: '崩界の深廊で採れる虚無の結晶の断片。武器・防具の素材となる。' },
+    darkIron: { id: 'darkIron', name: '深淵鉄鉱', nameEn: 'DARK IRON', category: 'material', rarity: 'uncommon', dungeonId: 'dungeon3', description: '深淵の騎士が纏う黒鎧と同質の鉄鉱石。硬度が極めて高い。' },
+    chaosDust: { id: 'chaosDust', name: '混沌の粉塵', nameEn: 'CHAOS DUST', category: 'material', rarity: 'rare', dungeonId: 'dungeon3', description: 'カオス・ウィッチが操る混沌エネルギーが粉末状に凝固したもの。魔力増幅素材。' },
+    phantomCore: { id: 'phantomCore', name: '幻影核', nameEn: 'PHANTOM CORE', category: 'material', rarity: 'rare', dungeonId: 'dungeon3', description: '幻影皇の核心部から生まれる幻影の結晶。高度な装備製作に用いられる。' },
+    voidEssence: { id: 'voidEssence', name: '虚無の精髄', nameEn: 'VOID ESSENCE', category: 'material', rarity: 'epic', dungeonId: 'dungeon3', description: '虚無の楽団が奏でる虚空の旋律が液化したもの。最高位のダンジョン素材。' },
+    voidHelm: { id: 'voidHelm', name: '虚空の兜', nameEn: 'VOID HELM', category: 'equipment', slot: 'head', rarity: 'epic', dungeonId: 'dungeon3', description: '崩界の深廊の素材で鍛えた兜。精神と防御を高める。' },
+    abyssalArmor: { id: 'abyssalArmor', name: '深淵の鎧', nameEn: 'ABYSSAL ARMOR', category: 'equipment', slot: 'body', rarity: 'epic', dungeonId: 'dungeon3', description: '深淵鉄鉱を用いた最高位の鎧。強靭な防御力を誇る。' },
+    phantomGauntlet: { id: 'phantomGauntlet', name: '幻影拳甲', nameEn: 'PHANTOM GAUNTLET', category: 'equipment', slot: 'arms', rarity: 'epic', dungeonId: 'dungeon3', description: '幻影核の力が宿る拳甲。攻撃力と俊敏を高める。' },
+    voidRing: { id: 'voidRing', name: '虚無の指輪', nameEn: 'VOID RING', category: 'equipment', slot: 'accessory', rarity: 'epic', dungeonId: 'dungeon3', description: '虚無の精髄を封じた指輪。あらゆる能力値を高める。' },
     cadenza_staff: { id: 'cadenza_staff', name: '魔杖カデンツァ', nameEn: 'CADENZA', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: '独奏卿ゼナカドが振るった魔導指揮杖。杖が描く軌跡に魔力が追従し、ひとりの術者を楽団へと変える。' },
     soloist_mask: { id: 'soloist_mask', name: '独奏卿の仮面', nameEn: 'SOLOIST MASK', category: 'equipment', slot: 'head', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: 'ゼナカドが身につけていた、片眼を覆う妖艶な仮面。' },
     soloist_coat: { id: 'soloist_coat', name: '独奏卿の燕尾服', nameEn: 'SOLOIST COAT', category: 'equipment', slot: 'body', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: '黒・紫・金で仕立てられた独奏卿の燕尾服。魔力と精神を守る。' },
@@ -292,7 +336,9 @@ window.ARSENE_DATA = {
     wizardRod: { id: 'wizardRod', name: 'ウィザードロッド', weaponType: 'staff', weaponSprite: 'staff_wizard', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.9, bonuses: { mag: 9 }, grantsSkillId: 'fireball' },
     sunStaff: { id: 'sunStaff', name: '太陽の杖', weaponType: 'staff', weaponSprite: 'staff_sun', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.2, bonuses: { mag: 14 } },
     cadenza_staff: { id: 'cadenza_staff', name: '魔杖カデンツァ', seriesId: 'zenacad', weaponType: 'staff', weaponSprite: 'staff_cadenza', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.05, bonuses: { mag: 11, maxMp: 8 } },
-    lunaEdge: { id: 'lunaEdge', name: '月影剣ルナエッジ', dungeonId: 'dungeon2', weaponType: 'sword', weaponSprite: 'sword_luna', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 2.8, bonuses: { str: 14, dex: 4, critBonus: 0.05 } }
+    lunaEdge: { id: 'lunaEdge', name: '月影剣ルナエッジ', dungeonId: 'dungeon2', weaponType: 'sword', weaponSprite: 'sword_luna', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 2.8, bonuses: { str: 14, dex: 4, critBonus: 0.05 } },
+    voidBlade: { id: 'voidBlade', name: '虚空刃ヴォイドブレード', nameEn: 'VOID BLADE', dungeonId: 'dungeon3', weaponType: 'sword', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 3.4, bonuses: { str: 18, agi: 6, critBonus: 0.06 } },
+    chaosRod: { id: 'chaosRod', name: '混沌の魔杖カオスロッド', nameEn: 'CHAOS ROD', dungeonId: 'dungeon3', weaponType: 'staff', weaponSprite: 'staff_chaos', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.6, bonuses: { mag: 20, maxMp: 10 } }
   },
   accessories: {
     slimeRing: { id: 'slimeRing', name: 'スライムリング', bonuses: { vit: 2, luk: 2 } },
@@ -303,7 +349,8 @@ window.ARSENE_DATA = {
     goblinEarring: { id: 'goblinEarring', name: 'ゴブリンの耳飾り', bonuses: { agi: 2, luk: 2 } },
     cursedNecklace: { id: 'cursedNecklace', name: '呪われた首飾り', bonuses: { mag: 3, luk: -1 } },
     maestri_baton: { id: 'maestri_baton', name: '七奏のタクト', seriesId: 'zenacad', bonuses: { mag: 4, maxMp: 12 } },
-    echoPendant: { id: 'echoPendant', name: '残響のペンダント', dungeonId: 'dungeon2', bonuses: { maxMp: 16, mag: 5 } }
+    echoPendant: { id: 'echoPendant', name: '残響のペンダント', dungeonId: 'dungeon2', bonuses: { maxMp: 16, mag: 5 } },
+    voidRing: { id: 'voidRing', name: '虚無の指輪', dungeonId: 'dungeon3', bonuses: { str: 5, mag: 5, agi: 5, vit: 5, mnd: 5, maxHp: 20, maxMp: 15 } }
   },
   armors: {
     roughHood: { id: 'roughHood', name: '粗削りフード', slot: 'head', bonuses: { vit: 1, mnd: 1 } },
@@ -333,7 +380,10 @@ window.ARSENE_DATA = {
     silentHood: { id: 'silentHood', name: '静寂のフード', slot: 'head', dungeonId: 'dungeon2', bonuses: { mag: 5, mnd: 5, maxMp: 6 } },
     abyssCoat: { id: 'abyssCoat', name: '深域の外套', slot: 'body', dungeonId: 'dungeon2', bonuses: { maxHp: 20, vit: 6, mnd: 5 } },
     abyssGloves: { id: 'abyssGloves', name: '魔蝕のグローブ', slot: 'arms', dungeonId: 'dungeon2', bonuses: { str: 4, mag: 4, dex: 3 } },
-    nightwalkerBoots: { id: 'nightwalkerBoots', name: '夜渡りのブーツ', slot: 'feet', dungeonId: 'dungeon2', bonuses: { agi: 7, dex: 3 } }
+    nightwalkerBoots: { id: 'nightwalkerBoots', name: '夜渡りのブーツ', slot: 'feet', dungeonId: 'dungeon2', bonuses: { agi: 7, dex: 3 } },
+    voidHelm: { id: 'voidHelm', name: '虚空の兜', slot: 'head', dungeonId: 'dungeon3', bonuses: { mnd: 8, vit: 7, maxHp: 16 } },
+    abyssalArmor: { id: 'abyssalArmor', name: '深淵の鎧', slot: 'body', dungeonId: 'dungeon3', bonuses: { vit: 12, maxHp: 30, mnd: 5 } },
+    phantomGauntlet: { id: 'phantomGauntlet', name: '幻影拳甲', slot: 'arms', dungeonId: 'dungeon3', bonuses: { str: 8, agi: 6, dex: 4 } }
   },
   enemies: {
     shadowSlime: {
@@ -424,6 +474,55 @@ window.ARSENE_DATA = {
       ],
       stealTable: [{ itemId: 'darkSoulStone', chance: .25 }],
       ai: [{ id: 'spiritBolt', name: '霊弾', kind: 'magic', weight: .65 }, { id: 'attack', name: '体当たり', kind: 'physical', weight: .35 }]
+    },
+    voidWatcher: {
+      id: 'voidWatcher', name: '虚空の監視者', enName: 'VOID WATCHER', dungeonId: 'dungeon3',
+      element: '虚無', weaknesses: ['光', '聖'], resistances: ['闇', '魔'],
+      spriteClass: 'void-watcher', battleScale: 1.1,
+      stats: { maxHp: 350, atk: 28, def: 25, mag: 38, mnd: 18, spd: 14 }, exp: 95, gold: { min: 40, max: 70 },
+      dropTable: [{ itemId: 'voidShard', chance: .45 }, { itemId: 'chaosDust', chance: .22 }, { itemId: 'phantomCore', chance: .10 }],
+      ai: [{ id: 'soulBolt', name: '虚空弾', kind: 'magic', weight: .65 }, { id: 'attack', name: '虚空の一瞥', kind: 'magic', weight: .35 }]
+    },
+    abyssalKnight: {
+      id: 'abyssalKnight', name: '深淵の騎士', enName: 'ABYSSAL KNIGHT', dungeonId: 'dungeon3',
+      element: '闇', weaknesses: ['光', '雷'], resistances: ['闇', '物理'],
+      spriteClass: 'abyssal-knight', battleScale: 1.3,
+      stats: { maxHp: 480, atk: 45, def: 38, mag: 12, mnd: 15, spd: 12 }, exp: 110, gold: { min: 45, max: 80 },
+      dropTable: [{ itemId: 'darkIron', chance: .40 }, { itemId: 'voidShard', chance: .20 }, { itemId: 'voidEssence', chance: .08 }],
+      ai: [{ id: 'attack', name: '深淵の剣撃', kind: 'physical', weight: .70 }, { id: 'soulBolt', name: '虚空震撃', kind: 'physical', weight: .30 }]
+    },
+    chaosWitch: {
+      id: 'chaosWitch', name: 'カオス・ウィッチ', enName: 'CHAOS WITCH', dungeonId: 'dungeon3',
+      element: '混沌', weaknesses: ['聖', '打'], resistances: ['魔', '闇'],
+      spriteClass: 'chaos-witch', battleScale: 1.0,
+      stats: { maxHp: 300, atk: 18, def: 14, mag: 50, mnd: 22, spd: 16 }, exp: 130, gold: { min: 50, max: 85 },
+      dropTable: [{ itemId: 'chaosDust', chance: .50 }, { itemId: 'voidShard', chance: .25 }, { itemId: 'phantomCore', chance: .12 }],
+      ai: [{ id: 'soulBolt', name: '混沌魔法', kind: 'magic', weight: .60 }, { id: 'attack', name: '呪縛の指先', kind: 'magic', weight: .40 }]
+    },
+    voidGargoyle: {
+      id: 'voidGargoyle', name: '虚空ガーゴイル', enName: 'VOID GARGOYLE', dungeonId: 'dungeon3',
+      element: '闇', weaknesses: ['打', '聖'], resistances: ['物理', '魔', '闇'],
+      spriteClass: 'void-gargoyle', battleScale: 1.4,
+      stats: { maxHp: 520, atk: 40, def: 42, mag: 14, mnd: 16, spd: 8 }, exp: 118, gold: { min: 42, max: 75 },
+      dropTable: [{ itemId: 'darkIron', chance: .38 }, { itemId: 'voidShard', chance: .18 }, { itemId: 'voidEssence', chance: .10 }],
+      ai: [{ id: 'attack', name: '石翼の一撃', kind: 'physical', weight: .75 }, { id: 'soulBolt', name: '虚空咆哮', kind: 'physical', weight: .25 }]
+    },
+    phantomEmperor: {
+      id: 'phantomEmperor', name: '幻影皇', enName: 'PHANTOM EMPEROR', dungeonId: 'dungeon3',
+      element: '虚無', weaknesses: ['聖', '光'], resistances: ['物理', '闇', '魔'],
+      spriteClass: 'phantom-emperor', battleScale: 1.2,
+      stats: { maxHp: 360, atk: 36, def: 22, mag: 42, mnd: 24, spd: 20 }, exp: 140, gold: { min: 55, max: 90 },
+      dropTable: [{ itemId: 'phantomCore', chance: .40 }, { itemId: 'darkIron', chance: .22 }, { itemId: 'voidEssence', chance: .14 }],
+      ai: [{ id: 'soulBolt', name: '皇の号令', kind: 'magic', weight: .55 }, { id: 'attack', name: '幻影剣閃', kind: 'physical', weight: .45 }]
+    },
+    voidOrchestra: {
+      id: 'voidOrchestra', name: '虚無の楽団', enName: 'VOID ORCHESTRA', dungeonId: 'dungeon3',
+      kind: 'elite',
+      element: '虚無', weaknesses: ['光'], resistances: ['物理', '闇', '魔', '毒'],
+      spriteClass: 'void-orchestra', battleScale: 1.15,
+      stats: { maxHp: 600, atk: 42, def: 30, mag: 46, mnd: 26, spd: 18 }, exp: 180, gold: { min: 70, max: 120 },
+      dropTable: [{ itemId: 'voidEssence', chance: .50 }, { itemId: 'phantomCore', chance: .35 }, { itemId: 'chaosDust', chance: .30 }, { itemId: 'darkIron', chance: .20 }],
+      ai: [{ id: 'soulBolt', name: '虚無の交響', kind: 'magic', weight: .60 }, { id: 'attack', name: '楽団の奔流', kind: 'physical', weight: .40 }]
     },
     silentHarmonist: {
       id: 'silentHarmonist', name: 'サイレント・ハーモニスト', enName: 'SILENT HARMONIST', dungeonId: 'dungeon2',

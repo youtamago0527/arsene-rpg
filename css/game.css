@@ -110,6 +110,46 @@
 .enemy-silentKnight .slime[style*="background-image"]{left:-2px;bottom:6px;width:128px;height:148px;background-size:400% auto;background-position:33.3% 100%;filter:drop-shadow(0 0 8px #6688bb) drop-shadow(0 0 18px #223366);animation:idle 1.9s ease-in-out infinite}
 .enemy-reverbSlime .slime[style*="background-image"]{left:4px;bottom:10px;width:108px;height:118px;background-size:400% auto;background-position:66.6% 100%;filter:drop-shadow(0 0 7px #88ccff) drop-shadow(0 0 14px #2255aa);animation:slimeIdle 1.6s ease-in-out infinite}
 .enemy-nocturneBanshee .slime[style*="background-image"]{left:0;bottom:12px;width:118px;height:134px;background-size:400% auto;background-position:100% 100%;filter:drop-shadow(0 0 9px #bb77ff) drop-shadow(0 0 20px #4a1d9e);animation:soulMageIdle 1.9s ease-in-out infinite}
+
+/* ── Dungeon 3 enemy sprites (pure CSS) ─────────────────────────────────── */
+@keyframes voidPulse{0%,100%{transform:translateY(0) scale(1);opacity:.9}50%{transform:translateY(-6px) scale(1.04);opacity:1}}
+@keyframes chaosSpin{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(4deg) scale(1.05)}100%{transform:rotate(0deg) scale(1)}}
+@keyframes gargoyleGlide{0%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}60%{transform:translateY(-5px)}}
+
+.enemy-voidWatcher .slime,.enemy-abyssalKnight .slime,.enemy-chaosWitch .slime,
+.enemy-voidGargoyle .slime,.enemy-phantomEmperor .slime,.enemy-voidOrchestra .slime{
+  border-radius:4px!important;background-image:none!important;position:relative;overflow:visible;
+}
+/* Void Watcher — floating eye cluster */
+.enemy-voidWatcher .slime{width:80px;height:80px;background:radial-gradient(circle at 50% 55%,#0a0020 60%,#220040);border:2px solid #6600cc;box-shadow:0 0 18px #6600ccaa,inset 0 0 20px #220050;animation:voidPulse 2.2s ease-in-out infinite}
+.enemy-voidWatcher .slime::before{content:'';position:absolute;top:28px;left:50%;transform:translateX(-50%);width:24px;height:24px;background:radial-gradient(circle at 50% 45%,#ff44ff 0%,#9900ff 55%,#330066 100%);border-radius:50%;box-shadow:0 0 12px #ff44ff,0 0 24px #9900ff}
+.enemy-voidWatcher .slime::after{content:'';position:absolute;top:14px;left:30%;width:12px;height:12px;background:#cc44ff;border-radius:50%;box-shadow:0 0 8px #cc44ff;animation:voidPulse 1.4s ease-in-out infinite alternate}
+
+/* Abyssal Knight — heavy armored silhouette */
+.enemy-abyssalKnight .slime{width:90px;height:110px;background:linear-gradient(170deg,#111 20%,#1a0030 70%,#0a0010);border:2px solid #442266;box-shadow:0 0 14px #330055aa;animation:idle 2.8s ease-in-out infinite;clip-path:polygon(30% 0%,70% 0%,85% 15%,85% 80%,70% 100%,30% 100%,15% 80%,15% 15%)}
+.enemy-abyssalKnight .slime::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:36px;height:36px;background:radial-gradient(circle,#2a0055 40%,#110022);border-radius:50%;border:2px solid #8844cc;box-shadow:0 0 10px #6622aa}
+.enemy-abyssalKnight .slime::after{content:'';position:absolute;bottom:10px;left:50%;transform:translateX(-50%);width:50px;height:4px;background:linear-gradient(90deg,transparent,#5500aa,transparent)}
+
+/* Chaos Witch — swirling chaos form */
+.enemy-chaosWitch .slime{width:78px;height:92px;background:radial-gradient(ellipse at 50% 40%,#180028 50%,#2a0044);border:2px solid #ff3399;box-shadow:0 0 16px #ff339966,inset 0 0 18px #660022;animation:chaosSpin 1.8s ease-in-out infinite;border-radius:8px 8px 40% 40%}
+.enemy-chaosWitch .slime::before{content:'';position:absolute;top:12px;left:50%;transform:translateX(-50%);width:28px;height:28px;background:conic-gradient(#ff00aa,#aa00ff,#ff6600,#ff00aa);border-radius:50%;animation:chaosSpin 1s linear infinite;box-shadow:0 0 16px #ff00aa}
+.enemy-chaosWitch .slime::after{content:'';position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:20px solid #cc0066;filter:drop-shadow(0 0 6px #ff00aa)}
+
+/* Void Gargoyle — stone wing silhouette */
+.enemy-voidGargoyle .slime{width:100px;height:100px;background:radial-gradient(ellipse at 50% 60%,#1a1a2e 40%,#0a0a1a);border:2px solid #334466;box-shadow:0 0 12px #2244aa55;animation:gargoyleGlide 3s ease-in-out infinite;clip-path:polygon(20% 10%,50% 0%,80% 10%,95% 40%,80% 100%,20% 100%,5% 40%)}
+.enemy-voidGargoyle .slime::before{content:'';position:absolute;top:25px;left:50%;transform:translateX(-50%);width:32px;height:32px;background:radial-gradient(circle,#1133aa 30%,#0a1155);border-radius:50%;box-shadow:0 0 10px #2244cc}
+.enemy-voidGargoyle .slime::after{content:'';position:absolute;top:18px;left:50%;transform:translateX(-50%);width:10px;height:10px;background:#4466ff;border-radius:50%;box-shadow:0 0 8px #4466ff,0 0 16px #2244cc}
+
+/* Phantom Emperor — regal phantom form */
+.enemy-phantomEmperor .slime{width:86px;height:106px;background:linear-gradient(160deg,#100020 20%,#1a0035 60%,#0c0018);border:2px solid #aa88ff;box-shadow:0 0 20px #aa88ff44,inset 0 0 24px #330055;animation:voidPulse 2s ease-in-out infinite;clip-path:polygon(50% 0%,80% 8%,90% 25%,80% 85%,60% 100%,40% 100%,20% 85%,10% 25%,20% 8%)}
+.enemy-phantomEmperor .slime::before{content:'';position:absolute;top:14px;left:50%;transform:translateX(-50%);width:22px;height:22px;background:radial-gradient(circle,#ddaaff 0%,#8844cc 60%,#220044 100%);border-radius:50%;box-shadow:0 0 14px #cc88ff,0 0 28px #660099}
+.enemy-phantomEmperor .slime::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:40px;height:12px;background:linear-gradient(90deg,transparent,#8866cc 30%,#cc88ff 50%,#8866cc 70%,transparent);filter:drop-shadow(0 -2px 6px #aa66ff)}
+
+/* Void Orchestra — grand eldritch ensemble */
+.enemy-voidOrchestra .slime{width:110px;height:110px;background:radial-gradient(ellipse at 50% 50%,#050010 35%,#120025 70%,#0a0018);border:2px solid #7700ff;box-shadow:0 0 24px #7700ffaa,0 0 48px #33004488,inset 0 0 30px #220040;animation:voidPulse 1.6s ease-in-out infinite;border-radius:50%}
+.enemy-voidOrchestra .slime::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;background:conic-gradient(#ff00ff,#6600ff,#0044ff,#00ccff,#ff00ff);border-radius:50%;animation:chaosSpin .8s linear infinite;box-shadow:0 0 20px #aa00ff,0 0 40px #5500cc}
+.enemy-voidOrchestra .slime::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:20px;background:#fff;border-radius:50%;box-shadow:0 0 10px #fff,0 0 20px #cc88ff,0 0 40px #8800ff}
+
 @media(max-width:760px){
   .enemy-silentHarmonist .slime[style*="background-image"]{width:100px;height:116px}
   .enemy-echoWraith .slime[style*="background-image"]{width:98px;height:110px}

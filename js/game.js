@@ -40,6 +40,8 @@
         if (craft) { if (!craft.disabled) this.craftItem(craft.dataset.craft); return; }
         const dismantle = e.target.closest('[data-disassemble]');
         if (dismantle) { if (!dismantle.disabled) this.dismantleItem(dismantle.dataset.disassemble); return; }
+        const enchant = e.target.closest('[data-enchant]');
+        if (enchant) { if (!enchant.disabled) this.enchantWeapon(enchant.dataset.enchant); return; }
         const craftDungeon = e.target.closest('[data-craft-dungeon]');
         if (craftDungeon) { this.craftDungeonFilter = craftDungeon.dataset.craftDungeon; this.renderMenuPanel('workshop'); return; }
         const craftArmor = e.target.closest('[data-craft-armor]');
@@ -61,7 +63,7 @@
     }
 
     freshProfile() {
-      const p = D.player; return { version: 6, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), musicScores: {}, bossDefeated: { zenacad: false }, currentJob: 'mage', jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
+      const p = D.player; return { version: 8, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), musicScores: {}, bossDefeated: { zenacad: false }, currentJob: 'mage', jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], weaponEnchants: {}, flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, dungeon3BattleWins: 0, dungeon3NewSeen: false }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
     }
     loadProfile() {
       try {
@@ -71,7 +73,10 @@
         if ((saved.version || 0) < 4) { const oldWins = Math.max(0, Number(saved.flags?.normalBattleWins) || 0), oldNoel = !!saved.flags?.noelFirstEncounterCleared; profile.flags.preNoelBattleWins = Number.isFinite(saved.flags?.preNoelBattleWins) ? saved.flags.preNoelBattleWins : (oldNoel ? D.battleProgression.noelEncounterWins : Math.min(oldWins, D.battleProgression.noelEncounterWins)); profile.flags.postNoelBattleWins = Number.isFinite(saved.flags?.postNoelBattleWins) ? saved.flags.postNoelBattleWins : (oldNoel ? oldWins : 0); profile.flags.zenakadoDefeated = false; profile.flags.zenakadoScoreClaimed = false; profile.flags.temporaryBossCompleted = false; }
         if (profile.flags.zenakadoDefeated) profile.bossDefeated.zenacad = true;
         if (!D.jobs[profile.currentJob]) profile.currentJob = 'mage';
-        profile.version = 7;
+        if (!profile.weaponEnchants) profile.weaponEnchants = {};
+        if (profile.flags.dungeon3BattleWins == null) profile.flags.dungeon3BattleWins = 0;
+        if (profile.flags.dungeon3NewSeen == null) profile.flags.dungeon3NewSeen = false;
+        profile.version = 8;
         return profile;
       } catch { return this.freshProfile(); }
     }
@@ -80,7 +85,7 @@
     encodeSaveTransferCode() { const save = localStorage.getItem(D.settings.saveKey), meta = localStorage.getItem(this.saveTransferMetaKey()), payload = { app: 'arsene-rpg', v: 1, exportedAt: new Date().toISOString(), save: save ? JSON.parse(save) : this.profile, meta: meta ? JSON.parse(meta) : null }; return btoa(unescape(encodeURIComponent(JSON.stringify(payload)))); }
     decodeSaveTransferCode(code) { try { const payload = JSON.parse(decodeURIComponent(escape(atob(String(code || '').trim())))); if (!payload || typeof payload !== 'object' || !payload.save) return null; return payload; } catch { return null; } }
     applySaveTransfer(payload) { localStorage.setItem(D.settings.saveKey, JSON.stringify(payload.save)); if (payload.meta) localStorage.setItem(this.saveTransferMetaKey(), JSON.stringify(payload.meta)); location.reload(); }
-    syncSkillUnlocks() { const learnedCharacter = new Set(this.profile.learnedCharacterSkills || []), learnedJob = new Set(this.profile.learnedJobSkills || []); (D.characterSkillProgression || []).forEach(entry => { if (this.profile.level >= entry.level) learnedCharacter.add(entry.skillId); }); Object.entries(this.profile.jobs || {}).forEach(([jobId, progress]) => { const job = D.jobs[jobId]; Object.entries(job?.skillUnlocks || {}).forEach(([level, skillId]) => { if (progress.level >= Number(level)) learnedJob.add(skillId); }); }); this.profile.learnedCharacterSkills = [...learnedCharacter]; this.profile.learnedJobSkills = [...learnedJob]; const allowed = new Set(['quickSlash', ...learnedCharacter, ...learnedJob]); this.profile.activeSkills = (this.profile.activeSkills || []).filter(id => allowed.has(id) && D.skills[id]?.type !== 'PASSIVE').slice(0, 4); for (const id of learnedCharacter) if (D.skills[id]?.type === 'ACTIVE' && this.profile.activeSkills.length < 4 && !this.profile.activeSkills.includes(id)) this.profile.activeSkills.push(id); }
+    syncSkillUnlocks() { const learnedCharacter = new Set(this.profile.learnedCharacterSkills || []), learnedJob = new Set(this.profile.learnedJobSkills || []); (D.characterSkillProgression || []).forEach(entry => { if (this.profile.level >= entry.level) learnedCharacter.add(entry.skillId); }); Object.entries(this.profile.jobs || {}).forEach(([jobId, progress]) => { const job = D.jobs[jobId]; Object.entries(job?.skillUnlocks || {}).forEach(([level, skillId]) => { if (progress.level >= Number(level)) learnedJob.add(skillId); }); }); this.profile.learnedCharacterSkills = [...learnedCharacter]; this.profile.learnedJobSkills = [...learnedJob]; const allowed = new Set(['quickSlash', ...learnedCharacter, ...learnedJob]); this.profile.activeSkills = (this.profile.activeSkills || []).filter(id => allowed.has(id) && D.skills[id]?.type !== 'PASSIVE').slice(0, 4); }
     learnedActiveSkillIds() { return [...new Set(['quickSlash', ...(this.profile.learnedCharacterSkills || []), ...(this.profile.learnedJobSkills || [])])].filter(id => D.skills[id]?.type !== 'PASSIVE'); }
     characterHasSkill(id) { return (this.profile.learnedCharacterSkills || []).includes(id) || (D.characterSkillProgression || []).some(entry => entry.skillId === id && this.profile.level >= entry.level); }
     jobExpNeeded(level) { return D.jobExpTable[level] || null; }
@@ -100,20 +105,20 @@
     equippedSeriesCount(seriesId, equipment = this.profile.equipment) { return Object.values(equipment).filter(id => id && (D.items[id]?.seriesId === seriesId || this.equipmentDefinition(id)?.seriesId === seriesId)).length; }
     activeSetEffects(equipment = this.profile.equipment) { const effects = {}; this.unlockedBossSeries().forEach(series => { const count = this.equippedSeriesCount(series.id, equipment); Object.entries(series.setBonuses || {}).forEach(([needed, bonus]) => { if (count >= Number(needed)) Object.assign(effects, bonus.effect || {}); }); }); return effects; }
     totalStats(equipment = this.profile.equipment) {
-      const total = clone(this.profile.baseStats), bonuses = this.equipmentBonuses(equipment), jobBonuses = this.activeJobBonuses(); Object.entries(bonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobBonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); const setEffects = this.activeSetEffects(equipment); if (setEffects.magPercent) total.mag = Math.max(total.mag + 1, Math.floor(total.mag * (1 + setEffects.magPercent / 100))); if (this.profile.flags.ramenBuffActive) total.maxHp = Math.ceil(total.maxHp * 1.03); total.critBonus ||= 0; total.def = total.vit; return total;
+      const total = clone(this.profile.baseStats), bonuses = this.equipmentBonuses(equipment), jobBonuses = this.activeJobBonuses(); Object.entries(bonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobBonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); const setEffects = this.activeSetEffects(equipment); if (setEffects.magPercent) total.mag = Math.max(total.mag + 1, Math.floor(total.mag * (1 + setEffects.magPercent / 100))); if (this.profile.flags.ramenBuffActive) total.maxHp = Math.ceil(total.maxHp * 1.03); total.critBonus ||= 0; total.def = total.vit; const wId = equipment.rightHand, w = D.weapons[wId]; if (w) { const enchLv = (this.profile.weaponEnchants || {})[wId] || 0; if (enchLv > 0) { const dstat = w.damageStat || 'str'; total[dstat] = (total[dstat] || 0) + enchLv * (D.enchantTable?.statBonus || 5); } } return total;
     }
     getDungeon(id = this.currentDungeonId) { return (D.dungeons || []).find(d => d.id === id) || (D.dungeons || [])[0]; }
-    isDungeonUnlocked(id) { const d = this.getDungeon(id); if (!d) return false; if (!d.unlockCondition) return true; if (d.unlockCondition === 'dungeon1Clear') return this.isBossDefeated('zenacad'); return false; }
+    isDungeonUnlocked(id) { const d = this.getDungeon(id); if (!d) return false; if (!d.unlockCondition) return true; if (d.unlockCondition === 'dungeon1Clear') return this.isBossDefeated('zenacad'); if (d.unlockCondition === 'dungeon2Clear') return (this.profile.flags.dungeon2BattleWins || 0) >= 15; return false; }
     applyDungeonBackground() { const bg = this.getDungeon()?.background || 'assets/bg/dungeon-battle-01.png'; const bf = $('#battlefield'); bf.dataset.dungeon = this.currentDungeonId; bf.style.backgroundImage = `linear-gradient(#0207134a,#0208171f 58%,#02040b5c),url("${bg}")`; bf.style.backgroundSize = 'auto,cover'; bf.style.backgroundPosition = 'center,center bottom'; bf.style.backgroundRepeat = 'no-repeat,no-repeat'; }
     equippedWeapon() { return D.weapons[this.profile.equipment.rightHand] || D.weapons.mageStaff; }
     progressState() { const f = this.profile.flags, noelGoal = D.battleProgression?.noelEncounterWins || 3, zenakadoGoal = D.battleProgression?.zenakadoEncounterWins || 7; if (!f.noelFirstEncounterCleared) { const wins = Math.max(0, f.preNoelBattleWins || 0); return { phase: 'noel', wins, goal: noelGoal, ready: wins >= noelGoal, bossId: 'noelFirstEncounter', bossName: 'NOËL' }; } if (!f.zenakadoDefeated) { const wins = Math.max(0, f.postNoelBattleWins || 0); return { phase: 'zenakado', wins, goal: zenakadoGoal, ready: wins >= zenakadoGoal, bossId: 'zenakado', bossName: 'ZENAKADO' }; } return { phase: 'complete', wins: zenakadoGoal, goal: zenakadoGoal, ready: false, bossId: null, bossName: 'DUNGEON CLEAR' }; }
 
     startBattle() {
       this.battleMode = 'slime'; const hadRamenBuff = !!this.profile.flags.ramenBuffActive, stats = this.totalStats(), vitals = this.storedVitals(stats); if (hadRamenBuff) { this.profile.flags.ramenBuffActive = false; this.saveProfile(); } this.player = { stats, hp: D.settings.healOnBattleStart ? stats.maxHp : vitals.hp, mp: D.settings.healOnBattleStart ? stats.maxMp : vitals.mp, inventory: this.profile.inventory, buffs: {}, cooldowns: {} };
-      const dungeon = this.getDungeon(), dungeon2 = this.currentDungeonId !== 'dungeon1';
+      const dungeon = this.getDungeon(), dungeon2 = this.currentDungeonId === 'dungeon2', dungeon3 = this.currentDungeonId === 'dungeon3';
       let wins, lineup;
-      if (dungeon2) {
-        wins = this.profile.flags.dungeon2BattleWins || 0;
+      if (dungeon2 || dungeon3) {
+        wins = dungeon3 ? (this.profile.flags.dungeon3BattleWins || 0) : (this.profile.flags.dungeon2BattleWins || 0);
         lineup = this.rollEncounter(wins, dungeon?.encounterProgression);
       } else {
         const progress = this.progressState(), difficultyWins = progress.phase === 'noel' ? progress.wins : progress.wins + (D.battleProgression?.noelEncounterWins || 3);
@@ -178,9 +183,9 @@
     }
     effectivePlayerStat(key) { const base = this.player.stats[key] || 0; return key === 'mag' && (this.player.buffs?.blueEcho || 0) > 0 ? base * 1.10 : base; }
     async beginPlayerTurn() { if (this.characterHasSkill('blueEcho') && Math.random() < .20) { this.player.buffs.blueEcho = 2; this.flashTitle('BLUE ECHO', 'MAG +10% // 2 TURNS'); this.setLog('蒼の残響が魔力を高める！'); await this.battleSleep(260); } if ((this.player.buffs.regenerate || 0) > 0) { const heal = Math.max(1, Math.ceil(this.player.stats.maxHp * .08)), gained = Math.min(heal, this.player.stats.maxHp - this.player.hp); this.player.hp += gained; if (gained) { this.audio.sfx('heal'); this.floating($('#ren'), `+${gained}`, 'heal'); this.setLog(`リジェネレートでHPが${gained}回復！`); this.updateHUD(); await this.battleSleep(220); } } }
-    endPlayerTurn() { if ((this.player.buffs.blueEcho || 0) > 0) this.player.buffs.blueEcho--; if ((this.player.buffs.regenerate || 0) > 0) this.player.buffs.regenerate--; }
+    endPlayerTurn() { if ((this.player.buffs.blueEcho || 0) > 0) this.player.buffs.blueEcho--; if ((this.player.buffs.regenerate || 0) > 0) this.player.buffs.regenerate--; if (this.player.buffs.defUp && this.turn > this.player.buffs.defUp.until) delete this.player.buffs.defUp; }
     damageFor(skill, enemy) {
-      const s = this.player.stats, w = this.equippedWeapon(), balance = D.combatBalance, weaponAttack = skill.id === 'attack', statKey = weaponAttack ? w.damageStat : (skill.kind === 'magical' ? 'mag' : 'str'), stat = this.effectivePlayerStat(statKey), power = weaponAttack ? w.power : skill.power, defDown = this.turn <= (enemy.defDownUntil || 0) ? .15 : 0, effectiveDef = enemy.stats.def * (1 - defDown) * (1 - (skill.ignoreDef || 0));
+      const s = this.player.stats, w = this.equippedWeapon(), balance = D.combatBalance, weaponAttack = skill.id === 'attack', statKey = weaponAttack ? w.damageStat : (skill.kind === 'magical' ? 'mag' : 'str'), stat = this.effectivePlayerStat(statKey), enchLv = weaponAttack ? ((this.profile.weaponEnchants || {})[this.profile.equipment.rightHand] || 0) : 0, basePower = weaponAttack ? w.power : skill.power, power = basePower * (1 + enchLv * 0.10), defDown = this.turn <= (enemy.defDownUntil || 0) ? .15 : 0, effectiveDef = enemy.stats.def * (1 - defDown) * (1 - (skill.ignoreDef || 0));
       let value = skill.kind === 'hybrid' ? this.effectivePlayerStat('str') * skill.strScale + this.effectivePlayerStat('mag') * skill.magScale - effectiveDef : stat * power + s.agi * (skill.agiScale || 0) - effectiveDef;
       value += roll(balance.playerVariance.min, balance.playerVariance.max);
       const critical = Math.random() < clamp(balance.critical.base + s.luk * balance.critical.luckRate + (s.critBonus || 0), balance.critical.base, balance.critical.max + (s.critBonus || 0));
@@ -196,7 +201,7 @@
       if (skill.effect?.type === 'selfDefDown') { this.player.defDownUntil = this.turn + skill.effect.turns - 1; this.setLog('捨て身斬りの反動でRENのDEFが20%低下！'); }
       if (target.hp <= 0) { target.alive = false; this.audio.sfx('defeat'); el.classList.add('defeated'); target.rolledDrops = this.rollDrops(target); target.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); if (item.rarity === 'epic' || item.rarity === 'legendary') this.announceRareDrop(item); } }); const earned = this.grantEnemyReward(target); this.setLog(`${target.name}${target.label}を撃破！ EXP+${earned.exp} GOLD+${earned.gold}`); await this.battleSleep(600); }
     }
-    async applySelfSkill(skill) { this.flashTitle(skill.name, skill.nameEn || 'SELF SKILL'); const effect = skill.effect || {}, ren = $('#ren'); ren.classList.add('casting'); await this.battleSleep(260); if (effect.type === 'mpRecover') { const amount = Math.max(1, Math.ceil(this.player.stats.maxMp * effect.maxMpRate)), gained = Math.min(amount, this.player.stats.maxMp - this.player.mp); this.player.mp += gained; this.audio.sfx('heal'); this.floating(ren, `MP +${gained}`, 'heal'); this.setLog(`精神集中でMPが${gained}回復！`); } if (effect.type === 'hpRecover') { const amount = Math.max(1, Math.round(this.player.stats.mnd * effect.mndScale + effect.base)), gained = Math.min(amount, this.player.stats.maxHp - this.player.hp); this.player.hp += gained; this.audio.sfx('heal'); this.floating(ren, `+${gained}`, 'heal'); this.setLog(`ヒールでHPが${gained}回復！`); } if (effect.type === 'regenerate') { this.player.buffs.regenerate = effect.turns + 1; this.audio.sfx('heal'); this.setLog('リジェネレート！ 3ターンの間、HPが回復する。'); } this.persistVitals(); this.updateHUD(); await this.battleSleep(350); ren.classList.remove('casting'); }
+    async applySelfSkill(skill) { this.flashTitle(skill.name, skill.nameEn || 'SELF SKILL'); const effect = skill.effect || {}, ren = $('#ren'); ren.classList.add('casting'); await this.battleSleep(260); if (effect.type === 'mpRecover') { const amount = Math.max(1, Math.ceil(this.player.stats.maxMp * effect.maxMpRate)), gained = Math.min(amount, this.player.stats.maxMp - this.player.mp); this.player.mp += gained; this.audio.sfx('heal'); this.floating(ren, `MP +${gained}`, 'heal'); this.setLog(`精神集中でMPが${gained}回復！`); } if (effect.type === 'hpRecover') { const amount = Math.max(1, Math.round(this.player.stats.mnd * effect.mndScale + effect.base)), gained = Math.min(amount, this.player.stats.maxHp - this.player.hp); this.player.hp += gained; this.audio.sfx('heal'); this.floating(ren, `+${gained}`, 'heal'); this.setLog(`ヒールでHPが${gained}回復！`); } if (effect.type === 'regenerate') { this.player.buffs.regenerate = effect.turns + 1; this.audio.sfx('heal'); this.setLog('リジェネレート！ 3ターンの間、HPが回復する。'); } if (effect.type === 'selfDefUp') { this.player.buffs.defUp = { rate: effect.rate, until: this.turn + effect.turns }; this.audio.sfx('heal'); this.floating(ren, `DEF +${Math.round(effect.rate * 100)}%`, 'heal'); this.setLog(`雄叫びでDEFが${Math.round(effect.rate * 100)}%上昇！ ${effect.turns}ターン持続。`); } this.persistVitals(); this.updateHUD(); await this.battleSleep(350); ren.classList.remove('casting'); }
     async playerAttackAll(skill) {
       const targets = this.enemies.filter(e => e.alive); if (!targets.length) return;
       this.setLog(`${skill.name}！`); this.flashTitle(skill.name, 'AREA MAGIC'); this.audio.sfx('magic');
@@ -233,7 +238,7 @@
       if (isMagic) { this.flashTitle(chosen.name, 'BOSS MAGIC'); this.audio.sfx('dark'); } else { this.flashTitle(chosen.name, 'BOSS STRIKE'); this.audio.sfx('slash'); }
       el.classList.add('enemy-attacking'); await this.battleSleep(400); ren.classList.add('hit');
       const balance = D.combatBalance, formula = isMagic ? balance.enemyMagic : balance.enemyPhysical;
-      const attackStat = isMagic ? enemy.stats.mag : enemy.stats.atk, defenseStat = isMagic ? this.player.stats.mnd : this.player.stats.def * (this.turn <= (this.player.defDownUntil || 0) ? .8 : 1);
+      const defUpBuff = (this.player.buffs?.defUp && this.turn <= this.player.buffs.defUp.until) ? (1 + (this.player.buffs.defUp.rate || 0)) : 1; const attackStat = isMagic ? enemy.stats.mag : enemy.stats.atk, defenseStat = isMagic ? this.player.stats.mnd : this.player.stats.def * defUpBuff * (this.turn <= (this.player.defDownUntil || 0) ? .8 : 1);
       const raw = attackStat * formula.attackScale - defenseStat * formula.defenseScale;
       const damage = Math.max(1, Math.round(raw + roll(balance.enemyVariance.min, balance.enemyVariance.max)));
       this.audio.sfx('playerHit'); this.player.hp = Math.max(0, this.player.hp - damage); this.persistVitals(); this.floating(ren, damage, 'enemy-damage'); this.setLog(`RENは${damage}ダメージを受けた！`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
@@ -296,7 +301,7 @@
       const reward = { exp: this.battleRewards.exp, gold: this.battleRewards.gold, drops: this.battleRewards.drops }, levels = this.battleRewards.levels, jobResult = this.grantJobExp(this.battleRewards.exp);
       const newRecipeHTML = (this.battleRewards.newRecipes || []).map(rid => { const r = D.recipes[rid], item = D.items[r?.resultItemId]; return r && item ? `<div class="new-recipe-unlock"><small>NEW RECIPE</small><b>${item.name}</b><span>${item.nameEn || ''}</span><em>工房で製作可能になった</em></div>` : ''; }).join('');
       const rewardBlock = `${this.rewardHTML(reward, levels)}${this.jobResultHTML(jobResult)}${newRecipeHTML}`;
-      if (this.battleMode === 'slime') { if (this.currentDungeonId === 'dungeon2') { this.profile.flags.dungeon2BattleWins = (this.profile.flags.dungeon2BattleWins || 0) + 1; } else { if (this.profile.flags.noelFirstEncounterCleared) this.profile.flags.postNoelBattleWins = (this.profile.flags.postNoelBattleWins || 0) + 1; else this.profile.flags.preNoelBattleWins = (this.profile.flags.preNoelBattleWins || 0) + 1; this.profile.flags.normalBattleWins = (this.profile.flags.normalBattleWins || 0) + 1; } this.saveProfile(); }
+      if (this.battleMode === 'slime') { if (this.currentDungeonId === 'dungeon3') { this.profile.flags.dungeon3BattleWins = (this.profile.flags.dungeon3BattleWins || 0) + 1; } else if (this.currentDungeonId === 'dungeon2') { this.profile.flags.dungeon2BattleWins = (this.profile.flags.dungeon2BattleWins || 0) + 1; } else { if (this.profile.flags.noelFirstEncounterCleared) this.profile.flags.postNoelBattleWins = (this.profile.flags.postNoelBattleWins || 0) + 1; else this.profile.flags.preNoelBattleWins = (this.profile.flags.preNoelBattleWins || 0) + 1; this.profile.flags.normalBattleWins = (this.profile.flags.normalBattleWins || 0) + 1; } this.saveProfile(); }
       if (this.battleMode === 'zenakado') { const firstClear = !this.isBossDefeated('zenacad'), firstScore = !this.profile.flags.zenakadoScoreClaimed; this.markBossDefeated('zenacad'); this.profile.flags.zenakadoDefeated = false; this.profile.flags.postNoelBattleWins = 0; this.profile.flags.temporaryBossCompleted = true; if (firstScore) { this.profile.musicScores.cadenzaLoot = true; this.profile.flags.zenakadoScoreClaimed = true; } this.saveProfile(); const stolen = firstClear ? '<div class="boss-recipe-unlock"><small>PHANTOM STEAL</small><b>NEW RECIPES STOLEN</b><strong>《ZENACAD SERIES》</strong><span>工房に BOSS EQUIPMENT と JOB SYSTEM が追加された！</span></div>' : ''; this.showResult('VICTORY', '独奏卿ゼナカドを打ち倒し、禁断の楽譜と装備製法を盗み出した！', 'BOSS CLEARED', `${rewardBlock}${firstScore ? this.scoreGetHTML('cadenzaLoot') : ''}${stolen}`); return; }
       const progress = this.progressState(); if (this.battleMode === 'slime' && progress.ready) { const label = progress.phase === 'noel' ? '永遠の裁定者ノエル' : '独奏卿ゼナカド'; this.showResult('VICTORY', '闇を切り裂き、戦利品を獲得した。', 'BATTLE COMPLETE', `${rewardBlock}<div class="workshop-unlock boss-signal"><b>BOSS SIGNAL</b><strong>${label}の反応を確認！</strong><span>拠点からボス遭遇へ進めます。</span></div>`); } else { await this.showBattleClear(reward, levels, jobResult); }
     }
@@ -348,11 +353,13 @@
     renderDungeonSelect(panel) {
       panel.hidden = false;
       const available = (D.dungeons || []).filter(d => this.isDungeonUnlocked(d.id));
-      const showNew = this.isDungeonUnlocked('dungeon2') && !this.profile.flags.dungeon2NewSeen;
-      if (showNew) { this.profile.flags.dungeon2NewSeen = true; this.saveProfile(); }
+      const showNewD2 = this.isDungeonUnlocked('dungeon2') && !this.profile.flags.dungeon2NewSeen;
+      const showNewD3 = this.isDungeonUnlocked('dungeon3') && !this.profile.flags.dungeon3NewSeen;
+      if (showNewD2) { this.profile.flags.dungeon2NewSeen = true; this.saveProfile(); }
+      if (showNewD3) { this.profile.flags.dungeon3NewSeen = true; this.saveProfile(); }
       panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>DUNGEON SELECT</small><h2>ダンジョン選択</h2><div class="dungeon-select-list">${available.map(d => {
-        const isNew = d.id === 'dungeon2' && showNew;
-        const progress = d.id === 'dungeon1' ? (() => { const p = this.progressState(); return p.phase === 'complete' ? 'AREA BOSS CLEARED' : `BATTLE ${Math.min(p.wins, p.goal)} / ${p.goal}`; })() : `BATTLE ${this.profile.flags.dungeon2BattleWins || 0}`;
+        const isNew = (d.id === 'dungeon2' && showNewD2) || (d.id === 'dungeon3' && showNewD3);
+        const progress = d.id === 'dungeon1' ? (() => { const p = this.progressState(); return p.phase === 'complete' ? 'AREA BOSS CLEARED' : `BATTLE ${Math.min(p.wins, p.goal)} / ${p.goal}`; })() : d.id === 'dungeon2' ? `BATTLE ${this.profile.flags.dungeon2BattleWins || 0}` : `BATTLE ${this.profile.flags.dungeon3BattleWins || 0}`;
         return `<button class="dungeon-card" data-enter-dungeon="${d.id}"><div class="dungeon-thumb" style="background-image:url('${d.thumbnail}')"></div><div class="dungeon-info"><small>${d.nameEn || d.enName || d.name}</small><strong>${d.name}</strong><span>${d.description || ''}</span><em>推奨 Lv.${d.recommendedLevel}+</em><b class="dungeon-progress">${progress}</b>${isNew ? '<mark class="dungeon-new">NEW</mark>' : ''}</div></button>`;
       }).join('')}</div>`;
     }
@@ -368,6 +375,7 @@
       const materialRows = (D.workshop.materialIds || []).map(id => { const item = D.items[id], count = this.profile.inventory[id] || 0; if (item?.bossId && !this.isBossDefeated(item.bossId)) return ''; return `<div class="workshop-material rarity-${item.rarity}"><span><i></i><b>${item.name}</b></span><strong>×${count}</strong><small>${item.description}</small></div>`; }).join('');
       if (this.workshopTab === 'materials') return `<div class="workshop-section-title"><b>素材一覧</b><span>MATERIALS</span></div><div class="workshop-materials">${materialRows || '<p>素材を所持していません。</p>'}</div>`;
       if (this.workshopTab === 'catalog') return `<div class="workshop-section-title"><b>怪異図鑑</b><span>CATALOG</span></div><div class="workshop-catalog"><article><em>01</em><b>ダンジョン1の怪異</b><span>6種の通常怪異を確認</span></article><article class="boss-record"><em>EVENT BOSS</em><b>ノエル</b><span>初回遭遇記録 // 戦力解析不能</span></article><article class="boss-record"><em>DUNGEON BOSS</em><b>ゼナカド</b><span>静寂のホール // 独奏卿</span></article></div>`;
+      if (this.workshopTab === 'enchant') return this.enchantContent();
       if (this.workshopTab === 'bossEquipment') return this.bossEquipmentContent();
       if (this.workshopTab === 'disassemble') { const gear = Object.entries(this.profile.inventory).filter(([id,n]) => n > 0 && D.items[id]?.category === 'equipment').map(([id,n]) => { const item = D.items[id], series = D.bossEquipmentSeries?.[item.seriesId], equipped = Object.values(this.profile.equipment).includes(id), spare = n - (equipped ? 1 : 0), can = !!series && spare > 0, output = series?.dismantle, material = D.items[output?.materialId]; return `<article class="${series ? 'boss-dismantle' : ''}"><div><b>${item.name}</b><span>${this.bonusText(id)} // 所持 ×${n}${equipped ? '（1個装備中）' : ''}</span>${series ? `<small>→ ${material?.name || output.materialId} ×${output.count}</small>` : ''}</div><button data-disassemble="${id}" ${can ? '' : 'disabled'}>${series ? (can ? '分解する' : '予備なし') : '対象外'}</button></article>`; }).join(''); return `<div class="workshop-section-title"><b>装備分解</b><span>DISASSEMBLE</span></div><p class="workshop-warning">ボス装備の予備を分解し、シリーズ素材へ変換できます。装備中の最後の1個は保護されます。</p><div class="workshop-disassemble">${gear || '<p>分解可能な装備がありません。</p>'}</div>`; }
       const craftCategory = this.workshopTab === 'armor' ? 'armor' : 'weapon', categoryName = craftCategory === 'weapon' ? '武器' : '防具', categoryEn = craftCategory === 'weapon' ? 'WEAPON CRAFT' : 'ARMOR CRAFT', dungeons = D.dungeons || [], filter = this.craftDungeonFilter || 'all', armorFilter = this.craftArmorFilter || 'leftHand';
@@ -398,12 +406,46 @@
     renderWorkshop(panel) {
       if ((this.profile.newlyUnlockedRecipes || []).length) { this.profile.newlyUnlockedRecipes = []; this.saveProfile(); }
       if (!this.profile.flags.noelFirstEncounterCleared) { panel.innerHTML = '<button class="panel-home" data-menu="home">拠点へ戻る</button><small>PHANTOM WORKSHOP</small><h2>工房</h2><div class="workshop-unlock"><b>LOCKED</b><strong>まだ工房は利用できません</strong><span>通常戦を3回制し、永遠の裁定者ノエルと遭遇すると解放されます。</span></div>'; return; }
-      const availableTabs = [...D.workshop.tabs, ...(this.unlockedBossSeries().length ? [{ id: 'bossEquipment', name: 'ボス装備', enName: 'BOSS EQUIPMENT' }] : [])]; if (!availableTabs.some(tab => tab.id === this.workshopTab)) this.workshopTab = 'weapon'; const tabs = availableTabs.map(tab => `<button data-workshop-tab="${tab.id}" class="${this.workshopTab === tab.id ? 'active' : ''}"><b>${tab.name}</b><span>${tab.enName}</span></button>`).join('');
+      const enchantUnlocked = (this.profile.flags.dungeon2BattleWins || 0) >= 15; const availableTabs = [...D.workshop.tabs, ...(this.unlockedBossSeries().length ? [{ id: 'bossEquipment', name: 'ボス装備', enName: 'BOSS EQUIPMENT' }] : []), ...(enchantUnlocked ? [{ id: 'enchant', name: '武器強化', enName: 'ENCHANT' }] : [])]; if (!availableTabs.some(tab => tab.id === this.workshopTab)) this.workshopTab = 'weapon'; const tabs = availableTabs.map(tab => `<button data-workshop-tab="${tab.id}" class="${this.workshopTab === tab.id ? 'active' : ''}"><b>${tab.name}</b><span>${tab.enName}</span></button>`).join('');
       panel.innerHTML = `<div class="workshop-header"><small>UNLOCKED FACILITY</small><h2>PHANTOM WORKSHOP</h2><span>ファントムワークショップ</span><div><b>GOLD ${this.profile.gold}</b><b>MATERIALS ${(D.workshop.materialIds || []).reduce((sum,id)=>sum+(this.profile.inventory[id]||0),0)}</b></div></div><div class="workshop-layout"><aside><div class="workshop-keeper"><img src="assets/ui/workshop/helper-fox-pixel.png" alt="工房のお助けキャラ"><b>さてさて……</b><span>何を作ろうかな？</span></div><nav>${tabs}</nav></aside><section class="workshop-main">${this.workshopContent()}</section></div>`;
     }
+    enchantContent() {
+      const et = D.enchantTable, enchants = this.profile.weaponEnchants || {}, weapons = Object.values(D.weapons).filter(w => w.id && D.items[w.id]);
+      if (!weapons.length) return '<p>強化可能な武器がありません。</p>';
+      const cards = weapons.map(w => {
+        const level = enchants[w.id] || 0, isEquipped = this.profile.equipment.rightHand === w.id;
+        const invCount = this.profile.inventory[w.id] || 0, hasSpare = isEquipped ? invCount >= 1 : invCount >= 2;
+        if (level >= et.maxLevel) return `<article class="enchant-card max"><b>${w.name}</b><span>+${level} MAX</span><small>最大強化達成</small></article>`;
+        const nextLevel = level + 1, rate = et.successRates[level], cost = et.goldCosts[level], rateText = `${Math.round(rate * 100)}%`, canAfford = this.profile.gold >= cost;
+        const canEnchant = hasSpare && canAfford;
+        const spareText = isEquipped ? `所持 ×${invCount}（1個装備中）` : `所持 ×${invCount}`;
+        return `<article class="enchant-card${level > 0 ? ' enhanced' : ''}"><div class="enchant-card-header"><b>${w.name}</b><strong>+${level} → +${nextLevel}</strong></div><div class="enchant-card-body"><span>成功率 <b>${rateText}</b></span><span>費用 <b>${cost} GOLD</b></span><small>${spareText}</small>${!hasSpare ? '<small class="enchant-warn">同じ武器が追加で必要</small>' : ''}${!canAfford ? '<small class="enchant-warn">GOLD不足</small>' : ''}</div><button data-enchant="${w.id}" ${canEnchant ? '' : 'disabled'}>強化する</button></article>`;
+      }).join('');
+      return `<div class="workshop-section-title"><b>武器強化</b><span>WEAPON ENCHANT</span></div><p class="workshop-warning">同じ武器1個を素材として強化します。+3まで成功率100%。+4以降は失敗で武器が消滅します。</p><div class="enchant-grid">${cards}</div>`;
+    }
+    enchantWeapon(weaponId) {
+      const w = D.weapons[weaponId]; if (!w) return;
+      const enchants = this.profile.weaponEnchants || {}, level = enchants[weaponId] || 0, et = D.enchantTable;
+      if (level >= et.maxLevel) return;
+      const isEquipped = this.profile.equipment.rightHand === weaponId, invCount = this.profile.inventory[weaponId] || 0, hasSpare = isEquipped ? invCount >= 1 : invCount >= 2, cost = et.goldCosts[level];
+      if (!hasSpare || this.profile.gold < cost) return;
+      this.profile.gold -= cost;
+      this.profile.inventory[weaponId] = (this.profile.inventory[weaponId] || 0) - 1;
+      const success = Math.random() < et.successRates[level];
+      if (success) {
+        this.profile.weaponEnchants[weaponId] = level + 1;
+        this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('workshop');
+      } else {
+        delete this.profile.weaponEnchants[weaponId];
+        if (isEquipped) this.profile.equipment.rightHand = 'mageStaff'; else this.profile.inventory[weaponId] = Math.max(0, (this.profile.inventory[weaponId] || 0) - 1);
+        this.saveProfile(); this.audio.sfx('defeat'); this.renderMenuSummary(); this.renderMenuPanel('workshop');
+        alert(`武器強化FAILED！\n${w.name}は粉砕された……`);
+      }
+    }
     bonusText(id) {
-      const bonuses = this.equipmentDefinition(id)?.bonuses || {}, rows = Object.entries(bonuses);
-      return rows.length ? rows.map(([key, value]) => `${statLabels[key] || key.toUpperCase()} ${value >= 0 ? '+' : ''}${value}`).join(' / ') : '補正なし';
+      const bonuses = this.equipmentDefinition(id)?.bonuses || {}, rows = Object.entries(bonuses), w = D.weapons[id], enchLv = w ? ((this.profile.weaponEnchants || {})[id] || 0) : 0;
+      const enchStr = enchLv > 0 ? ` [+${enchLv}]` : '';
+      return rows.length ? rows.map(([key, value]) => `${statLabels[key] || key.toUpperCase()} ${value >= 0 ? '+' : ''}${value}`).join(' / ') + enchStr : '補正なし' + enchStr;
     }
     equipmentPreviewHTML(id) {
       if (!id) return `<div class="equipment-empty-preview"><b>装備候補を選択</b><span>候補をタップすると、現在装備との能力差を確認できます。</span></div>`;

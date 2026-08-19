@@ -40,3 +40,21 @@
 @media(max-width:480px){.food-bowl{width:82px;height:82px}.food-image{width:82px;height:82px}}
 .food-coming{margin-top:18px;padding-top:14px;border-top:1px solid #173f64}.food-coming>header{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}.food-coming>header b{font:800 10px Cinzel;letter-spacing:.2em;color:#6fa7d2}.food-coming>header span{font:700 8px Cinzel;letter-spacing:.18em;color:#4a6680}.food-coming>div{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.food-coming-card{position:relative;isolation:isolate;min-height:88px;display:grid;place-content:center;gap:5px;text-align:center;overflow:hidden;background:#010306;border:1px solid #14283a;box-shadow:inset 0 0 28px #000}.food-coming-card::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(120deg,#000e,#03070af2);box-shadow:inset 0 0 35px #000}.food-coming-card i{position:absolute;z-index:-2;left:50%;top:50%;width:90px;height:48px;transform:translate(-50%,-40%);border-radius:50%;background:#09101a;box-shadow:0 12px 0 #020304;filter:brightness(.25)}.food-coming-card b{font-size:clamp(10px,1.4vw,14px);color:#c4ced7;text-shadow:0 1px 4px #000;letter-spacing:.04em}.food-coming-card span{font:700 7px Cinzel;letter-spacing:.16em;color:#385b78}.food-coming-card[aria-disabled="true"]{cursor:not-allowed}
 @media(max-width:480px){.food-coming{margin-top:13px;padding-top:10px}.food-coming>div{grid-template-columns:1fr;gap:5px}.food-coming-card{min-height:54px}.food-coming-card i{width:70px;height:35px}.food-coming-card b{font-size:11px}}
+
+/* ── Weapon Enchant UI ──────────────────────────────────────────────── */
+.enchant-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:10px}
+.enchant-card{background:#07091a;border:1px solid #1a2a44;padding:12px 14px;display:flex;flex-direction:column;gap:6px;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+.enchant-card.enhanced{border-color:#3a6aaa;box-shadow:0 0 10px #1a4a8844}
+.enchant-card.max{border-color:#cc9900;box-shadow:0 0 12px #cc990044}
+.enchant-card-header{display:flex;justify-content:space-between;align-items:baseline}
+.enchant-card-header b{font:800 12px Cinzel;color:#c8d8f0;letter-spacing:.05em}
+.enchant-card-header strong{font:900 14px Cinzel;color:#4af;letter-spacing:.1em}
+.enchant-card-body{display:flex;flex-direction:column;gap:3px}
+.enchant-card-body span{font-size:10px;color:#7899bb;letter-spacing:.08em}
+.enchant-card-body b{color:#c0d8ff}
+.enchant-card-body small{font-size:9px;color:#4a6a88;margin-top:1px}
+.enchant-warn{color:#ff4466!important}
+.enchant-card button{margin-top:4px;padding:6px 10px;font:700 9px Cinzel;letter-spacing:.2em;background:linear-gradient(120deg,#0a1428,#0d1f3c);border:1px solid #2a4466;color:#7aaddd;cursor:pointer;clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px);transition:border-color .2s,color .2s}
+.enchant-card button:hover:not(:disabled){border-color:#4af;color:#adf}
+.enchant-card button:disabled{opacity:.4;cursor:not-allowed}
+@media(max-width:480px){.enchant-grid{grid-template-columns:1fr}}
