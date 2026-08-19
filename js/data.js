@@ -1,6 +1,14 @@
 window.ARSENE_DATA = {
   settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5 },
   dualBladeOffHandRate: 0.70,
+  // 武器種マスタ。ここに追記すれば得意武器選択・アイテム欄のタブへ自動反映される。
+  // damageStats は将来の体術ダメージ計算（力＋素早さ）用の予約情報。
+  weaponTypes: [
+    { id: 'sword', name: '剣', nameEn: 'SWORD', description: '力で斬り込む近接武器。素直な物理攻撃。', damageStats: ['str'], starterWeaponId: 'phantomSword' },
+    { id: 'staff', name: '杖', nameEn: 'STAFF', description: '魔力を導く杖。魔法主体で戦う。', damageStats: ['mag'], starterWeaponId: 'mageStaff' },
+    { id: 'martial', name: '体術', nameEn: 'MARTIAL', description: '爪や籠手を使う徒手格闘。速さで手数を稼ぐ。', damageStats: ['str', 'agi'], starterWeaponId: 'ironClaw' }
+  ],
+  startingJobIds: ['warrior', 'martialArtist', 'mage', 'priest'],
   battleProgression: { noelEncounterWins: 3, zenakadoEncounterWins: 7 },
   expTable: { 1: 50, 2: 120, 3: 220 },
   jobExpTable: { 1: 25, 2: 45, 3: 70, 4: 100, 5: 135, 6: 175, 7: 220, 8: 270, 9: 330, 10: 400, 11: 480, 12: 570, 13: 670, 14: 780, 15: 900, 16: 1040, 17: 1190, 18: 1360, 19: 1550 },
@@ -47,22 +55,22 @@ window.ARSENE_DATA = {
   ],
   jobs: {
     warrior: {
-      id: 'warrior', name: '戦士', nameEn: 'WARRIOR', description: '力と耐久力で正面から怪異を打ち破る。',
+      id: 'warrior', name: '戦士', nameEn: 'WARRIOR', description: '力と耐久力で正面から怪異を打ち破る。', signatureSkillId: 'powerCharge', growthStats: ['str', 'vit'], featureText: '力・体力を伸ばしやすいジョブ。物理攻撃・HP・耐久力などの脳筋系パッシブを習得できる。',
       growth: { 1: { str: 2 }, 2: { maxHp: 5 }, 3: { vit: 1 }, 4: { str: 2, vit: 1 }, 5: { maxHp: 8 }, 6: { str: 2 }, 7: { maxHp: 8, vit: 2 }, 8: { str: 3 }, 9: { vit: 2 }, 10: { str: 4, maxHp: 12 }, 11: { str: 2 }, 12: { maxHp: 10, vit: 2 }, 13: { str: 3 }, 14: { vit: 3, maxHp: 8 }, 15: { str: 4 }, 16: { maxHp: 12, vit: 3 }, 17: { str: 4 }, 18: { vit: 4 }, 19: { str: 5 }, 20: { str: 6, maxHp: 18, vit: 5 } },
       skillUnlocks: { 3: 'powerStrike', 6: 'breakEdge', 9: 'recklessEdge', 12: 'warCry', 16: 'titanBlow' }
     },
     mage: {
-      id: 'mage', name: '魔導士', nameEn: 'MAGE', description: '魔力を操り、単体・全体魔法を使い分ける。',
+      id: 'mage', name: '魔導士', nameEn: 'MAGE', description: '魔力を操り、単体・全体魔法を使い分ける。', signatureSkillId: 'meditation', growthStats: ['mag'], featureText: '魔力を伸ばしやすいジョブ。MP上昇・魔法威力などの魔法系パッシブを習得できる。',
       growth: { 1: { mag: 2 }, 2: { maxMp: 5 }, 3: { mag: 2 }, 4: { maxMp: 6 }, 5: { mag: 2 }, 6: { maxMp: 8 }, 7: { mag: 3 }, 8: { maxMp: 8 }, 9: { mag: 3 }, 10: { mag: 4, maxMp: 12 }, 11: { mag: 3 }, 12: { maxMp: 14 }, 13: { mag: 4 }, 14: { maxMp: 12 }, 15: { mag: 4 }, 16: { maxMp: 16 }, 17: { mag: 5 }, 18: { maxMp: 14 }, 19: { mag: 5 }, 20: { mag: 6, maxMp: 20 } },
       skillUnlocks: { 3: 'blueFlame', 6: 'manaBurst', 9: 'astralRay', 12: 'arcaneExplosion', 16: 'voidNova' }
     },
     martialArtist: {
-      id: 'martialArtist', name: '武道家', nameEn: 'MARTIAL ARTIST', description: '速度と多段攻撃でクリティカルを狙う。',
+      id: 'martialArtist', name: '武道家', nameEn: 'MARTIAL ARTIST', description: '速度と多段攻撃でクリティカルを狙う。', signatureSkillId: 'burstFist', growthStats: ['agi', 'luk'], featureText: '素早さ・運を伸ばしやすいジョブ。会心率・素早い行動などに関係するパッシブを習得できる。',
       growth: { 1: { agi: 2 }, 2: { str: 2, maxHp: 4 }, 3: { agi: 2 }, 4: { str: 2 }, 5: { agi: 3 }, 6: { str: 2 }, 7: { critBonus: .02 }, 8: { agi: 3, str: 2 }, 9: { critBonus: .03 }, 10: { critBonus: .05, agi: 3 }, 11: { agi: 3 }, 12: { str: 3, critBonus: .02 }, 13: { agi: 4 }, 14: { str: 3 }, 15: { agi: 4, critBonus: .03 }, 16: { str: 4 }, 17: { agi: 4 }, 18: { str: 4, critBonus: .03 }, 19: { agi: 5 }, 20: { critBonus: .07, agi: 5, str: 4 } },
       skillUnlocks: { 3: 'doubleStrike', 6: 'breakFist', 9: 'shadowRush', 12: 'swiftBarrage', 16: 'shadowSeven' }
     },
     priest: {
-      id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。',
+      id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。', signatureSkillId: 'heal', growthStats: ['mnd', 'vit'], featureText: '精神・体力を伸ばしやすいジョブ。回復能力や耐久・支援に関係するパッシブを習得できる。',
       growth: { 1: { mnd: 2 }, 2: { maxMp: 5 }, 3: { mnd: 2 }, 4: { maxMp: 6 }, 5: { mnd: 2, maxHp: 5 }, 6: { maxMp: 8 }, 7: { mnd: 3 }, 8: { maxMp: 8 }, 9: { mnd: 3 }, 10: { mnd: 4, maxMp: 12 }, 11: { mnd: 3 }, 12: { maxMp: 14, maxHp: 5 }, 13: { mnd: 4 }, 14: { maxMp: 12 }, 15: { mnd: 4 }, 16: { maxMp: 16 }, 17: { mnd: 5 }, 18: { maxMp: 14 }, 19: { mnd: 5 }, 20: { mnd: 6, maxMp: 20, maxHp: 8 } },
       skillUnlocks: { 3: 'heal', 6: 'holyLight', 9: 'regenerate', 12: 'greatHeal', 16: 'divineSmite' }
     },
@@ -257,6 +265,8 @@ window.ARSENE_DATA = {
     blueNote: { id: 'blueNote', name: 'ブルーノート', nameEn: 'BLUE NOTE', source: 'character', unlockLevel: 1, type: 'ACTIVE', kind: 'hybrid', target: 'single', mp: 5, power: 1, strScale: 1.7, magScale: 1.7, agiScale: 0, powerText: 'ATK×1.7＋MAG×1.7', effectText: '物理攻撃力と魔力の双方を参照', description: '青い魔力を武器へ纏わせて敵を攻撃する。物理攻撃力と魔力の双方を参照してダメージを与える。' },
     blueEcho: { id: 'blueEcho', name: '蒼の残響', nameEn: 'BLUE ECHO', source: 'character', unlockLevel: 3, type: 'PASSIVE', kind: 'passive', target: 'self', mp: 0, powerText: '－', effectText: 'ターン開始時20%でMAG +10%／2ターン。重複せず残り時間を更新', description: '戦いの中で魔力の波長を捉え、自らの魔力を高める。' },
     meditation: { id: 'meditation', name: '精神集中', nameEn: 'MEDITATION', source: 'character', unlockLevel: 5, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 3, powerText: '最大MPの10%', effect: { type: 'mpRecover', maxMpRate: .10 }, effectText: '最大MPの10%回復／クールタイム3ターン', description: '呼吸を整え、乱れた魔力を収束させる。自身のMPを回復する。' },
+    powerCharge: { id: 'powerCharge', name: 'ちからため', nameEn: 'POWER CHARGE', source: 'job', jobId: 'warrior', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 3, powerText: '次の物理攻撃 ×1.8', effect: { type: 'selfAtkCharge', rate: .8 }, effectText: '次に使う物理攻撃の威力+80%／クールタイム3ターン', description: '全身に力を溜める。次に使用する物理攻撃の威力を大きく高める。' },
+    burstFist: { id: 'burstFist', name: 'ばくれつけん', nameEn: 'BURST FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 1, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 4, power: 1.5, hits: 3, agiScale: 0, powerText: 'ATK×1.5×3回', effectText: '3回連続攻撃／各攻撃で個別クリティカル判定', description: '目にも留まらぬ拳の連打を叩き込む。' },
     powerStrike: { id: 'powerStrike', name: '強撃', nameEn: 'POWER STRIKE', source: 'job', jobId: 'warrior', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 4, power: 4.2, agiScale: 0, powerText: 'ATK×4.2', effectText: '通常攻撃より高威力', description: '力を込めた一撃。ATKを参照して敵単体へ物理ダメージを与える。' },
     breakEdge: { id: 'breakEdge', name: 'ブレイクエッジ', nameEn: 'BREAK EDGE', source: 'job', jobId: 'warrior', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 7, power: 3.5, agiScale: 0, effect: { type: 'enemyDefDown', rate: .20, turns: 2 }, powerText: 'ATK×3.5', effectText: '敵DEF -20%／2ターン', description: '防御を断つ斬撃。物理ダメージと同時に敵のDEFを低下させる。' },
     recklessEdge: { id: 'recklessEdge', name: '捨て身斬り', nameEn: 'RECKLESS EDGE', source: 'job', jobId: 'warrior', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 10, power: 6.0, agiScale: 0, effect: { type: 'selfDefDown', rate: .20, turns: 2 }, powerText: 'ATK×6.0', effectText: '使用後、自身のDEF -20%／2ターン', description: '守りを捨てて放つ高威力の斬撃。' },
@@ -294,6 +304,7 @@ window.ARSENE_DATA = {
     manaPotion: { id: 'manaPotion', name: '魔力回復薬', category: 'consumable', rarity: 'common', description: 'MPを20回復する。', effect: { mp: 20 } },
     mageStaff: { id: 'mageStaff', name: '魔導士の杖', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '青い魔力を導く魔導士の基本杖。' },
     phantomSword: { id: 'phantomSword', name: '青影の剣', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '青い残光を引く怪盗の細身剣。' },
+    ironClaw: { id: 'ironClaw', name: '鉄の爪', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '拳に装着する鋼の爪。素早い連撃に適する。' },
     shadowWand: { id: 'shadowWand', name: 'シャドウワンド', category: 'equipment', slot: 'rightHand', rarity: 'rare', description: '闇の魔力を帯びたシャドウスライム由来の杖。' },
     slimeRing: { id: 'slimeRing', name: 'スライムリング', category: 'equipment', slot: 'accessory', rarity: 'rare', description: '不思議な弾力を持つ魔力の指輪。' },
     darkCore: { id: 'darkCore', name: 'ダークコア', category: 'material', rarity: 'epic', description: 'シャドウスライムの核。強い闇の魔力を宿している。' },
@@ -386,9 +397,10 @@ window.ARSENE_DATA = {
     myrthi_metro: { id: 'myrthi_metro', name: '第二奏のメトロノーム', nameEn: 'SECOND BEAT METRO', category: 'equipment', slot: 'accessory', rarity: 'legendary', stars: 5, seriesId: 'myrthi', description: '正確なリズムを刻み続けるメトロノーム。着けた者のあらゆる動作を研ぎ澄ます。' }
   },
   weapons: {
-    mageStaff: { id: 'mageStaff', name: '魔導士の杖', weaponType: 'staff', weaponSprite: 'staff_01', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.2, bonuses: {} },
+    mageStaff: { id: 'mageStaff', name: '魔導士の杖', weaponType: 'staff', weaponSprite: 'staff_01', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.2, bonuses: { mag: 2 } },
     shadowWand: { id: 'shadowWand', name: 'シャドウワンド', weaponType: 'staff', weaponSprite: 'staff_shadow', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.45, bonuses: { mag: 4, mnd: 1 } },
     phantomSword: { id: 'phantomSword', name: '青影の剣', weaponType: 'sword', weaponSprite: 'sword_01', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 2, bonuses: { str: 2 } },
+    ironClaw: { id: 'ironClaw', name: '鉄の爪', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 2, bonuses: { agi: 2 } },
     flameStaff: { id: 'flameStaff', name: 'フレイムスタッフ', weaponType: 'staff', weaponSprite: 'staff_flame', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.6, bonuses: { mag: 6 }, grantsSkillId: 'flame' },
     wizardRod: { id: 'wizardRod', name: 'ウィザードロッド', weaponType: 'staff', weaponSprite: 'staff_wizard', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.9, bonuses: { mag: 9 }, grantsSkillId: 'fireball' },
     sunStaff: { id: 'sunStaff', name: '太陽の杖', weaponType: 'staff', weaponSprite: 'staff_sun', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.2, bonuses: { mag: 14 } },

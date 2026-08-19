@@ -18,6 +18,9 @@
       this.confirmYes = null;
       this.transferMode = null;
       this.transferExportCode = '';
+      this.chosenCharacter = null;
+      this.chosenWeaponType = null;
+      this.chosenJob = null;
     }
 
     async init() {
@@ -29,8 +32,9 @@
       } catch (error) {
         console.error('Start flow data could not be loaded.', error);
         this.prologue = [{ id: 'fallback', time: '00:00', text: 'その名は――\n\n或世盗。\n\nARSÈNE.', effect: 'arsene' }];
-        this.characters = [{ id: 'ren', name: '雨宮 蓮', nameEn: 'AMAMIYA REN', available: true, initialJobName: '魔導士', style: 'MAGIC / TECHNICAL', description: '青い魔力を操る魔導士。', image: 'assets/playable-characters/amamiya-ren/body-no-weapon.png' }];
+        this.characters = [{ id: 'ren', name: '雨宮 蓮', nameEn: 'AMAMIYA REN', available: true, type: 'MAGE', description: '魔力とMPに優れた魔法型。', trait: { name: '魔導の才', description: '杖の武器学成長に小ボーナス。' }, tendency: { str: 2, vit: 3, mag: 5, mnd: 4, agi: 3, luk: 3 }, image: 'assets/playable-characters/amamiya-ren/body-no-weapon.png', portraitMode: 'cutout' }];
       }
+      this.game.setCharacterList(this.characters);
       this.render();
       this.bind();
       const watched = this.openingWatched() || new URLSearchParams(location.search).has('skipop');
@@ -66,7 +70,9 @@
           <div class="flow-frame"><div class="title-content"><div class="flow-emblem" aria-hidden="true"></div><small>THE PHANTOM HOUR BEGINS</small><h1>或世盗&nbsp;<span class="nowrap">-ARSÈNE-</span></h1><p>PHANTOM THIEF RPG</p><nav class="title-menu"><button data-title-new>NEW GAME<span>新たな物語を始める</span></button><button data-title-continue>CONTINUE<span>セーブデータから再開</span></button><button data-title-settings>SETTINGS<span>音量・データ設定</span></button></nav></div><div class="flow-version">VER.0.3</div></div>
         </section>
         <section class="flow-screen prologue-screen" data-flow-screen="prologue"><div class="prologue-stage"></div><button class="prologue-skip" data-prologue-skip>SKIP</button><div class="prologue-copy"><b class="prologue-time"></b><div class="prologue-text"></div></div><span class="prologue-next">CLICK / TAP / ENTER</span><div class="prologue-progress"><i></i></div></section>
-        <section class="flow-screen select-screen" data-flow-screen="select"><div class="select-wrap"><header class="select-heading"><small>CHARACTER SELECT</small><h1>今宵の主役を選べ</h1></header><div class="character-grid"></div></div></section>
+        <section class="flow-screen select-screen" data-flow-screen="select"><div class="select-wrap"><header class="select-heading"><small>CHARACTER SELECT</small><h1>今宵の主役を選べ</h1></header><div class="character-stage"></div><div class="character-switcher"></div></div></section>
+        <section class="flow-screen weapon-screen" data-flow-screen="weapon"><div class="select-wrap"><header class="select-heading"><small>PREFERRED WEAPON</small><h1>得意武器を選べ</h1></header><div class="weapon-grid"></div><div class="choice-note"><b>得意武器について</b><ul><li>得意武器は「武器レベルの成長」と「技の習得」に少しだけボーナスがあります。</li><li>選択しなかった武器も、ゲームを進めることで使用・育成できます。</li><li>得意武器は装備制限ではありません。</li></ul></div><div class="choice-actions"><button class="choice-back" data-weapon-back>戻る<span>BACK</span></button><button class="choice-next" data-weapon-next disabled>この武器で始める<span>START</span></button></div></div></section>
+        <section class="flow-screen job-screen" data-flow-screen="job"><div class="select-wrap"><header class="select-heading"><small>STARTING JOB</small><h1>初期ジョブを選べ</h1></header><div class="job-grid"></div><div class="choice-actions"><button class="choice-back" data-job-back>戻る<span>BACK</span></button></div></div><div class="job-detail-modal"><div class="job-detail-card"></div></div></section>
         <section class="flow-screen settings-screen" data-flow-screen="settings"><div class="flow-settings"></div></section>
         <section class="flow-screen game-start-screen" data-flow-screen="game-start"><div class="flow-frame"><div class="start-card"><small>PHANTOM // 01</small><strong>AMAMIYA REN</strong><div class="flow-emblem" aria-hidden="true"></div><span>麺処 おくのほそ道</span></div></div></section>
         <div class="flow-confirm"><div class="confirm-card"><small>CONFIRM</small><h2></h2><div class="confirm-actions"><button data-confirm-no>NO</button><button data-confirm-yes>YES</button></div></div></div>
@@ -81,8 +87,21 @@
         if (event.target.closest('[data-title-continue]')) { await this.continueGame(); return; }
         if (event.target.closest('[data-title-settings]')) { this.showSettings('title'); return; }
         if (event.target.closest('[data-prologue-skip]')) { event.stopPropagation(); this.showCharacterSelect(); return; }
+        const preview = event.target.closest('[data-preview-character]');
+        if (preview) { this.showCharacterSelect(preview.dataset.previewCharacter); return; }
         const select = event.target.closest('[data-select-character]');
         if (select) { this.askCharacter(select.dataset.selectCharacter); return; }
+        const weaponPick = event.target.closest('[data-select-weapon]');
+        if (weaponPick) { this.chosenWeaponType = weaponPick.dataset.selectWeapon; this.showWeaponSelect(); return; }
+        if (event.target.closest('[data-weapon-back]')) { this.showJobSelect(); return; }
+        if (event.target.closest('[data-weapon-next]')) { if (!this.chosenWeaponType) { this.toast('得意武器を選んでください。'); return; } await this.startGame(this.chosenCharacter); return; }
+        const jobPick = event.target.closest('[data-select-job]');
+        if (jobPick) { this.openJobDetail(jobPick.dataset.selectJob); return; }
+        if (event.target.closest('[data-job-detail-close]')) { this.closeJobDetail(); return; }
+        const jobConfirm = event.target.closest('[data-confirm-job]');
+        if (jobConfirm) { this.chosenJob = jobConfirm.dataset.confirmJob; this.closeJobDetail(); this.showWeaponSelect(); return; }
+        if (event.target.closest('[data-job-back]')) { this.showCharacterSelect(); return; }
+        if (event.target.classList?.contains('job-detail-modal')) { this.closeJobDetail(); return; }
         if (event.target.closest('[data-settings-back]')) { this.leaveSettings(); return; }
         if (event.target.closest('[data-watch-opening]')) { this.watchOpening(this.settingsReturn); return; }
         if (event.target.closest('[data-reset-data]')) { this.confirmReset(); return; }
@@ -187,6 +206,7 @@
       await sleep(520);
       current.classList.remove('leaving');
       this.prologueIndex = 0;
+      this.chosenCharacter = null; this.chosenWeaponType = null; this.chosenJob = null;
       this.setScreen('prologue');
       this.renderPrologue();
     }
@@ -204,18 +224,86 @@
     }
 
     advancePrologue() { this.prologueIndex += 1; if (this.prologueIndex >= this.prologue.length) this.showCharacterSelect(); else this.renderPrologue(); }
-    showCharacterSelect() {
+
+    selectableCharacters() { return this.characters.filter(c => c.available); }
+    stars(n) { const v = Math.max(0, Math.min(5, Number(n) || 0)); return `<i class="stars"><b>${'★'.repeat(v)}</b><em>${'★'.repeat(5 - v)}</em></i>`; }
+
+    showCharacterSelect(focusId) {
       this.setScreen('select');
-      $('.character-grid', this.root).innerHTML = this.characters.map(character => character.available ? `
-        <article class="character-card available"><img src="${character.image}" alt="${character.name}"><div class="card-info"><h2>${character.name}</h2><h3>${character.nameEn}</h3><dl><dt>INITIAL JOB</dt><dd>${character.initialJobName}</dd><dt>STYLE</dt><dd>${character.style}</dd></dl><p>${character.description}</p><button data-select-character="${character.id}">SELECT</button></div></article>` : `
-        <article class="character-card locked" aria-disabled="true"><div class="character-silhouette"></div><strong>LOCKED</strong><span>${character.nameEn}<br>COMING SOON</span></article>`).join('');
+      const list = this.selectableCharacters();
+      if (!list.length) return;
+      const current = list.find(c => c.id === (focusId || this.previewCharacterId)) || list[0];
+      this.previewCharacterId = current.id;
+      this.game.applyCharacterTheme(current.theme);
+
+      const tendencyKeys = [['str', '力'], ['vit', '体力'], ['mag', '魔力'], ['mnd', '精神'], ['agi', '素早さ'], ['luk', '運']];
+      const tendency = tendencyKeys.map(([k, label]) => `<div class="tend-row"><span>${label}</span>${this.stars(current.tendency?.[k])}</div>`).join('');
+      const trait = current.trait;
+      const nl = text => (text || '').split('\n').filter(Boolean).map(line => `<p>${line}</p>`).join('');
+
+      $('.character-stage', this.root).innerHTML = `
+        <article class="character-card available" data-portrait="${current.portraitMode || 'scene'}">
+          <div class="cc-art"><img src="${current.image}" alt="${current.name}" style="object-position:${current.imageFocus || '50% 20%'}"></div>
+          <div class="card-info">
+            <h2>${current.name}</h2><h3>${current.nameEn}</h3>
+            <div class="cc-type"><small>TYPE</small><b>${current.type || ''}</b>${current.typeLabel ? `<span>${current.typeLabel}</span>` : ''}</div>
+            <div class="cc-desc">${nl(current.description)}</div>
+            ${trait ? `<div class="cc-trait"><small>CHARACTER TRAIT</small><b>${trait.name}</b>${trait.nameEn ? `<span class="cc-trait-en">${trait.nameEn}</span>` : ''}<div class="cc-trait-desc">${nl(trait.description)}</div></div>` : ''}
+            <div class="cc-tendency"><small>INITIAL TENDENCY</small><div class="tend-grid">${tendency}</div></div>
+            <button class="cc-select" data-select-character="${current.id}">SELECT</button>
+          </div>
+        </article>`;
+
+      $('.character-switcher', this.root).innerHTML = list.map(c => `
+        <button type="button" class="mini-card ${c.id === current.id ? 'active' : ''}" data-preview-character="${c.id}" aria-pressed="${c.id === current.id}" style="--mini-primary:${c.theme?.primary || '#2f9dff'};--mini-glow:${c.theme?.glow || '#147dd8'}">
+          <span class="mini-art"><img src="${c.image}" alt="" style="object-position:${c.imageFocus || '50% 20%'}"></span>
+          <b>${c.name}</b><small>${c.type || ''}</small>
+        </button>`).join('');
     }
 
     askCharacter(id) {
       const character = this.characters.find(entry => entry.id === id && entry.available);
       if (!character) { this.toast('このPHANTOMはまだ選択できません。'); return; }
-      this.openConfirm(`${character.name}でゲームを開始しますか？`, () => this.startGame(character));
+      this.openConfirm(`${character.name}で進みますか？`, () => { this.chosenCharacter = character; this.game.applyCharacterTheme(character.theme); this.showJobSelect(); });
     }
+
+    // ── 得意武器選択 ──────────────────────────────────────────
+    showWeaponSelect() {
+      this.setScreen('weapon');
+      const types = this.game.weaponTypeList();
+      $('.weapon-grid', this.root).innerHTML = types.map(type => {
+        const w = window.ARSENE_DATA.weapons[type.starterWeaponId];
+        const bonus = Object.entries(w?.bonuses || {}).map(([k, v]) => `${this.statLabel(k)} ${v >= 0 ? '+' : ''}${v}`).join(' / ') || '補正なし';
+        const selected = this.chosenWeaponType === type.id;
+        return `<button type="button" class="weapon-card ${selected ? 'selected' : ''}" data-select-weapon="${type.id}" aria-pressed="${selected}"><span class="wc-icon" data-weapon-icon="${type.id}" aria-hidden="true"></span><strong>${type.name}</strong><small>${type.nameEn}</small><p>${type.description}</p><div class="wc-starter"><b>初期装備</b><span>${w?.name || '—'}</span><em>${bonus}</em></div></button>`;
+      }).join('');
+      $('[data-weapon-next]', this.root).disabled = !this.chosenWeaponType;
+    }
+    statLabel(key) { return ({ maxHp: 'HP', maxMp: 'MP', str: '力', vit: '体力', mag: '魔力', mnd: '精神', agi: '素早さ', dex: '器用さ', luk: '運', critBonus: '会心' })[key] || key.toUpperCase(); }
+
+    // ── 初期ジョブ選択 ────────────────────────────────────────
+    showJobSelect() {
+      this.setScreen('job');
+      const jobs = this.game.startingJobList();
+      $('.job-grid', this.root).innerHTML = jobs.map(job => {
+        const growth = (job.growthStats || []).map(k => this.statLabel(k)).join(' ・ ');
+        return `<button type="button" class="job-card" data-select-job="${job.id}"><strong>${job.name}</strong><small>${job.nameEn}</small><span class="jc-growth">${growth}</span><p>${job.description}</p><em>詳細を見る</em></button>`;
+      }).join('');
+      this.closeJobDetail();
+    }
+    openJobDetail(jobId) {
+      const job = window.ARSENE_DATA.jobs[jobId]; if (!job) return;
+      const skill = window.ARSENE_DATA.skills[job.signatureSkillId];
+      const growth = (job.growthStats || []).map(k => `<i>${this.statLabel(k)}</i>`).join('');
+      const modal = $('.job-detail-modal', this.root);
+      $('.job-detail-card', modal).innerHTML = `<button type="button" class="jd-close" data-job-detail-close aria-label="閉じる">×</button><small>STARTING JOB</small><h2>${job.name}</h2><span class="jd-en">${job.nameEn}</span>
+        <div class="jd-block"><b>成長しやすい能力</b><div class="jd-growth">${growth || '<i>—</i>'}</div></div>
+        <div class="jd-block"><b>特徴</b><p>${job.featureText || job.description || ''}</p></div>
+        ${skill ? `<div class="jd-block jd-skill"><b>固有スキル</b><strong>${skill.name}</strong><span class="jd-skill-en">${skill.nameEn || ''}</span><p>${skill.description || ''}</p>${skill.effectText ? `<em>${skill.effectText}</em>` : ''}</div>` : ''}
+        <button type="button" class="jd-start" data-confirm-job="${job.id}">このジョブで進む<span>NEXT</span></button>`;
+      modal.classList.add('active');
+    }
+    closeJobDetail() { $('.job-detail-modal', this.root)?.classList.remove('active'); }
 
     async startGame(character) {
       const profile = this.game.freshProfile();
@@ -225,7 +313,9 @@
       profile.openingWatched = true;
       profile.flags.prologueCompleted = true;
       profile.flags.openingWatched = true;
+      this.game.applyStartingChoice(profile, this.chosenWeaponType, this.chosenJob);
       this.game.profile = profile;
+      this.game.applyCharacterTheme(character.theme);
       this.game.saveProfile();
       this.writeMeta({ openingWatched: true });
       this.setScreen('game-start');
@@ -239,6 +329,7 @@
       if (!this.saveExists()) return;
       await this.game.audio.unlock();
       this.game.profile = this.game.loadProfile();
+      this.game.applyThemeForCharacter(this.game.profile.selectedCharacter, this.characters);
       this.game.profile.openingWatched = true;
       this.game.profile.flags.openingWatched = true;
       this.game.saveProfile();
