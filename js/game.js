@@ -22,6 +22,12 @@
       $('#menu-panel').addEventListener('click', async e => {
         const enterDungeon = e.target.closest('[data-enter-dungeon]');
         if (enterDungeon) { this.currentDungeonId = enterDungeon.dataset.enterDungeon; const dungeonCfg = this.getDungeon(this.currentDungeonId); await this.audio.playTrack(dungeonCfg?.music || this.battleMusic); this.startBattle(); return; }
+        const slotPick = e.target.closest('[data-equip-slot-pick]');
+        if (slotPick) { if (slotPick.disabled) return; const s = slotPick.dataset.equipSlotPick; this.equipSlot = this.equipSlot === s ? null : s; this.selectedEquipmentId = null; this.audio.sfx('ui'); this.renderMenuPanel('equipment'); return; }
+        const equipSort = e.target.closest('[data-equip-sort]');
+        if (equipSort) { this.equipSort = equipSort.dataset.equipSort; this.audio.sfx('ui'); this.renderMenuPanel('equipment'); return; }
+        const unequip = e.target.closest('[data-unequip-slot]');
+        if (unequip) { this.unequipSlot(unequip.dataset.unequipSlot); return; }
         const equipTab = e.target.closest('[data-equip-tab]');
         if (equipTab) { this.equipTab = equipTab.dataset.equipTab; this.audio.sfx('ui'); this.renderMenuPanel('equipment'); return; }
         const itemTab = e.target.closest('[data-item-tab]');
@@ -623,14 +629,17 @@
       const need = this.expNeeded(), expPct = Math.min(100, 100 * this.profile.exp / need), jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100;
       const slots = D.equipmentSlots || [{ id: 'rightHand', name: '右手', enName: 'MAIN' }, { id: 'leftHand', name: '左手', enName: 'OFF' }, { id: 'head', name: '頭', enName: 'HEAD' }, { id: 'body', name: '体', enName: 'BODY' }, { id: 'arms', name: '腕', enName: 'ARMS' }, { id: 'feet', name: '足', enName: 'FEET' }, { id: 'accessory', name: 'アクセ', enName: 'ACC' }];
       const eqRows = slots.map(s => { const id = this.profile.equipment[s.id], it = D.items[id]; return `<div class="st-eq-row ${id ? 'filled' : 'empty'}"><span>${s.name}</span><b>${it?.name || '—'}${id ? this.enchantSuffix(id) : ''}</b><small>${id ? this.bonusText(id) : ''}</small></div>`; }).join('');
-      const statRows = Object.keys(statLabels).map(k => `<div class="st-stat"><span>${statLabels[k]}</span><b>${total[k]}</b><em>基本 ${base[k]}${bonus[k] ? ` / 装備 +${bonus[k]}` : ''}</em></div>`).join('');
+      const jobBonus = this.activeJobBonuses();
+      const statRows = Object.keys(statLabels).map(k => { const parts = [`基本 ${base[k]}`]; if (bonus[k]) parts.push(`<i class="src-eq">装備 +${bonus[k]}</i>`); if (jobBonus[k]) parts.push(`<i class="src-job">JOB +${jobBonus[k]}</i>`); return `<div class="st-stat"><span>${statLabels[k]}</span><b>${total[k]}</b><em>${parts.join(' / ')}</em></div>`; }).join('');
+      const jobBonusRows = Object.entries(jobBonus).filter(([, v]) => v).map(([k, v]) => `<div class="st-jb-row"><span>${statLabels[k] || k.toUpperCase()}</span><b>+${v}</b></div>`).join('');
+      const jobHtml = `<div class="st-section"><h3>ジョブ補正 <span>JOB BONUS</span></h3><div class="st-jb-head"><b>${D.jobs[jid]?.name || ''}</b><em>Lv.${jlv} まで習得</em></div>${jobBonusRows ? `<div class="st-jb">${jobBonusRows}</div>` : '<p class="item-empty">まだ補正はありません。</p>'}</div>`;
       const passives = (this.profile.passiveSlots || []).map(id => D.skills[id]).filter(Boolean);
       const passiveHtml = passives.length ? `<div class="st-section"><h3>パッシブ <span>PASSIVE</span></h3><div class="st-passives">${passives.map(s => `<div><b>${s.name}</b><small>${s.description || ''}</small></div>`).join('')}</div></div>` : '';
       panel.innerHTML = `<small>CHARACTER DATA</small><h2>${withTabs ? '装備・ステータス' : 'ステータス'}</h2>${withTabs ? this.equipTabsHtml() : ''}
         <div class="st-head"><div class="st-portrait" aria-hidden="true"></div><div class="st-id"><strong>雨宮 蓮</strong><span>AMAMIYA REN</span><b>LV.${String(this.profile.level).padStart(2,'0')}</b><em>${D.jobs[jid]?.name || ''} Lv.${jlv}</em></div></div>
         <div class="st-meters"><div class="st-meter hp"><span>HP</span><i style="width:${100*vitals.hp/total.maxHp}%"></i><output>${vitals.hp} / ${total.maxHp}</output></div><div class="st-meter mp"><span>MP</span><i style="width:${100*vitals.mp/total.maxMp}%"></i><output>${vitals.mp} / ${total.maxMp}</output></div><div class="st-meter exp"><span>EXP</span><i style="width:${expPct}%"></i><output>${expPct.toFixed(2)}%</output></div><div class="st-meter jexp"><span>JEXP</span><i style="width:${jpct}%"></i><output>${jneed ? jpct.toFixed(2)+'%' : 'MASTER'}</output></div></div>
         <div class="st-section"><h3>装備 <span>EQUIPMENT</span></h3><div class="st-eq">${eqRows}</div></div>
-        <div class="st-section"><h3>能力値 <span>STATS</span></h3><div class="stat-grid">${statRows}</div></div>${passiveHtml}`;
+        <div class="st-section"><h3>能力値 <span>STATS</span></h3><div class="stat-grid">${statRows}</div></div>${jobHtml}${passiveHtml}`;
     }
     enchantLevel(id) { return (D.weapons[id] ? (this.profile.weaponEnchants || {})[id] : (this.profile.armorEnchants || {})[id]) || 0; }
     enchantSuffix(id) { const lv = this.enchantLevel(id); return lv > 0 ? `<em class="ench-lv">+${lv}</em>` : ''; }
@@ -715,7 +724,7 @@
     }
     equipmentPreviewHTML(id) {
       if (!id) return `<div class="equipment-empty-preview"><b>装備候補を選択</b><span>候補をタップすると、現在装備との能力差を確認できます。</span></div>`;
-      const item = D.items[id], currentId = this.profile.equipment[item.slot], currentItem = D.items[currentId], nextEquipment = { ...this.profile.equipment, [item.slot]: id }, before = this.totalStats(), after = this.totalStats(nextEquipment), active = currentId === id;
+      const item = D.items[id], targetSlot = this.equipSlot || item.slot, currentId = this.profile.equipment[targetSlot], currentItem = D.items[currentId], nextEquipment = { ...this.profile.equipment, [targetSlot]: id }, before = this.totalStats(), after = this.totalStats(nextEquipment), active = currentId === id;
       const rows = Object.keys(statLabels).map(key => { const delta = after[key] - before[key], state = delta > 0 ? 'up' : delta < 0 ? 'down' : 'same', change = delta ? `${delta > 0 ? '+' : ''}${delta} ${delta > 0 ? '↑' : '↓'}` : '－'; return `<div class="compare-row ${state}"><span>${statLabels[key]}</span><b>${before[key]}</b><i>→</i><strong>${after[key]}</strong><em>${change}</em></div>`; }).join('');
       const isDualBlade = this.profile.currentJob === 'dualBlade', isWeapon = !!D.weapons[id], leftActive = this.profile.equipment.leftHand === id;
       const leftBtn = isDualBlade && isWeapon ? `<button class="equip-confirm" data-equip-left="${id}" ${leftActive ? 'disabled' : ''} style="margin-top:.4rem">${leftActive ? '左手装備中' : '左手に装備'}<span>${leftActive ? 'L-EQUIPPED' : 'L-EQUIP'}</span></button>` : '';
@@ -723,18 +732,49 @@
     }
     musicScoreSectionHTML() { const scores = Object.values(D.musicScores || {}); return `<section class="music-score-section"><h3>楽曲 <span>MUSIC SCORE // PRIVATE MODE</span></h3><div>${scores.map(score => { const owned = !!this.profile.musicScores?.[score.id]; return `<article class="music-score-card ${owned ? 'owned' : 'locked'}"><i>♪</i><div><small>${owned ? 'PLAYABLE SCORE' : 'LOCKED SCORE'}</small><b>${owned ? score.title : '????????'}</b><strong>${owned ? `（${score.subtitle}）` : 'ゼナカド初回撃破で解放'}</strong><span>${owned ? score.description : 'まだ演奏できません。'}</span></div><em>${owned ? 'PRIVATE MODE ITEM' : 'LOCKED'}</em></article>`; }).join('')}</div></section>`; }
     bossSetBonusSectionHTML() { const seriesList = this.unlockedBossSeries(); if (!seriesList.length) return ''; return seriesList.map(series => { const count = this.equippedSeriesCount(series.id); return `<section class="boss-set-section"><header><div><small>BOSS EQUIPMENT SET</small><h3>${series.name}</h3></div><strong>${count} / ${series.equipment.length} EQUIPPED</strong></header><div>${Object.entries(series.setBonuses || {}).map(([needed, bonus]) => `<article class="${count >= Number(needed) ? 'active' : ''}"><b>${needed} SET — ${bonus.name}</b><span>${bonus.description}</span></article>`).join('')}</div></section>`; }).join(''); }
-    equipTabsHtml() { const t = this.equipTab || 'equip'; return `<div class="item-tabs eq-tabs"><button data-equip-tab="equip" class="${t === 'equip' ? 'active' : ''}"><b>装備</b><span>EQUIPMENT</span></button><button data-equip-tab="status" class="${t === 'status' ? 'active' : ''}"><b>ステータス</b><span>STATUS</span></button></div>`; }
+    equipTabsHtml() { const t = this.equipTab || 'equip'; return `<div class="item-tabs eq-tabs"><button data-equip-tab="equip" class="${t === 'equip' ? 'active' : ''}"><b>装備</b><span>EQUIPMENT</span></button><button data-equip-tab="status" class="${t === 'status' ? 'active' : ''}"><b>ステータス</b><span>STATUS</span></button><button data-equip-tab="score" class="${t === 'score' ? 'active' : ''}"><b>楽曲</b><span>SCORE</span></button></div>`; }
     renderEquipmentPanel(panel) {
       if (this.equipTab === 'status') { this.renderStatusPanel(panel, true); return; }
+      if (this.equipTab === 'score') { panel.innerHTML = `<small>MUSIC SCORE</small><h2>楽曲</h2>${this.equipTabsHtml()}<div class="score-note"><b>今後プライベートモードで使用します</b><span>入手した楽曲は、実装予定のプライベートモードで演奏できるようになります。</span></div>${this.musicScoreSectionHTML()}`; return; }
       const slots = D.equipmentSlots || [], owned = Object.entries(this.profile.inventory).filter(([id, n]) => n > 0 && D.items[id]?.category === 'equipment');
       if (this.selectedEquipmentId && !(this.profile.inventory[this.selectedEquipmentId] > 0)) this.selectedEquipmentId = null;
       const isDualBlade = this.profile.currentJob === 'dualBlade';
-      const slotHtml = slots.map(slot => { const id = this.profile.equipment[slot.id], item = D.items[id]; const rate = isDualBlade && slot.id === 'leftHand' && D.weapons[id] ? ' ×70%' : ''; return `<div class="equipment-slot ${id ? 'filled' : 'empty'} ${slot.id === 'leftHand' && !isDualBlade ? 'slot-disabled' : ''}"><span>${slot.name}<small>${slot.enName}</small></span><b>${item?.name || 'なし'}${id ? this.enchantSuffix(id) : ''}${rate}</b></div>`; }).join('');
-      const candidateHtml = owned.map(([id]) => { const item = D.items[id], active = this.profile.equipment[item.slot] === id, selected = this.selectedEquipmentId === id, slot = slots.find(s => s.id === item.slot); return `<button data-equip-preview="${id}" aria-pressed="${selected}" class="equipment-candidate rarity-${item.rarity} ${active ? 'equipped-now' : ''} ${selected ? 'selected' : ''}"><span class="candidate-title"><b>${item.name}${this.enchantSuffix(id)}${item.stars ? `<small>${'★'.repeat(item.stars)}</small>` : ''}</b>${active ? '<em>EQUIPPED</em>' : ''}</span><strong>${this.bonusText(id)}</strong><small>${slot?.name || item.slot} // ${item.description}</small></button>`; }).join('');
-      panel.innerHTML = `<small>EQUIPMENT</small><h2>装備・ステータス</h2>${this.equipTabsHtml()}<div class="equipment-screen"><section class="equipment-slots-wrap"><h3>装備中 <span>CURRENT LOADOUT</span></h3><div class="equipment-slots">${slotHtml}</div></section><section class="equipment-workbench"><div class="equipment-candidates"><h3>装備一覧 <span>OWNED EQUIPMENT</span></h3>${candidateHtml || '<p>装備品を所持していません。</p>'}</div><div id="equipment-preview" class="equipment-preview"><h3>能力比較 <span>STATUS COMPARISON</span></h3>${this.equipmentPreviewHTML(this.selectedEquipmentId)}</div></section>${this.bossSetBonusSectionHTML()}${this.musicScoreSectionHTML()}</div>`;
+      const activeSlot = this.equipSlot && slots.some(s => s.id === this.equipSlot) ? this.equipSlot : null;
+      const slotHtml = slots.map(slot => { const id = this.profile.equipment[slot.id], item = D.items[id]; const rate = isDualBlade && slot.id === 'leftHand' && D.weapons[id] ? ' ×70%' : ''; const disabled = slot.id === 'leftHand' && !isDualBlade; const count = this.candidatesForSlot(slot.id).length; return `<button type="button" data-equip-slot-pick="${slot.id}" class="equipment-slot ${id ? 'filled' : 'empty'} ${disabled ? 'slot-disabled' : ''} ${activeSlot === slot.id ? 'slot-active' : ''}" ${disabled ? 'disabled' : ''}><span>${slot.name}<small>${slot.enName}</small></span><b>${item?.name || 'なし'}${id ? this.enchantSuffix(id) : ''}${rate}</b>${count && !disabled ? `<i class="slot-count">${count}</i>` : ''}</button>`; }).join('');
+      let workbench;
+      if (!activeSlot) {
+        workbench = `<div class="equip-hint"><b>装備部位を選んでください</b><span>上の部位をタップすると、そこに装備できるアイテムだけが表示されます。</span></div>`;
+      } else {
+        const slotDef = slots.find(s => s.id === activeSlot);
+        let list = this.candidatesForSlot(activeSlot);
+        const sortKey = this.equipSort || 'default';
+        if (sortKey !== 'default') list = [...list].sort((a, b) => this.equipSortValue(b, sortKey) - this.equipSortValue(a, sortKey) || (D.items[a]?.name || '').localeCompare(D.items[b]?.name || ''));
+        const sortOpts = [{ id: 'default', name: '標準' }, ...Object.keys(statLabels).map(k => ({ id: k, name: statLabels[k] }))];
+        const sortHtml = `<div class="equip-sort"><span>並べ替え</span><div class="equip-sort-btns">${sortOpts.map(o => `<button data-equip-sort="${o.id}" class="${sortKey === o.id ? 'active' : ''}">${o.name}</button>`).join('')}</div></div>`;
+        const curId = this.profile.equipment[activeSlot];
+        const unequipBtn = curId ? `<button class="equip-unequip" data-unequip-slot="${activeSlot}">${slotDef?.name}を外す<span>UNEQUIP</span></button>` : '';
+        const cards = list.map(id => { const item = D.items[id], active = this.profile.equipment[activeSlot] === id, selected = this.selectedEquipmentId === id; const delta = this.equipDeltaSummary(id, activeSlot); return `<button data-equip-preview="${id}" aria-pressed="${selected}" class="equipment-candidate rarity-${item.rarity} ${active ? 'equipped-now' : ''} ${selected ? 'selected' : ''}"><span class="candidate-title"><b>${item.name}${this.enchantSuffix(id)}${item.stars ? `<small>${'★'.repeat(item.stars)}</small>` : ''}</b>${active ? '<em>EQUIPPED</em>' : ''}</span><strong>${this.bonusText(id)}</strong>${delta ? `<span class="cand-delta">${delta}</span>` : ''}<small>${item.description}</small></button>`; }).join('');
+        workbench = `<div class="equipment-candidates"><h3>${slotDef?.name}の装備 <span>${slotDef?.enName}</span></h3>${sortHtml}${unequipBtn}${cards || '<p class="item-empty">この部位に装備できるアイテムがありません。</p>'}</div><div id="equipment-preview" class="equipment-preview"><h3>能力比較 <span>STATUS COMPARISON</span></h3>${this.equipmentPreviewHTML(this.selectedEquipmentId)}</div>`;
+      }
+      panel.innerHTML = `<small>EQUIPMENT</small><h2>装備・ステータス</h2>${this.equipTabsHtml()}<div class="equipment-screen"><section class="equipment-slots-wrap"><h3>装備中 <span>CURRENT LOADOUT</span></h3><div class="equipment-slots">${slotHtml}</div></section><section class="equipment-workbench">${workbench}</section>${this.bossSetBonusSectionHTML()}</div>`;
+    }
+    candidatesForSlot(slotId) {
+      const isDualBlade = this.profile.currentJob === 'dualBlade';
+      return Object.entries(this.profile.inventory).filter(([id, n]) => {
+        if (!(n > 0)) return false; const item = D.items[id]; if (!item || item.category !== 'equipment') return false;
+        if (slotId === 'leftHand') return isDualBlade ? (!!D.weapons[id] || item.slot === 'leftHand') : item.slot === 'leftHand';
+        return item.slot === slotId;
+      }).map(([id]) => id);
+    }
+    equipSortValue(id, key) { const before = this.totalStats(), item = D.items[id]; if (!item) return 0; const slot = this.equipSlot || item.slot; const after = this.totalStats({ ...this.profile.equipment, [slot]: id }); return after[key] - before[key]; }
+    equipDeltaSummary(id, slotId) {
+      const before = this.totalStats(), after = this.totalStats({ ...this.profile.equipment, [slotId]: id });
+      const parts = Object.keys(statLabels).map(k => { const d = after[k] - before[k]; return d ? `<i class="${d > 0 ? 'up' : 'down'}">${statLabels[k]} ${d > 0 ? '+' : ''}${d}</i>` : ''; }).filter(Boolean);
+      return parts.length ? parts.join('') : '<i class="same">変化なし</i>';
     }
     previewEquipment(id) { const item = D.items[id]; if (!item || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; this.selectedEquipmentId = id; this.renderMenuPanel('equipment'); requestAnimationFrame(() => $('#equipment-preview')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })); }
-    equipItem(id) { const item = D.items[id]; if (!item || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; this.profile.equipment[item.slot] = id; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
+    equipItem(id) { const item = D.items[id]; if (!item || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; const slot = (this.equipSlot && this.candidatesForSlot(this.equipSlot).includes(id)) ? this.equipSlot : item.slot; this.profile.equipment[slot] = id; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
+    unequipSlot(slotId) { if (!slotId || !(slotId in this.profile.equipment)) return; this.profile.equipment[slotId] = slotId === 'rightHand' ? 'mageStaff' : null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('ui'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
     equipFromInventory(id) { const item = D.items[id]; if (!item || !(this.profile.inventory[id] > 0)) return; const slot = D.weapons[id] ? 'rightHand' : item.slot; if (!slot) return; this.profile.equipment[slot] = id; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('items'); }
     equipLeftHandWeapon(id) { if (!D.weapons[id] || !(this.profile.inventory[id] > 0) || this.profile.currentJob !== 'dualBlade') return; this.profile.equipment.leftHand = id; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
 

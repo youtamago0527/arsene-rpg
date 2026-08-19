@@ -93,3 +93,44 @@
 .st-passives>div{padding:7px 10px;border:1px solid #3a2a5e;background:#0c0718}
 .st-passives b{display:block;font-size:12px;color:#d8b6ff}
 .st-passives small{font-size:10px;color:#9c88bb}
+
+/* ── Equipment slot picker & sort ─────────────────────────────── */
+.equipment-slot{position:relative;width:100%;text-align:left;cursor:pointer;transition:.15s}
+.equipment-slot:disabled{cursor:default;opacity:.45}
+.equipment-slot:not(:disabled):hover{border-color:#3fa6ff}
+.equipment-slot.slot-active{border-color:#3fa6ff;background:linear-gradient(#0d2949,#071528);box-shadow:inset 0 0 16px #1272d055}
+.slot-count{position:absolute;right:6px;top:6px;min-width:16px;padding:1px 4px;border-radius:8px;background:#1a5fa8;color:#fff;font:700 9px/1.4 Cinzel;font-style:normal;text-align:center}
+.equip-hint{padding:26px 16px;text-align:center;border:1px dashed #2a4664;background:#050c17}
+.equip-hint b{display:block;margin-bottom:5px;font-size:14px;color:#cfe4f7}
+.equip-hint span{font-size:11px;color:#7f9dba;line-height:1.6}
+.equip-sort{display:grid;gap:5px;margin:8px 0 10px}
+.equip-sort>span{font:700 9px/1 Cinzel;letter-spacing:.16em;color:#7f9dba}
+.equip-sort-btns{display:flex;flex-wrap:wrap;gap:4px}
+.equip-sort-btns button{padding:4px 10px;border:1px solid #2a3f5c;background:#060d18;color:#8fb0cf;font-size:10px;cursor:pointer;transition:.15s}
+.equip-sort-btns button.active{border-color:#3fa6ff;background:#0e2a49;color:#fff}
+.equip-unequip{width:100%;margin-bottom:8px;padding:8px;border:1px solid #6b2740;background:#1a0710;color:#ffb4c6;cursor:pointer;display:grid;gap:1px}
+.equip-unequip span{font:700 8px/1 Cinzel;letter-spacing:.16em;opacity:.8}
+.equip-unequip:hover{border-color:#ff5f85;background:#2a0c17}
+.cand-delta{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.cand-delta i{padding:1px 5px;border-radius:3px;font:700 9px/1.5 Cinzel;font-style:normal}
+.cand-delta i.up{background:#0d3320;color:#7bff9a}
+.cand-delta i.down{background:#330d18;color:#ff8fa6}
+.cand-delta i.same{background:#161d28;color:#7f9dba}
+
+/* ── Status: job bonus ───────────────────────────────────────── */
+.st-stat em i{font-style:normal;padding:0 3px;border-radius:2px}
+.st-stat em i.src-eq{color:#7bd3ff;background:#0a2135}
+.st-stat em i.src-job{color:#d8b6ff;background:#1a0f2e}
+.st-jb-head{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.st-jb-head b{font-size:13px;color:#d8b6ff}
+.st-jb-head em{font-size:10px;font-style:normal;color:#9c88bb}
+.st-jb{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:5px}
+.st-jb-row{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px 9px;border:1px solid #3a2a5e;background:#0c0718}
+.st-jb-row span{font-size:10px;color:#9c88bb}
+.st-jb-row b{font:700 13px/1 Cinzel;color:#d8b6ff}
+
+/* ── Music score tab ─────────────────────────────────────────── */
+.item-tabs.eq-tabs{grid-template-columns:repeat(3,1fr)}
+.score-note{margin:10px 0 12px;padding:11px 13px;border:1px solid #4a3a5e;background:linear-gradient(100deg,#140b26,#0a0716);display:grid;gap:3px}
+.score-note b{font-size:12px;color:#d8b6ff}
+.score-note span{font-size:10px;color:#9c88bb;line-height:1.65}
