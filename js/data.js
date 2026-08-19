@@ -300,9 +300,10 @@ window.ARSENE_DATA = {
     // ══ 武器カテゴリ別の通常攻撃 ══════════════════════════════
     // 装備武器の weaponType から basicAttackByWeaponType で引かれる。
     // 剣は既存 attack をそのまま使用（力依存の物理攻撃）。
-    // powerScale は武器のpowerに掛かる倍率。力に加えて素早さも参照する体術の通常攻撃。
-    martialStrike: { id: 'martialStrike', name: 'たたかう', nameEn: 'MARTIAL STRIKE', mp: 0, kind: 'weapon', weaponType: 'martial', target: 'single', powerScale: 0.82, agiScale: 0.45, damageType: 'physical', powerText: 'ATK×0.82＋AGI×0.45', description: '拳と爪による打撃。力と素早さを参照する。' },
-    staffFireball: { id: 'staffFireball', name: 'ファイアーボール', nameEn: 'FIREBALL', mp: 0, kind: 'magical', weaponType: 'staff', target: 'single', power: 2.1, agiScale: 0, damageType: 'magical', element: 'fire', powerText: 'MAG×2.1', effectText: '炎属性／MP消費なし', description: '杖に灯した炎弾を撃ち出す。杖の通常攻撃。' },
+    // 3種の通常攻撃は同一の計算式（武器power × 参照ステータス）。参照する能力だけが異なる。
+    //   剣 → 力 ／ 爪 → 素早さ ／ 杖 → 魔力
+    martialStrike: { id: 'martialStrike', name: 'たたかう', nameEn: 'MARTIAL STRIKE', mp: 0, kind: 'weapon', weaponType: 'martial', target: 'single', agiScale: 0, damageType: 'physical', powerText: 'AGI依存', description: '拳と爪による打撃。素早さを参照する。' },
+    staffFireball: { id: 'staffFireball', name: 'ファイアーボール', nameEn: 'FIREBALL', mp: 0, kind: 'weapon', weaponType: 'staff', target: 'single', agiScale: 0, damageType: 'magical', element: 'fire', powerText: 'MAG依存', effectText: '炎属性／MP消費なし', description: '杖に灯した炎弾を撃ち出す。杖の通常攻撃。' },
 
     // ══ 閃き技（対応する攻撃の使用中に閃く）═══════════════════
     // weaponType / prerequisiteSkill / requiredWeaponLevel / sparkRate で
@@ -312,14 +313,14 @@ window.ARSENE_DATA = {
       weaponType: 'sword', prerequisiteSkill: 'attack', requiredWeaponLevel: 3, sparkRate: null,
       mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
       power: 0.7, hitCount: 2, hits: 2, agiScale: 0, criticalModifier: 0,
-      powerText: 'ATK×0.7×2回', effectText: '2連撃／合計1.4倍', description: '踏み込みから返す刃で二度斬りつける。'
+      powerText: 'STR×0.7×2回', effectText: '2連撃／合計1.4倍', description: '踏み込みから返す刃で二度斬りつける。'
     },
     doubleClaw: {
       id: 'doubleClaw', name: 'ダブルクロー', nameEn: 'DOUBLE CLAW', source: 'weapon', type: 'ACTIVE',
       weaponType: 'martial', prerequisiteSkill: 'martialStrike', requiredWeaponLevel: 3, sparkRate: null,
       mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
-      power: 0.65, hitCount: 2, hits: 2, agiScale: 0.2, criticalModifier: 0.08,
-      powerText: 'ATK×0.65×2回', effectText: '2連撃／各撃で会心判定＋会心率上昇', description: '両の爪で切り裂く連撃。会心を狙いやすい。'
+      power: 0.65, hitCount: 2, hits: 2, agiScale: 0, criticalModifier: 0.08,
+      powerText: 'AGI×0.65×2回', effectText: '2連撃／各撃で会心判定＋会心率上昇', description: '両の爪で切り裂く連撃。会心を狙いやすい。'
     },
     fireStorm: {
       id: 'fireStorm', name: 'ファイアストーム', nameEn: 'FIRE STORM', source: 'weapon', type: 'ACTIVE',
@@ -470,7 +471,7 @@ window.ARSENE_DATA = {
     mageStaff: { id: 'mageStaff', name: '魔導士の杖', weaponType: 'staff', weaponSprite: 'staff_01', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.2, bonuses: { mag: 2 } },
     shadowWand: { id: 'shadowWand', name: 'シャドウワンド', weaponType: 'staff', weaponSprite: 'staff_shadow', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.45, bonuses: { mag: 4, mnd: 1 } },
     phantomSword: { id: 'phantomSword', name: '青影の剣', weaponType: 'sword', weaponSprite: 'sword_01', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 2, bonuses: { str: 2 } },
-    ironClaw: { id: 'ironClaw', name: '鉄の爪', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 2, bonuses: { agi: 2 } },
+    ironClaw: { id: 'ironClaw', name: '鉄の爪', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', damageStat: 'agi', power: 2, bonuses: { agi: 2 } },
     flameStaff: { id: 'flameStaff', name: 'フレイムスタッフ', weaponType: 'staff', weaponSprite: 'staff_flame', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.6, bonuses: { mag: 6 }, grantsSkillId: 'flame' },
     wizardRod: { id: 'wizardRod', name: 'ウィザードロッド', weaponType: 'staff', weaponSprite: 'staff_wizard', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.9, bonuses: { mag: 9 }, grantsSkillId: 'fireball' },
     sunStaff: { id: 'sunStaff', name: '太陽の杖', weaponType: 'staff', weaponSprite: 'staff_sun', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.2, bonuses: { mag: 14 } },
