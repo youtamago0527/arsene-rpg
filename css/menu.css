@@ -134,3 +134,19 @@
 .score-note{margin:10px 0 12px;padding:11px 13px;border:1px solid #4a3a5e;background:linear-gradient(100deg,#140b26,#0a0716);display:grid;gap:3px}
 .score-note b{font-size:12px;color:#d8b6ff}
 .score-note span{font-size:10px;color:#9c88bb;line-height:1.65}
+
+.menu-panel.panel-tall{min-height:88svh}
+
+/* ── Boss challenge / rematch card ───────────────────────────── */
+.dungeon-card.boss-card{border-color:#6b2740;background:linear-gradient(100deg,#1a0710,#0a0409)}
+.dungeon-card.boss-card:hover{border-color:#ff5f85;box-shadow:0 0 18px #c4004455}
+.dungeon-card.boss-card .dungeon-info small{color:#ff8fa6}
+.dungeon-card.boss-card .dungeon-progress{color:#ffb4c6}
+.dungeon-card.boss-rematch{border-color:#3a2a5e;background:linear-gradient(100deg,#140b26,#0a0716)}
+.dungeon-card.boss-rematch:hover{border-color:#a26bff;box-shadow:0 0 18px #7a3fd455}
+.dungeon-card.boss-rematch .dungeon-info small{color:#d8b6ff}
+.dungeon-card.boss-rematch .dungeon-progress{color:#b79aff}
+.boss-thumb{background-size:cover;background-position:center top}
+.boss-tag-new,.boss-tag-rematch{position:absolute;right:8px;top:8px;padding:2px 7px;border-radius:3px;font:700 9px/1.5 Cinzel}
+.boss-tag-new{background:#c40044;color:#fff}
+.boss-tag-rematch{background:#6b3fd4;color:#fff}

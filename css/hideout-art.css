@@ -35,3 +35,5 @@
 .hideout-art-shell .hideout-player{pointer-events:auto}
 .hideout-art-shell .hideout-player-portrait{display:block!important;position:absolute!important;left:0;top:0;width:39%;height:100%;padding:0;border:0;background:transparent;cursor:pointer;z-index:5}
 .hideout-art-shell .hideout-player-portrait:hover,.hideout-art-shell .hideout-player-portrait:focus-visible{outline:2px solid #43c9ff;outline-offset:-3px;filter:drop-shadow(0 0 10px #178fff)}
+
+.hideout-art-shell .hideout-panel.panel-tall{height:88svh}

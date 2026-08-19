@@ -38,6 +38,8 @@
         if (itemASub) { this.itemArmorSub = itemASub.dataset.itemAsub; this.audio.sfx('ui'); this.renderMenuPanel('items'); return; }
         const equipFromItem = e.target.closest('[data-equip-item]');
         if (equipFromItem) { if (!equipFromItem.disabled) this.equipFromInventory(equipFromItem.dataset.equipItem); return; }
+        const bossChallenge = e.target.closest('[data-boss-challenge]');
+        if (bossChallenge) { await this.audio.playTrack(this.bossMusic); this.startBossByKey(bossChallenge.dataset.bossChallenge); return; }
         const watchOpening = e.target.closest('[data-watch-opening]');
         if (watchOpening) { window.arseneStartFlow?.watchOpening(); return; }
         const resetData = e.target.closest('[data-reset-data]');
@@ -183,14 +185,16 @@
       this.turn = 1; this.locked = false; this.finished = false; this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [] }; $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyDungeonBackground();
       this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); const names = [...new Set(this.enemies.map(e => e.name))]; this.setLog(`${count}体の${names.join('と')}が現れた！`); this.flashTitle('ENCOUNTER', '怪異反応を検知'); this.showMainCommands();
     }
-    startBossEncounter() {
-      const progress = this.progressState(); if (!progress.ready || !progress.bossId) { this.showMenu('home'); return; }
-      this.battleMode = progress.phase; const hadRamenBuff = !!this.profile.flags.ramenBuffActive, stats = this.totalStats(), template = D.enemies[progress.bossId]; if (hadRamenBuff) { this.profile.flags.ramenBuffActive = false; this.saveProfile(); }
+    startBossEncounter(forceBossId = null, forcePhase = null) {
+      const progress = this.progressState();
+      const bossId = forceBossId || progress.bossId, phase = forcePhase || progress.phase;
+      if (!bossId || (!forceBossId && !progress.ready)) { this.showMenu('home'); return; }
+      this.battleMode = phase; const hadRamenBuff = !!this.profile.flags.ramenBuffActive, stats = this.totalStats(), template = D.enemies[bossId]; if (!template) { this.showMenu('home'); return; } if (hadRamenBuff) { this.profile.flags.ramenBuffActive = false; this.saveProfile(); }
       const vitals = this.storedVitals(stats); this.player = { stats, hp: vitals.hp, mp: vitals.mp, inventory: this.profile.inventory, buffs: {}, cooldowns: {} };
       const bossStats = template.dynamicScale ? { maxHp: stats.maxHp * template.dynamicScale, atk: Math.max(stats.str, stats.mag) * template.dynamicScale, def: stats.def * template.dynamicScale, mag: stats.mag * template.dynamicScale, mnd: stats.mnd * template.dynamicScale, spd: stats.agi * template.dynamicScale } : { ...template.stats };
       this.enemies = [{ ...template, uid: `${template.id}-boss`, label: '', stats: bossStats, hp: bossStats.maxHp, alive: true }];
       this.turn = 1; this.locked = false; this.finished = false; this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [] }; $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual();
-      this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); this.setLog(this.battleMode === 'noel' ? '忘却の最奥――永遠の裁定者ノエルが姿を現した……。' : '静寂のホールに、独奏卿ゼナカドの旋律が響く……！'); this.flashTitle('BOSS ENCOUNTER', progress.bossName); this.showMainCommands();
+      this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); this.setLog(this.battleMode === 'noel' ? '忘却の最奥――永遠の裁定者ノエルが姿を現した……。' : '静寂のホールに、独奏卿ゼナカドの旋律が響く……！'); this.flashTitle('BOSS ENCOUNTER', (template.nameEn || template.name || progress.bossName).toUpperCase()); this.showMainCommands();
     }
     startMyrthiBoss() {
       this.battleMode = 'myrthi'; const hadRamenBuff = !!this.profile.flags.ramenBuffActive, stats = this.totalStats(), template = D.enemies.myrthi;
@@ -451,7 +455,7 @@
     showMenu(panel = 'home') { if (this.player) this.persistVitals(); const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
     renderMenuSummary() { const t = this.totalStats(), v = this.storedVitals(t), need = this.expNeeded(), workshopUnlocked = !!this.profile.flags.noelFirstEncounterCleared, buff = !!this.profile.flags.ramenBuffActive, progress = this.progressState(); $('#menu-level').textContent = `LV.${String(this.profile.level).padStart(2,'0')}`; $('#menu-hp').textContent = `${v.hp} / ${t.maxHp}`; $('#menu-mp').textContent = `${v.mp} / ${t.maxMp}`; $('#hideout-hp-bar').style.width = `${100 * v.hp / t.maxHp}%`; $('#hideout-mp-bar').style.width = `${100 * v.mp / t.maxMp}%`; $('#menu-gold').textContent = this.profile.gold.toLocaleString('ja-JP'); const expPct = Math.min(100, 100 * this.profile.exp / need); $('#menu-exp-text').textContent = `${expPct.toFixed(2)}%`; $('#menu-exp-bar').style.width = `${expPct}%`; const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {}, jlv = jst.level || 1, jneed = this.jobExpNeeded(jlv), jexp = jst.exp || 0, jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100; const jexpLabel = $('#menu-jexp-label'), jexpText = $('#menu-jexp-text'), jexpBar = $('#menu-jexp-bar'); if (jexpLabel) jexpLabel.textContent = `${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}`; if (jexpText) jexpText.textContent = jneed ? `${jpct.toFixed(2)}%` : 'MASTER'; if (jexpBar) jexpBar.style.width = `${jpct}%`; $('#workshop-nav').hidden = !workshopUnlocked; const bossButton = $('#menu-screen [data-menu="boss"]'); const d2Wins = this.profile.flags.dungeon2BattleWins || 0, myrthiReady = d2Wins >= 10 && !this.isBossDefeated('myrthi'); if (myrthiReady) { bossButton.hidden = false; bossButton.firstChild.textContent = '黒紅の双刃を追う'; bossButton.querySelector('span').textContent = `MYRTHI // BATTLE ${Math.min(d2Wins, 10)} / 10`; } else { bossButton.hidden = !progress.ready; bossButton.firstChild.textContent = progress.phase === 'noel' ? 'ノエルの反応を追う' : 'ゼナカドの旋律を追う'; bossButton.querySelector('span').textContent = `${progress.bossName} // BATTLE ${Math.min(progress.wins, progress.goal)} / ${progress.goal}`; } const buffEl = $('#hideout-buff'); buffEl.classList.toggle('active', buff); buffEl.querySelector('strong').textContent = buff ? '最大HP ＋3%' : '効果なし'; buffEl.querySelector('span').textContent = buff ? '効果：次のダンジョン1回のみ' : 'カズのまかないで次の潜入を強化'; }
     renderMenuPanel(name) {
-      [...$('#menu-nav').querySelectorAll('button')].forEach(b => b.classList.toggle('active', b.dataset.menu === name)); const panel = $('#menu-panel'); panel.hidden = name === 'home'; if (name === 'home') { panel.innerHTML = ''; return; }
+      [...$('#menu-nav').querySelectorAll('button')].forEach(b => b.classList.toggle('active', b.dataset.menu === name)); const panel = $('#menu-panel'); panel.hidden = name === 'home'; panel.classList.toggle('panel-tall', name === 'equipment'); if (name === 'home') { panel.innerHTML = ''; return; }
       if (name === 'status') { this.renderStatusPanel(panel); return; }
       if (name === 'items') { this.renderItemsPanel(panel); return; }
       if (name === 'dungeon-select') { this.renderDungeonSelect(panel); return; }
@@ -536,8 +540,29 @@
       panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>DUNGEON SELECT</small><h2>ダンジョン選択</h2><div class="dungeon-select-list">${available.map(d => {
         const isNew = (d.id === 'dungeon2' && showNewD2) || (d.id === 'dungeon3' && showNewD3);
         const progress = d.id === 'dungeon1' ? (() => { const p = this.progressState(); return p.phase === 'complete' ? 'AREA BOSS CLEARED' : `BATTLE ${Math.min(p.wins, p.goal)} / ${p.goal}`; })() : d.id === 'dungeon2' ? (this.isBossDefeated('myrthi') ? 'AREA BOSS CLEARED' : `BATTLE ${Math.min(this.profile.flags.dungeon2BattleWins || 0, 10)} / 10`) : `BATTLE ${Math.min(this.profile.flags.dungeon3BattleWins || 0, 15)} / 15`;
-        return `<button class="dungeon-card" data-enter-dungeon="${d.id}"><div class="dungeon-thumb" style="background-image:url('${d.thumbnail}')"></div><div class="dungeon-info"><small>${d.nameEn || d.enName || d.name}</small><strong>${d.name}</strong><span>${d.description || ''}</span><em>推奨 Lv.${d.recommendedLevel}+</em><b class="dungeon-progress">${progress}</b>${isNew ? '<mark class="dungeon-new">NEW</mark>' : ''}</div></button>`;
+        const boss = this.dungeonBossEntry(d.id);
+        const bossCard = boss ? `<button class="dungeon-card boss-card ${boss.cleared ? 'boss-rematch' : 'boss-ready'}" data-boss-challenge="${boss.key}"><div class="dungeon-thumb boss-thumb" style="background-image:url('${boss.sprite || d.thumbnail}')"></div><div class="dungeon-info"><small>BOSS // ${boss.enName}</small><strong>${boss.name}</strong><span>${boss.title || ''}</span><b class="dungeon-progress">${boss.cleared ? '撃破済み — 再戦できます' : '挑戦可能'}</b><mark class="${boss.cleared ? 'boss-tag-rematch' : 'boss-tag-new'}">${boss.cleared ? 'REMATCH' : 'CHALLENGE'}</mark></div></button>` : '';
+        return `<button class="dungeon-card" data-enter-dungeon="${d.id}"><div class="dungeon-thumb" style="background-image:url('${d.thumbnail}')"></div><div class="dungeon-info"><small>${d.nameEn || d.enName || d.name}</small><strong>${d.name}</strong><span>${d.description || ''}</span><em>推奨 Lv.${d.recommendedLevel}+</em><b class="dungeon-progress">${progress}</b>${isNew ? '<mark class="dungeon-new">NEW</mark>' : ''}</div></button>${bossCard}`;
       }).join('')}</div>`;
+    }
+    dungeonBossEntry(dungeonId) {
+      if (dungeonId === 'dungeon2') {
+        const wins = this.profile.flags.dungeon2BattleWins || 0, cleared = this.isBossDefeated('myrthi');
+        if (!cleared && wins < 10) return null;
+        const e = D.enemies.myrthi;
+        return { key: 'myrthi', name: e?.name || 'ミルティ', enName: 'MYRTHI', title: e?.title || '黒紅の双刃戦姫', sprite: e?.sprite, cleared };
+      }
+      if (dungeonId === 'dungeon1') {
+        const p = this.progressState();
+        if (p.phase === 'complete') { const e = D.enemies.zenakado; return { key: 'zenakado', name: e?.name || 'ゼナカド', enName: 'ZENAKADO', title: e?.title || '', sprite: e?.sprite, cleared: true }; }
+        return null;
+      }
+      return null;
+    }
+    startBossByKey(key) {
+      if (key === 'myrthi') { this.currentDungeonId = 'dungeon2'; this.startMyrthiBoss(); return; }
+      if (key === 'zenakado') { this.currentDungeonId = 'dungeon1'; this.startBossEncounter('zenakado', 'zenakado'); return; }
+      this.startBossEncounter();
     }
     changeJob(id) {
       const isAdv = ['arcaneMaestro', 'dualBlade'].includes(id);
