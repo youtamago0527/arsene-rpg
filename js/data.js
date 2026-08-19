@@ -79,6 +79,14 @@ window.ARSENE_DATA = {
       skillUnlocks: { 3: 'twistingEdge', 6: 'sunderDance', 9: 'crimsonRush', 12: 'dualEdgeBarrage', 16: 'battleDance' }
     }
   },
+  jobCommandAbilities: {
+    warrior: { cmd: '剣技', cmdEn: 'SWORD ARTS' },
+    mage: { cmd: '魔導', cmdEn: 'ARCANA' },
+    martialArtist: { cmd: '拳技', cmdEn: 'FIST ARTS' },
+    priest: { cmd: '神聖', cmdEn: 'SACRED ARTS' },
+    arcaneMaestro: { cmd: '魔奏', cmdEn: 'ARCANE SONG' },
+    dualBlade: { cmd: '双刃技', cmdEn: 'DUAL ARTS' }
+  },
   equipmentSlots: [
     { id: 'rightHand', name: '右手', enName: 'RIGHT HAND' },
     { id: 'leftHand', name: '左手', enName: 'LEFT HAND' },
