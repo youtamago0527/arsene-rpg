@@ -22,6 +22,14 @@
       $('#menu-panel').addEventListener('click', async e => {
         const enterDungeon = e.target.closest('[data-enter-dungeon]');
         if (enterDungeon) { this.currentDungeonId = enterDungeon.dataset.enterDungeon; const dungeonCfg = this.getDungeon(this.currentDungeonId); await this.audio.playTrack(dungeonCfg?.music || this.battleMusic); this.startBattle(); return; }
+        const itemTab = e.target.closest('[data-item-tab]');
+        if (itemTab) { this.itemTab = itemTab.dataset.itemTab; this.pickFirstStockedSub(); this.audio.sfx('ui'); this.renderMenuPanel('items'); return; }
+        const itemWSub = e.target.closest('[data-item-wsub]');
+        if (itemWSub) { this.itemWeaponSub = itemWSub.dataset.itemWsub; this.audio.sfx('ui'); this.renderMenuPanel('items'); return; }
+        const itemASub = e.target.closest('[data-item-asub]');
+        if (itemASub) { this.itemArmorSub = itemASub.dataset.itemAsub; this.audio.sfx('ui'); this.renderMenuPanel('items'); return; }
+        const equipFromItem = e.target.closest('[data-equip-item]');
+        if (equipFromItem) { if (!equipFromItem.disabled) this.equipFromInventory(equipFromItem.dataset.equipItem); return; }
         const watchOpening = e.target.closest('[data-watch-opening]');
         if (watchOpening) { window.arseneStartFlow?.watchOpening(); return; }
         const resetData = e.target.closest('[data-reset-data]');
@@ -436,8 +444,8 @@
     renderMenuSummary() { const t = this.totalStats(), v = this.storedVitals(t), need = this.expNeeded(), workshopUnlocked = !!this.profile.flags.noelFirstEncounterCleared, buff = !!this.profile.flags.ramenBuffActive, progress = this.progressState(); $('#menu-level').textContent = `LV.${String(this.profile.level).padStart(2,'0')}`; $('#menu-hp').textContent = `${v.hp} / ${t.maxHp}`; $('#menu-mp').textContent = `${v.mp} / ${t.maxMp}`; $('#hideout-hp-bar').style.width = `${100 * v.hp / t.maxHp}%`; $('#hideout-mp-bar').style.width = `${100 * v.mp / t.maxMp}%`; $('#menu-gold').textContent = this.profile.gold.toLocaleString('ja-JP'); const expPct = Math.min(100, 100 * this.profile.exp / need); $('#menu-exp-text').textContent = `${expPct.toFixed(2)}%`; $('#menu-exp-bar').style.width = `${expPct}%`; const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {}, jlv = jst.level || 1, jneed = this.jobExpNeeded(jlv), jexp = jst.exp || 0, jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100; const jexpLabel = $('#menu-jexp-label'), jexpText = $('#menu-jexp-text'), jexpBar = $('#menu-jexp-bar'); if (jexpLabel) jexpLabel.textContent = `${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}`; if (jexpText) jexpText.textContent = jneed ? `${jpct.toFixed(2)}%` : 'MASTER'; if (jexpBar) jexpBar.style.width = `${jpct}%`; $('#workshop-nav').hidden = !workshopUnlocked; const bossButton = $('#menu-screen [data-menu="boss"]'); const d2Wins = this.profile.flags.dungeon2BattleWins || 0, myrthiReady = d2Wins >= 10 && !this.isBossDefeated('myrthi'); if (myrthiReady) { bossButton.hidden = false; bossButton.firstChild.textContent = '黒紅の双刃を追う'; bossButton.querySelector('span').textContent = `MYRTHI // BATTLE ${Math.min(d2Wins, 10)} / 10`; } else { bossButton.hidden = !progress.ready; bossButton.firstChild.textContent = progress.phase === 'noel' ? 'ノエルの反応を追う' : 'ゼナカドの旋律を追う'; bossButton.querySelector('span').textContent = `${progress.bossName} // BATTLE ${Math.min(progress.wins, progress.goal)} / ${progress.goal}`; } const buffEl = $('#hideout-buff'); buffEl.classList.toggle('active', buff); buffEl.querySelector('strong').textContent = buff ? '最大HP ＋3%' : '効果なし'; buffEl.querySelector('span').textContent = buff ? '効果：次のダンジョン1回のみ' : 'カズのまかないで次の潜入を強化'; }
     renderMenuPanel(name) {
       [...$('#menu-nav').querySelectorAll('button')].forEach(b => b.classList.toggle('active', b.dataset.menu === name)); const panel = $('#menu-panel'); panel.hidden = name === 'home'; if (name === 'home') { panel.innerHTML = ''; return; }
-      if (name === 'status') { const base = this.profile.baseStats, bonus = this.equipmentBonuses(), total = this.totalStats(); panel.innerHTML = `<small>CHARACTER DATA</small><h2>ステータス</h2><div class="stat-grid">${Object.keys(statLabels).map(k => `<div><span>${statLabels[k]}</span><b>${total[k]}</b><em>基本 ${base[k]}${bonus[k] ? ` / 装備 +${bonus[k]}` : ''}</em></div>`).join('')}</div>`; }
-      if (name === 'items') { const stats = this.totalStats(), vitals = this.storedVitals(stats), rows = Object.entries(this.profile.inventory).filter(([,n])=>n>0).map(([id,n]) => { const i=D.items[id]; if (!i) return ''; const recoverable = i.category === 'consumable' && (i.effect?.hp || i.effect?.mp), full = i.effect?.hp ? vitals.hp >= stats.maxHp : i.effect?.mp ? vitals.mp >= stats.maxMp : true; return `<div class="item-row rarity-${i.rarity}"><div><b>${i.name}</b><small>${i.description}</small></div><strong>×${n}</strong>${recoverable ? `<button data-use-item="${id}" ${full ? 'disabled' : ''}>${full ? '満タン' : '使う'}</button>` : ''}</div>`; }).join(''); panel.innerHTML = `<small>INVENTORY</small><h2>アイテム</h2><div class="inventory-vitals"><b>HP ${vitals.hp} / ${stats.maxHp}</b><b>MP ${vitals.mp} / ${stats.maxMp}</b></div><div class="inventory-list">${rows || '<p>所持品なし</p>'}</div>`; }
+      if (name === 'status') { this.renderStatusPanel(panel); return; }
+      if (name === 'items') { this.renderItemsPanel(panel); return; }
       if (name === 'dungeon-select') { this.renderDungeonSelect(panel); return; }
       if (name === 'equipment') this.renderEquipmentPanel(panel);
       if (name === 'workshop') this.renderWorkshop(panel);
@@ -606,6 +614,60 @@
         alert(`武器強化FAILED！\n${w.name}は粉砕された……`);
       }
     }
+    renderStatusPanel(panel) {
+      const base = this.profile.baseStats, bonus = this.equipmentBonuses(), total = this.totalStats(), vitals = this.storedVitals(total);
+      const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {}, jlv = jst.level || 1, jneed = this.jobExpNeeded(jlv), jexp = jst.exp || 0;
+      const need = this.expNeeded(), expPct = Math.min(100, 100 * this.profile.exp / need), jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100;
+      const slots = D.equipmentSlots || [{ id: 'rightHand', name: '右手', enName: 'MAIN' }, { id: 'leftHand', name: '左手', enName: 'OFF' }, { id: 'head', name: '頭', enName: 'HEAD' }, { id: 'body', name: '体', enName: 'BODY' }, { id: 'arms', name: '腕', enName: 'ARMS' }, { id: 'feet', name: '足', enName: 'FEET' }, { id: 'accessory', name: 'アクセ', enName: 'ACC' }];
+      const eqRows = slots.map(s => { const id = this.profile.equipment[s.id], it = D.items[id]; return `<div class="st-eq-row ${id ? 'filled' : 'empty'}"><span>${s.name}</span><b>${it?.name || '—'}${id ? this.enchantSuffix(id) : ''}</b><small>${id ? this.bonusText(id) : ''}</small></div>`; }).join('');
+      const statRows = Object.keys(statLabels).map(k => `<div class="st-stat"><span>${statLabels[k]}</span><b>${total[k]}</b><em>基本 ${base[k]}${bonus[k] ? ` / 装備 +${bonus[k]}` : ''}</em></div>`).join('');
+      const passives = (this.profile.passiveSlots || []).map(id => D.skills[id]).filter(Boolean);
+      const passiveHtml = passives.length ? `<div class="st-section"><h3>パッシブ <span>PASSIVE</span></h3><div class="st-passives">${passives.map(s => `<div><b>${s.name}</b><small>${s.description || ''}</small></div>`).join('')}</div></div>` : '';
+      panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>CHARACTER DATA</small><h2>ステータス</h2>
+        <div class="st-head"><div class="st-portrait" aria-hidden="true"></div><div class="st-id"><strong>雨宮 蓮</strong><span>AMAMIYA REN</span><b>LV.${String(this.profile.level).padStart(2,'0')}</b><em>${D.jobs[jid]?.name || ''} Lv.${jlv}</em></div></div>
+        <div class="st-meters"><div class="st-meter hp"><span>HP</span><i style="width:${100*vitals.hp/total.maxHp}%"></i><output>${vitals.hp} / ${total.maxHp}</output></div><div class="st-meter mp"><span>MP</span><i style="width:${100*vitals.mp/total.maxMp}%"></i><output>${vitals.mp} / ${total.maxMp}</output></div><div class="st-meter exp"><span>EXP</span><i style="width:${expPct}%"></i><output>${expPct.toFixed(2)}%</output></div><div class="st-meter jexp"><span>JEXP</span><i style="width:${jpct}%"></i><output>${jneed ? jpct.toFixed(2)+'%' : 'MASTER'}</output></div></div>
+        <div class="st-section"><h3>装備 <span>EQUIPMENT</span></h3><div class="st-eq">${eqRows}</div></div>
+        <div class="st-section"><h3>能力値 <span>STATS</span></h3><div class="stat-grid">${statRows}</div></div>${passiveHtml}`;
+    }
+    enchantLevel(id) { return (D.weapons[id] ? (this.profile.weaponEnchants || {})[id] : (this.profile.armorEnchants || {})[id]) || 0; }
+    enchantSuffix(id) { const lv = this.enchantLevel(id); return lv > 0 ? `<em class="ench-lv">+${lv}</em>` : ''; }
+    itemTabs() {
+      const weaponTypes = [...new Set(Object.values(D.weapons).map(w => w.weaponType).filter(Boolean))];
+      const typeNames = { sword: '剣', staff: '杖', dagger: '短剣', axe: '斧', spear: '槍', bow: '弓' };
+      return {
+        main: [{ id: 'consumable', name: '消費', enName: 'CONSUMABLE' }, { id: 'weapon', name: '武器', enName: 'WEAPON' }, { id: 'armor', name: '防具', enName: 'ARMOR' }],
+        weaponSubs: weaponTypes.map(t => ({ id: t, name: typeNames[t] || t.toUpperCase(), enName: t.toUpperCase() })),
+        armorSubs: (D.workshop?.armorTabs || []).map(t => ({ id: t.id, name: t.name, enName: t.enName }))
+      };
+    }
+    pickFirstStockedSub() {
+      const tabs = this.itemTabs(), inv = this.profile.inventory;
+      const has = (cat, sub) => Object.entries(inv).some(([id, n]) => { if (!(n > 0)) return false; const it = D.items[id], w = D.weapons[id]; if (!it) return false; return cat === 'weapon' ? !!w && w.weaponType === sub : it.category === 'equipment' && !w && it.slot === sub; });
+      if (this.itemTab === 'weapon') { const t = tabs.weaponSubs.find(t => has('weapon', t.id)); if (t) this.itemWeaponSub = t.id; }
+      if (this.itemTab === 'armor') { const t = tabs.armorSubs.find(t => has('armor', t.id)); if (t) this.itemArmorSub = t.id; }
+    }
+    renderItemsPanel(panel) {
+      const stats = this.totalStats(), vitals = this.storedVitals(stats), inv = this.profile.inventory, tabs = this.itemTabs();
+      if (!this.itemTab) this.itemTab = 'consumable';
+      if (!this.itemWeaponSub) this.itemWeaponSub = tabs.weaponSubs[0]?.id || 'sword';
+      if (!this.itemArmorSub) this.itemArmorSub = tabs.armorSubs[0]?.id || 'head';
+      const owned = Object.entries(inv).filter(([, n]) => n > 0);
+      const countFor = (cat, sub) => owned.filter(([id]) => { const it = D.items[id]; if (!it) return false; if (cat === 'consumable') return it.category === 'consumable'; const w = D.weapons[id]; if (cat === 'weapon') return !!w && (!sub || w.weaponType === sub); if (cat === 'armor') return it.category === 'equipment' && !w && (!sub || it.slot === sub); return false; }).length;
+      const mainTabs = tabs.main.map(t => `<button data-item-tab="${t.id}" class="${this.itemTab === t.id ? 'active' : ''}"><b>${t.name}</b><span>${t.enName}</span>${countFor(t.id) ? `<i>${countFor(t.id)}</i>` : ''}</button>`).join('');
+      let subTabs = '';
+      if (this.itemTab === 'weapon') subTabs = `<div class="item-subtabs">${tabs.weaponSubs.map(t => `<button data-item-wsub="${t.id}" class="${this.itemWeaponSub === t.id ? 'active' : ''}">${t.name}${countFor('weapon', t.id) ? `<i>${countFor('weapon', t.id)}</i>` : ''}</button>`).join('')}</div>`;
+      if (this.itemTab === 'armor') subTabs = `<div class="item-subtabs">${tabs.armorSubs.map(t => `<button data-item-asub="${t.id}" class="${this.itemArmorSub === t.id ? 'active' : ''}">${t.name}${countFor('armor', t.id) ? `<i>${countFor('armor', t.id)}</i>` : ''}</button>`).join('')}</div>`;
+      const sub = this.itemTab === 'weapon' ? this.itemWeaponSub : this.itemTab === 'armor' ? this.itemArmorSub : null;
+      const list = owned.filter(([id]) => { const it = D.items[id]; if (!it) return false; const w = D.weapons[id]; if (this.itemTab === 'consumable') return it.category === 'consumable'; if (this.itemTab === 'weapon') return !!w && w.weaponType === sub; return it.category === 'equipment' && !w && it.slot === sub; });
+      const rows = list.map(([id, n]) => {
+        const it = D.items[id], w = D.weapons[id];
+        if (this.itemTab === 'consumable') { const recoverable = it.effect?.hp || it.effect?.mp, full = it.effect?.hp ? vitals.hp >= stats.maxHp : it.effect?.mp ? vitals.mp >= stats.maxMp : true; return `<div class="item-row rarity-${it.rarity}"><div><b>${it.name}</b><small>${it.description}</small></div><strong>×${n}</strong>${recoverable ? `<button data-use-item="${id}" ${full ? 'disabled' : ''}>${full ? '満タン' : '使う'}</button>` : ''}</div>`; }
+        const equipped = Object.values(this.profile.equipment).includes(id), slot = w ? 'rightHand' : it.slot;
+        return `<div class="item-row rarity-${it.rarity}${equipped ? ' item-equipped' : ''}"><div><b>${it.name}${this.enchantSuffix(id)}${equipped ? '<mark class="eq-badge">装備中</mark>' : ''}</b><small>${this.bonusText(id)}</small></div><strong>×${n}</strong><button data-equip-item="${id}" data-equip-slot="${slot}" ${equipped ? 'disabled' : ''}>${equipped ? '装備中' : '装備'}</button></div>`;
+      }).join('');
+      const emptyMsg = this.itemTab === 'consumable' ? '消費アイテムなし' : this.itemTab === 'weapon' ? 'この種類の武器なし' : 'この部位の防具なし';
+      panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>INVENTORY</small><h2>アイテム</h2><div class="inventory-vitals"><b>HP ${vitals.hp} / ${stats.maxHp}</b><b>MP ${vitals.mp} / ${stats.maxMp}</b></div><div class="item-tabs">${mainTabs}</div>${subTabs}<div class="inventory-list">${rows || `<p class="item-empty">${emptyMsg}</p>`}</div>`;
+    }
     armorEnchantContent() {
       const et = D.enchantTable, enchants = this.profile.armorEnchants || {};
       const armorSlots = ['head','body','arms','feet','accessory','leftHand'];
@@ -644,7 +706,7 @@
       }
     }
     bonusText(id) {
-      const bonuses = this.equipmentDefinition(id)?.bonuses || {}, rows = Object.entries(bonuses), w = D.weapons[id], enchLv = w ? ((this.profile.weaponEnchants || {})[id] || 0) : 0;
+      const bonuses = this.equipmentDefinition(id)?.bonuses || {}, rows = Object.entries(bonuses), enchLv = this.enchantLevel(id);
       const enchStr = enchLv > 0 ? ` [+${enchLv}]` : '';
       return rows.length ? rows.map(([key, value]) => `${statLabels[key] || key.toUpperCase()} ${value >= 0 ? '+' : ''}${value}`).join(' / ') + enchStr : '補正なし' + enchStr;
     }
@@ -662,12 +724,13 @@
       const slots = D.equipmentSlots || [], owned = Object.entries(this.profile.inventory).filter(([id, n]) => n > 0 && D.items[id]?.category === 'equipment');
       if (this.selectedEquipmentId && !(this.profile.inventory[this.selectedEquipmentId] > 0)) this.selectedEquipmentId = null;
       const isDualBlade = this.profile.currentJob === 'dualBlade';
-      const slotHtml = slots.map(slot => { const id = this.profile.equipment[slot.id], item = D.items[id]; const rate = isDualBlade && slot.id === 'leftHand' && D.weapons[id] ? ' ×70%' : ''; return `<div class="equipment-slot ${id ? 'filled' : 'empty'} ${slot.id === 'leftHand' && !isDualBlade ? 'slot-disabled' : ''}"><span>${slot.name}<small>${slot.enName}</small></span><b>${item?.name || 'なし'}${rate}</b></div>`; }).join('');
-      const candidateHtml = owned.map(([id]) => { const item = D.items[id], active = this.profile.equipment[item.slot] === id, selected = this.selectedEquipmentId === id, slot = slots.find(s => s.id === item.slot); return `<button data-equip-preview="${id}" aria-pressed="${selected}" class="equipment-candidate rarity-${item.rarity} ${active ? 'equipped-now' : ''} ${selected ? 'selected' : ''}"><span class="candidate-title"><b>${item.name}${item.stars ? `<small>${'★'.repeat(item.stars)}</small>` : ''}</b>${active ? '<em>EQUIPPED</em>' : ''}</span><strong>${this.bonusText(id)}</strong><small>${slot?.name || item.slot} // ${item.description}</small></button>`; }).join('');
+      const slotHtml = slots.map(slot => { const id = this.profile.equipment[slot.id], item = D.items[id]; const rate = isDualBlade && slot.id === 'leftHand' && D.weapons[id] ? ' ×70%' : ''; return `<div class="equipment-slot ${id ? 'filled' : 'empty'} ${slot.id === 'leftHand' && !isDualBlade ? 'slot-disabled' : ''}"><span>${slot.name}<small>${slot.enName}</small></span><b>${item?.name || 'なし'}${id ? this.enchantSuffix(id) : ''}${rate}</b></div>`; }).join('');
+      const candidateHtml = owned.map(([id]) => { const item = D.items[id], active = this.profile.equipment[item.slot] === id, selected = this.selectedEquipmentId === id, slot = slots.find(s => s.id === item.slot); return `<button data-equip-preview="${id}" aria-pressed="${selected}" class="equipment-candidate rarity-${item.rarity} ${active ? 'equipped-now' : ''} ${selected ? 'selected' : ''}"><span class="candidate-title"><b>${item.name}${this.enchantSuffix(id)}${item.stars ? `<small>${'★'.repeat(item.stars)}</small>` : ''}</b>${active ? '<em>EQUIPPED</em>' : ''}</span><strong>${this.bonusText(id)}</strong><small>${slot?.name || item.slot} // ${item.description}</small></button>`; }).join('');
       panel.innerHTML = `<small>EQUIPMENT</small><h2>装備</h2><div class="equipment-screen"><section class="equipment-slots-wrap"><h3>装備中 <span>CURRENT LOADOUT</span></h3><div class="equipment-slots">${slotHtml}</div></section><section class="equipment-workbench"><div class="equipment-candidates"><h3>装備一覧 <span>OWNED EQUIPMENT</span></h3>${candidateHtml || '<p>装備品を所持していません。</p>'}</div><div id="equipment-preview" class="equipment-preview"><h3>能力比較 <span>STATUS COMPARISON</span></h3>${this.equipmentPreviewHTML(this.selectedEquipmentId)}</div></section>${this.bossSetBonusSectionHTML()}${this.musicScoreSectionHTML()}</div>`;
     }
     previewEquipment(id) { const item = D.items[id]; if (!item || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; this.selectedEquipmentId = id; this.renderMenuPanel('equipment'); requestAnimationFrame(() => $('#equipment-preview')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })); }
     equipItem(id) { const item = D.items[id]; if (!item || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; this.profile.equipment[item.slot] = id; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
+    equipFromInventory(id) { const item = D.items[id]; if (!item || !(this.profile.inventory[id] > 0)) return; const slot = D.weapons[id] ? 'rightHand' : item.slot; if (!slot) return; this.profile.equipment[slot] = id; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('items'); }
     equipLeftHandWeapon(id) { if (!D.weapons[id] || !(this.profile.inventory[id] > 0) || this.profile.currentJob !== 'dualBlade') return; this.profile.equipment.leftHand = id; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
 
     kazuDialogueCondition(key) {
