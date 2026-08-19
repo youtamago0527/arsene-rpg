@@ -58,14 +58,16 @@
         if (jobSkillDetail) { if (!this.jobUI) this.jobUI = { tab: 'job', detailId: null, modal: null, passiveSlotIdx: null, passiveFilter: 'all' }; this.jobUI.modal = 'skillDetail'; this.jobUI.skillDetailId = jobSkillDetail.dataset.jobSkillDetail; this.renderMenuPanel('job'); return; }
         const openModal = e.target.closest('[data-open-modal]');
         if (openModal) { if (!this.jobUI) this.jobUI = { tab: 'job', detailId: null, modal: null, passiveSlotIdx: null, passiveFilter: 'all' }; const m = openModal.dataset.openModal; if (m === 'subCommand') { this.jobUI.modal = 'subCommand'; } else if (m === 'passive0') { this.jobUI.modal = 'passiveSelect'; this.jobUI.passiveSlotIdx = 0; } else if (m === 'passive1') { this.jobUI.modal = 'passiveSelect'; this.jobUI.passiveSlotIdx = 1; } this.renderMenuPanel('job'); return; }
-        const closeModal = e.target.closest('[data-close-modal]');
-        if (closeModal) { if (this.jobUI) this.jobUI.modal = null; this.renderMenuPanel('job'); return; }
         const setSubCmd = e.target.closest('[data-set-sub-command]');
         if (setSubCmd) { this.setSubCommand(setSubCmd.dataset.setSubCommand || null); return; }
         const setPassive = e.target.closest('[data-set-passive]');
         if (setPassive) { const parts = setPassive.dataset.setPassive.split(':'); this.setPassiveSlot(Number(parts[0]), parts[1] || null); return; }
         const passiveFilter = e.target.closest('[data-passive-filter]');
         if (passiveFilter) { if (!this.jobUI) this.jobUI = { tab: 'job', detailId: null, modal: null, passiveSlotIdx: null, passiveFilter: 'all' }; this.jobUI.passiveFilter = passiveFilter.dataset.passiveFilter; this.renderMenuPanel('job'); return; }
+        const innerModal = e.target.closest('.jmodal');
+        if (innerModal && !e.target.closest('button[data-close-modal]')) return;
+        const closeModal = e.target.closest('[data-close-modal]');
+        if (closeModal) { if (this.jobUI) this.jobUI.modal = null; this.renderMenuPanel('job'); return; }
         const jobChange = e.target.closest('[data-job-change]');
         if (jobChange) { this.changeJob(jobChange.dataset.jobChange); return; }
         const skillToggle = e.target.closest('[data-skill-toggle]');
@@ -83,12 +85,12 @@
     }
 
     freshProfile() {
-      const p = D.player; return { version: 10, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), musicScores: {}, bossDefeated: { zenacad: false, myrthi: false }, currentJob: 'mage', jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], subCommand: null, passiveSlots: [null, null], weaponEnchants: {}, flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, dungeon3BattleWins: 0, dungeon3NewSeen: false }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
+      const p = D.player; return { version: 11, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), musicScores: {}, bossDefeated: { zenacad: false, myrthi: false }, currentJob: 'mage', jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], subCommand: null, passiveSlots: [null, null], weaponEnchants: {}, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, dungeon3BattleWins: 0, dungeon3NewSeen: false, lastBattleResult: null, consecutiveDefeats: 0 }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
     }
     loadProfile() {
       try {
         const saved = JSON.parse(localStorage.getItem(D.settings.saveKey)); if (!saved) return this.freshProfile();
-        const base = this.freshProfile(), jobs = clone(base.jobs); Object.keys(jobs).forEach(id => jobs[id] = { ...jobs[id], ...(saved.jobs?.[id] || {}) }); const profile = { ...base, ...saved, baseStats: { ...base.baseStats, ...saved.baseStats }, currentVitals: { ...base.currentVitals, ...saved.currentVitals }, equipment: { ...base.equipment, ...saved.equipment }, inventory: { ...base.inventory, ...saved.inventory }, musicScores: { ...base.musicScores, ...saved.musicScores }, bossDefeated: { ...base.bossDefeated, ...saved.bossDefeated }, jobs, learnedJobSkills: Array.isArray(saved.learnedJobSkills) ? saved.learnedJobSkills : [], learnedCharacterSkills: Array.isArray(saved.learnedCharacterSkills) ? saved.learnedCharacterSkills : [], activeSkills: Array.isArray(saved.activeSkills) ? saved.activeSkills.slice(0, 4) : base.activeSkills, flags: { ...base.flags, ...saved.flags }, discoveredMaterials: Array.isArray(saved.discoveredMaterials) ? saved.discoveredMaterials : [], unlockedRecipes: Array.isArray(saved.unlockedRecipes) ? saved.unlockedRecipes : [], newlyUnlockedRecipes: Array.isArray(saved.newlyUnlockedRecipes) ? saved.newlyUnlockedRecipes : [] };
+        const base = this.freshProfile(), jobs = clone(base.jobs); Object.keys(jobs).forEach(id => jobs[id] = { ...jobs[id], ...(saved.jobs?.[id] || {}) }); const profile = { ...base, ...saved, baseStats: { ...base.baseStats, ...saved.baseStats }, currentVitals: { ...base.currentVitals, ...saved.currentVitals }, equipment: { ...base.equipment, ...saved.equipment }, inventory: { ...base.inventory, ...saved.inventory }, musicScores: { ...base.musicScores, ...saved.musicScores }, bossDefeated: { ...base.bossDefeated, ...saved.bossDefeated }, jobs, learnedJobSkills: Array.isArray(saved.learnedJobSkills) ? saved.learnedJobSkills : [], learnedCharacterSkills: Array.isArray(saved.learnedCharacterSkills) ? saved.learnedCharacterSkills : [], activeSkills: Array.isArray(saved.activeSkills) ? saved.activeSkills.slice(0, 4) : base.activeSkills, flags: { ...base.flags, ...saved.flags }, kazuSeenOnce: Array.isArray(saved.kazuSeenOnce) ? saved.kazuSeenOnce : [], discoveredMaterials: Array.isArray(saved.discoveredMaterials) ? saved.discoveredMaterials : [], unlockedRecipes: Array.isArray(saved.unlockedRecipes) ? saved.unlockedRecipes : [], newlyUnlockedRecipes: Array.isArray(saved.newlyUnlockedRecipes) ? saved.newlyUnlockedRecipes : [] };
         if ((saved.version || 0) < 3 || !saved.currentVitals) { const bonuses = {}; Object.values(profile.equipment).forEach(id => Object.entries((D.weapons[id] || D.accessories[id] || D.armors?.[id] || D.equipment?.[id])?.bonuses || {}).forEach(([key, value]) => bonuses[key] = (bonuses[key] || 0) + value)); profile.currentVitals = { hp: profile.baseStats.maxHp + (bonuses.maxHp || 0), mp: profile.baseStats.maxMp + (bonuses.maxMp || 0) }; }
         if ((saved.version || 0) < 4) { const oldWins = Math.max(0, Number(saved.flags?.normalBattleWins) || 0), oldNoel = !!saved.flags?.noelFirstEncounterCleared; profile.flags.preNoelBattleWins = Number.isFinite(saved.flags?.preNoelBattleWins) ? saved.flags.preNoelBattleWins : (oldNoel ? D.battleProgression.noelEncounterWins : Math.min(oldWins, D.battleProgression.noelEncounterWins)); profile.flags.postNoelBattleWins = Number.isFinite(saved.flags?.postNoelBattleWins) ? saved.flags.postNoelBattleWins : (oldNoel ? oldWins : 0); profile.flags.zenakadoDefeated = false; profile.flags.zenakadoScoreClaimed = false; profile.flags.temporaryBossCompleted = false; }
         if (profile.flags.zenakadoDefeated) profile.bossDefeated.zenacad = true;
@@ -101,7 +103,10 @@
         if (profile.bossDefeated.myrthi == null) profile.bossDefeated.myrthi = false;
         if (!Array.isArray(profile.passiveSlots)) profile.passiveSlots = [null, null];
         if (profile.subCommand === undefined) profile.subCommand = null;
-        profile.version = 10;
+        if (!Array.isArray(profile.kazuSeenOnce)) profile.kazuSeenOnce = [];
+        if (profile.flags.consecutiveDefeats == null) profile.flags.consecutiveDefeats = 0;
+        if (profile.flags.lastBattleResult === undefined) profile.flags.lastBattleResult = null;
+        profile.version = 11;
         return profile;
       } catch { return this.freshProfile(); }
     }
@@ -397,6 +402,7 @@
     }
     scoreGetHTML(id) { const score = D.musicScores?.[id]; return score ? `<div class="score-get"><small>SCORE GET</small><strong>${score.title}</strong><b>（${score.subtitle}）</b><span>演奏可能になった</span><em>PRIVATE MODE ITEM</em></div>` : ''; }
     async victory() {
+      this.profile.flags.consecutiveDefeats = 0; this.profile.flags.lastBattleResult = 'victory';
       this.finished = true; this.audio.stopMusic(650); this.audio.sfx('victory'); this.flashTitle('VICTORY', 'ALL SHADOWS ELIMINATED'); $('#ren').classList.add('victory'); await this.battleSleep(1100);
       const reward = { exp: this.battleRewards.exp, gold: this.battleRewards.gold, drops: this.battleRewards.drops }, levels = this.battleRewards.levels, jobResult = this.grantJobExp(this.battleRewards.exp);
       const newRecipeHTML = (this.battleRewards.newRecipes || []).map(rid => { const r = D.recipes[rid], item = D.items[r?.resultItemId]; return r && item ? `<div class="new-recipe-unlock"><small>NEW RECIPE</small><b>${item.name}</b><span>${item.nameEn || ''}</span><em>工房で製作可能になった</em></div>` : ''; }).join('');
@@ -419,13 +425,13 @@
     async defeat() {
       this.finished = true; this.audio.stopMusic(500); this.audio.sfx('defeat'); $('#ren').classList.add('down');
       if (this.battleMode === 'noel') { const stats = this.totalStats(); this.profile.flags.noelFirstEncounterCleared = true; this.profile.flags.preNoelBattleWins = Math.max(this.profile.flags.preNoelBattleWins || 0, D.battleProgression.noelEncounterWins); this.profile.flags.postNoelBattleWins = 0; this.profile.currentVitals = { hp: stats.maxHp, mp: stats.maxMp }; this.player.hp = stats.maxHp; this.player.mp = stats.maxMp; this.saveProfile(); this.flashTitle('DEFEAT', 'NOËL — THE ETERNAL JUDGE'); await this.battleSleep(1000); this.showResult('DEFEAT', '圧倒的な裁定の前に敗れた。ノエルは姿を消し、全回復して拠点へ帰還した。', 'THE NEXT KEY', '<div class="workshop-unlock"><b>PHANTOM WORKSHOP</b><strong>工房が解放された！</strong><span>敗北の記録を解析し、装備製作機能が使用可能になりました。</span></div>'); return; }
-      this.player.hp = 1; this.persistVitals(); if (this.battleMode === 'zenakado') { this.flashTitle('DEFEAT', 'ZENAKADO WINS'); await this.battleSleep(1000); this.showResult('DEFEAT', 'ゼナカドに敗れた。カズに救助され拠点へ帰還した。HPは1で応急処置された。', 'CHALLENGE FAILED', this.battleSummaryHTML() || '<div class="boss-result-note">報酬・ドロップなし</div>'); return; }
+      this.player.hp = 1; this.profile.flags.lastBattleResult = 'defeat'; this.profile.flags.consecutiveDefeats = (this.profile.flags.consecutiveDefeats || 0) + 1; this.persistVitals(); if (this.battleMode === 'zenakado') { this.flashTitle('DEFEAT', 'ZENAKADO WINS'); await this.battleSleep(1000); this.showResult('DEFEAT', 'ゼナカドに敗れた。カズに救助され拠点へ帰還した。HPは1で応急処置された。', 'CHALLENGE FAILED', this.battleSummaryHTML() || '<div class="boss-result-note">報酬・ドロップなし</div>'); return; }
       if (this.battleMode === 'myrthi') { this.flashTitle('DEFEAT', 'MYRTHI WINS'); await this.battleSleep(1000); this.showResult('DEFEAT', 'ミルティに敗れた。カズに救助され拠点へ帰還した。HPは1で応急処置された。', 'CHALLENGE FAILED', this.battleSummaryHTML() || '<div class="boss-result-note">報酬・ドロップなし</div>'); return; }
       this.flashTitle('GAME OVER', 'MISSION FAILED'); await this.battleSleep(1000); this.showResult('GAME OVER', 'カズに救助され、HP 1で拠点へ運び込まれた。', 'RETURN TO HIDEOUT', this.battleSummaryHTML());
     }
     showResult(title, copy, kicker, html) { $('#result-title').textContent = title; $('#result-copy').textContent = copy; $('#result-kicker').textContent = kicker; $('#rewards').innerHTML = html; $('#result-menu').innerHTML = '拠点へ <span>HIDEOUT</span>'; $('#result').hidden = false; $('#result').style.display = 'grid'; }
 
-    showMenu(panel = 'home') { if (this.player) this.persistVitals(); const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); }
+    showMenu(panel = 'home') { if (this.player) this.persistVitals(); const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
     renderMenuSummary() { const t = this.totalStats(), v = this.storedVitals(t), need = this.expNeeded(), workshopUnlocked = !!this.profile.flags.noelFirstEncounterCleared, buff = !!this.profile.flags.ramenBuffActive, progress = this.progressState(); $('#menu-level').textContent = `LV.${String(this.profile.level).padStart(2,'0')}`; $('#menu-hp').textContent = `${v.hp} / ${t.maxHp}`; $('#menu-mp').textContent = `${v.mp} / ${t.maxMp}`; $('#hideout-hp-bar').style.width = `${100 * v.hp / t.maxHp}%`; $('#hideout-mp-bar').style.width = `${100 * v.mp / t.maxMp}%`; $('#menu-gold').textContent = this.profile.gold.toLocaleString('ja-JP'); $('#menu-exp-text').textContent = `${this.profile.exp} / ${need}`; $('#menu-exp-bar').style.width = `${100 * this.profile.exp / need}%`; $('#menu-battle-progress').textContent = progress.phase === 'complete' ? 'DUNGEON CLEAR' : progress.ready ? `${progress.bossName} READY` : `BATTLE ${progress.wins + 1} / ${progress.goal}`; $('#workshop-nav').hidden = !workshopUnlocked; const bossButton = $('#menu-screen [data-menu="boss"]'); bossButton.hidden = !progress.ready; bossButton.firstChild.textContent = progress.phase === 'noel' ? 'ノエルの反応を追う' : 'ゼナカドの旋律を追う'; bossButton.querySelector('span').textContent = `${progress.bossName} // BATTLE ${Math.min(progress.wins, progress.goal)} / ${progress.goal}`; const buffEl = $('#hideout-buff'); buffEl.classList.toggle('active', buff); buffEl.querySelector('strong').textContent = buff ? '最大HP ＋3%' : '効果なし'; buffEl.querySelector('span').textContent = buff ? '効果：次のダンジョン1回のみ' : 'カズのまかないで次の潜入を強化'; }
     renderMenuPanel(name) {
       [...$('#menu-nav').querySelectorAll('button')].forEach(b => b.classList.toggle('active', b.dataset.menu === name)); const panel = $('#menu-panel'); panel.hidden = name === 'home'; if (name === 'home') { panel.innerHTML = ''; return; }
@@ -486,7 +492,7 @@
       const avail = Object.values(D.jobs).filter(j => { if (j.id === currentId) return false; const isAdv = ['arcaneMaestro', 'dualBlade'].includes(j.id); return isAdv ? this.isAdvancedJobUnlocked(j.id) : this.jobSystemUnlocked() || j.id === 'mage'; });
       const rows = avail.map(j => { const cmd = this.jobCommand(j.id), p = this.profile.jobs[j.id], hasSkills = this.jobLearnedActiveSkills(j.id).length > 0, sel = this.profile.subCommand === j.id; return `<button class="modal-row${sel ? ' sel' : ''}" data-set-sub-command="${j.id}"><div><b>${cmd.cmd}</b><small>${j.name} Lv.${p.level}${!hasSkills ? ' ── 習得技なし' : ''}</small></div><em>${sel ? '✓' : ''}</em></button>`; }).join('');
       const clear = this.profile.subCommand ? `<button class="modal-row modal-clear" data-set-sub-command="">SUB COMMANDを外す</button>` : '';
-      return `<div class="jmodal-bg" data-close-modal><div class="jmodal" onclick="event.stopPropagation()"><div class="jmodal-hdr"><b>SUB COMMAND</b><button data-close-modal class="jmodal-close">✕</button></div><div class="jmodal-body">${rows}${clear}</div></div></div>`;
+      return `<div class="jmodal-bg" data-close-modal><div class="jmodal"><div class="jmodal-hdr"><b>SUB COMMAND</b><button data-close-modal class="jmodal-close">✕</button></div><div class="jmodal-body">${rows}${clear}</div></div></div>`;
     }
     passiveModalHtml(slotIdx) {
       const passives = this.allLearnedPassives(), cur = (this.profile.passiveSlots || [])[slotIdx], filter = this.jobUI?.passiveFilter || 'all', other = slotIdx === 0 ? 1 : 0;
@@ -495,13 +501,13 @@
       const filtered = passives.filter(p => filter === 'all' || (filter === 'character' && p.source === 'character') || p.jobId === filter);
       const rows = filtered.length ? filtered.map(p => { const sel = cur === p.id, othSel = (this.profile.passiveSlots || [])[other] === p.id; return `<button class="modal-row${sel ? ' sel' : ''}${othSel ? ' dis' : ''}" data-set-passive="${slotIdx}:${p.id}" ${othSel ? 'disabled' : ''}><div><b>${p.name}</b><small>${p.effectText || ''}</small></div><em>${sel ? '✓' : ''}</em></button>`; }).join('') : '<p class="modal-empty">習得済みPASSIVEがありません</p>';
       const clear = cur ? `<button class="modal-row modal-clear" data-set-passive="${slotIdx}:">PASSIVE ${slotIdx + 1}を外す</button>` : '';
-      return `<div class="jmodal-bg" data-close-modal><div class="jmodal" onclick="event.stopPropagation()"><div class="jmodal-hdr"><b>PASSIVE ${slotIdx + 1}</b><button data-close-modal class="jmodal-close">✕</button></div><div class="pf-tabs">${filterHtml}</div><div class="jmodal-body">${rows}${clear}</div></div></div>`;
+      return `<div class="jmodal-bg" data-close-modal><div class="jmodal"><div class="jmodal-hdr"><b>PASSIVE ${slotIdx + 1}</b><button data-close-modal class="jmodal-close">✕</button></div><div class="pf-tabs">${filterHtml}</div><div class="jmodal-body">${rows}${clear}</div></div></div>`;
     }
     skillModalHtml(skillId) {
       const s = D.skills[skillId]; if (!s) return '';
       const src = s.source === 'character' ? '蓮の固有技' : (D.jobs[s.jobId]?.name || '');
       const lv = s.unlockLevel ? `Character Lv.${s.unlockLevel}習得` : s.unlockJobLevel ? `JOB Lv.${s.unlockJobLevel}習得` : '';
-      return `<div class="jmodal-bg" data-close-modal><div class="jmodal skill-modal" onclick="event.stopPropagation()"><div class="jmodal-hdr"><b>${s.name}</b><button data-close-modal class="jmodal-close">✕</button></div><div class="jmodal-body"><div class="sk-meta"><em class="sk-type">${s.type || 'ACTIVE'}</em>${src ? `<span>${src}</span>` : ''}${lv ? `<span>${lv}</span>` : ''}</div><dl class="sk-stats"><div><dt>消費MP</dt><dd>${s.mp || 0}</dd></div><div><dt>威力</dt><dd>${s.powerText || '－'}</dd></div><div><dt>対象</dt><dd>${({ single: '敵単体', all: '敵全体', self: '自分' })[s.target] || s.target || '－'}</dd></div>${s.hits > 1 ? `<div><dt>HIT</dt><dd>${s.hits}回</dd></div>` : ''}${s.cooldown ? `<div><dt>CT</dt><dd>${s.cooldown}T</dd></div>` : ''}</dl><p class="sk-effect">${s.effectText || ''}</p><p class="sk-desc">${s.description || ''}</p></div></div></div>`;
+      return `<div class="jmodal-bg" data-close-modal><div class="jmodal skill-modal"><div class="jmodal-hdr"><b>${s.name}</b><button data-close-modal class="jmodal-close">✕</button></div><div class="jmodal-body"><div class="sk-meta"><em class="sk-type">${s.type || 'ACTIVE'}</em>${src ? `<span>${src}</span>` : ''}${lv ? `<span>${lv}</span>` : ''}</div><dl class="sk-stats"><div><dt>消費MP</dt><dd>${s.mp || 0}</dd></div><div><dt>威力</dt><dd>${s.powerText || '－'}</dd></div><div><dt>対象</dt><dd>${({ single: '敵単体', all: '敵全体', self: '自分' })[s.target] || s.target || '－'}</dd></div>${s.hits > 1 ? `<div><dt>HIT</dt><dd>${s.hits}回</dd></div>` : ''}${s.cooldown ? `<div><dt>CT</dt><dd>${s.cooldown}T</dd></div>` : ''}</dl><p class="sk-effect">${s.effectText || ''}</p><p class="sk-desc">${s.description || ''}</p></div></div></div>`;
     }
     renderDungeonSelect(panel) {
       panel.hidden = false;
@@ -624,6 +630,73 @@
     previewEquipment(id) { const item = D.items[id]; if (!item || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; this.selectedEquipmentId = id; this.renderMenuPanel('equipment'); requestAnimationFrame(() => $('#equipment-preview')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })); }
     equipItem(id) { const item = D.items[id]; if (!item || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; this.profile.equipment[item.slot] = id; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
     equipLeftHandWeapon(id) { if (!D.weapons[id] || !(this.profile.inventory[id] > 0) || this.profile.currentJob !== 'dualBlade') return; this.profile.equipment.leftHand = id; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
+
+    kazuDialogueCondition(key) {
+      const f = this.profile.flags, workshopUnlocked = !!f.noelFirstEncounterCleared;
+      switch (key) {
+        case 'always': return true;
+        case 'new_game': return (f.preNoelBattleWins || 0) === 0 && (f.postNoelBattleWins || 0) === 0;
+        case 'after_first_battle': return (f.preNoelBattleWins || 0) >= 1 && (f.preNoelBattleWins || 0) <= 3 && !f.noelFirstEncounterCleared;
+        case 'low_hp': { const t = this.totalStats(), v = this.storedVitals(t); return v.hp <= Math.ceil(t.maxHp * 0.30); }
+        case 'just_defeated': return f.lastBattleResult === 'defeat';
+        case 'consecutive_defeats': return (f.consecutiveDefeats || 0) >= 2;
+        case 'workshop_just_unlocked': return workshopUnlocked;
+        case 'workshop_unlocked': return workshopUnlocked;
+        case 'weapon_fusion_unlocked': return workshopUnlocked && !!f.zenakadoDefeated;
+        case 'boss1_available': return (f.preNoelBattleWins || 0) >= (D.battleProgression?.noelEncounterWins || 3) && !f.noelFirstEncounterCleared;
+        case 'boss1_cleared': return !!f.noelFirstEncounterCleared;
+        case 'zenakado_available': return f.noelFirstEncounterCleared && !f.zenakadoDefeated && (f.postNoelBattleWins || 0) >= (D.battleProgression?.zenakadoEncounterWins || 7);
+        case 'zenakado_cleared': return !!f.zenakadoDefeated;
+        case 'zenakado_cleared_first': return !!f.zenakadoDefeated;
+        case 'dungeon2_available': return this.isDungeonUnlocked('dungeon2');
+        case 'dungeon2_first_return': return this.isDungeonUnlocked('dungeon2') && (f.dungeon2BattleWins || 0) >= 1;
+        case 'myrthi_available': return (f.dungeon2BattleWins || 0) >= 9 && !this.isBossDefeated('myrthi');
+        case 'myrthi_cleared': return this.isBossDefeated('myrthi');
+        case 'myrthi_cleared_first': return this.isBossDefeated('myrthi');
+        case 'job_unlocked': return this.jobSystemUnlocked();
+        case 'job_mastered': return Object.values(this.profile.jobs || {}).some(j => j.level >= 20);
+        case 'has_materials_no_workshop': return !workshopUnlocked && (this.profile.discoveredMaterials || []).length > 0;
+        case 'reni_chat': return workshopUnlocked;
+        case 'workshop_used': return (this.profile.unlockedRecipes || []).length > 0;
+        case 'ramen_chat': return true;
+        case 'meta_chat': return true;
+        default: return false;
+      }
+    }
+
+    showKazuDialogue() {
+      const data = window.KAZU_DIALOGUES; if (!data || !Array.isArray(data)) return;
+      if (!this.kazuHistory) this.kazuHistory = [];
+      const seen = new Set(this.profile.kazuSeenOnce || []);
+      const eligible = data.filter(entry => {
+        if (entry.once && seen.has(entry.id)) return false;
+        return this.kazuDialogueCondition(entry.condition);
+      });
+      if (!eligible.length) return;
+      const maxPriority = Math.max(...eligible.map(e => e.priority));
+      const topTier = eligible.filter(e => e.priority === maxPriority);
+      const casual = eligible.filter(e => e.priority < 20);
+      let pool = maxPriority < 20 && casual.length ? casual : topTier;
+      let chosen = pool[Math.floor(Math.random() * pool.length)];
+      const recentIds = new Set(this.kazuHistory);
+      const freshPool = pool.filter(e => !recentIds.has(e.id));
+      if (freshPool.length) chosen = freshPool[Math.floor(Math.random() * freshPool.length)];
+      const dialogues = chosen.dialogues.filter(t => !this.kazuHistory.includes(t));
+      const text = (dialogues.length ? dialogues : chosen.dialogues)[Math.floor(Math.random() * (dialogues.length || chosen.dialogues.length))];
+      this.kazuHistory = [text, ...this.kazuHistory].slice(0, 5);
+      if (chosen.once) { this.profile.kazuSeenOnce = [...seen, chosen.id]; this.saveProfile(); }
+      this.renderKazuBubble(text);
+    }
+
+    renderKazuBubble(text) {
+      const scene = document.querySelector('.hideout-scene'); if (!scene) return;
+      const old = document.getElementById('kazu-bubble'); if (old) old.remove();
+      const bubble = document.createElement('div');
+      bubble.id = 'kazu-bubble'; bubble.className = 'kazu-bubble'; bubble.textContent = text;
+      scene.appendChild(bubble);
+      let timer = setTimeout(() => bubble.remove(), 6000);
+      bubble.addEventListener('click', () => { clearTimeout(timer); bubble.remove(); });
+    }
   }
   addEventListener('DOMContentLoaded', () => { window.arseneGame = new BattleGame(); });
 })();
