@@ -150,3 +150,14 @@
 .boss-tag-new,.boss-tag-rematch{position:absolute;right:8px;top:8px;padding:2px 7px;border-radius:3px;font:700 9px/1.5 Cinzel}
 .boss-tag-new{background:#c40044;color:#fff}
 .boss-tag-rematch{background:#6b3fd4;color:#fff}
+
+/* ── Boss rematch lock ───────────────────────────────────────── */
+.dungeon-card.boss-locked{border-color:#2a3f5c;background:linear-gradient(100deg,#080d16,#050810);opacity:.72;cursor:default}
+.dungeon-card.boss-locked:hover{border-color:#2a3f5c;box-shadow:none;transform:none}
+.dungeon-card.boss-locked .dungeon-thumb{filter:grayscale(.85) brightness(.6)}
+.dungeon-card.boss-locked .dungeon-info small{color:#6f8aa6}
+.dungeon-card.boss-locked .dungeon-info strong{color:#8fa8c0}
+.dungeon-card.boss-locked .dungeon-progress{color:#7f9dba}
+.boss-tag-locked{position:absolute;right:8px;top:8px;padding:2px 7px;border-radius:3px;background:#20304a;color:#9fc4e4;font:700 9px/1.5 Cinzel}
+.boss-rematch-bar{display:block;height:5px;margin-top:5px;background:#080b12;border:1px solid #2a3f5c;overflow:hidden}
+.boss-rematch-bar em{display:block;height:100%;background:linear-gradient(90deg,#2a5f9e,#5fb0ff);transition:width .3s}

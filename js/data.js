@@ -1,5 +1,5 @@
 window.ARSENE_DATA = {
-  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01' },
+  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5 },
   dualBladeOffHandRate: 0.70,
   battleProgression: { noelEncounterWins: 3, zenakadoEncounterWins: 7 },
   expTable: { 1: 50, 2: 120, 3: 220 },
