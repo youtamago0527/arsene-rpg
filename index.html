@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#040814">
   <title>或世盗 -ARSÈNE- | Battle Prototype</title>
-  <link rel="stylesheet" href="css/game.css?v=0.3.8">
+  <link rel="stylesheet" href="css/game.css?v=0.3.9">
   <link rel="stylesheet" href="css/menu.css?v=0.3.3">
   <link rel="stylesheet" href="css/fixes.css?v=0.1.8">
   <link rel="stylesheet" href="css/hideout.css?v=0.3.0">
   <link rel="stylesheet" href="css/settings.css?v=0.2.4">
-  <link rel="stylesheet" href="css/hideout-art.css?v=0.3.3">
+  <link rel="stylesheet" href="css/hideout-art.css?v=0.3.4">
   <link rel="stylesheet" href="css/start-flow.css?v=0.3.0">
   <link rel="stylesheet" href="css/op-movie.css?v=0.3.2">
   <link rel="stylesheet" href="css/op-responsive.css?v=0.3.1">
@@ -35,8 +35,7 @@
         <div class="player-meta"><small>PHANTOM // 01</small><strong>REN</strong><span>LV.<b id="level">1</b></span></div>
         <div class="meter-row"><label>HP</label><div class="meter hp"><i id="player-hp-bar"></i></div><output id="player-hp">80 / 80</output></div>
         <div class="meter-row"><label>MP</label><div class="meter mp"><i id="player-mp-bar"></i></div><output id="player-mp">40 / 40</output></div>
-        <div class="meter-row exp-row"><label>EXP</label><div class="meter exp"><i id="player-exp-bar"></i></div><output id="player-exp-label"></output></div>
-        <div class="meter-row jexp-row"><label>JEXP</label><div class="meter jexp"><i id="player-jexp-bar"></i></div><output id="player-jexp-label"></output></div>
+        <div class="xp-row"><div class="xp-cell"><small>EXP</small><div class="meter exp"><i id="player-exp-bar"></i><output id="player-exp-label"></output></div></div><div class="xp-cell"><small id="player-jexp-name">JOB</small><div class="meter jexp"><i id="player-jexp-bar"></i><output id="player-jexp-label"></output></div></div></div>
       </aside>
 
       <div class="combatants">
@@ -66,7 +65,7 @@
         <div class="hideout-title"><i aria-hidden="true"></i><div><small>ARSÈNE HIDEOUT</small><h1>麺処 おくのほそ道</h1><span>―― 或世盗の拠点 ――</span></div></div>
         <div class="hideout-player"><div class="hideout-player-portrait" aria-hidden="true"></div><div><small>PHANTOM // 01</small><strong>雨宮 蓮</strong><b id="menu-level">LV.1</b><div class="hideout-meter"><span>HP</span><i><em id="hideout-hp-bar"></em><output id="menu-hp">80</output></i></div><div class="hideout-meter mp"><span>MP</span><i><em id="hideout-mp-bar"></em><output id="menu-mp">40</output></i></div></div></div>
       </header>
-      <section class="hideout-resources" aria-label="所持資源と進行状況"><div class="hideout-gold"><small>GOLD</small><strong id="menu-gold">0</strong></div><div class="hideout-progress"><small>EXP</small><strong id="menu-exp-text">0 / 50</strong><i class="hideout-exp"><em id="menu-exp-bar"></em></i><small class="jexp-label">JEXP</small><strong id="menu-jexp-text">0 / 0</strong><i class="hideout-exp hideout-jexp"><em id="menu-jexp-bar"></em></i></div><button type="button" data-menu="system"><small>NOTICE</small><b>お知らせ</b></button></section>
+      <section class="hideout-resources" aria-label="所持資源と進行状況"><div class="hideout-gold"><small>GOLD</small><strong id="menu-gold">0</strong></div><div class="hideout-progress"><small>EXP</small><strong id="menu-exp-text">0 / 50</strong><i class="hideout-exp"><em id="menu-exp-bar"></em></i><small class="jexp-label" id="menu-jexp-label">JEXP</small><strong id="menu-jexp-text">0 / 0</strong><i class="hideout-exp hideout-jexp"><em id="menu-jexp-bar"></em></i></div><button type="button" data-menu="system"><small>NOTICE</small><b>お知らせ</b></button></section>
       <section id="hideout-buff" class="hideout-buff"><i aria-hidden="true"></i><b>ACTIVE BUFF</b><strong>効果なし</strong><span>カズの料理で次の潜入を強化</span></section>
       <section class="hideout-scene" aria-label="麺処 おくのほそ道 店内">
         <div class="hideout-sign">麺処 <b>おくのほそ道</b></div><div class="ramen-lantern">ラ<br>ー<br>メ<br>ン</div><div class="shopkeeper"><i></i><b>カズ（店主）</b><span>腹減ってんだろ？<br>まずは食ってけよ。</span></div><div class="hideout-ren" aria-hidden="true"></div><img class="hideout-fox" src="assets/ui/workshop/helper-fox-pixel.png" alt="工房のお助けキャラ">
@@ -89,7 +88,7 @@
   <script src="js/data.js?v=0.6.3"></script>
   <script src="js/audio.js?v=0.3.2"></script>
   <script src="js/kazu_dialogues.js?v=0.1.0"></script>
-  <script src="js/game.js?v=0.6.7"></script>
+  <script src="js/game.js?v=0.6.8"></script>
   <script src="js/start-flow.js?v=0.3.4"></script>
 </body>
 </html>

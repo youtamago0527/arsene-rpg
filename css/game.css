@@ -163,3 +163,5 @@
 .meter.exp i{background:linear-gradient(90deg,#2ea84f,#7bff9a)}.exp-row output{font:700 9px Cinzel;text-align:right}
 
 .meter.jexp i{background:linear-gradient(90deg,#8b3fd4,#d98cff)}.jexp-row output{font:700 9px Cinzel;text-align:right}
+
+.xp-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:5px 0 2px}.xp-cell{display:grid;gap:2px;min-width:0}.xp-cell>small{font:700 8px/1 Cinzel;letter-spacing:.12em;color:#8fb6d8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.xp-cell .meter{position:relative;height:11px;overflow:visible}.xp-cell .meter i{overflow:hidden}.xp-cell .meter output{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 9px/1 Cinzel;color:#fff;text-shadow:0 1px 3px #000,0 0 6px #000;pointer-events:none;z-index:2}.meter.exp i{background:linear-gradient(90deg,#0f7ad8,#4fd8ff)}.meter.jexp i{background:linear-gradient(90deg,#8b3fd4,#d98cff)}
