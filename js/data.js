@@ -43,7 +43,24 @@ window.ARSENE_DATA = {
     traitBonusScale: { small: { weaponExp: 1.15, spark: 1.5, mpGrowth: 1.3, heal: 1.15, critical: 0.03 } },
 
     // ── 成長しないジョブ ────────────────────────────────────
-    noGrowthJobs: ['phantomThief']
+    noGrowthJobs: ['phantomThief'],
+
+    // ── ジョブLvアップ時の基礎ステータス成長（1Lvごと）───────
+    // 初期4職は合計6/Lv（Lv1→20で114ポイント）で統一。偏りでジョブ個性を作る。
+    jobGrowthPerLevel: {
+      warrior:       { str: 2, vit: 2, mag: 0, mnd: 1, agi: 1, luk: 0 },
+      martialArtist: { str: 1, vit: 1, mag: 0, mnd: 0, agi: 2, luk: 2 },
+      mage:          { str: 0, vit: 0, mag: 2, mnd: 2, agi: 1, luk: 1 },
+      priest:        { str: 0, vit: 2, mag: 1, mnd: 2, agi: 0, luk: 1 },
+      magicKnight:   { str: 1, vit: 1, mag: 2, mnd: 1, agi: 1, luk: 0 }
+    },
+    // パッシブ習得Lv
+    jobPassiveLevels: [5, 10, 15],
+    // 通常ジョブが他ジョブから持ち込めるパッシブ枠数 / PHANTOM THIEF の枠数
+    passiveSlotCount: { normal: 1, phantomThief: 2 },
+    actionSlotCount: { normal: 0, phantomThief: 2 },
+    // 魔装士《魔力装填》の追加ダメージ係数
+    magicChargeRate: 0.5
   },
 
   battleProgression: { noelEncounterWins: 3, zenakadoEncounterWins: 7 },
@@ -92,24 +109,41 @@ window.ARSENE_DATA = {
   ],
   jobs: {
     warrior: {
-      id: 'warrior', name: '戦士', nameEn: 'WARRIOR', description: '力と耐久力で正面から怪異を打ち破る。', signatureSkillId: 'powerCharge', growthStats: ['str', 'vit'], featureText: '力・体力を伸ばしやすいジョブ。物理攻撃・HP・耐久力などの脳筋系パッシブを習得できる。',
+      id: 'warrior', name: '戦士', nameEn: 'WARRIOR', description: '力と耐久力で正面から怪異を打ち破る。', signatureSkillId: 'powerCharge', passiveUnlocks: { 5: 'p_might', 10: 'p_tough', 15: 'p_instinct' }, growthStats: ['str', 'vit'], featureText: '力・体力を伸ばしやすいジョブ。物理攻撃・HP・耐久力などの脳筋系パッシブを習得できる。',
       growth: { 1: { str: 2 }, 2: { maxHp: 5 }, 3: { vit: 1 }, 4: { str: 2, vit: 1 }, 5: { maxHp: 8 }, 6: { str: 2 }, 7: { maxHp: 8, vit: 2 }, 8: { str: 3 }, 9: { vit: 2 }, 10: { str: 4, maxHp: 12 }, 11: { str: 2 }, 12: { maxHp: 10, vit: 2 }, 13: { str: 3 }, 14: { vit: 3, maxHp: 8 }, 15: { str: 4 }, 16: { maxHp: 12, vit: 3 }, 17: { str: 4 }, 18: { vit: 4 }, 19: { str: 5 }, 20: { str: 6, maxHp: 18, vit: 5 } },
       skillUnlocks: { 3: 'powerStrike', 6: 'breakEdge', 9: 'recklessEdge', 12: 'warCry', 16: 'titanBlow' }
     },
     mage: {
-      id: 'mage', name: '魔導士', nameEn: 'MAGE', description: '魔力を操り、単体・全体魔法を使い分ける。', signatureSkillId: 'meditation', growthStats: ['mag'], featureText: '魔力を伸ばしやすいジョブ。MP上昇・魔法威力などの魔法系パッシブを習得できる。',
+      id: 'mage', name: '魔導士', nameEn: 'MAGE', description: '魔力を操り、単体・全体魔法を使い分ける。', signatureSkillId: 'meditation', passiveUnlocks: { 5: 'p_amplify', 10: 'p_manaStore', 15: 'p_spellBoost' }, growthStats: ['mag'], featureText: '魔力を伸ばしやすいジョブ。MP上昇・魔法威力などの魔法系パッシブを習得できる。',
       growth: { 1: { mag: 2 }, 2: { maxMp: 5 }, 3: { mag: 2 }, 4: { maxMp: 6 }, 5: { mag: 2 }, 6: { maxMp: 8 }, 7: { mag: 3 }, 8: { maxMp: 8 }, 9: { mag: 3 }, 10: { mag: 4, maxMp: 12 }, 11: { mag: 3 }, 12: { maxMp: 14 }, 13: { mag: 4 }, 14: { maxMp: 12 }, 15: { mag: 4 }, 16: { maxMp: 16 }, 17: { mag: 5 }, 18: { maxMp: 14 }, 19: { mag: 5 }, 20: { mag: 6, maxMp: 20 } },
       skillUnlocks: { 3: 'blueFlame', 6: 'manaBurst', 9: 'astralRay', 12: 'arcaneExplosion', 16: 'voidNova' }
     },
     martialArtist: {
-      id: 'martialArtist', name: '武道家', nameEn: 'MARTIAL ARTIST', description: '速度と多段攻撃でクリティカルを狙う。', signatureSkillId: 'burstFist', growthStats: ['agi', 'luk'], featureText: '素早さ・運を伸ばしやすいジョブ。会心率・素早い行動などに関係するパッシブを習得できる。',
+      id: 'martialArtist', name: '武道家', nameEn: 'MARTIAL ARTIST', description: '速度と多段攻撃でクリティカルを狙う。', signatureSkillId: 'burstFist', passiveUnlocks: { 5: 'p_gale', 10: 'p_vitalAim', 15: 'p_fortune' }, growthStats: ['agi', 'luk'], featureText: '素早さ・運を伸ばしやすいジョブ。会心率・素早い行動などに関係するパッシブを習得できる。',
       growth: { 1: { agi: 2 }, 2: { str: 2, maxHp: 4 }, 3: { agi: 2 }, 4: { str: 2 }, 5: { agi: 3 }, 6: { str: 2 }, 7: { critBonus: .02 }, 8: { agi: 3, str: 2 }, 9: { critBonus: .03 }, 10: { critBonus: .05, agi: 3 }, 11: { agi: 3 }, 12: { str: 3, critBonus: .02 }, 13: { agi: 4 }, 14: { str: 3 }, 15: { agi: 4, critBonus: .03 }, 16: { str: 4 }, 17: { agi: 4 }, 18: { str: 4, critBonus: .03 }, 19: { agi: 5 }, 20: { critBonus: .07, agi: 5, str: 4 } },
       skillUnlocks: { 3: 'doubleStrike', 6: 'breakFist', 9: 'shadowRush', 12: 'swiftBarrage', 16: 'shadowSeven' }
     },
     priest: {
-      id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。', signatureSkillId: 'heal', growthStats: ['mnd', 'vit'], featureText: '精神・体力を伸ばしやすいジョブ。回復能力や耐久・支援に関係するパッシブを習得できる。',
+      id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。', signatureSkillId: 'heal', passiveUnlocks: { 5: 'p_spirit', 10: 'p_healArt', 15: 'p_wardBarrier' }, growthStats: ['mnd', 'vit'], featureText: '精神・体力を伸ばしやすいジョブ。回復能力や耐久・支援に関係するパッシブを習得できる。',
       growth: { 1: { mnd: 2 }, 2: { maxMp: 5 }, 3: { mnd: 2 }, 4: { maxMp: 6 }, 5: { mnd: 2, maxHp: 5 }, 6: { maxMp: 8 }, 7: { mnd: 3 }, 8: { maxMp: 8 }, 9: { mnd: 3 }, 10: { mnd: 4, maxMp: 12 }, 11: { mnd: 3 }, 12: { maxMp: 14, maxHp: 5 }, 13: { mnd: 4 }, 14: { maxMp: 12 }, 15: { mnd: 4 }, 16: { maxMp: 16 }, 17: { mnd: 5 }, 18: { maxMp: 14 }, 19: { mnd: 5 }, 20: { mnd: 6, maxMp: 20, maxHp: 8 } },
       skillUnlocks: { 3: 'heal', 6: 'holyLight', 9: 'regenerate', 12: 'greatHeal', 16: 'divineSmite' }
+    },
+    // 1面クリアで解放される新ジョブ。上位職ではなく「新しい選択肢」。
+    magicKnight: {
+      id: 'magicKnight', name: '魔装士', nameEn: 'MAGIC KNIGHT', description: '刃に魔力を纏わせ、物理と魔法を組み合わせて戦う。',
+      signatureSkillId: 'magicCharge', passiveUnlocks: { 5: 'p_spellBlade', 10: 'p_manaFlow', 15: 'p_elemental' },
+      growthStats: ['mag', 'str'], featureText: '魔力を軸に物理も扱うハイブリッド型。武器を選ばず戦えるジョブ。',
+      unlockCondition: { keyItem: 'magicKnightProof' },
+      skillUnlocks: {}
+    },
+    // 特殊ジョブ。自身では成長せず、将来的に他ジョブの成長を盗む。
+    phantomThief: {
+      id: 'phantomThief', name: 'ファントムシーフ', nameEn: 'PHANTOM THIEF', description: '自らは育たず、他のジョブで培った力を盗み取る怪盗の本質。',
+      signatureSkillId: null, passiveUnlocks: {}, growthStats: [],
+      featureText: '自身では成長しない特殊ジョブ。各ジョブをMASTERすることで能力と固有スキルを継承する。',
+      special: true, noGrowth: true,
+      unlockCondition: { story: 'phantomThiefAwakening' },
+      skillUnlocks: {}
     },
     arcaneMaestro: {
       id: 'arcaneMaestro', name: '魔奏士', nameEn: 'ARCANE MAESTRO', description: '魔法と回復を極めた上位職。ゼナカド撃破後、魔導士と僧侶をLv20にすると解放。',
@@ -305,6 +339,27 @@ window.ARSENE_DATA = {
     martialStrike: { id: 'martialStrike', name: 'たたかう', nameEn: 'MARTIAL STRIKE', mp: 0, kind: 'weapon', weaponType: 'martial', target: 'single', agiScale: 0, damageType: 'physical', powerText: 'AGI依存', description: '拳と爪による打撃。素早さを参照する。' },
     staffFireball: { id: 'staffFireball', name: 'ファイアーボール', nameEn: 'FIREBALL', mp: 0, kind: 'weapon', weaponType: 'staff', target: 'single', agiScale: 0, damageType: 'magical', element: 'fire', powerText: 'MAG依存', effectText: '炎属性／MP消費なし', description: '杖に灯した炎弾を撃ち出す。杖の通常攻撃。' },
 
+    // ══ ジョブパッシブ（Lv5 / 10 / 15 で習得。習得後は永久）════
+    // passiveEffect の type で効果を分類し、戦闘コードは type だけを見る。
+    p_might:       { id: 'p_might', name: '剛力', nameEn: 'MIGHT', type: 'PASSIVE', jobId: 'warrior', passiveEffect: { type: 'statPercent', stat: 'str', rate: .05 }, effectText: '力 +5%', description: '鍛え上げた膂力。力が5%上昇する。' },
+    p_tough:       { id: 'p_tough', name: '強靭', nameEn: 'TOUGHNESS', type: 'PASSIVE', jobId: 'warrior', passiveEffect: { type: 'statPercent', stat: 'vit', rate: .05 }, effectText: '体力 +5%', description: '打たれ強い肉体。体力が5%上昇する。' },
+    p_instinct:    { id: 'p_instinct', name: '闘争本能', nameEn: 'BATTLE INSTINCT', type: 'PASSIVE', jobId: 'warrior', passiveEffect: { type: 'lowHpPhysicalUp', rate: .10, hpThreshold: .5 }, effectText: 'HP50%以下で物理ダメージ +10%', description: '追い詰められるほど牙を剥く。' },
+    p_gale:        { id: 'p_gale', name: '疾風', nameEn: 'GALE', type: 'PASSIVE', jobId: 'martialArtist', passiveEffect: { type: 'statPercent', stat: 'agi', rate: .05 }, effectText: '素早さ +5%', description: '風のような身のこなし。素早さが5%上昇する。' },
+    p_vitalAim:    { id: 'p_vitalAim', name: '急所狙い', nameEn: 'VITAL AIM', type: 'PASSIVE', jobId: 'martialArtist', passiveEffect: { type: 'criticalUp', rate: .03 }, effectText: '会心率 +3%', description: '急所を見抜く眼。会心率が上昇する。' },
+    p_fortune:     { id: 'p_fortune', name: '幸運', nameEn: 'FORTUNE', type: 'PASSIVE', jobId: 'martialArtist', passiveEffect: { type: 'statPercent', stat: 'luk', rate: .05 }, effectText: '運 +5%', description: '天運を引き寄せる。運が5%上昇する。' },
+    p_amplify:     { id: 'p_amplify', name: '魔力増幅', nameEn: 'AMPLIFY', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'statPercent', stat: 'mag', rate: .05 }, effectText: '魔力 +5%', description: '魔力の流れを増幅する。魔力が5%上昇する。' },
+    p_manaStore:   { id: 'p_manaStore', name: '魔力貯蔵', nameEn: 'MANA STORAGE', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'statPercent', stat: 'maxMp', rate: .10 }, effectText: '最大MP +10%', description: '体内に魔力を蓄える。最大MPが10%上昇する。' },
+    p_spellBoost:  { id: 'p_spellBoost', name: '魔法増幅', nameEn: 'SPELL BOOST', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'magicDamageUp', rate: .10 }, effectText: '攻撃魔法ダメージ +10%', description: '攻撃魔法の威力を高める。' },
+    p_spirit:      { id: 'p_spirit', name: '精神力', nameEn: 'SPIRIT', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'statPercent', stat: 'mnd', rate: .05 }, effectText: '精神 +5%', description: '揺るがぬ心。精神が5%上昇する。' },
+    p_healArt:     { id: 'p_healArt', name: '治癒術', nameEn: 'HEALING ART', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'healUp', rate: .10 }, effectText: 'HP回復量 +10%', description: '癒やしの術を高める。' },
+    p_wardBarrier: { id: 'p_wardBarrier', name: '魔法障壁', nameEn: 'WARD BARRIER', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'magicResist', rate: .10 }, effectText: '被魔法ダメージ -10%', description: '魔を退ける薄い障壁を纏う。' },
+    p_spellBlade:  { id: 'p_spellBlade', name: '魔剣適性', nameEn: 'SPELL BLADE', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'multiStatPercent', stats: { str: .03, mag: .03 } }, effectText: '力 +3% / 魔力 +3%', description: '刃と魔を同時に扱う適性。' },
+    p_manaFlow:    { id: 'p_manaFlow', name: '魔力循環', nameEn: 'MANA FLOW', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'statPercent', stat: 'maxMp', rate: .05 }, effectText: '最大MP +5%', description: '魔力を絶えず巡らせる。最大MPが5%上昇する。' },
+    p_elemental:   { id: 'p_elemental', name: '属性増幅', nameEn: 'ELEMENTAL BOOST', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'elementDamageUp', rate: .08 }, effectText: '属性攻撃ダメージ +8%', description: '属性を帯びた攻撃の威力を高める。' },
+
+    // ══ 魔装士 固有スキル ═════════════════════════════════════
+    magicCharge: { id: 'magicCharge', name: '魔力装填', nameEn: 'MAGIC CHARGE', source: 'job', jobId: 'magicKnight', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 4, cooldown: 3, powerText: '次の物理攻撃に MAG×0.5 を追加', effect: { type: 'selfMagicCharge' }, effectText: '次に使う物理攻撃・武器技へ魔力依存の追加ダメージ／CT3', description: '刃に魔力を装填する。次の物理攻撃へ魔力分のダメージを上乗せする。' },
+
     // ══ 閃き技（対応する攻撃の使用中に閃く）═══════════════════
     // weaponType / prerequisiteSkill / requiredWeaponLevel / sparkRate で
     // 派生ツリーを構成する。戦闘コードに技ごとの条件は書かない。
@@ -330,6 +385,76 @@ window.ARSENE_DATA = {
       powerText: 'MAG×0.7（全体）', effectText: '敵全体へ炎属性魔法', description: '渦巻く業火が戦場を包む。'
     },
 
+    // ── 剣：二段斬り → 三段斬り → 音速剣 → 残像剣 ──────────────
+    tripleSlash: {
+      id: 'tripleSlash', name: '三段斬り', nameEn: 'TRIPLE SLASH', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'sword', prerequisiteSkill: 'doubleSlash', requiredWeaponLevel: 7, sparkRate: null,
+      mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
+      power: 0.55, hitCount: 3, hits: 3, agiScale: 0, criticalModifier: 0,
+      powerText: 'STR×0.55×3回', effectText: '3連撃／合計1.65倍', description: '流れるような三連の斬撃。'
+    },
+    sonicBlade: {
+      id: 'sonicBlade', name: '音速剣', nameEn: 'SONIC BLADE', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'sword', prerequisiteSkill: 'tripleSlash', requiredWeaponLevel: 12, sparkRate: null,
+      mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
+      power: 1.6, hitCount: 1, agiScale: 0, criticalModifier: 0, speedBonus: 40,
+      powerText: 'STR×1.6', effectText: '強い先制補正', description: '音を置き去りにする神速の一閃。'
+    },
+    afterimageBlade: {
+      id: 'afterimageBlade', name: '残像剣', nameEn: 'AFTERIMAGE BLADE', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'sword', prerequisiteSkill: 'sonicBlade', requiredWeaponLevel: 18, sparkRate: null,
+      mp: 0, kind: 'physical', damageType: 'physical', target: 'all',
+      power: 0.9, hitCount: 1, agiScale: 0, criticalModifier: 0,
+      powerText: 'STR×0.9（全体）', effectText: '敵全体へ物理攻撃', description: '無数の残像が同時に敵を薙ぐ。剣の最初の全体攻撃。'
+    },
+
+    // ── 体術：ダブルクロー →（急所突き／疾風拳）→ 影縫い ───────
+    vitalPierce: {
+      id: 'vitalPierce', name: '急所突き', nameEn: 'VITAL PIERCE', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'martial', prerequisiteSkill: 'doubleClaw', requiredWeaponLevel: 7, sparkRate: null,
+      mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
+      power: 1.2, hitCount: 1, agiScale: 0, criticalModifier: 0.25,
+      powerText: 'AGI×1.2', effectText: '会心率 大幅上昇', description: '一点の急所を穿つ。会心を狙う技。'
+    },
+    galeFist: {
+      id: 'galeFist', name: '疾風拳', nameEn: 'GALE FIST', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'martial', prerequisiteSkill: 'doubleClaw', requiredWeaponLevel: 12, sparkRate: null,
+      mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
+      power: 1.4, hitCount: 1, agiScale: 0.3, criticalModifier: 0, speedBonus: 40,
+      powerText: 'AGI×1.4＋AGI×0.3', effectText: '強い先制補正', description: '疾風のごとき踏み込みから放つ拳。'
+    },
+    shadowStitch: {
+      id: 'shadowStitch', name: '影縫い', nameEn: 'SHADOW STITCH', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'martial', prerequisiteSkill: 'galeFist', requiredWeaponLevel: 18, sparkRate: null,
+      mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
+      power: 1.3, hitCount: 1, agiScale: 0, criticalModifier: 0,
+      inflict: { type: 'slow', chance: 0.5, turns: 2, speedPenalty: 40 },
+      powerText: 'AGI×1.3', effectText: '50%で対象の行動順を大きく低下（2ターン）', description: '影を縫い止め、動きを鈍らせる。'
+    },
+
+    // ── 杖：ファイアーボール →（ファイアストーム／ファイアランス）→ インフェルノ → メテオ ──
+    fireLance: {
+      id: 'fireLance', name: 'ファイアランス', nameEn: 'FIRE LANCE', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'staff', prerequisiteSkill: 'staffFireball', requiredWeaponLevel: 7, sparkRate: null,
+      mp: 6, kind: 'magical', damageType: 'magical', element: 'fire', target: 'single',
+      power: 1.6, hitCount: 1, agiScale: 0, criticalModifier: 0,
+      powerText: 'MAG×1.6', effectText: '単体高火力の炎魔法', description: '収束した炎が槍となって貫く。'
+    },
+    inferno: {
+      id: 'inferno', name: 'インフェルノ', nameEn: 'INFERNO', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'staff', prerequisiteSkill: 'fireStorm', requiredWeaponLevel: 12, sparkRate: null,
+      mp: 10, kind: 'magical', damageType: 'magical', element: 'fire', target: 'all',
+      power: 1.0, hitCount: 1, agiScale: 0, criticalModifier: 0,
+      powerText: 'MAG×1.0（全体）', effectText: '敵全体を焼き尽くす炎', description: '地を舐める獄炎が全てを飲み込む。'
+    },
+    meteor: {
+      id: 'meteor', name: 'メテオ', nameEn: 'METEOR', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'staff', prerequisiteSkill: 'inferno', requiredWeaponLevel: 18, sparkRate: null,
+      mp: 18, kind: 'magical', damageType: 'magical', element: 'fire', target: 'all',
+      power: 1.5, hitCount: 1, agiScale: 0, criticalModifier: 0,
+      powerText: 'MAG×1.5（全体）', effectText: '高コストの大魔法', description: '天より降る星の礫が戦場を穿つ。'
+    },
+
     quickSlash: { id: 'quickSlash', name: 'クイックスラッシュ', nameEn: 'QUICK SLASH', source: 'character', type: 'ACTIVE', mp: 5, kind: 'physical', target: 'single', power: 3.5, agiScale: 0.8, powerText: 'ATK×3.5＋AGI×0.8', effectText: '素早さも威力へ加算', description: '素早い踏み込みから放つ斬撃。力と素早さを参照して敵単体へダメージを与える。' },
     flame: { id: 'flame', name: 'フラム', mp: 6, kind: 'magical', target: 'all', power: 0.8, agiScale: 0, elementId: 'fire' },
     fireball: { id: 'fireball', name: 'ファイアボール', mp: 5, kind: 'magical', target: 'single', power: 1.4, agiScale: 0, elementId: 'fire' },
@@ -337,7 +462,8 @@ window.ARSENE_DATA = {
     blueEcho: { id: 'blueEcho', name: '蒼の残響', nameEn: 'BLUE ECHO', source: 'character', unlockLevel: 3, type: 'PASSIVE', kind: 'passive', target: 'self', mp: 0, powerText: '－', effectText: 'ターン開始時20%でMAG +10%／2ターン。重複せず残り時間を更新', description: '戦いの中で魔力の波長を捉え、自らの魔力を高める。' },
     meditation: { id: 'meditation', name: '精神集中', nameEn: 'MEDITATION', source: 'character', unlockLevel: 5, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 3, powerText: '最大MPの10%', effect: { type: 'mpRecover', maxMpRate: .10 }, effectText: '最大MPの10%回復／クールタイム3ターン', description: '呼吸を整え、乱れた魔力を収束させる。自身のMPを回復する。' },
     powerCharge: { id: 'powerCharge', name: 'ちからため', nameEn: 'POWER CHARGE', source: 'job', jobId: 'warrior', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 3, powerText: '次の物理攻撃 ×3.5', effect: { type: 'selfAtkCharge', rate: 2.5 }, effectText: '次に使う物理攻撃の威力+250%／クールタイム3ターン', description: '全身に力を溜める。次に使用する物理攻撃の威力を大きく高める。' },
-    burstFist: { id: 'burstFist', name: 'ばくれつけん', nameEn: 'BURST FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 1, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 4, power: 1.5, hits: 3, agiScale: 0, powerText: 'ATK×1.5×3回', effectText: '3回連続攻撃／各攻撃で個別クリティカル判定', description: '目にも留まらぬ拳の連打を叩き込む。' },
+    // 武道家の固有技。体術武器技（会心・先制・速度妨害）とは役割を分ける純粋な多段攻撃。
+    burstFist: { id: 'burstFist', name: 'ばくれつけん', nameEn: 'BURST FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 1, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 6, power: 0.5, hits: 4, agiScale: 0, powerText: 'ATK×0.5×4回', effectText: '4回連続攻撃／各攻撃で個別クリティカル判定', description: '目にも留まらぬ拳の連打を叩き込む。武道家だけが扱える固有技。' },
     powerStrike: { id: 'powerStrike', name: '強撃', nameEn: 'POWER STRIKE', source: 'job', jobId: 'warrior', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 4, power: 4.2, agiScale: 0, powerText: 'ATK×4.2', effectText: '通常攻撃より高威力', description: '力を込めた一撃。ATKを参照して敵単体へ物理ダメージを与える。' },
     breakEdge: { id: 'breakEdge', name: 'ブレイクエッジ', nameEn: 'BREAK EDGE', source: 'job', jobId: 'warrior', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 7, power: 3.5, agiScale: 0, effect: { type: 'enemyDefDown', rate: .20, turns: 2 }, powerText: 'ATK×3.5', effectText: '敵DEF -20%／2ターン', description: '防御を断つ斬撃。物理ダメージと同時に敵のDEFを低下させる。' },
     recklessEdge: { id: 'recklessEdge', name: '捨て身斬り', nameEn: 'RECKLESS EDGE', source: 'job', jobId: 'warrior', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 10, power: 6.0, agiScale: 0, effect: { type: 'selfDefDown', rate: .20, turns: 2 }, powerText: 'ATK×6.0', effectText: '使用後、自身のDEF -20%／2ターン', description: '守りを捨てて放つ高威力の斬撃。' },
@@ -376,6 +502,7 @@ window.ARSENE_DATA = {
     mageStaff: { id: 'mageStaff', name: '魔導士の杖', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '青い魔力を導く魔導士の基本杖。' },
     phantomSword: { id: 'phantomSword', name: '青影の剣', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '青い残光を引く怪盗の細身剣。' },
     ironClaw: { id: 'ironClaw', name: '鉄の爪', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '拳に装着する鋼の爪。素早い連撃に適する。' },
+    magicKnightProof: { id: 'magicKnightProof', name: '魔装士の証', nameEn: 'PROOF OF THE MAGIC KNIGHT', category: 'key', rarity: 'epic', description: '刃と魔を繋ぐ古い紋章。新たな生き方を選ぶ資格を示す。' },
     shadowWand: { id: 'shadowWand', name: 'シャドウワンド', category: 'equipment', slot: 'rightHand', rarity: 'rare', description: '闇の魔力を帯びたシャドウスライム由来の杖。' },
     slimeRing: { id: 'slimeRing', name: 'スライムリング', category: 'equipment', slot: 'accessory', rarity: 'rare', description: '不思議な弾力を持つ魔力の指輪。' },
     darkCore: { id: 'darkCore', name: 'ダークコア', category: 'material', rarity: 'epic', description: 'シャドウスライムの核。強い闇の魔力を宿している。' },

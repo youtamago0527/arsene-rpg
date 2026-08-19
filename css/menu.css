@@ -190,3 +190,15 @@
 .boss-tag-locked{position:absolute;right:8px;top:8px;padding:2px 7px;border-radius:3px;background:#20304a;color:#9fc4e4;font:700 9px/1.5 Cinzel}
 .boss-rematch-bar{display:block;height:5px;margin-top:5px;background:#080b12;border:1px solid #2a3f5c;overflow:hidden}
 .boss-rematch-bar em{display:block;height:100%;background:linear-gradient(90deg,#2a5f9e,#5fb0ff);transition:width .3s}
+
+/* ══ 1面クリア報酬 / アビリティ画面 ═══════════════════════ */
+.stage-reward{margin:14px 0;padding:13px 15px;background:linear-gradient(#1a1204,#0a0702);border:1px solid #ffd76a;box-shadow:0 0 26px #ffb43a44}
+.sr-key{display:grid;gap:2px;margin-bottom:9px}
+.sr-key small{font:700 8px Cinzel;letter-spacing:.24em;color:#ffe9a8}
+.sr-key b{font-size:19px;color:#fff;text-shadow:0 0 11px #ffb43a}
+.sr-key span{font-size:10px;color:#c9b48a;line-height:1.6}
+.sr-jobs small{display:block;margin-bottom:5px;font:700 8px Cinzel;letter-spacing:.22em;color:#7bd3ff}
+.sr-jobs div{display:flex;flex-wrap:wrap;gap:5px}
+.sr-jobs mark{padding:3px 9px;border-radius:3px;background:#0d2949;color:#9fdcff;border:1px solid #2a6a9e;font-size:11px}
+.ab-static{cursor:pointer}
+.abset-h span{font-weight:400;opacity:.7}
