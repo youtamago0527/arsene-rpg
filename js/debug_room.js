@@ -30,6 +30,94 @@
   const isPassive = s => s.kind === 'passive' || /^p_/.test(s.id || '');
   const isJobSkill = s => s.source === 'job' || !!s.jobId;
 
+  // ── 項目名の日本語表示 ────────────────────────────────────────
+  // ここに無いキーは英字のまま出る。増やしたいときは1行足すだけ。
+  const LABELS = {
+    id: 'ID', name: '名前', nameEn: '英語名', description: '説明', enName: '英語名',
+    stats: '能力', maxHp: '最大HP', maxMp: '最大MP', atk: '攻撃', def: '防御',
+    mag: '魔力', mnd: '精神', spd: '素早さ', str: '力', vit: '体力', agi: '素早さ',
+    dex: '器用さ', luk: '運', exp: '経験値', gold: 'GOLD', min: '最小', max: '最大',
+    dropTable: 'ドロップ', itemId: 'アイテム', chance: '確率(0〜1)', count: '個数',
+    ai: '行動パターン', weight: '出現比率', kind: '種別',
+    element: '属性', weaknesses: '弱点', resistances: '耐性',
+    sprite: '画像パス', battleScale: '表示倍率', dungeonId: 'ダンジョン', floorId: '階層',
+    power: '威力', mp: '消費MP', hits: 'ヒット数', target: '対象', aoe: '全体攻撃',
+    damageType: 'ダメージ種別', weaponType: '武器種', randomTarget: 'ランダム対象',
+    prerequisiteSkill: '派生元の技', requiredWeaponLevel: '必要武器学Lv', sparkRate: '閃き率(0〜1)',
+    powerText: '威力表示', effectText: '効果表示', source: '入手元', jobId: 'JOB', type: 'タイプ',
+    slot: '装備部位', rarity: 'レア度', category: '分類',
+    attackPower: '攻撃力', defensePower: '防御力', magicAttackPower: '魔法攻撃力', magicDefensePower: '魔法防御力',
+    bonuses: '能力ボーナス', effects: '特殊効果', criticalRateBonus: '会心率+',
+    physicalDamagePercent: '物理ダメージ+%', fireDamagePercent: '炎ダメージ+%',
+    magicDamageReductionPercent: '被魔法ダメージ-%', healBonusPercent: '回復量+%',
+    materials: '必要素材', resultItemId: '完成品', resultCount: '個数',
+    craftCategory: '分類', materialUnlockId: '解放素材',
+    floors: '階層', winsToClear: 'クリアに必要な勝利数', encounterProgression: '出現テーブル',
+    minWins: 'この勝利数から', pool: '出現する敵', unlockCondition: '解放条件',
+    recommendedLevel: '推奨Lv', background: '背景', thumbnail: 'サムネイル', music: 'BGM',
+    successRates: '成功率(+1から順に)', goldCosts: '費用(+1から順に)', maxLevel: '最大強化', powerRate: '1段階あたりの上昇率',
+    attackScale: '攻撃倍率', defenseK: '防御の効きにくさK', base: '基準値', growth: '伸び', curve: 'カーブ',
+    critical: '会心', luckRate: '運の寄与', multiplier: '倍率', variance: 'ばらつき',
+    playerVariance: '味方ダメージのばらつき', enemyVariance: '敵ダメージのばらつき',
+    enemyPhysical: '敵の物理', enemyMagic: '敵の魔法',
+    dexRate: '器用さの寄与', enemySpdRate: '敵素早さの寄与',
+    scaling: '参照能力', powerKey: '加算する装備能力',
+    weaponExpTable: '武器学の必要EXP', weaponExpMultiplier: '武器EXP倍率',
+    baseHpGrowthRate: 'HP成長率', baseMpGrowthRate: 'MP成長率',
+    hpGrowthAmount: 'HP上昇量', mpGrowthAmount: 'MP上昇量',
+    jobHpGrowthBonus: 'JOB別HP成長+', jobMpGrowthBonus: 'JOB別MP成長+',
+    jobGrowthPerLevel: 'JOB Lvあたりの成長', sparkBaseRate: '基本閃き率',
+    dungeon2BossWins: 'D2ボス解放に必要な勝利数', bossRematchWins: 'ボス再戦に必要な周回数',
+    debugPassword: 'デバッグPW', healOnBattleStart: '戦闘開始時に全回復',
+    noelEncounterWins: 'ノエル出現の勝利数', zenakadoEncounterWins: 'ゼナカド出現の勝利数',
+    starterWeaponId: '初期武器', unlockFlag: '解放フラグ', damageStats: '参照能力'
+  };
+  const labelOf = k => LABELS[k] || k;
+
+  // 参照先が決まっている項目は、打ち間違い防止のため選択式にする
+  function optionsFor(key) {
+    const D = window.ARSENE_DATA || {};
+    const ids = o => Object.keys(o || {});
+    switch (key) {
+      case 'itemId': case 'resultItemId': case 'materialUnlockId': case 'starterWeaponId':
+        return [...ids(D.items), ...ids(D.weapons), ...ids(D.armors), ...ids(D.accessories)];
+      case 'prerequisiteSkill': return ids(D.skills);
+      case 'jobId': return ids(D.jobs);
+      case 'weaponType': return (D.weaponTypes || []).map(t => t.id);
+      case 'slot': return (D.equipmentSlots || []).map(s => s.id || s);
+      case 'dungeonId': return (D.dungeons || []).map(d => d.id);
+      case 'damageType': return ['physical', 'magical'];
+      case 'target': return ['single', 'all', 'self', 'ally'];
+      case 'rarity': return ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+      case 'craftCategory': return ['weapon', 'armor'];
+      default: return null;
+    }
+  }
+  // 敵IDを選ぶ欄（出現テーブルの pool 内の id）
+  const enemyIds = () => Object.keys((window.ARSENE_DATA || {}).enemies || {});
+
+  // ── 入力欄に出さない項目 ──────────────────────────────────────
+  // 書き換えるとゲームが壊れる／画像が消えるもの。
+  //   ・レコードのID       … 変えるとリネームではなく複製になり参照が切れる
+  //   ・画像や音のパス      … 存在しないパスにすると表示・再生が壊れる
+  //   ・コード分岐用の文字列 … 想定外の値にすると技や解放条件が動かなくなる
+  // どうしても触りたいときは「JSONで編集」に切り替えれば出てくる。
+  const HIDDEN_KEYS = new Set([
+    'sprite', 'battleSprite', 'weaponSprite', 'image', 'thumbnail', 'background', 'music',
+    'attackMotion', 'portraitMode', 'imageFocus', 'battleScale', 'theme',
+    'saveKey', 'debugPassword',
+    'unlockFlag', 'unlockCondition',
+    'kind', 'source', 'type', 'powerKey', 'craftCategory'
+  ]);
+  // path 単位で隠すもの（トップレベルのIDと階層IDのみ。pool内のIDは選択式なので出す）
+  const isHiddenPath = (path, key) => {
+    if (HIDDEN_KEYS.has(key)) return true;
+    if (key === 'id') return !/\.pool\.\d+\.id$/.test(path); // 出現テーブルの敵IDだけは編集可
+    if (key === 'type' || key === 'effect') return false;
+    if (/^effect\.type$/.test(path)) return true;
+    return false;
+  };
+
   const CATEGORIES = [
     { g: '敵', key: 'enemies', label: 'モンスター', list: true, hint: 'stats / exp / gold / dropTable / ai' },
 
@@ -133,8 +221,28 @@
   .dbg-list button.edited:after{content:' ●';color:#c8a04a}
   .dbg-search{width:100%;padding:6px 8px;margin-bottom:6px;background:#080e1a;color:#cfe0f2;border:1px solid #1d3a5c;border-radius:3px;font-size:12px}
   .dbg-edit{display:flex;flex-direction:column;gap:8px;padding:10px;min-height:0}
-  .dbg-edit textarea{flex:1;min-height:200px;width:100%;padding:10px;background:#060b14;color:#bfe3ff;border:1px solid #1d3a5c;border-radius:4px;font:12px/1.5 ui-monospace,Consolas,monospace;resize:none;white-space:pre;overflow:auto}
-  .dbg-edit textarea.bad{border-color:#c0392b}
+  .dbg-edit>textarea{flex:1;min-height:200px;width:100%;padding:10px;background:#060b14;color:#bfe3ff;border:1px solid #1d3a5c;border-radius:4px;font:12px/1.5 ui-monospace,Consolas,monospace;resize:none;white-space:pre;overflow:auto}
+  .dbg-edit>textarea.bad{border-color:#c0392b}
+  /* 入力欄モード */
+  #dbg-form{flex:1;min-height:0;overflow:auto;padding:2px 4px 4px 0}
+  .dbg-idline{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #16283f;font-size:11px;color:#67809a}
+  .dbg-idline code{color:#9fd8ff;font-size:12px}
+  .dbg-f{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:8px;margin-bottom:5px}
+  .dbg-f>span{font-size:12px;color:#9db6cf;text-align:right}
+  .dbg-f>span small{display:block;font-size:9px;color:#5d7a99}
+  .dbg-f input[type=text],.dbg-f input[type=number],.dbg-f select,.dbg-f textarea{width:100%;padding:5px 7px;background:#060b14;color:#dbe9f7;border:1px solid #1d3a5c;border-radius:3px;font-size:13px}
+  .dbg-f input[type=number]{font-variant-numeric:tabular-nums}
+  .dbg-f input[type=checkbox]{width:18px;height:18px;justify-self:start}
+  .dbg-f-wide{grid-template-columns:150px 1fr}
+  .dbg-f textarea{resize:vertical;font-family:inherit}
+  .dbg-group{margin:8px 0;padding:8px 10px;border:1px solid #16283f;border-radius:4px}
+  .dbg-group>legend{padding:0 6px;font-size:11px;letter-spacing:.08em;color:#5fc6ff}
+  .dbg-group>legend small{margin-left:6px;color:#5d7a99}
+  .dbg-row{position:relative;display:grid;grid-template-columns:20px 1fr 26px;align-items:start;gap:6px;margin-bottom:6px;padding:6px;background:#080f1c;border:1px solid #142238;border-radius:3px}
+  .dbg-row>b{font-size:10px;color:#5d7a99;padding-top:6px}
+  .dbg-row-del{width:24px;height:24px;background:#2a1216;color:#ff9d86;border:1px solid #6b2a2a;border-radius:3px;cursor:pointer;font-size:14px;line-height:1}
+  .dbg-row-add{width:100%;padding:6px;background:#0d1c30;color:#8fc4f0;border:1px dashed #2f6ea8;border-radius:3px;cursor:pointer;font-size:12px}
+  @media(max-width:560px){.dbg-f,.dbg-f-wide{grid-template-columns:1fr}.dbg-f>span{text-align:left}}
   .dbg-actions{display:flex;flex-wrap:wrap;gap:8px}
   .dbg-actions button{padding:7px 14px;background:#122744;color:#cfe0f2;border:1px solid #2f6ea8;border-radius:4px;cursor:pointer;font-size:12px}
   .dbg-actions button.primary{background:#1c4b7d;border-color:#3f8fd0}
@@ -154,7 +262,95 @@
   .dbg-gate-box p{margin:8px 0 0;font-size:11px;color:#ff9d86;min-height:16px}
   `;
 
-  let state = { cat: 0, id: null };
+  let state = { cat: 0, id: null, raw: false, draft: null };
+
+  // ══ フォーム描画 ════════════════════════════════════════════
+  // レコードの形からそのまま入力欄を組み立てる。
+  //   数値 → number入力 ／ 真偽 → チェック ／ 参照ID → 選択式
+  //   配列(数値・文字) → カンマ区切りの1行入力
+  //   配列(オブジェクト) → 行ごとの枠＋「行を追加 / 削除」
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const isPlainObj = v => v && typeof v === 'object' && !Array.isArray(v);
+
+  function fieldHTML(path, key, value) {
+    const label = labelOf(key);
+    const p = esc(path);
+    if (typeof value === 'boolean')
+      return `<label class="dbg-f"><span>${esc(label)}</span><input type="checkbox" data-path="${p}" data-t="bool" ${value ? 'checked' : ''}></label>`;
+    if (typeof value === 'number' || (value === null && /Rate|Power|count|chance|weight|Lv|Level|min|max|exp|gold|mp|hits|power/i.test(key)))
+      return `<label class="dbg-f"><span>${esc(label)}</span><input type="number" step="any" data-path="${p}" data-t="num" value="${value ?? ''}" placeholder="${value === null ? '未設定' : ''}"></label>`;
+    const opts = optionsFor(key) || (key === 'id' && /\.pool\.\d+\.id$/.test(path) ? enemyIds() : null);
+    if (opts) {
+      const cur = value ?? '';
+      const list = opts.includes(cur) || cur === '' ? opts : [cur, ...opts];
+      return `<label class="dbg-f"><span>${esc(label)}</span><select data-path="${p}" data-t="str">${
+        list.map(o => `<option value="${esc(o)}" ${o === cur ? 'selected' : ''}>${esc(o)}</option>`).join('')
+      }<option value="" ${cur === '' ? 'selected' : ''}>（なし）</option></select></label>`;
+    }
+    const long = typeof value === 'string' && value.length > 40;
+    if (long) return `<label class="dbg-f dbg-f-wide"><span>${esc(label)}</span><textarea rows="2" data-path="${p}" data-t="str">${esc(value)}</textarea></label>`;
+    return `<label class="dbg-f"><span>${esc(label)}</span><input type="text" data-path="${p}" data-t="str" value="${esc(value ?? '')}"></label>`;
+  }
+
+  function nodeHTML(path, key, value, depth) {
+    if (isHiddenPath(path, key)) return '';
+    if (Array.isArray(value)) {
+      if (!value.length || !isPlainObj(value[0])) {
+        // 数値・文字の配列はカンマ区切りで扱う
+        return `<label class="dbg-f dbg-f-wide"><span>${esc(labelOf(key))}<small>カンマ区切り</small></span>
+          <input type="text" data-path="${esc(path)}" data-t="csv" value="${esc(value.join(', '))}"></label>`;
+      }
+      const rows = value.map((v, i) => `<div class="dbg-row"><b>${i + 1}</b>
+        <div class="dbg-row-body">${Object.entries(v).map(([k2, v2]) => nodeHTML(`${path}.${i}.${k2}`, k2, v2, depth + 1)).join('')}</div>
+        <button class="dbg-row-del" data-del-row="${esc(path)}.${i}" title="この行を削除">×</button></div>`).join('');
+      return `<fieldset class="dbg-group"><legend>${esc(labelOf(key))}<small>${value.length}件</small></legend>
+        ${rows}<button class="dbg-row-add" data-add-row="${esc(path)}">＋ 行を追加</button></fieldset>`;
+    }
+    if (isPlainObj(value)) {
+      const inner = Object.entries(value).map(([k2, v2]) => nodeHTML(`${path}.${k2}`, k2, v2, depth + 1)).join('');
+      if (!inner.trim()) return ''; // 中身が全部非表示なら枠ごと出さない
+      return `<fieldset class="dbg-group"><legend>${esc(labelOf(key))}</legend>${inner}</fieldset>`;
+    }
+    return fieldHTML(path, key, value);
+  }
+
+  function formHTML(rec) {
+    if (!isPlainObj(rec)) return '<p class="dbg-hint">この項目はJSON編集のみ対応です。</p>';
+    const body = Object.entries(rec).map(([k, v]) => nodeHTML(k, k, v, 0)).join('');
+    const head = rec.id ? `<div class="dbg-idline">ID <code>${esc(rec.id)}</code><small>IDや画像パスなど、変えると壊れる項目は出していません</small></div>` : '';
+    return head + (body.trim() || '<p class="dbg-hint">編集できる項目がありません。</p>');
+  }
+
+  // ── パス操作 ──
+  const getPath = (o, path) => path.split('.').reduce((a, k) => (a == null ? a : a[k]), o);
+  function setPath(o, path, val) {
+    const ks = path.split('.'); const last = ks.pop();
+    let cur = o;
+    for (const k of ks) { if (cur[k] == null) cur[k] = /^\d+$/.test(k) ? [] : {}; cur = cur[k]; }
+    cur[last] = val;
+  }
+  function delPath(o, path) {
+    const ks = path.split('.'); const last = ks.pop();
+    const parent = ks.length ? getPath(o, ks.join('.')) : o;
+    if (Array.isArray(parent)) parent.splice(+last, 1); else delete parent[last];
+  }
+
+  // フォームの入力値をレコードへ反映して返す
+  function collectForm() {
+    const rec = JSON.parse(JSON.stringify(state.draft));
+    document.querySelectorAll('#dbg-form [data-path]').forEach(el => {
+      const path = el.dataset.path, t = el.dataset.t;
+      let v;
+      if (t === 'bool') v = el.checked;
+      else if (t === 'num') v = el.value === '' ? null : Number(el.value);
+      else if (t === 'csv') {
+        const parts = el.value.split(',').map(s => s.trim()).filter(s => s !== '');
+        v = parts.map(s => (s !== '' && !isNaN(s) ? Number(s) : s));
+      } else v = el.value === '' ? null : el.value;
+      setPath(rec, path, v);
+    });
+    return rec;
+  }
 
   function css() {
     if (document.getElementById('dbg-css')) return;
@@ -204,15 +400,33 @@
       (def.list ? `<input id="dbg-q" class="dbg-search" placeholder="ID・名前で検索" value="${q.replace(/"/g, '&quot;')}">` : '') +
       shown.map(id => `<button data-id="${id}" class="${id === state.id ? 'on' : ''} ${def.list && edited.has(id) ? 'edited' : ''}">${recordName(def, id)}</button>`).join('');
 
-    const ta = root.querySelector('#dbg-json');
-    ta.value = state.id != null && recs[state.id] !== undefined ? JSON.stringify(recs[state.id], null, 2) : '';
-    ta.classList.remove('bad');
+    // 選択中レコードの下書き。フォームはこの下書きを描画する。
+    const rec = state.id != null ? recs[state.id] : undefined;
+    if (!state.draft || state.draftKey !== `${state.cat}:${state.id}`) {
+      state.draft = rec === undefined ? null : JSON.parse(JSON.stringify(rec));
+      state.draftKey = `${state.cat}:${state.id}`;
+    }
+    const ta = root.querySelector('#dbg-json'), form = root.querySelector('#dbg-form');
+    ta.hidden = !state.raw; form.hidden = state.raw;
+    root.querySelector('#dbg-mode').textContent = state.raw ? '入力欄で編集' : 'JSONで編集';
+    if (state.raw) { ta.value = state.draft ? JSON.stringify(state.draft, null, 2) : ''; ta.classList.remove('bad'); }
+    else form.innerHTML = state.draft ? formHTML(state.draft) : '<p class="dbg-hint">項目を選んでください。</p>';
     root.querySelector('.dbg-hint').textContent = `${def.g} / ${def.label} — ${def.hint}`;
     root.querySelector('#dbg-del').style.display = def.list ? '' : 'none';
     root.querySelector('#dbg-new').style.display = def.list ? '' : 'none';
     const n = Object.values(ov).reduce((a, p) => a + Object.keys(p).filter(k => k !== '__deleted').length + (p.__deleted || []).length, 0);
     root.querySelector('.dbg-foot').textContent =
       `未書き出しの変更 ${n} 件　／　変更は端末に保存され次回起動時にも適用されます。data.js へ正式に取り込むには「書き出し」でJSONをコピーしてください。`;
+  }
+
+  // フォームだけ描き直す（カテゴリ一覧などは触らない）
+  function renderForm() {
+    const form = document.getElementById('dbg-form');
+    if (form) form.innerHTML = state.draft ? formHTML(state.draft) : '';
+  }
+  function readRawSafe() {
+    const ta = document.getElementById('dbg-json');
+    try { return JSON.parse(ta.value); } catch (e) { msg('JSONが壊れているので入力欄へは戻せません', true); return state.draft; }
   }
 
   function msg(text, isErr) {
@@ -223,9 +437,15 @@
 
   // ── 操作 ──────────────────────────────────────────────────────
   function saveCurrent() {
-    const ta = document.getElementById('dbg-json'); let parsed;
-    try { parsed = JSON.parse(ta.value); }
-    catch (e) { ta.classList.add('bad'); msg('JSONが壊れています：' + e.message, true); return; }
+    let parsed;
+    if (state.raw) {
+      const ta = document.getElementById('dbg-json');
+      try { parsed = JSON.parse(ta.value); }
+      catch (e) { ta.classList.add('bad'); msg('JSONが壊れています：' + e.message, true); return; }
+    } else {
+      if (!state.draft) { msg('編集する項目を選んでください', true); return; }
+      parsed = collectForm();
+    }
     const def = cur(), ov = loadOverrides();
     if (def.list) {
       const id = parsed.id || state.id;
@@ -325,9 +545,11 @@
         <div class="dbg-col dbg-list"></div>
         <div class="dbg-col dbg-edit">
           <div class="dbg-hint"></div>
-          <textarea id="dbg-json" spellcheck="false"></textarea>
+          <div id="dbg-form"></div>
+          <textarea id="dbg-json" spellcheck="false" hidden></textarea>
           <div class="dbg-actions">
             <button id="dbg-save" class="primary">保存</button>
+            <button id="dbg-mode">JSONで編集</button>
             <button id="dbg-new">複製して追加</button>
             <button id="dbg-revert">元に戻す</button>
             <button id="dbg-del" class="danger">削除</button>
@@ -343,6 +565,32 @@
       if (cat) { state.cat = +cat.dataset.cat; state.id = null; render(); return; }
       const id = e.target.closest('[data-id]');
       if (id) { state.id = id.dataset.id; render(); return; }
+      const addRow = e.target.closest('[data-add-row]');
+      if (addRow) {
+        state.draft = collectForm();
+        const arr = getPath(state.draft, addRow.dataset.addRow) || [];
+        const tpl = arr.length ? JSON.parse(JSON.stringify(arr[arr.length - 1])) : {};
+        // 追加行は数値0・真偽false・文字は空にする。
+        // ただし参照ID（アイテムや敵）は未選択だと扱いに困るので、選択肢の先頭を入れておく。
+        for (const k of Object.keys(tpl)) {
+          if (typeof tpl[k] === 'number') { tpl[k] = 0; continue; }
+          if (typeof tpl[k] === 'boolean') { tpl[k] = false; continue; }
+          const opts = optionsFor(k) || (k === 'id' ? enemyIds() : null);
+          tpl[k] = opts && opts.length ? opts[0] : '';
+        }
+        arr.push(tpl); setPath(state.draft, addRow.dataset.addRow, arr);
+        renderForm(); return;
+      }
+      const delRow = e.target.closest('[data-del-row]');
+      if (delRow) {
+        state.draft = collectForm();
+        delPath(state.draft, delRow.dataset.delRow);
+        renderForm(); return;
+      }
+      if (e.target.id === 'dbg-mode') {
+        state.draft = state.raw ? readRawSafe() : collectForm();
+        state.raw = !state.raw; render(); return;
+      }
       if (e.target.id === 'dbg-save') return saveCurrent();
       if (e.target.id === 'dbg-new') return newRecord();
       if (e.target.id === 'dbg-del') return deleteRecord();
