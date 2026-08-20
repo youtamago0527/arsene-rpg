@@ -152,30 +152,31 @@
   .select-screen .select-wrap{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);height:100svh;max-height:100svh;padding:10px;gap:7px;overflow:hidden}
   .select-heading{grid-column:1;grid-row:1}
   .character-switcher{grid-column:1;grid-row:2;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible;gap:5px}
-  .character-stage{grid-column:1;grid-row:3;overflow:auto}
+  .character-stage{grid-column:1;grid-row:3;overflow:hidden}
   .select-heading h1{font-size:clamp(19px,5.6vw,26px)}
   .select-heading small{font-size:8px;letter-spacing:.2em}
   .mini-card{padding:4px 3px 5px;gap:1px;min-width:0}
   .mini-art{aspect-ratio:1.2/1}
   .mini-card b{font-size:9px;line-height:1.25}
   .mini-card small{font-size:6px;letter-spacing:.04em}
-  .select-screen .character-card{grid-template-rows:minmax(150px,26svh) auto}
-  .character-card[data-portrait="cutout"] .cc-art img{padding:3px 8px 0;image-rendering:pixelated}
-  .cc-art::after{height:22%}
-  .select-screen .card-info{gap:6px;padding:9px 11px 11px}
-  .select-screen .character-card h2{font-size:20px}
-  .cc-type{padding:5px 8px;gap:6px}
-  .cc-type b{font-size:12px}
-  .cc-type span{font-size:10px}
+  .select-screen .character-card{grid-template-rows:132px minmax(0,1fr);height:100%}
+  .character-card[data-portrait="cutout"] .cc-art img{width:92%;height:92%;margin:auto;padding:0 8px;object-position:center!important;image-rendering:auto}
+  .cc-art::after{height:15%}
+  .select-screen .card-info{gap:3px;padding:7px 9px 8px;align-content:start}
+  .select-screen .character-card h2{font-size:18px;line-height:1.15}
+  .select-screen .character-card h3{margin:0;font-size:7px}
+  .cc-type{padding:4px 7px;gap:5px}
+  .cc-type small{font-size:6px}.cc-type b{font-size:11px}.cc-type span{font-size:8px}
   .cc-desc{display:grid;gap:2px}
-  .cc-desc p{font-size:11px;line-height:1.6}
-  .cc-trait{padding:7px 9px}
-  .cc-trait>b{font-size:14px}
+  .cc-desc p{font-size:9px;line-height:1.4}
+  .cc-trait{padding:5px 7px}
+  .cc-trait>small{font-size:6px}.cc-trait>b{font-size:12px;line-height:1.25}.cc-trait-en{font-size:6px}
   .cc-trait-desc{display:grid;gap:1px}
-  .cc-trait-desc p{font-size:10px;line-height:1.6}
-  .tend-grid{grid-template-columns:minmax(0,1fr);gap:2px}
-  .tend-row{grid-template-columns:44px 1fr;gap:8px}
-  .tend-row>span{font-size:10px}
-  .stars{font-size:12px}
-  .cc-select{padding:11px;font-size:13px;letter-spacing:.18em}
+  .cc-trait-desc p{font-size:8px;line-height:1.4}
+  .cc-tendency{gap:2px}.cc-tendency>small{font-size:6px}
+  .tend-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:1px 8px}
+  .tend-row{grid-template-columns:28px minmax(0,1fr);gap:3px}
+  .tend-row>span{font-size:8px}
+  .stars{font-size:9px;letter-spacing:.06em}
+  .cc-select{padding:8px;font-size:11px;letter-spacing:.18em}
 }

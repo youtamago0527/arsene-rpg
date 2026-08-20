@@ -64,6 +64,9 @@ window.ARSENE_DATA = {
 
     // ── 閃き ────────────────────────────────────────────────
     sparkBaseRate: 0.05,
+    // パッシブは転生1回ごとに「基本値 × この割合」ずつ強くなる。
+    // 個別に rebirthStep / max を書けばそちらが優先される。
+    passiveRebirthStepRate: 0.4,
     // キャラクター固有特性 "small" が何倍になるか（characters.json 側は記号のみ保持）
     traitBonusScale: { small: { weaponExp: 1.2, spark: 1.5, mpGrowth: 1.3, heal: 1.3, critical: 0.03 } },
 
@@ -167,7 +170,7 @@ window.ARSENE_DATA = {
   ],
   jobs: {
     warrior: {
-      id: 'warrior', name: '戦士', nameEn: 'WARRIOR', description: '力と耐久力で正面から怪異を打ち破る。', signatureSkillId: 'powerCharge', passiveUnlocks: { 5: 'p_might', 10: 'p_tough', 15: 'p_instinct' }, growthStats: ['str', 'vit'], featureText: '力・体力を伸ばしやすいジョブ。物理攻撃・HP・耐久力などの脳筋系パッシブを習得できる。',
+      id: 'warrior', name: '戦士', nameEn: 'WARRIOR', description: '力と耐久力で正面から怪異を打ち破る。', signatureSkillId: 'powerCharge', passiveUnlocks: { 1: 'p_adept', 5: 'p_might', 10: 'p_tough', 15: 'p_instinct' }, growthStats: ['str', 'vit'], featureText: '力・体力を伸ばしやすいジョブ。物理攻撃・HP・耐久力などの脳筋系パッシブを習得できる。',
       growth: { 1: { str: 2 }, 2: { maxHp: 5 }, 3: { vit: 1 }, 4: { str: 2, vit: 1 }, 5: { maxHp: 8 }, 6: { str: 2 }, 7: { maxHp: 8, vit: 2 }, 8: { str: 3 }, 9: { vit: 2 }, 10: { str: 4, maxHp: 12 }, 11: { str: 2 }, 12: { maxHp: 10, vit: 2 }, 13: { str: 3 }, 14: { vit: 3, maxHp: 8 }, 15: { str: 4 }, 16: { maxHp: 12, vit: 3 }, 17: { str: 4 }, 18: { vit: 4 }, 19: { str: 5 }, 20: { str: 6, maxHp: 18, vit: 5 } },
       skillUnlocks: {}
     },
@@ -519,20 +522,22 @@ window.ARSENE_DATA = {
 
     // ══ ジョブパッシブ（Lv5 / 10 / 15 で習得。習得後は永久）════
     // passiveEffect の type で効果を分類し、戦闘コードは type だけを見る。
-    p_might:       { id: 'p_might', name: '練達', nameEn: 'MASTERY', type: 'PASSIVE', jobId: 'warrior', passiveEffect: { type: 'skillMpDiscount', rate: .40 }, effectText: '武器技の消費MP -40%', description: '振り慣れた身体は無駄がない。武器技の消費MPが軽くなる。力が5%上昇する。' },
+    p_might:       { id: 'p_might', name: '剛力', nameEn: 'MIGHT', type: 'PASSIVE', jobId: 'warrior', passiveEffect: { type: 'statPercent', stat: 'str', rate: .05 }, effectText: '力 +5%', description: '鍛え上げた膂力。力が上昇する。転生するたびに上げ幅が伸びる。' },
+    // 戦士Lv1：武器技のMP消費を軽くする。転生で伸びるが50%で頭打ち。
+    p_adept:       { id: 'p_adept', name: '練達', nameEn: 'ADEPT', type: 'PASSIVE', jobId: 'warrior', passiveEffect: { type: 'skillMpDiscount', rate: .20, rebirthStep: .06, max: .50 }, effectText: '武器技の消費MP -20%', description: '振り慣れた身体は無駄がない。武器技の消費MPが軽くなる。' },
     p_tough:       { id: 'p_tough', name: '強靭', nameEn: 'TOUGHNESS', type: 'PASSIVE', jobId: 'warrior', passiveEffect: { type: 'statPercent', stat: 'vit', rate: .05 }, effectText: '体力 +5%', description: '打たれ強い肉体。体力が5%上昇する。' },
-    p_instinct:    { id: 'p_instinct', name: '闘争本能', nameEn: 'BATTLE INSTINCT', type: 'PASSIVE', jobId: 'warrior', passiveEffect: { type: 'lowHpPhysicalUp', rate: .10, hpThreshold: .5 }, effectText: 'HP50%以下で物理ダメージ +10%', description: '追い詰められるほど牙を剥く。' },
+    p_instinct:    { id: 'p_instinct', name: '闘争本能', nameEn: 'BATTLE INSTINCT', type: 'PASSIVE', jobId: 'warrior', passiveEffect: { type: 'lowHpPhysicalUp', rate: .10, rebirthStep: .03, max: .30, hpThreshold: .5 }, effectText: 'HP50%以下で物理ダメージ +10%', description: '追い詰められるほど牙を剥く。' },
     p_gale:        { id: 'p_gale', name: '疾風', nameEn: 'GALE', type: 'PASSIVE', jobId: 'martialArtist', passiveEffect: { type: 'statPercent', stat: 'agi', rate: .05 }, effectText: '素早さ +5%', description: '風のような身のこなし。素早さが5%上昇する。' },
-    p_vitalAim:    { id: 'p_vitalAim', name: '急所狙い', nameEn: 'VITAL AIM', type: 'PASSIVE', jobId: 'martialArtist', passiveEffect: { type: 'criticalUp', rate: .10 }, effectText: '会心率 +10%', description: '急所を見抜く眼。会心率が上昇する。' },
+    p_vitalAim:    { id: 'p_vitalAim', name: '急所狙い', nameEn: 'VITAL AIM', type: 'PASSIVE', jobId: 'martialArtist', passiveEffect: { type: 'criticalUp', rate: .06, rebirthStep: .02, max: .20 }, effectText: '会心率 +6%', description: '急所を見抜く眼。会心率が上昇する。' },
     p_fortune:     { id: 'p_fortune', name: '幸運', nameEn: 'FORTUNE', type: 'PASSIVE', jobId: 'martialArtist', passiveEffect: { type: 'statPercent', stat: 'luk', rate: .05 }, effectText: '運 +5%', description: '天運を引き寄せる。運が5%上昇する。' },
     p_amplify:     { id: 'p_amplify', name: '魔力増幅', nameEn: 'AMPLIFY', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'statPercent', stat: 'mag', rate: .05 }, effectText: '魔力 +5%', description: '魔力の流れを増幅する。魔力が5%上昇する。' },
     p_manaStore:   { id: 'p_manaStore', name: '魔力貯蔵', nameEn: 'MANA STORAGE', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'statPercent', stat: 'maxMp', rate: .10 }, effectText: '最大MP +10%', description: '体内に魔力を蓄える。最大MPが10%上昇する。' },
-    p_spellBoost:  { id: 'p_spellBoost', name: '魔法増幅', nameEn: 'SPELL BOOST', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'magicDamageUp', rate: .10 }, effectText: '攻撃魔法ダメージ +10%', description: '攻撃魔法の威力を高める。' },
+    p_spellBoost:  { id: 'p_spellBoost', name: '魔法増幅', nameEn: 'SPELL BOOST', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'magicDamageUp', rate: .10, rebirthStep: .03, max: .30 }, effectText: '攻撃魔法ダメージ +10%', description: '攻撃魔法の威力を高める。' },
     // 僧侶Lv1：長く潜って稼ぐ役どころ。戦闘で得るGOLDが増える。
-    p_tithe:       { id: 'p_tithe', name: '施しの祈り', nameEn: 'TITHE', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'goldUp', rate: .40 }, effectText: '獲得GOLD +40%', description: '善を積む祈り。倒した怪異が遺すものを、余さず拾い上げる。' },
+    p_tithe:       { id: 'p_tithe', name: '施しの祈り', nameEn: 'TITHE', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'goldUp', rate: .40, rebirthStep: .12 }, effectText: '獲得GOLD +40%', description: '善を積む祈り。倒した怪異が遺すものを、余さず拾い上げる。' },
     p_spirit:      { id: 'p_spirit', name: '精神力', nameEn: 'SPIRIT', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'statPercent', stat: 'mnd', rate: .05 }, effectText: '精神 +5%', description: '揺るがぬ心。精神が5%上昇する。' },
     p_healArt:     { id: 'p_healArt', name: '治癒術', nameEn: 'HEALING ART', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'healUp', rate: .10 }, effectText: 'HP回復量 +10%', description: '癒やしの術を高める。' },
-    p_wardBarrier: { id: 'p_wardBarrier', name: '托鉢', nameEn: 'ALMS', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'mealDiscount', rate: .50 }, effectText: 'カズのまかない代 -50%', description: '喜捨を受ける身。カズのまかないを安く分けてもらえる。' },
+    p_wardBarrier: { id: 'p_wardBarrier', name: '托鉢', nameEn: 'ALMS', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'mealDiscount', rate: .50, rebirthStep: .08, max: .80 }, effectText: 'カズのまかない代 -50%', description: '喜捨を受ける身。カズのまかないを安く分けてもらえる。' },
     p_spellBlade:  { id: 'p_spellBlade', name: '魔剣適性', nameEn: 'SPELL BLADE', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'multiStatPercent', stats: { str: .03, mag: .03 } }, effectText: '力 +3% / 魔力 +3%', description: '刃と魔を同時に扱う適性。' },
     p_manaFlow:    { id: 'p_manaFlow', name: '魔力循環', nameEn: 'MANA FLOW', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'statPercent', stat: 'maxMp', rate: .05 }, effectText: '最大MP +5%', description: '魔力を絶えず巡らせる。最大MPが5%上昇する。' },
     p_elemental:   { id: 'p_elemental', name: '属性増幅', nameEn: 'ELEMENTAL BOOST', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'elementDamageUp', rate: .08 }, effectText: '属性攻撃ダメージ +8%', description: '属性を帯びた攻撃の威力を高める。' },

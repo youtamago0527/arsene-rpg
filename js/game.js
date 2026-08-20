@@ -308,12 +308,41 @@
       return [...new Map([...learned, ...legacy].map(s => [s.id, s])).values()];
     }
     // パッシブのステータス系効果を totalStats へ反映する
+    // ══ パッシブの転生成長 ════════════════════════════════════
+    // パッシブはそのJOBを転生させるたびに強くなる。
+    //   実効値 = rate + 転生回数 × step   （step 未指定なら rate の40%）
+    //   max があればそこで頭打ち。MP割引のように青天井にできない効果へ付ける。
+    // これで「後から強いJOBが出ても、育てた既存JOBが腐らない」形にする。
+    passiveRate(passive, key = 'rate') {
+      const e = passive?.passiveEffect; if (!e) return 0;
+      const base = e[key] || 0; if (!base) return 0;
+      const n = this.rebirthCount(passive.jobId || this.profile.currentJob);
+      if (!n) return base;
+      const step = e.rebirthStep != null ? e.rebirthStep : base * (this.gb().passiveRebirthStepRate ?? 0.4);
+      const grown = base + n * step;
+      return e.max != null ? Math.min(e.max, grown) : grown;
+    }
+    // 表示用：効果テキストの数値を、転生で伸びた現在値に差し替える。
+    // 「力 +5%」→ 転生2回なら「力 +9%（転生+4%）」のように出す。
+    passiveCurrentText(passive) {
+      const e = passive?.passiveEffect; if (!e?.rate) return passive?.effectText || '';
+      const base = e.rate, cur = this.passiveRate(passive), text = passive.effectText || '';
+      const basePct = Math.round(base * 100), curPct = Math.round(cur * 100);
+      // 「HP50%以下で〜 +10%」のように%が複数ある文があるので、
+      // 符号つきの数値（+10% / -20%）だけを差し替える。無ければ末尾の%を使う。
+      const signed = new RegExp(`([+\\-])${basePct}%`);
+      let label;
+      if (signed.test(text)) label = text.replace(signed, (_, s) => `${s}${curPct}%`);
+      else label = text.replace(new RegExp(`${basePct}%(?![\\s\\S]*\\d%)`), `${curPct}%`);
+      const gain = curPct - basePct;
+      return gain > 0 ? `${label}（転生 +${gain}%）` : label;
+    }
     applyPassiveStats(total) {
       for (const p of this.activePassives()) {
         const e = p.passiveEffect; if (!e) continue;
-        if (e.type === 'statPercent') total[e.stat] = Math.round((total[e.stat] || 0) * (1 + e.rate));
+        if (e.type === 'statPercent') total[e.stat] = Math.round((total[e.stat] || 0) * (1 + this.passiveRate(p)));
         else if (e.type === 'multiStatPercent') Object.entries(e.stats || {}).forEach(([k, r]) => total[k] = Math.round((total[k] || 0) * (1 + r)));
-        else if (e.type === 'criticalUp') total.critBonus = (total.critBonus || 0) + e.rate;
+        else if (e.type === 'criticalUp') total.critBonus = (total.critBonus || 0) + this.passiveRate(p);
       }
       return total;
     }
@@ -323,7 +352,7 @@
     equippedPassiveList() { const slots = this.isPhantomThief() ? (this.profile.ptPassiveSlots || []) : (this.profile.equippedPassives || []); return slots.slice(0, this.passiveSlotCount()).map(id => D.skills[id]).filter(s => s?.type === 'PASSIVE'); }
     // 実際に効果を発揮する全パッシブ（現在ジョブ習得分＋装備分、重複除去）
     activePassives() { return [...new Map([...this.currentJobPassives(), ...this.equippedPassiveList()].map(s => [s.id, s])).values()]; }
-    passiveEffectRate(type) { return this.activePassives().reduce((sum, p) => p.passiveEffect?.type === type ? sum + (p.passiveEffect.rate || 0) : sum, 0); }
+    passiveEffectRate(type) { return this.activePassives().reduce((sum, p) => p.passiveEffect?.type === type ? sum + this.passiveRate(p) : sum, 0); }
     setEquippedPassive(idx, skillId) {
       const key = this.isPhantomThief() ? 'ptPassiveSlots' : 'equippedPassives';
       const max = this.passiveSlotCount();
@@ -1545,8 +1574,9 @@
         ? `<p class="st-jb-note">全JOBで育てた成長を ${Math.round((this.gb().phantomThiefInheritRate ?? 0.5) * 100)}% 引き継いでいます。</p>`
         : `<p class="st-jb-note">JOBで育てた成長は、そのJOBに就いている間だけ乗ります。</p>`;
       const jobHtml = `<div class="st-section"><h3>ジョブ補正</h3><div class="st-jb-head"><b>${D.jobs[jid]?.name || ''}</b><em>Lv.${jlv}</em></div>${jobBonusRows ? `<div class="st-jb">${jobBonusRows}</div>` : '<p class="item-empty">まだ補正はありません。</p>'}${ptNote}</div>`;
-      const passives = (this.profile.passiveSlots || []).map(id => D.skills[id]).filter(Boolean);
-      const passiveHtml = passives.length ? `<div class="st-section"><h3>パッシブ</h3><div class="st-passives">${passives.map(s => `<div><b>${s.name}</b><small>${s.description || ''}</small></div>`).join('')}</div></div>` : '';
+      // 実際に効いているパッシブを、転生で伸びた現在値つきで出す
+      const passives = this.activePassives();
+      const passiveHtml = passives.length ? `<div class="st-section"><h3>パッシブ</h3><div class="st-passives">${passives.map(s => `<div><b>${s.name}</b><em>${this.passiveCurrentText(s)}</em><small>${s.description || ''}</small></div>`).join('')}</div></div>` : '';
       panel.innerHTML = `<small>CHARACTER DATA</small><h2>${withTabs ? '装備・ステータス' : 'ステータス'}</h2>${withTabs ? this.equipTabsHtml() : ''}
         <div class="st-head"><div class="st-portrait" aria-hidden="true"></div><div class="st-id"><strong>${this.playerName()}</strong><em>${D.jobs[jid]?.name || ''} Lv.${jlv}</em></div></div>
         <div class="st-meters"><div class="st-meter hp"><span>HP</span><i style="width:${100*vitals.hp/total.maxHp}%"></i><output>${vitals.hp} / ${total.maxHp}</output></div><div class="st-meter mp"><span>MP</span><i style="width:${100*vitals.mp/total.maxMp}%"></i><output>${vitals.mp} / ${total.maxMp}</output></div><div class="st-meter exp"><span>${this.weaponTypeName(mType)} Lv.${mst.level}</span><i style="width:${mPct}%"></i><output>${mPct.toFixed(2)}%</output></div><div class="st-meter jexp"><span>${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}</span><i style="width:${jpct}%"></i><output>${jneed ? jpct.toFixed(2)+'%' : 'MASTER'}</output></div></div>

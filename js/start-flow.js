@@ -34,6 +34,11 @@
         this.prologue = [{ id: 'fallback', time: '00:00', text: 'その名は――\n\n或世盗。\n\nARSÈNE.', effect: 'arsene' }];
         this.characters = [{ id: 'ren', name: '雨宮 蓮', nameEn: 'AMAMIYA REN', available: true, type: 'MAGE', description: '魔力とMPに優れた魔法型。', trait: { name: '魔導の才', description: '杖の武器学成長に小ボーナス。' }, tendency: { str: 2, vit: 3, mag: 5, mnd: 4, agi: 3, luk: 3 }, image: 'assets/playable-characters/amamiya-ren/body-no-weapon.png', portraitMode: 'cutout' }];
       }
+      const protagonistOrder = ['roga', 'ren', 'sho', 'shizuma'];
+      this.characters.sort((a, b) => {
+        const ai = protagonistOrder.indexOf(a.id), bi = protagonistOrder.indexOf(b.id);
+        return (ai < 0 ? protagonistOrder.length : ai) - (bi < 0 ? protagonistOrder.length : bi);
+      });
       this.game.setCharacterList(this.characters);
       this.render();
       this.bind();
@@ -199,8 +204,7 @@
     }
 
     async beginNewGame() {
-      await this.game.audio.unlock();
-      await this.game.audio.playTimedLoop(this.openingMusic, 100, 5);
+      this.game.audio.unlock().then(() => this.game.audio.playTimedLoop(this.openingMusic, 100, 5)).catch(error => console.warn('Opening BGM could not start.', error));
       const current = $('[data-flow-screen="title"]', this.root);
       current.classList.add('leaving');
       await sleep(520);
@@ -242,7 +246,7 @@
       const nl = text => (text || '').split('\n').filter(Boolean).map(line => `<p>${line}</p>`).join('');
 
       $('.character-stage', this.root).innerHTML = `
-        <article class="character-card available" data-portrait="${current.portraitMode || 'scene'}">
+        <article class="character-card available" data-character="${current.id}" data-portrait="${current.portraitMode || 'scene'}">
           <div class="cc-art"><img src="${current.image}" alt="${current.name}" style="object-position:${current.imageFocus || '50% 20%'}"></div>
           <div class="card-info">
             <h2>${current.name}</h2><h3>${current.nameEn}</h3>
