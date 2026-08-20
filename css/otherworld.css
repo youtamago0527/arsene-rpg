@@ -23,6 +23,25 @@ body.ow-glitch #menu-screen{animation:ow-shake .5s steps(2) 3}
 
 /* ── レニーフォックス ── */
 .hideout-fox{cursor:pointer}
+.ow-lenny-guide #menu-screen{position:relative}
+.ow-lenny-guide #menu-screen:after{content:"";position:fixed;z-index:900;inset:0;background:#01030bc9;backdrop-filter:blur(2px);pointer-events:auto}
+.ow-lenny-guide .hideout-art-shell>.hideout-fox-hotspot{z-index:902;outline:2px solid #50c8ff;outline-offset:4px;background:radial-gradient(circle,#42c7ff22 0 38%,#168dff12 58%,transparent 72%);box-shadow:0 0 18px #42c7ff,0 0 48px #125eff;animation:ow-guide-pulse 1.05s ease-in-out infinite}
+.ow-lenny-guide-label{position:absolute;z-index:903;left:50%;top:26.5%;translate:-50% 0;width:max-content;max-width:82%;padding:8px 15px;color:#e9f8ff;background:#051326ee;border:1px solid #48beff;border-radius:4px;font-size:11px;font-weight:800;letter-spacing:.08em;text-align:center;pointer-events:none;box-shadow:0 0 18px #168dff88}
+@keyframes ow-guide-pulse{50%{filter:brightness(1.55);box-shadow:0 0 30px #71d8ff,0 0 70px #274fff;transform:scale(1.035)}}
+
+/* ── 異世界へ飲み込まれる遷移 ── */
+.ow-dive{position:fixed;z-index:12000;inset:0;display:grid;place-items:center;overflow:hidden;background:#01020a00;pointer-events:all;animation:ow-dive-dark 1.55s ease-in forwards}
+.ow-dive:before,.ow-dive:after{content:"";position:absolute;left:50%;top:50%;width:26vmax;height:26vmax;border-radius:50%;translate:-50% -50%;border:2px solid #6e35ff;box-shadow:0 0 30px #168dff,inset 0 0 40px #6e35ff;animation:ow-vortex 1.45s cubic-bezier(.55,.05,.72,.36) forwards}
+.ow-dive:after{width:14vmax;height:14vmax;border-color:#62d9ff;animation-delay:.08s;animation-duration:1.32s;animation-direction:reverse;opacity:.72}
+.ow-dive-rings{position:absolute;left:50%;top:50%;width:8vmax;height:8vmax;border-radius:50%;translate:-50% -50%;background:repeating-conic-gradient(from 18deg,#65dcff 0 4deg,transparent 5deg 18deg,#8d35ff 19deg 22deg,transparent 23deg 37deg);filter:blur(.4px) drop-shadow(0 0 12px #168dff);animation:ow-ring-swallow 1.5s cubic-bezier(.6,.02,.8,.4) forwards}
+.ow-dive-core{position:absolute;left:50%;top:50%;width:3vmax;height:3vmax;border-radius:50%;translate:-50% -50%;background:#000;box-shadow:0 0 30px 12px #6c20ff,0 0 80px 32px #116dff88;animation:ow-core-swallow 1.5s ease-in forwards}
+.ow-dive-label{position:relative;z-index:2;margin-top:34vmin;color:#dff7ff;font:800 11px Cinzel,serif;letter-spacing:.38em;text-shadow:0 0 12px #37bfff;animation:ow-dive-label 1.3s ease forwards}
+@keyframes ow-dive-dark{0%{background:#01020a00}55%{background:#03011688}100%{background:#000}}
+@keyframes ow-vortex{0%{scale:.16;rotate:0deg;opacity:0}20%{opacity:1}100%{scale:7.5;rotate:520deg;opacity:.2}}
+@keyframes ow-ring-swallow{0%{scale:.2;rotate:0deg;opacity:0}15%{opacity:1}70%{scale:5.5;rotate:-610deg;opacity:1}100%{scale:13;rotate:-840deg;opacity:0}}
+@keyframes ow-core-swallow{0%{scale:.2;opacity:.2}58%{scale:2.2;opacity:1}100%{scale:36;opacity:1}}
+@keyframes ow-dive-label{0%,20%{opacity:0;letter-spacing:.65em}45%{opacity:1}88%{opacity:1}100%{opacity:0;filter:blur(5px)}}
+@media(prefers-reduced-motion:reduce){.ow-dive,.ow-dive:before,.ow-dive:after,.ow-dive-rings,.ow-dive-core,.ow-dive-label{animation-duration:.35s!important}}
 .lenny-lead{margin:2px 0 12px;font-size:13px;color:#f0a24b}
 .lenny-menu{display:grid;gap:8px}
 .lenny-menu button{position:relative;display:grid;gap:2px;padding:12px 14px;text-align:left;background:#080f1c;color:#dceaf8;border:1px solid #24405f;border-radius:5px;cursor:pointer}
@@ -95,6 +114,17 @@ body.ow-glitch #menu-screen{animation:ow-shake .5s steps(2) 3}
 .ow-warn.ow-stop{color:#ff9d86;background:#170a0a;border-color:#6b2a2a}
 .ow-enter{width:100%;padding:14px;background:linear-gradient(120deg,#43128f,#1c4b7d);color:#fff;border:1px solid #a86bff;border-radius:5px;font-size:15px;letter-spacing:.1em;cursor:pointer}
 .ow-enter:hover{box-shadow:0 0 20px #a86bff55}
+.ow-dungeon-list{display:grid;gap:10px;margin-top:12px}
+.ow-dungeon-card{position:relative;display:grid;gap:5px;width:100%;padding:15px;text-align:left;color:#e8f4ff;background:linear-gradient(125deg,#120822,#071629);border:1px solid #6335a1;border-radius:6px;overflow:hidden}
+.ow-dungeon-card.active{cursor:pointer;box-shadow:inset 0 0 24px #46169b44,0 0 15px #213d8e44}
+.ow-dungeon-card.active:before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 25%,#55c8ff15 47%,transparent 68%);translate:-100% 0;animation:ow-card-scan 2.8s ease-in-out infinite}
+.ow-dungeon-card small{font:800 9px Cinzel,serif;letter-spacing:.2em;color:#6ecfff}
+.ow-dungeon-card strong{font-size:17px;letter-spacing:.05em}
+.ow-dungeon-card span{font-size:10px;line-height:1.6;color:#99acc2}
+.ow-dungeon-card em{justify-self:start;padding:3px 8px;color:#d9c4ff;background:#42167599;border:1px solid #7e46b8;border-radius:99px;font-size:9px;font-style:normal}
+.ow-dungeon-card.locked{min-height:76px;place-content:center;filter:saturate(.35);opacity:.48;border-color:#283647;background:#070b12}
+.ow-dungeon-card.locked strong{font:800 12px Cinzel,serif;letter-spacing:.14em}.ow-dungeon-card.locked span{letter-spacing:.1em}
+@keyframes ow-card-scan{0%,52%{translate:-110% 0}100%{translate:130% 0}}
 
 /* ── 異世界：周回中 ── */
 .ow-step,.ow-chests,.ow-summary{display:grid;gap:10px;justify-items:center;text-align:center}

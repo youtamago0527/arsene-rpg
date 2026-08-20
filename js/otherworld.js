@@ -22,14 +22,24 @@
   P.loadProfile = function () {
     const p = origLoad.call(this);
     const f = p.flags ||= {};
+    const hadOtherWorldUnlock = !!f.otherWorldUnlocked;
     if (f.phantomThiefUnlocked == null) f.phantomThiefUnlocked = false;
     if (f.otherWorldUnlocked == null) f.otherWorldUnlocked = false;
     if (f.phantomTutorialViewed == null) f.phantomTutorialViewed = false;
+    if (f.phantomMascotGuided == null) f.phantomMascotGuided = !!f.phantomTutorialViewed;
     if (f.otherWorldNewSeen == null) f.otherWorldNewSeen = false;
     if (f.pendingPhantomNoise == null) f.pendingPhantomNoise = false;
     if (f.owInterferenceMax == null) f.owInterferenceMax = D().otherWorld?.interferenceMax ?? 2;
     if (f.owUsedToday == null) f.owUsedToday = 0;
     if (f.owLastDate == null) f.owLastDate = '';
+    // 異世界実装前にゼナカドを撃破した旧セーブを自動移行する。
+    if (p.bossDefeated?.zenacad || f.magicKnightProofObtained || f.zenakadoScoreClaimed) {
+      f.phantomThiefUnlocked = true;
+      f.otherWorldUnlocked = true;
+      p.unlockedJobs = Array.isArray(p.unlockedJobs) ? p.unlockedJobs : [];
+      if (!p.unlockedJobs.includes('phantomThief')) p.unlockedJobs.push('phantomThief');
+      if (!hadOtherWorldUnlock && !f.phantomMascotGuided) f.pendingPhantomNoise = true;
+    }
     // 進行状況を持たないJOB（phantomThief / magicKnight など）を補完する
     p.jobs ||= {};
     for (const id of Object.keys(D().jobs || {})) p.jobs[id] ||= { level: 1, exp: 0 };
@@ -44,7 +54,7 @@
   P.freshProfile = function () {
     const p = origFresh.call(this);
     Object.assign(p.flags, {
-      phantomThiefUnlocked: false, otherWorldUnlocked: false, phantomTutorialViewed: false,
+      phantomThiefUnlocked: false, otherWorldUnlocked: false, phantomTutorialViewed: false, phantomMascotGuided: false,
       otherWorldNewSeen: false, pendingPhantomNoise: false,
       owInterferenceMax: D().otherWorld?.interferenceMax ?? 2, owUsedToday: 0, owLastDate: ''
     });
@@ -210,6 +220,7 @@
     if (!r) return r;                                  // 初回以外は何もしない
     this.profile.flags.phantomThiefUnlocked = true;
     this.profile.flags.otherWorldUnlocked = true;
+    this.profile.flags.phantomMascotGuided = false;
     this.profile.flags.pendingPhantomNoise = true;     // 拠点へ戻った時にNOISEを流す
     this.unlockJob('phantomThief');
     this.saveProfile();
@@ -224,6 +235,8 @@
       this.profile.flags.pendingPhantomNoise = false;
       this.saveProfile();
       setTimeout(() => this.playPhantomNoise(), 500);
+    } else if (panel === 'home' && this.profile?.flags?.otherWorldUnlocked && !this.profile.flags.phantomMascotGuided) {
+      setTimeout(() => this.startLennyGuide(), 250);
     }
   };
 
@@ -261,6 +274,7 @@
     const close = () => {
       el.remove(); document.body.classList.remove('ow-glitch');
       this.renderMenuSummary?.();
+      this.startLennyGuide();
     };
     el.addEventListener('click', () => { i++; if (i >= NOISE_LINES.length) close(); else { this.audio?.sfx?.('ui'); render(); } });
     render();
@@ -269,13 +283,30 @@
   // ════════════════════════════════════════════════════════════
   // レニーフォックス（拠点の狐）
   // ════════════════════════════════════════════════════════════
+  P.startLennyGuide = function () {
+    if (!this.profile?.flags?.otherWorldUnlocked || this.profile.flags.phantomMascotGuided) return;
+    document.body.classList.add('ow-lenny-guide');
+    const shell = document.querySelector('.hideout-art-shell');
+    if (shell && !document.getElementById('ow-lenny-guide-label')) {
+      const label = document.createElement('div');
+      label.id = 'ow-lenny-guide-label'; label.className = 'ow-lenny-guide-label';
+      label.textContent = 'レニーフォックスが呼んでいる――';
+      shell.appendChild(label);
+    }
+  };
+  P.finishLennyGuide = function () {
+    document.body.classList.remove('ow-lenny-guide');
+    document.getElementById('ow-lenny-guide-label')?.remove();
+    if (!this.profile?.flags?.phantomMascotGuided) {
+      this.profile.flags.phantomMascotGuided = true;
+      this.saveProfile();
+    }
+  };
   P.lennyUnlocked = function () { return !!this.profile?.flags?.otherWorldUnlocked; };
   P.openLenny = function () {
-    if (!this.lennyUnlocked()) {
-      // D1クリア前は従来どおり。工房が開いていれば工房へ、まだなら何もしない。
-      if (this.profile?.flags?.noelFirstEncounterCleared) { this.audio.sfx('ui'); this.renderMenuPanel('workshop'); }
-      return;
-    }
+    // レニーフォックスは異世界専用。未解放時は工房などへ転送しない。
+    if (!this.lennyUnlocked()) return;
+    this.finishLennyGuide();
     this.audio.sfx('ui');
     if (!this.profile.flags.phantomTutorialViewed) { this.renderMenuPanel('phantom-tutorial'); return; }
     this.renderMenuPanel('lenny');
@@ -311,6 +342,9 @@
     { h: 'ACTIONは2枠', talk: ['盗んだ技を全部使えると思うなよ。', '一度に持っていけるのは2つまでだ。', '何を組み合わせるかは、お前次第。'], big: '脳筋ってのも立派な作戦だ。',
       note: ['盗んだACTIONは何個でも保存できますが、戦闘へ持ち込めるのは2つまでです。',
              '例：《ちからため》×《ばくれつけん》＝脳筋型 ／ 《ばくれつけん》×《ヒール》＝攻撃回復型 ／ 《魔力装填》×《精神集中》＝魔法戦士型。'] },
+    { h: 'PASSIVEも2枠', talk: ['技だけ盗んで終わりじゃない。', '他のJOBで身につけた戦い方も、こっちへ持ってこられる。', '選べるのは――'], big: 'PASSIVEも2つまでだ。',
+      note: ['他JOBで永久習得したPASSIVEから2つを選び、PHANTOM THIEF専用枠へ装備できます。',
+             'ACTION2枠とは別枠です。同じPASSIVEを2枠へ重複装備することはできません。'] },
     { h: '武器学は盗む必要がない', talk: ['ただし武器学は別だ。', '剣の振り方。爪での戦い方。杖の扱い方。', 'そいつはJOBから借りた力じゃない。'], big: 'お前自身が磨いた技術だ。',
       note: ['PHANTOM THIEFへJOBチェンジしても武器学Lvはそのまま維持され、習得済みの武器技もそのまま使えます。',
              'ただしPHANTOM THIEF中は武器学が伸びません。新しい技を閃きたいときは通常JOBへ戻ってください。'] },
@@ -385,21 +419,54 @@
       </div>
       ${isPT ? '' : '<p class="ow-warn">PHANTOM THIEF以外でも侵入できますが、この世界ではJOB経験値も武器学も伸びません。</p>'}
       ${canGo
-        ? '<button class="ow-enter" data-lenny="enter">異世界へ侵入する</button>'
+        ? '<button class="ow-enter" data-lenny="select">侵入先を選択する</button>'
         : '<p class="ow-warn ow-stop">「今日はもうやめとけ。」<br>「今のお前じゃ、これ以上向こう側に干渉したら身体がもたねえ。」</p>'}`);
+  };
+
+  P.owDungeonChoices = function () {
+    const cfg = this.owCfg();
+    if (Array.isArray(cfg.dungeons) && cfg.dungeons.length) return cfg.dungeons;
+    return [{ id: cfg.id || 'otherWorld', name: '境界の裂け目', nameEn: 'BOUNDARY RIFT', description: cfg.description, background: cfg.background, available: true }];
+  };
+
+  P.renderOwDungeonSelect = function (panel) {
+    const cfg = this.owCfg(), inf = this.owInterference(), arcana = this.owTodayArcana();
+    const cards = this.owDungeonChoices().map(d => `<button class="ow-dungeon-card active" data-lenny="enter" data-ow-dungeon="${esc(d.id)}">
+      <small>${esc(d.nameEn || 'OTHER WORLD')}</small><strong>${esc(d.name)}</strong>
+      <span>${esc(d.description || '')}</span><em>${cfg.battlesPerRun ?? 10} BATTLES ／ ${esc(arcana?.name || '本日のアルカナ')}</em></button>`).join('');
+    panel.innerHTML = `<button class="panel-home" data-menu="lenny">レニーへ戻る</button>
+      <small>RIFT DESTINATION</small><h2>異世界ダンジョン選択</h2>
+      <div class="ow-power"><span>異界干渉力</span><b>${inf.left} / ${inf.max}</b></div>
+      <div class="ow-dungeon-list">${cards}
+        <div class="ow-dungeon-card locked"><strong>UNOBSERVED RIFT</strong><span>COMING SOON</span></div>
+        <div class="ow-dungeon-card locked"><strong>UNOBSERVED RIFT</strong><span>COMING SOON</span></div>
+      </div>`;
   };
 
   // ════════════════════════════════════════════════════════════
   // 異世界：1周（雑魚9＋BOSS1）
   // ════════════════════════════════════════════════════════════
-  P.owEnter = async function () {
+  P.playOwTransition = function () {
+    document.getElementById('ow-dive')?.remove();
+    const el = document.createElement('div');
+    el.id = 'ow-dive'; el.className = 'ow-dive';
+    el.innerHTML = '<i class="ow-dive-rings"></i><i class="ow-dive-core"></i><b class="ow-dive-label">RIFT // DIVE</b>';
+    document.body.appendChild(el);
+    this.audio?.sfx?.('dark');
+    const duration = matchMedia('(prefers-reduced-motion: reduce)').matches ? 380 : 1550;
+    return new Promise(resolve => setTimeout(() => { el.remove(); resolve(); }, duration));
+  };
+
+  P.owEnter = async function (dungeonId = null) {
     const inf = this.owInterference();
     if (inf.left <= 0) return;
     this.profile.flags.owUsedToday = (this.profile.flags.owUsedToday || 0) + 1;
     this.saveProfile();
     const cfg = this.owCfg();
-    this.owRun = { battle: 1, total: cfg.battlesPerRun ?? 10, arcana: 0, rebirth: 0, gold: 0, mats: {} };
-    await this.audio.playTrack(this.bossMusic);
+    const selected = this.owDungeonChoices().find(d => d.id === dungeonId) || this.owDungeonChoices()[0];
+    this.owRun = { dungeonId: selected?.id || cfg.id, battle: 1, total: cfg.battlesPerRun ?? 10, arcana: 0, rebirth: 0, gold: 0, mats: {} };
+    await this.audio.playTrack(this.otherWorldMusic || this.bossMusic);
+    await this.playOwTransition();
     this.startOwBattle();
   };
 
@@ -460,7 +527,6 @@
         this.giveArcana('rebirthArcana', 1); run.rebirth++;
         got.push(`${D().items.rebirthArcana?.name || '輪廻のアルカナ'} ×1`);
       }
-      this.audio.stopMusic(650);
       this.owShowChests(got);
       return;
     }
@@ -581,6 +647,7 @@
       if (name === 'lenny') { panel.hidden = false; this.renderLennyPanel(panel); return; }
       if (name === 'phantom-tutorial') { panel.hidden = false; this.ptTutorialPage = 0; this.renderPhantomTutorial(panel); return; }
       if (name === 'otherworld') { panel.hidden = false; this.renderOtherWorldPanel(panel); return; }
+      if (name === 'otherworld-select') { panel.hidden = false; this.renderOwDungeonSelect(panel); return; }
     }
     return origRenderPanel.call(this, name);
   };
@@ -611,8 +678,9 @@
       g.audio?.sfx?.('ui');
       if (a === 'menu') g.renderMenuPanel('lenny');
       else if (a === 'otherworld') g.renderMenuPanel('otherworld');
+      else if (a === 'select') g.renderMenuPanel('otherworld-select');
       else if (a === 'tutorial') { g.ptTutorialPage = 0; g.renderMenuPanel('phantom-tutorial'); }
-      else if (a === 'enter') g.owEnter();
+      else if (a === 'enter') g.owEnter(lenny.dataset.owDungeon || null);
       else if (a === 'next') g.owNextBattle();
       else if (a === 'retreat') g.owRetreat();
       return;

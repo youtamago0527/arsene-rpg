@@ -1,5 +1,7 @@
 .hideout-art-shell{position:relative;width:min(1024px,100%);min-height:0;padding:0;background:#000;border:0;box-shadow:0 0 80px #000;overflow:visible}
 .hideout-full-art{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none}
+.hideout-art-shell>.hideout-fox-hotspot{position:absolute;z-index:6;left:69%;top:31%;right:auto;bottom:auto;width:22%;height:17%;padding:0;border:0;border-radius:46%;background:transparent;box-shadow:none;clip-path:none;filter:none;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.hideout-art-shell>.hideout-fox-hotspot:focus-visible{outline:2px solid #46b9ff;outline-offset:3px;box-shadow:0 0 22px #168dff}
 .hideout-art-shell .hideout-title,.hideout-art-shell .hideout-scene,.hideout-art-shell .hideout-footer{display:none}
 .hideout-art-shell .hideout-topbar{position:absolute;z-index:4;inset:0;display:block;pointer-events:none}
 .hideout-art-shell .hideout-player{position:absolute;top:1.25%;right:1.5%;width:43%;height:10.5%;min-height:0;padding:0;border:0;background:transparent;box-shadow:none;clip-path:none;display:block}
