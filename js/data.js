@@ -639,8 +639,8 @@ window.ARSENE_DATA = {
       id: 'afterimageBlade', name: '残像剣', nameEn: 'AFTERIMAGE BLADE', source: 'weapon', type: 'ACTIVE',
       weaponType: 'sword', prerequisiteSkill: 'sonicBlade', requiredWeaponLevel: 18, sparkRate: null,
       mp: 8, kind: 'physical', damageType: 'physical', target: 'all',
-      power: 0.9, hitCount: 1, agiScale: 0, criticalModifier: 0,
-      powerText: 'STR×0.9（全体）', effectText: '敵全体へ物理攻撃', description: '無数の残像が同時に敵を薙ぐ。剣の最初の全体攻撃。'
+      power: 1.3, hitCount: 1, agiScale: 0, criticalModifier: 0,
+      powerText: '攻撃性能×1.3（全体）', effectText: '敵全体へ物理攻撃', description: '無数の残像が同時に敵を薙ぐ。剣の唯一の全体攻撃。'
     },
 
     // ── 体術：ダブルクロー →（急所突き／疾風拳）→ 影縫い ───────
