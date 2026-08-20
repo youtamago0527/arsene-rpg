@@ -73,11 +73,14 @@ window.ARSENE_DATA = {
     // ── ジョブLvアップ時の基礎ステータス成長（1Lvごと）───────
     // 初期4職は合計6/Lv（Lv1→20で114ポイント）で統一。偏りでジョブ個性を作る。
     jobGrowthPerLevel: {
-      warrior:       { str: 2, vit: 2, mag: 0, mnd: 1, agi: 1, luk: 0 },
-      martialArtist: { str: 1, vit: 1, mag: 0, mnd: 0, agi: 2, luk: 2 },
-      mage:          { str: 0, vit: 0, mag: 2, mnd: 2, agi: 1, luk: 1 },
-      priest:        { str: 0, vit: 2, mag: 1, mnd: 2, agi: 0, luk: 1 },
-      magicKnight:   { str: 1, vit: 1, mag: 2, mnd: 1, agi: 1, luk: 0 }
+      // どのJOBも合計6/Lvで揃える（Lv1→20で114ポイント）。
+      // 器用さを伸ばすのは魔奏士だけ。楽器のダメージと命中に直結する。
+      warrior:       { str: 2, vit: 2, mag: 0, mnd: 1, agi: 1, dex: 0, luk: 0 },
+      martialArtist: { str: 1, vit: 1, mag: 0, mnd: 0, agi: 2, dex: 0, luk: 2 },
+      mage:          { str: 0, vit: 0, mag: 2, mnd: 2, agi: 1, dex: 0, luk: 1 },
+      priest:        { str: 0, vit: 2, mag: 1, mnd: 2, agi: 0, dex: 0, luk: 1 },
+      // 魔奏士：器用さ最優先。マジックナイトなので力と魔力も伸びる。
+      magicKnight:   { str: 1, vit: 1, mag: 2, mnd: 0, agi: 0, dex: 2, luk: 0 }
     },
     // パッシブ習得Lv
     jobPassiveLevels: [5, 10, 15],
@@ -104,7 +107,8 @@ window.ARSENE_DATA = {
     buffRate: 0.10,        // 1スタックあたりの上昇率
     maxStacks: 3,          // 重ねがけ上限
     nocturneTurns: 3,      // ノクターンの自然回復ターン数
-    nocturneHealRate: 0.08 // 1ターンあたりの回復量（最大HP比）
+    nocturneHealRate: 0.08, // 1ターンあたりの回復量（最大HP比）
+    soloTurns: 2           // ソロ（2回行動）の持続ターン
   },
   // 上位JOBは設計見直し中のため一旦空。復活させるときはここへIDを戻す。
   advancedJobIds: [],
@@ -184,7 +188,7 @@ window.ARSENE_DATA = {
     // 1面クリアで解放される新ジョブ。上位職ではなく「新しい選択肢」。
     magicKnight: {
       id: 'magicKnight', name: '魔奏士', nameEn: 'MAGIC KNIGHT', description: '刃に魔力を纏わせ、物理と魔法を組み合わせて戦う。',
-      signatureSkillId: 'ensemble', passiveUnlocks: { 5: 'p_forte', 10: 'p_crescendo', 15: 'p_nocturne' },
+      signatureSkillId: 'ensemble', passiveUnlocks: { 1: 'p_solo', 5: 'p_forte', 10: 'p_crescendo', 15: 'p_nocturne' },
       growthStats: ['mag', 'str'], featureText: '魔力を軸に物理も扱うハイブリッド型。武器を選ばず戦えるジョブ。',
       unlockCondition: { keyItem: 'magicKnightProof' },
       skillUnlocks: {}
@@ -279,6 +283,8 @@ window.ARSENE_DATA = {
       floors: [
         {
           id: 'd2f1', name: '残響の回廊', nameEn: '1F ECHOING CORRIDOR', winsToClear: 50,
+          background: 'assets/bg/dungeon2/d2f1-echoing-corridor.png',
+          thumbnail: 'assets/bg/dungeon2/d2f1-echoing-corridor.png',
           description: '踏み込んだ音が返ってこない廊。まだ弱い残響たちが彷徨っている。',
           materials: ['reverbJelly', 'echoShard'],
           encounterProgression: [
@@ -290,6 +296,8 @@ window.ARSENE_DATA = {
         },
         {
           id: 'd2f2', name: '沈黙の広間', nameEn: '2F HALL OF HUSH', winsToClear: 50,
+          background: 'assets/bg/dungeon2/d2f2-hall-of-hush.png',
+          thumbnail: 'assets/bg/dungeon2/d2f2-hall-of-hush.png',
           description: '奏者の姿だけが残された広間。音のない演奏が延々と続いている。',
           materials: ['spectralDust', 'violinString', 'silentNote'],
           encounterProgression: [
@@ -301,6 +309,8 @@ window.ARSENE_DATA = {
         },
         {
           id: 'd2f3', name: '楽殿最奥', nameEn: '3F INNERMOST HALL', winsToClear: 50,
+          background: 'assets/bg/dungeon2/d2f3-innermost-hall.png',
+          thumbnail: 'assets/bg/dungeon2/d2f3-innermost-hall.png',
           description: '奪われた音の全てが積み上がった最奥。ここを越えれば黒紅の双刃が待つ。',
           materials: ['silentArmor', 'stoneShard', 'moonstone'],
           encounterProgression: [
@@ -438,6 +448,8 @@ window.ARSENE_DATA = {
     infernoStone:   { id: 'infernoStone',   name: '獄炎の魔石',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'stoneShard',   resultItemId: 'infernoStone',   resultCount: 1, gold: 620, materials: [{ itemId: 'stoneShard', count: 4 }, { itemId: 'silentArmor', count: 3 }, { itemId: 'moonstone', count: 2 }] },
 
     luminaStaff:    { id: 'luminaStaff',    name: '月白杖ルミナ',    craftCategory: 'weapon', dungeonId: 'dungeon2', materialUnlockId: 'reverbJelly',  resultItemId: 'luminaStaff',    resultCount: 1, gold: 420, materials: [{ itemId: 'reverbJelly', count: 4 }, { itemId: 'echoShard', count: 3 }, { itemId: 'silentNote', count: 2 }] },
+    // 楽器の持ち替え先。教室のリコーダーからの乗り換え用。
+    silentRecorder: { id: 'silentRecorder', name: '静寂のリコーダー', craftCategory: 'weapon', dungeonId: 'dungeon2', materialUnlockId: 'violinString', resultItemId: 'silentRecorder', resultCount: 1, gold: 420, materials: [{ itemId: 'violinString', count: 4 }, { itemId: 'silentNote', count: 3 }, { itemId: 'echoShard', count: 2 }] },
     moonCrown:      { id: 'moonCrown',      name: '月白の聖冠',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'echoShard',    resultItemId: 'moonCrown',      resultCount: 1, gold: 210, materials: [{ itemId: 'echoShard', count: 3 }, { itemId: 'reverbJelly', count: 3 }] },
     mercyBangle:    { id: 'mercyBangle',    name: '慈愛の腕輪',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'silentNote',   resultItemId: 'mercyBangle',    resultCount: 1, gold: 240, materials: [{ itemId: 'silentNote', count: 4 }, { itemId: 'spectralDust', count: 2 }] },
     sacredShoes:    { id: 'sacredShoes',    name: '聖巡の靴',        craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'spectralDust', resultItemId: 'sacredShoes',    resultCount: 1, gold: 220, materials: [{ itemId: 'spectralDust', count: 4 }, { itemId: 'violinString', count: 2 }] },
@@ -525,9 +537,14 @@ window.ARSENE_DATA = {
     // ══ 魔奏士 固有スキル ═════════════════════════════════════
     // アンサンブル：3ターンのあいだ魔奏士パッシブの発動率を引き上げる。
     // 発動率・持続は maestroBalance で一括調整できる。
-    ensemble: { id: 'ensemble', name: 'アンサンブル', nameEn: 'ENSEMBLE', source: 'job', jobId: 'magicKnight', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 8, cooldown: 4, powerText: '3ターン 発動率 50%→75%', effect: { type: 'ensemble' }, effectText: '3ターン、魔奏士パッシブの発動率が75%になる／CT4', description: '旋律を重ね合わせ、乱れた魔奏を整える。パッシブが格段に発動しやすくなる。' },
+    ensemble: { id: 'ensemble', name: 'アンサンブル', nameEn: 'ENSEMBLE', source: 'job', jobId: 'magicKnight', unlockJobLevel: 5, type: 'ACTIVE', kind: 'support', target: 'self', mp: 8, cooldown: 4, powerText: '3ターン 発動率 50%→75%', effect: { type: 'ensemble' }, effectText: '3ターン、魔奏士パッシブの発動率が75%になる／CT4', description: '旋律を重ね合わせ、乱れた魔奏を整える。パッシブが格段に発動しやすくなる。' },
+    // ── 演奏中だけ解放される専用技 ──
+    // requiresBuff を持つ技は、その演奏が鳴っているあいだだけコマンドに出る。
+    sforzando:  { id: 'sforzando',  name: 'スフォルツァンド', nameEn: 'SFORZANDO',  source: 'job', jobId: 'magicKnight', type: 'ACTIVE', kind: 'physical', target: 'single', mp: 5, power: 1.4, agiScale: 0, requiresBuff: 'atkUp',  damageType: 'physical', powerText: '攻撃性能×1.4', effectText: '《フォルテ》発動中のみ使用可能', description: '強奏の勢いをそのまま刃に乗せる。フォルテが鳴っているあいだだけ放てる一撃。' },
+    fortissimo: { id: 'fortissimo', name: 'フォルティッシモ', nameEn: 'FORTISSIMO', source: 'job', jobId: 'magicKnight', type: 'ACTIVE', kind: 'magical',  target: 'single', mp: 7, power: 1.4, agiScale: 0, requiresBuff: 'matkUp', damageType: 'magical',  powerText: '魔法攻撃性能×1.4', effectText: '《クレッシェンド》発動中のみ使用可能', description: '高まりきった旋律を一点へ叩きつける。クレッシェンドが鳴っているあいだだけ放てる魔法。' },
     // ── 魔奏士パッシブ（自ターン開始時に抽選で発動）──
-    p_forte:     { id: 'p_forte',     name: 'フォルテ',     nameEn: 'FORTE',     type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'atkUp',  rate: .10 }, effectText: '自ターン開始時に抽選。攻撃力+10%', description: '強奏が刃に乗る。自分のターン開始時、一定確率で攻撃力が上がる。' },
+    p_solo:      { id: 'p_solo',      name: 'ソロ',         nameEn: 'SOLO',      type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'doubleAct', requiresWeaponType: 'instrument' }, effectText: '楽器装備時のみ。自ターン開始時に抽選で2ターン2回行動', description: '独奏に入る。楽器を手にしているときだけ、一定確率で一度に二度動けるようになる。' },
+    p_forte:     { id: 'p_forte',     name: 'フォルテ',     nameEn: 'FORTE',     type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'atkUp',  rate: .10 }, effectText: '自ターン開始時に抽選。攻撃力+10%／専用技が解放', description: '強奏が刃に乗る。自分のターン開始時、一定確率で攻撃力が上がり、専用技が使えるようになる。' },
     p_crescendo: { id: 'p_crescendo', name: 'クレッシェンド', nameEn: 'CRESCENDO', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'matkUp', rate: .10 }, effectText: '自ターン開始時に抽選。魔法攻撃力+10%', description: '高まりゆく旋律が魔を押し上げる。自分のターン開始時、一定確率で魔法攻撃力が上がる。' },
     p_nocturne:  { id: 'p_nocturne',  name: 'ノクターン',   nameEn: 'NOCTURNE',  type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'regen' }, effectText: '自ターン開始時に抽選。3ターン自然回復', description: '夜想曲が傷を癒やす。自分のターン開始時、一定確率で継続回復を得る。' },
     magicCharge: { id: 'magicCharge', name: '魔力装填', nameEn: 'MAGIC CHARGE', source: 'job', jobId: 'magicKnight', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 4, cooldown: 3, powerText: '次の物理攻撃に MAG×0.5 を追加', effect: { type: 'selfMagicCharge' }, effectText: '次に使う物理攻撃・武器技へ魔力依存の追加ダメージ／CT3', description: '刃に魔力を装填する。次の物理攻撃へ魔力分のダメージを上乗せする。' },
@@ -725,6 +742,8 @@ window.ARSENE_DATA = {
     starfireShoes:   { id: 'starfireShoes',   name: '星火の魔導靴',   nameEn: 'STARFIRE SHOES',    category: 'equipment', slot: 'feet',      rarity: 'rare', description: '星の火を踏んで進む魔導靴。' },
     infernoStone:    { id: 'infernoStone',    name: '獄炎の魔石',     nameEn: 'INFERNO STONE',     category: 'equipment', slot: 'accessory', rarity: 'rare', description: '獄炎の芯を宿した魔石。' },
     luminaStaff:     { id: 'luminaStaff',     name: '月白杖ルミナ',   nameEn: 'LUMINA STAFF',      category: 'equipment', slot: 'rightHand', rarity: 'rare', description: '月光を束ねた白銀の杖。' },
+    classroomRecorder: { id: 'classroomRecorder', name: '教室のリコーダー', nameEn: 'CLASSROOM RECORDER', category: 'equipment', slot: 'rightHand', rarity: 'uncommon', description: 'どこの教室にもある、あのリコーダー。魔奏士が吹けば音が刃に変わる。器用さがそのまま威力になる。' },
+    silentRecorder:    { id: 'silentRecorder',    name: '静寂のリコーダー', nameEn: 'SILENT RECORDER',    category: 'equipment', slot: 'rightHand', rarity: 'rare',      description: '沈黙の楽殿で拾った音の出ないリコーダー。吹くと聴こえない旋律が敵を裂く。' },
     moonCrown:       { id: 'moonCrown',       name: '月白の聖冠',     nameEn: 'MOON CROWN',        category: 'equipment', slot: 'head',      rarity: 'rare', description: '月の加護を宿す聖冠。' },
     moonVestment:    { id: 'moonVestment',    name: '月祈の法衣',     nameEn: 'MOON VESTMENT',     category: 'equipment', slot: 'body',      rarity: 'rare', description: '月へ祈りを捧げる法衣。' },
     mercyBangle:     { id: 'mercyBangle',     name: '慈愛の腕輪',     nameEn: 'MERCY BANGLE',      category: 'equipment', slot: 'arms',      rarity: 'rare', description: '慈しみの力を増幅する腕輪。' },
@@ -836,6 +855,11 @@ window.ARSENE_DATA = {
     yashaClaw: { id: 'yashaClaw', name: '夜叉爪アギト', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 13, bonuses: { agi: 3 }, effects: { criticalRateBonus: 0.03 } },
     ignisStaff: { id: 'ignisStaff', name: '獄炎杖イグニス', weaponType: 'staff', weaponSprite: 'staff_flame', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 20, bonuses: { maxMp: 10 } },
     luminaStaff: { id: 'luminaStaff', name: '月白杖ルミナ', weaponType: 'staff', weaponSprite: 'staff_sun', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 12, magicDefensePower: 8, bonuses: { maxMp: 8 }, effects: { healingPowerPercent: 0.07 } },
+    // ── 楽器（魔奏士）──
+    // ダメージは器用さ（dex）を参照する。weaponScaling.instrument を見ること。
+    // 楽奏の証と一緒に配られる最初の楽器。これが無いと武器学《楽器》を使えない。
+    classroomRecorder: { id: 'classroomRecorder', name: '教室のリコーダー', weaponType: 'instrument', weaponSprite: 'staff_01', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 10, bonuses: { dex: 3 } },
+    silentRecorder:    { id: 'silentRecorder',    name: '静寂のリコーダー', weaponType: 'instrument', weaponSprite: 'staff_sun', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 20, magicDefensePower: 6, bonuses: { dex: 6 }, effects: { criticalRateBonus: 0.03 } },
     flameStaff: { id: 'flameStaff', name: 'フレイムスタッフ', weaponType: 'staff', weaponSprite: 'staff_flame', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.6, bonuses: { mag: 6 }, grantsSkillId: 'flame' },
     wizardRod: { id: 'wizardRod', name: 'ウィザードロッド', weaponType: 'staff', weaponSprite: 'staff_wizard', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.9, bonuses: { mag: 9 }, grantsSkillId: 'fireball' },
     sunStaff: { id: 'sunStaff', name: '太陽の杖', weaponType: 'staff', weaponSprite: 'staff_sun', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.2, bonuses: { mag: 14 } },
@@ -1081,7 +1105,7 @@ window.ARSENE_DATA = {
       id: 'silentHarmonist', name: 'サイレント・ハーモニスト', enName: 'SILENT HARMONIST', dungeonId: 'dungeon2',
       kind: 'elite',
       element: '闇', weaknesses: ['光', '雷'], resistances: ['闇'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.1,
+      sprite: 'assets/enemy-characters/dungeon2/silentHarmonist.png', battleScale: 1.1,
       stats: { maxHp: 210, atk: 22, def: 14, mag: 22, mnd: 16, spd: 16 }, exp: 85, gold: { min: 35, max: 60 },
       dropTable: [
         { itemId: 'silentNote',   chance: .50 },
@@ -1094,7 +1118,7 @@ window.ARSENE_DATA = {
     echoWraith: {
       id: 'echoWraith', name: 'エコー・レイス', enName: 'ECHO WRAITH', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['聖', '打'], resistances: ['闇', '毒'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.0,
+      sprite: 'assets/enemy-characters/dungeon2/echoWraith.png', battleScale: 1.0,
       stats: { maxHp: 95, atk: 14, def: 6, mag: 16, mnd: 10, spd: 22 }, exp: 40, gold: { min: 18, max: 35 },
       dropTable: [
         { itemId: 'echoShard',    chance: .50 },
@@ -1106,7 +1130,7 @@ window.ARSENE_DATA = {
     muteGargoyle: {
       id: 'muteGargoyle', name: 'ムート・ガーゴイル', enName: 'MUTE GARGOYLE', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['打', '風'], resistances: ['闇', '毒', '物理'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.3,
+      sprite: 'assets/enemy-characters/dungeon2/muteGargoyle.png', battleScale: 1.3,
       stats: { maxHp: 220, atk: 19, def: 16, mag: 10, mnd: 14, spd: 6 }, exp: 58, gold: { min: 22, max: 42 },
       dropTable: [
         { itemId: 'stoneShard',  chance: .55 },
@@ -1118,7 +1142,7 @@ window.ARSENE_DATA = {
     nocturneChandelier: {
       id: 'nocturneChandelier', name: 'ノクターン・シャンデリア', enName: 'NOCTURNE CHANDELIER', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['炎', '光'], resistances: ['闇', '魔法'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.1,
+      sprite: 'assets/enemy-characters/dungeon2/nocturneChandelier.png', battleScale: 1.1,
       stats: { maxHp: 140, atk: 13, def: 9, mag: 18, mnd: 14, spd: 7 }, exp: 46, gold: { min: 18, max: 36 },
       dropTable: [
         { itemId: 'violinString', chance: .40 },
@@ -1130,7 +1154,7 @@ window.ARSENE_DATA = {
     silentKnight: {
       id: 'silentKnight', name: 'サイレント・ナイト', enName: 'SILENT KNIGHT', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['炎', '聖'], resistances: ['闇', '物理'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.2,
+      sprite: 'assets/enemy-characters/dungeon2/silentKnight.png', battleScale: 1.2,
       stats: { maxHp: 165, atk: 20, def: 14, mag: 8, mnd: 10, spd: 14 }, exp: 55, gold: { min: 22, max: 45 },
       dropTable: [
         { itemId: 'silentArmor', chance: .38 },
@@ -1142,7 +1166,7 @@ window.ARSENE_DATA = {
     reverbSlime: {
       id: 'reverbSlime', name: 'リバーブ・スライム', enName: 'REVERB SLIME', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['火', '斬'], resistances: ['闇'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 0.85,
+      sprite: 'assets/enemy-characters/dungeon2/reverbSlime.png', battleScale: 0.85,
       stats: { maxHp: 85, atk: 12, def: 8, mag: 10, mnd: 8, spd: 8 }, exp: 35, gold: { min: 15, max: 30 },
       dropTable: [
         { itemId: 'reverbJelly', chance: .55 },
@@ -1154,7 +1178,7 @@ window.ARSENE_DATA = {
     nocturneBanshee: {
       id: 'nocturneBanshee', name: 'ノクターン・バンシー', enName: 'NOCTURNE BANSHEE', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['雷', '光'], resistances: ['闇', '精神'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.0,
+      sprite: 'assets/enemy-characters/dungeon2/nocturneBanshee.png', battleScale: 1.0,
       stats: { maxHp: 105, atk: 12, def: 6, mag: 20, mnd: 12, spd: 13 }, exp: 42, gold: { min: 18, max: 35 },
       dropTable: [
         { itemId: 'spectralDust', chance: .45 },
@@ -1166,7 +1190,7 @@ window.ARSENE_DATA = {
 
     // ══════════════════════════════════════════════════════════════
     // ダンジョン2 追加モンスター（1F〜3F）
-    //   sprite は暫定で既存シートを指している。専用画像ができたら差し替えるだけでよい。
+    //   sprite はIDと同名の透過PNGを参照する。画像追加だけで差し替えやすい構造にしている。
     //   ドロップは階層ごとに素材を分けてあり、工房のレシピ進行と対応している。
     //     1F → リバーブゼリー / エコーの欠片
     //     2F → 霊幻の粉塵 / 亡霊のヴァイオリン弦 / 無音の楽譜
@@ -1177,7 +1201,7 @@ window.ARSENE_DATA = {
     hushMoth: {
       id: 'hushMoth', name: 'ハッシュ・モス', enName: 'HUSH MOTH', dungeonId: 'dungeon2', floorId: 'd2f1',
       element: '闇', weaknesses: ['火', '雷'], resistances: ['闇'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 0.8,
+      sprite: 'assets/enemy-characters/dungeon2/hushMoth.png', battleScale: 0.8,
       stats: { maxHp: 75, atk: 10, def: 5, mag: 14, mnd: 9, spd: 18 }, exp: 32, gold: { min: 14, max: 28 },
       dropTable: [
         { itemId: 'echoShard',  chance: .48 },
@@ -1189,7 +1213,7 @@ window.ARSENE_DATA = {
     chimeImp: {
       id: 'chimeImp', name: 'チャイム・インプ', enName: 'CHIME IMP', dungeonId: 'dungeon2', floorId: 'd2f1',
       element: '闇', weaknesses: ['光', '斬'], resistances: ['闇'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 0.85,
+      sprite: 'assets/enemy-characters/dungeon2/chimeImp.png', battleScale: 0.85,
       stats: { maxHp: 90, atk: 13, def: 7, mag: 8, mnd: 8, spd: 16 }, exp: 34, gold: { min: 16, max: 30 },
       dropTable: [
         { itemId: 'reverbJelly', chance: .46 },
@@ -1201,7 +1225,7 @@ window.ARSENE_DATA = {
     fadingChorister: {
       id: 'fadingChorister', name: 'フェイド・クワイア', enName: 'FADING CHORISTER', dungeonId: 'dungeon2', floorId: 'd2f1',
       element: '闇', weaknesses: ['光'], resistances: ['闇', '精神'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 0.95,
+      sprite: 'assets/enemy-characters/dungeon2/fadingChorister.png', battleScale: 0.95,
       stats: { maxHp: 100, atk: 11, def: 6, mag: 18, mnd: 12, spd: 11 }, exp: 38, gold: { min: 17, max: 32 },
       dropTable: [
         { itemId: 'echoShard',    chance: .45 },
@@ -1213,7 +1237,7 @@ window.ARSENE_DATA = {
     mutedHound: {
       id: 'mutedHound', name: 'ミュート・ハウンド', enName: 'MUTED HOUND', dungeonId: 'dungeon2', floorId: 'd2f1',
       element: '闇', weaknesses: ['火'], resistances: ['闇'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 0.9,
+      sprite: 'assets/enemy-characters/dungeon2/mutedHound.png', battleScale: 0.9,
       stats: { maxHp: 110, atk: 16, def: 9, mag: 4, mnd: 7, spd: 20 }, exp: 40, gold: { min: 18, max: 34 },
       dropTable: [
         { itemId: 'reverbJelly', chance: .44 },
@@ -1227,7 +1251,7 @@ window.ARSENE_DATA = {
     voidVioloncello: {
       id: 'voidVioloncello', name: 'ヴォイド・チェロ', enName: 'VOID VIOLONCELLO', dungeonId: 'dungeon2', floorId: 'd2f2',
       element: '闇', weaknesses: ['雷'], resistances: ['闇', '精神'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.05,
+      sprite: 'assets/enemy-characters/dungeon2/voidVioloncello.png', battleScale: 1.05,
       stats: { maxHp: 155, atk: 14, def: 11, mag: 22, mnd: 14, spd: 8 }, exp: 50, gold: { min: 22, max: 40 },
       dropTable: [
         { itemId: 'violinString', chance: .46 },
@@ -1239,7 +1263,7 @@ window.ARSENE_DATA = {
     pallidConductor: {
       id: 'pallidConductor', name: 'ペイルド・コンダクター', enName: 'PALLID CONDUCTOR', dungeonId: 'dungeon2', floorId: 'd2f2',
       element: '闇', weaknesses: ['光'], resistances: ['闇', '精神'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.05,
+      sprite: 'assets/enemy-characters/dungeon2/pallidConductor.png', battleScale: 1.05,
       stats: { maxHp: 170, atk: 16, def: 12, mag: 24, mnd: 16, spd: 14 }, exp: 56, gold: { min: 25, max: 44 },
       dropTable: [
         { itemId: 'silentNote',   chance: .48 },
@@ -1251,7 +1275,7 @@ window.ARSENE_DATA = {
     noiselessLancer: {
       id: 'noiselessLancer', name: 'ノイズレス・ランサー', enName: 'NOISELESS LANCER', dungeonId: 'dungeon2', floorId: 'd2f2',
       element: '闇', weaknesses: ['雷', '斬'], resistances: ['闇'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.0,
+      sprite: 'assets/enemy-characters/dungeon2/noiselessLancer.png', battleScale: 1.0,
       stats: { maxHp: 175, atk: 24, def: 15, mag: 6, mnd: 10, spd: 17 }, exp: 58, gold: { min: 26, max: 46 },
       dropTable: [
         { itemId: 'silentNote',  chance: .40 },
@@ -1263,7 +1287,7 @@ window.ARSENE_DATA = {
     grimMetronome: {
       id: 'grimMetronome', name: 'グリム・メトロノーム', enName: 'GRIM METRONOME', dungeonId: 'dungeon2', floorId: 'd2f2',
       element: '闇', weaknesses: ['雷'], resistances: ['闇', '打'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.0,
+      sprite: 'assets/enemy-characters/dungeon2/grimMetronome.png', battleScale: 1.0,
       stats: { maxHp: 190, atk: 18, def: 18, mag: 12, mnd: 14, spd: 5 }, exp: 54, gold: { min: 24, max: 42 },
       dropTable: [
         { itemId: 'stoneShard',   chance: .44 },
@@ -1275,7 +1299,7 @@ window.ARSENE_DATA = {
     whisperVeil: {
       id: 'whisperVeil', name: 'ウィスパー・ヴェイル', enName: 'WHISPER VEIL', dungeonId: 'dungeon2', floorId: 'd2f2',
       element: '闇', weaknesses: ['光', '火'], resistances: ['闇', '精神'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 0.95,
+      sprite: 'assets/enemy-characters/dungeon2/whisperVeil.png', battleScale: 0.95,
       stats: { maxHp: 150, atk: 12, def: 8, mag: 26, mnd: 16, spd: 15 }, exp: 52, gold: { min: 23, max: 41 },
       dropTable: [
         { itemId: 'spectralDust', chance: .50 },
@@ -1289,7 +1313,7 @@ window.ARSENE_DATA = {
     stoneChoir: {
       id: 'stoneChoir', name: 'ストーン・クワイア', enName: 'STONE CHOIR', dungeonId: 'dungeon2', floorId: 'd2f3',
       element: '闇', weaknesses: ['打'], resistances: ['闇', '斬'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.1,
+      sprite: 'assets/enemy-characters/dungeon2/stoneChoir.png', battleScale: 1.1,
       stats: { maxHp: 240, atk: 21, def: 16, mag: 16, mnd: 16, spd: 7 }, exp: 68, gold: { min: 30, max: 52 },
       dropTable: [
         { itemId: 'stoneShard',  chance: .52 },
@@ -1301,7 +1325,7 @@ window.ARSENE_DATA = {
     requiemKnight: {
       id: 'requiemKnight', name: 'レクイエム・ナイト', enName: 'REQUIEM KNIGHT', dungeonId: 'dungeon2', floorId: 'd2f3',
       element: '闇', weaknesses: ['雷'], resistances: ['闇'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.1,
+      sprite: 'assets/enemy-characters/dungeon2/requiemKnight.png', battleScale: 1.1,
       stats: { maxHp: 265, atk: 26, def: 17, mag: 8, mnd: 12, spd: 16 }, exp: 74, gold: { min: 34, max: 58 },
       dropTable: [
         { itemId: 'silentArmor', chance: .48 },
@@ -1313,7 +1337,7 @@ window.ARSENE_DATA = {
     shatteredDiva: {
       id: 'shatteredDiva', name: 'シャッタード・ディーヴァ', enName: 'SHATTERED DIVA', dungeonId: 'dungeon2', floorId: 'd2f3',
       element: '闇', weaknesses: ['光'], resistances: ['闇', '精神'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.05,
+      sprite: 'assets/enemy-characters/dungeon2/shatteredDiva.png', battleScale: 1.05,
       stats: { maxHp: 225, atk: 17, def: 12, mag: 28, mnd: 18, spd: 18 }, exp: 72, gold: { min: 32, max: 56 },
       dropTable: [
         { itemId: 'silentNote',   chance: .46 },
@@ -1325,7 +1349,7 @@ window.ARSENE_DATA = {
     silenceWarden: {
       id: 'silenceWarden', name: 'サイレンス・ウォーデン', enName: 'SILENCE WARDEN', dungeonId: 'dungeon2', floorId: 'd2f3',
       element: '闇', weaknesses: ['打', '雷'], resistances: ['闇', '斬'],
-      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.15,
+      sprite: 'assets/enemy-characters/dungeon2/silenceWarden.png', battleScale: 1.15,
       stats: { maxHp: 285, atk: 24, def: 18, mag: 14, mnd: 18, spd: 9 }, exp: 80, gold: { min: 38, max: 64 },
       dropTable: [
         { itemId: 'silentArmor', chance: .52 },

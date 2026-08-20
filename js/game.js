@@ -369,9 +369,12 @@
       this.profile.inventory.magicKnightProof = (this.profile.inventory.magicKnightProof || 0) + 1;
       const newly = [];
       [...(D.startingJobIds || []), 'magicKnight'].forEach(id => { if (this.unlockJob(id)) newly.push(D.jobs[id]); });
-      // 魔奏士の証：楽器の武器学を解放する
+      // 楽奏の証：楽器の武器学を解放する
       this.profile.inventory.arcaneMaestroProof = (this.profile.inventory.arcaneMaestroProof || 0) + 1;
       this.profile.flags.instrumentUnlocked = true;
+      // 武器学を解放しても楽器を1本も持っていなければ使えないので、最初の1本を一緒に渡す
+      const starter = D.items.classroomRecorder;
+      if (starter) this.profile.inventory.classroomRecorder = (this.profile.inventory.classroomRecorder || 0) + 1;
       this.saveProfile();
       // 2つまとめて入手する。どちらが何を解放したのかを添えて返す。
       return {
@@ -379,7 +382,8 @@
           { ...D.items.magicKnightProof, unlockNote: '新たなJOBが解放された' },
           { ...D.items.arcaneMaestroProof, unlockNote: '武器学《楽器》が解放された' }
         ],
-        jobs: newly, weaponType: this.weaponTypeDef('instrument')
+        jobs: newly, weaponType: this.weaponTypeDef('instrument'),
+        weapon: starter ? { ...starter, gear: D.weapons.classroomRecorder } : null
       };
     }
     // ══ 転生（輪廻のアルカナ）══════════════════════════════════
@@ -507,7 +511,11 @@
       const keyBlock = keys.length ? `<div class="sr-key"><small>KEY ITEM GET${keys.length > 1 ? ` ×${keys.length}` : ''}</small>${keyRows}</div>` : '';
       const jobs = (reward.jobs || []).map(j => `<mark>${j.name}</mark>`).join('');
       const wt = reward.weaponType ? `<div class="sr-jobs"><small>NEW WEAPON MASTERY</small><div><mark>${reward.weaponType.name}が扱えるようになった</mark></div></div>` : '';
-      return `<div class="stage-reward">${keyBlock}${jobs ? `<div class="sr-jobs"><small>NEW JOBS UNLOCKED</small><div>${jobs}</div></div>` : ''}${wt}</div>`;
+      // 武器学だけ解放しても武器が無ければ使えないので、一緒に渡した1本を明示する
+      const w = reward.weapon;
+      const stat = w?.gear ? `魔法攻撃力 +${w.gear.magicAttackPower || 0}${w.gear.bonuses?.dex ? ` / 器用さ +${w.gear.bonuses.dex}` : ''}` : '';
+      const wpn = w ? `<div class="sr-weapon"><small>NEW WEAPON GET</small><b>《${w.name}》</b><span>${w.description || ''}</span>${stat ? `<i>${stat}</i>` : ''}<em>装備すると《楽器》の武器学が伸びる</em></div>` : '';
+      return `<div class="stage-reward">${keyBlock}${wpn}${jobs ? `<div class="sr-jobs"><small>NEW JOBS UNLOCKED</small><div>${jobs}</div></div>` : ''}${wt}</div>`;
     }
 
     // ══ 武器学 / 成長 / 閃き ═══════════════════════════════════
@@ -690,7 +698,7 @@
     }
     getDungeon(id = this.currentDungeonId) { return (D.dungeons || []).find(d => d.id === id) || (D.dungeons || [])[0]; }
     isDungeonUnlocked(id) { const d = this.getDungeon(id); if (!d) return false; if (!d.unlockCondition) return true; if (d.unlockCondition === 'dungeon1Clear') return this.isBossDefeated('zenacad'); if (d.unlockCondition === 'dungeon2Clear') return this.isBossDefeated('myrthi'); return false; }
-    applyDungeonBackground() { const bg = this.getDungeon()?.background || 'assets/bg/dungeon-battle-01.png'; const bf = $('#battlefield'); bf.dataset.dungeon = this.currentDungeonId; bf.style.backgroundImage = `linear-gradient(#0207134a,#0208171f 58%,#02040b5c),url("${bg}")`; bf.style.backgroundSize = 'auto,cover'; bf.style.backgroundPosition = 'center,center bottom'; bf.style.backgroundRepeat = 'no-repeat,no-repeat'; }
+    applyDungeonBackground() { const dungeon = this.getDungeon(), floor = this.activeFloor(this.currentDungeonId); const bg = floor?.background || dungeon?.background || 'assets/bg/dungeon-battle-01.png'; const bf = $('#battlefield'); bf.dataset.dungeon = this.currentDungeonId; bf.dataset.floor = floor?.id || ''; bf.style.backgroundImage = `linear-gradient(#0207134a,#0208171f 58%,#02040b5c),url("${bg}")`; bf.style.backgroundSize = 'auto,cover'; bf.style.backgroundPosition = 'center,center bottom'; bf.style.backgroundRepeat = 'no-repeat,no-repeat'; }
     equippedWeapon() { return D.weapons[this.profile.equipment.rightHand] || D.weapons.mageStaff; }
     progressState() { const f = this.profile.flags, noelGoal = D.battleProgression?.noelEncounterWins || 3, zenakadoGoal = D.battleProgression?.zenakadoEncounterWins || 7; if (!f.noelFirstEncounterCleared) { const wins = Math.max(0, f.preNoelBattleWins || 0); return { phase: 'noel', wins, goal: noelGoal, ready: wins >= noelGoal, bossId: 'noelFirstEncounter', bossName: 'NOËL' }; } if (!f.zenakadoDefeated) { const wins = Math.max(0, f.postNoelBattleWins || 0); return { phase: 'zenakado', wins, goal: zenakadoGoal, ready: wins >= zenakadoGoal, bossId: 'zenakado', bossName: 'ZENAKADO' }; } return { phase: 'complete', wins: zenakadoGoal, goal: zenakadoGoal, ready: false, bossId: null, bossName: 'DUNGEON CLEAR' }; }
 
@@ -722,7 +730,7 @@
       const vitals = this.storedVitals(stats); this.player = { stats, hp: vitals.hp, mp: vitals.mp, inventory: this.profile.inventory, buffs: {}, cooldowns: {} };
       const bossStats = template.dynamicScale ? { maxHp: stats.maxHp * template.dynamicScale, atk: Math.max(stats.str, stats.mag) * template.dynamicScale, def: stats.def * template.dynamicScale, mag: stats.mag * template.dynamicScale, mnd: stats.mnd * template.dynamicScale, spd: stats.agi * template.dynamicScale } : { ...template.stats };
       this.enemies = [{ ...template, uid: `${template.id}-boss`, label: '', stats: bossStats, hp: bossStats.maxHp, alive: true }];
-      this.turn = 1; this.locked = false; this.finished = false; this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [] }; $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual();
+      this.turn = 1; this.locked = false; this.finished = false; this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [] }; $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyDungeonBackground();
       this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); this.setLog(this.battleMode === 'noel' ? '忘却の最奥――永遠の裁定者ノエルが姿を現した……。' : '静寂のホールに、独奏卿ゼナカドの旋律が響く……！'); this.flashTitle('BOSS ENCOUNTER', (template.nameEn || template.name || progress.bossName).toUpperCase()); this.showMainCommands();
     }
     startMyrthiBoss() {
@@ -1234,6 +1242,7 @@
           ? `<span>${f.description || ''}</span><em>主な素材：${mats || '—'}</em>`
           : `<span>前の階を踏破すると解放されます。</span><em>—</em>`;
         return `<button class="dungeon-card floor-card ${cls}" data-enter-floor="${f.id}" ${unlocked ? '' : 'disabled'}>
+          <div class="dungeon-thumb floor-thumb" style="background-image:url('${f.thumbnail || f.background || d.thumbnail}')"></div>
           <div class="dungeon-info"><small>${f.nameEn || ''}</small><strong>${unlocked ? f.name : '???'}</strong>${body}
           <b class="dungeon-progress">BATTLE ${Math.min(wins, goal)} / ${goal}</b>
           <i class="floor-bar"><em style="width:${pct}%"></em></i><mark class="floor-tag-${cls}">${tag}</mark></div></button>`;

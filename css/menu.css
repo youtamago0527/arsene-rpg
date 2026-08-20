@@ -260,10 +260,12 @@
 /* ── 階層選択ページ（ダンジョン2以降） ── */
 .floor-lead{margin:2px 0 10px;font-size:.78rem;letter-spacing:.08em;color:#8fa7c4}
 .dungeon-card.floor-card{align-items:stretch}
+.dungeon-card.floor-card .floor-thumb{height:100%;min-height:104px;background-position:center;filter:brightness(.72) saturate(.9)}
 .dungeon-card.floor-open{border-color:#2f6ea8;background:linear-gradient(100deg,#08172b,#050a14)}
 .dungeon-card.floor-cleared{border-color:#2c6b4e;background:linear-gradient(100deg,#071a12,#050c09)}
 .dungeon-card.floor-cleared .dungeon-progress{color:#7fd6a5}
 .dungeon-card.floor-locked{border-color:#2a2f3a;background:linear-gradient(100deg,#0b0d12,#07080c);opacity:.55}
+.dungeon-card.floor-locked .floor-thumb{filter:grayscale(1) brightness(.28)}
 .dungeon-card.floor-locked strong{color:#5d6675}
 .floor-bar{display:block;height:4px;margin-top:6px;border-radius:2px;background:#141a26;overflow:hidden}
 .floor-bar em{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,#2f9dff,#5fc6ff)}
@@ -337,3 +339,11 @@
 .sr-key-row + .sr-key-row{border-top:1px solid #4a3a1a}
 .sr-key-row b{font-size:17px}
 .sr-key-row em{font:700 10px/1.5 system-ui,sans-serif;font-style:normal;color:#8fd6a8}
+
+/* 楽器など、鍵アイテムと一緒に渡す武器の表示 */
+.sr-weapon{display:grid;gap:3px;margin-bottom:9px;padding:10px 12px;background:linear-gradient(120deg,#160f24,#0a0c16);border:1px solid #a86bff;border-radius:5px}
+.sr-weapon small{font:700 8px Cinzel;letter-spacing:.24em;color:#c9a4ff}
+.sr-weapon b{font-size:18px;color:#fff;text-shadow:0 0 11px #a86bff}
+.sr-weapon span{font-size:10px;line-height:1.6;color:#b6a8cf}
+.sr-weapon i{font-style:normal;font-size:11px;color:#7fd6a5}
+.sr-weapon em{font-style:normal;font-size:10px;color:#ffdc94}
