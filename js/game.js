@@ -223,9 +223,13 @@
     // defenseK が無いデータでは従来の引き算型へフォールバックする。
     enemyRawDamage(kind, attackStat, defUpBuff = 1) {
       const balance = D.combatBalance, formula = kind === 'magical' ? balance.enemyMagic : balance.enemyPhysical;
-      const def = this.defensePowerFor(kind, this.player.stats) * defUpBuff;
-      if (formula.defenseK) return attackStat * formula.attackScale * (formula.defenseK / (formula.defenseK + Math.max(0, def)));
-      return attackStat * formula.attackScale - def * (formula.defenseScale || 0);
+      // 数値以外が混ざるとダメージがNaNになり「HPが減らない＝無敵」になる。必ず数値へ落とす。
+      const atk = Number(attackStat) || 0;
+      const def = Math.max(0, (Number(this.defensePowerFor(kind, this.player.stats)) || 0) * (Number(defUpBuff) || 1));
+      const scale = Number(formula?.attackScale) || 0;
+      const k = Number(formula?.defenseK) || 0;
+      const raw = k ? atk * scale * (k / (k + def)) : atk * scale - def * (Number(formula?.defenseScale) || 0);
+      return Number.isFinite(raw) ? raw : 0;
     }
     // ══ 装備の特殊効果（%系）════════════════════════════════════
     // equipmentDefinition().effects の値を全スロット分合算する。
@@ -872,8 +876,9 @@
       for (const s of enemy.ai) { acc += s.weight; if (r < acc) { chosen = s; break; } }
       const isMagic = chosen.kind === 'magic';
       this.setLog(`${enemy.name}${enemy.label}の${chosen.name}！`); if (isMagic) { this.flashTitle(chosen.name, 'SHADOW MAGIC'); this.audio.sfx('dark'); } const el = document.getElementById(enemy.uid), ren = $('#ren'); el.classList.add('enemy-attacking'); await this.battleSleep(300); ren.classList.add('hit');
-      const balance = D.combatBalance, formula = isMagic ? balance.enemyMagic : balance.enemyPhysical, attackStat = isMagic ? enemy.stats.mag : enemy.stats.atk, defenseStat = isMagic ? this.player.stats.mnd : this.player.stats.def * (this.turn <= (this.player.defDownUntil || 0) ? .8 : 1);
-      const raw = attackStat * formula.attackScale - defenseStat * formula.defenseScale, miss = Math.random() < clamp((this.player.stats.agi - enemy.stats.spd) * .008, .02, .16), damage = miss ? 0 : Math.max(1, Math.round(raw + roll(balance.enemyVariance.min, balance.enemyVariance.max)));
+      const balance = D.combatBalance, attackStat = isMagic ? enemy.stats.mag : enemy.stats.atk;
+      const defMul = isMagic ? 1 : (this.turn <= (this.player.defDownUntil || 0) ? .8 : 1);
+      const raw = this.enemyRawDamage(isMagic ? 'magical' : 'physical', attackStat, defMul), miss = Math.random() < clamp((this.player.stats.agi - enemy.stats.spd) * .008, .02, .16), damage = miss ? 0 : Math.max(1, Math.round(raw + roll(balance.enemyVariance.min, balance.enemyVariance.max)));
       if (miss) { this.floating(ren, 'MISS', 'miss'); this.setLog('RENは攻撃をかわした！'); } else { this.audio.sfx('playerHit'); this.player.hp = Math.max(0, this.player.hp - damage); this.persistVitals(); this.floating(ren, damage, 'enemy-damage'); this.setLog(`RENは${damage}ダメージを受けた！`); } this.updateHUD(); await this.battleSleep(420); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
     }
     async bossAttack(enemy) {
