@@ -176,3 +176,11 @@ body.ow-glitch #menu-screen{animation:ow-shake .5s steps(2) 3}
 .pt-steal-stats{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:2px}
 .pt-steal-stats b{padding:3px 11px;background:#0b1526;border:1px solid #2f6ea8;border-radius:99px;font-size:12px;color:#7fd6a5}
 .pt-steal-result em{font-size:12px;font-style:normal;color:#ffdc94}
+
+/* ── 魔奏士バフ表示 ── */
+.maestro-buffs{position:absolute;left:50%;bottom:100%;translate:-50% -6px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;width:max-content;max-width:60vw;pointer-events:none;z-index:6}
+.maestro-buffs i{padding:2px 9px;border-radius:99px;font:700 10px/1.6 system-ui,sans-serif;font-style:normal;letter-spacing:.04em;white-space:nowrap;background:#050b16e6;box-shadow:0 2px 8px #0008}
+.maestro-buffs .mb-atk{color:#ffb98a;border:1px solid #c8703a}
+.maestro-buffs .mb-matk{color:#c9a4ff;border:1px solid #7a3fd0}
+.maestro-buffs .mb-regen{color:#8fd6a8;border:1px solid #2c8b5e}
+.maestro-buffs .mb-ens{color:#ffdc94;border:1px solid #c8a04a}

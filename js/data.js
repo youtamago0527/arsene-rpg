@@ -87,9 +87,27 @@ window.ARSENE_DATA = {
     // JOB成長は「今就いているJOBで育てた分」だけ乗る。
     // PHANTOM THIEF だけは全JOBの合算をこの割合で引き継げる。
     phantomThiefInheritRate: 0.5,
-    // 魔装士《魔力装填》の追加ダメージ係数
+    // 魔奏士《魔力装填》の追加ダメージ係数
     magicChargeRate: 0.5
   },
+  // ══════════════════════════════════════════════════════════════
+  // 魔奏士バランス。パッシブの発動率・持続・重ねがけ上限はここだけ触ればよい。
+  //   buffTurns  : 発動したバフが続くターン数（1＝そのターンのみ）
+  //   maxStacks  : 同じバフを何回まで重ねられるか
+  //   転生でスキル強化する場合は buffTurns を上げる想定。
+  // ══════════════════════════════════════════════════════════════
+  maestroBalance: {
+    procChance: 0.50,      // 通常時の発動率
+    ensembleChance: 0.75,  // アンサンブル中の発動率
+    ensembleTurns: 3,      // アンサンブルの持続ターン
+    buffTurns: 2,          // フォルテ／クレッシェンドの持続ターン（転生強化で3を想定）
+    buffRate: 0.10,        // 1スタックあたりの上昇率
+    maxStacks: 3,          // 重ねがけ上限
+    nocturneTurns: 3,      // ノクターンの自然回復ターン数
+    nocturneHealRate: 0.08 // 1ターンあたりの回復量（最大HP比）
+  },
+  // 上位JOBは設計見直し中のため一旦空。復活させるときはここへIDを戻す。
+  advancedJobIds: [],
 
   // 1面クリア目安30分：通常戦17回（1戦約50秒）＋ボス2戦＋拠点操作
   battleProgression: { noelEncounterWins: 8, zenakadoEncounterWins: 17 },
@@ -165,8 +183,8 @@ window.ARSENE_DATA = {
     },
     // 1面クリアで解放される新ジョブ。上位職ではなく「新しい選択肢」。
     magicKnight: {
-      id: 'magicKnight', name: '魔装士', nameEn: 'MAGIC KNIGHT', description: '刃に魔力を纏わせ、物理と魔法を組み合わせて戦う。',
-      signatureSkillId: 'magicCharge', passiveUnlocks: { 5: 'p_spellBlade', 10: 'p_manaFlow', 15: 'p_elemental' },
+      id: 'magicKnight', name: '魔奏士', nameEn: 'MAGIC KNIGHT', description: '刃に魔力を纏わせ、物理と魔法を組み合わせて戦う。',
+      signatureSkillId: 'ensemble', passiveUnlocks: { 5: 'p_forte', 10: 'p_crescendo', 15: 'p_nocturne' },
       growthStats: ['mag', 'str'], featureText: '魔力を軸に物理も扱うハイブリッド型。武器を選ばず戦えるジョブ。',
       unlockCondition: { keyItem: 'magicKnightProof' },
       skillUnlocks: {}
@@ -181,7 +199,7 @@ window.ARSENE_DATA = {
       skillUnlocks: {}
     },
     arcaneMaestro: {
-      id: 'arcaneMaestro', name: '魔奏士', nameEn: 'ARCANE MAESTRO', description: '魔法と回復を極めた上位職。ゼナカド撃破後、魔導士と僧侶をLv20にすると解放。',
+      id: 'arcaneMaestro', name: '魔奏聖', nameEn: 'ARCANE MAESTRO', description: '魔法と回復を極めた上位職。ゼナカド撃破後、魔導士と僧侶をLv20にすると解放。',
       unlockCondition: { bossDefeated: 'zenacad', jobLevels: { mage: 20, priest: 20 } },
       growth: { 1: { mag: 3 }, 2: { mnd: 3 }, 3: { mag: 3, maxMp: 8 }, 4: { mnd: 3 }, 5: { mag: 4, maxMp: 8 }, 6: { mnd: 4 }, 7: { mag: 4 }, 8: { mnd: 4, maxMp: 10 }, 9: { mag: 5 }, 10: { mnd: 5, maxMp: 12 }, 11: { mag: 4 }, 12: { mnd: 4, maxMp: 12 }, 13: { mag: 5 }, 14: { mnd: 5 }, 15: { mag: 6, maxMp: 14 }, 16: { mnd: 6 }, 17: { mag: 6 }, 18: { mnd: 6, maxMp: 16 }, 19: { mag: 7 }, 20: { mag: 8, mnd: 8, maxMp: 24 } },
       skillUnlocks: {}
@@ -504,7 +522,14 @@ window.ARSENE_DATA = {
     p_manaFlow:    { id: 'p_manaFlow', name: '魔力循環', nameEn: 'MANA FLOW', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'statPercent', stat: 'maxMp', rate: .05 }, effectText: '最大MP +5%', description: '魔力を絶えず巡らせる。最大MPが5%上昇する。' },
     p_elemental:   { id: 'p_elemental', name: '属性増幅', nameEn: 'ELEMENTAL BOOST', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'elementDamageUp', rate: .08 }, effectText: '属性攻撃ダメージ +8%', description: '属性を帯びた攻撃の威力を高める。' },
 
-    // ══ 魔装士 固有スキル ═════════════════════════════════════
+    // ══ 魔奏士 固有スキル ═════════════════════════════════════
+    // アンサンブル：3ターンのあいだ魔奏士パッシブの発動率を引き上げる。
+    // 発動率・持続は maestroBalance で一括調整できる。
+    ensemble: { id: 'ensemble', name: 'アンサンブル', nameEn: 'ENSEMBLE', source: 'job', jobId: 'magicKnight', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 8, cooldown: 4, powerText: '3ターン 発動率 50%→75%', effect: { type: 'ensemble' }, effectText: '3ターン、魔奏士パッシブの発動率が75%になる／CT4', description: '旋律を重ね合わせ、乱れた魔奏を整える。パッシブが格段に発動しやすくなる。' },
+    // ── 魔奏士パッシブ（自ターン開始時に抽選で発動）──
+    p_forte:     { id: 'p_forte',     name: 'フォルテ',     nameEn: 'FORTE',     type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'atkUp',  rate: .10 }, effectText: '自ターン開始時に抽選。攻撃力+10%', description: '強奏が刃に乗る。自分のターン開始時、一定確率で攻撃力が上がる。' },
+    p_crescendo: { id: 'p_crescendo', name: 'クレッシェンド', nameEn: 'CRESCENDO', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'matkUp', rate: .10 }, effectText: '自ターン開始時に抽選。魔法攻撃力+10%', description: '高まりゆく旋律が魔を押し上げる。自分のターン開始時、一定確率で魔法攻撃力が上がる。' },
+    p_nocturne:  { id: 'p_nocturne',  name: 'ノクターン',   nameEn: 'NOCTURNE',  type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'regen' }, effectText: '自ターン開始時に抽選。3ターン自然回復', description: '夜想曲が傷を癒やす。自分のターン開始時、一定確率で継続回復を得る。' },
     magicCharge: { id: 'magicCharge', name: '魔力装填', nameEn: 'MAGIC CHARGE', source: 'job', jobId: 'magicKnight', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 4, cooldown: 3, powerText: '次の物理攻撃に MAG×0.5 を追加', effect: { type: 'selfMagicCharge' }, effectText: '次に使う物理攻撃・武器技へ魔力依存の追加ダメージ／CT3', description: '刃に魔力を装填する。次の物理攻撃へ魔力分のダメージを上乗せする。' },
 
     // ══ 閃き技（対応する攻撃の使用中に閃く）═══════════════════
@@ -649,8 +674,8 @@ window.ARSENE_DATA = {
     mageStaff: { id: 'mageStaff', name: '魔導士の杖', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '青い魔力を導く魔導士の基本杖。' },
     phantomSword: { id: 'phantomSword', name: '青影の剣', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '青い残光を引く怪盗の細身剣。' },
     ironClaw: { id: 'ironClaw', name: '鉄の爪', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '拳に装着する鋼の爪。素早い連撃に適する。' },
-    magicKnightProof: { id: 'magicKnightProof', name: '魔装士の証', nameEn: 'PROOF OF THE MAGIC KNIGHT', category: 'key', rarity: 'epic', description: '刃と魔を繋ぐ古い紋章。新たな生き方を選ぶ資格を示す。' },
-    arcaneMaestroProof: { id: 'arcaneMaestroProof', name: '魔奏士の証', nameEn: 'PROOF OF THE ARCANE MAESTRO', category: 'key', rarity: 'epic', description: '音と魔を繋ぐ古い譜面。楽器を武器として扱う資格を示す。' },
+    magicKnightProof: { id: 'magicKnightProof', name: '魔奏士の証', nameEn: 'PROOF OF THE MAGIC KNIGHT', category: 'key', rarity: 'epic', description: '刃と魔を繋ぐ古い紋章。新たな生き方を選ぶ資格を示す。' },
+    arcaneMaestroProof: { id: 'arcaneMaestroProof', name: '楽奏の証', nameEn: 'PROOF OF THE ARCANE MAESTRO', category: 'key', rarity: 'epic', description: '音と魔を繋ぐ古い譜面。楽器を武器として扱う資格を示す。' },
     rebirthArcana: { id: 'rebirthArcana', name: '輪廻のアルカナ', nameEn: 'ARCANA OF REBIRTH', category: 'special', rarity: 'legendary', noSell: true, description: '極めた力を捨て、さらなる高みへ至るためのアルカナ。JOB Lv20からの転生に1個消費する。' },
 
     // ══ D1 通常工房装備（24種）══════════════════════════════════

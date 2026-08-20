@@ -22,7 +22,7 @@
       martialArtist: 'burstFist',    // ばくれつけん
       mage: 'meditation',            // 精神集中
       priest: 'heal',                // ヒール
-      magicKnight: 'magicCharge',    // 魔力装填
+      magicKnight: 'ensemble',       // アンサンブル
       arcaneMaestro: 'resonantSpell',
       dualBlade: 'battleDance'
     }

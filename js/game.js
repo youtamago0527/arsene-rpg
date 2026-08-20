@@ -362,7 +362,7 @@
       Object.entries(job.passiveUnlocks || {}).forEach(([lv, id]) => { if (Number(lv) <= level && !learned.includes(id) && D.skills[id]) { learned.push(id); out.push(D.skills[id]); } });
       return out;
     }
-    // 1面クリア報酬：魔装士の証＋残り初期3職と魔装士を解放
+    // 1面クリア報酬：魔奏士の証＋残り初期3職と魔奏士を解放
     grantStageOneReward() {
       if (this.profile.flags.magicKnightProofObtained) return null;
       this.profile.flags.magicKnightProofObtained = true;
@@ -496,7 +496,7 @@
       const jobs = (reward.jobs || []).map(j => `<mark>${j.name}</mark>`).join('');
       const extra = reward.extraKeyItem ? `<div class="sr-key"><small>KEY ITEM GET</small><b>《${reward.extraKeyItem.name}》</b><span>${reward.extraKeyItem.description || ''}</span></div>` : '';
       const wt = reward.weaponType ? `<div class="sr-jobs"><small>NEW WEAPON MASTERY</small><div><mark>${reward.weaponType.name}が扱えるようになった</mark></div></div>` : '';
-      return `<div class="stage-reward"><div class="sr-key"><small>KEY ITEM GET</small><b>《${reward.keyItem?.name || '魔装士の証'}》</b><span>${reward.keyItem?.description || ''}</span></div>${extra}${jobs ? `<div class="sr-jobs"><small>NEW JOBS UNLOCKED</small><div>${jobs}</div></div>` : ''}${wt}</div>`;
+      return `<div class="stage-reward"><div class="sr-key"><small>KEY ITEM GET</small><b>《${reward.keyItem?.name || '魔奏士の証'}》</b><span>${reward.keyItem?.description || ''}</span></div>${extra}${jobs ? `<div class="sr-jobs"><small>NEW JOBS UNLOCKED</small><div>${jobs}</div></div>` : ''}${wt}</div>`;
     }
 
     // ══ 武器学 / 成長 / 閃き ═══════════════════════════════════
@@ -762,7 +762,7 @@
       if (cond.jobLevels) { for (const [reqId, reqLv] of Object.entries(cond.jobLevels)) { if ((this.profile.jobs[reqId]?.level || 1) < reqLv) return false; } }
       return true;
     }
-    checkAdvancedJobUnlocks() { const ids = ['arcaneMaestro', 'dualBlade']; ids.forEach(id => { if (this.isAdvancedJobUnlocked(id)) { const job = D.jobs[id]; if (job && !this.profile.jobs[id]) this.profile.jobs[id] = { level: 1, exp: 0 }; } }); }
+    checkAdvancedJobUnlocks() { const ids = D.advancedJobIds || []; ids.forEach(id => { if (this.isAdvancedJobUnlocked(id)) { const job = D.jobs[id]; if (job && !this.profile.jobs[id]) this.profile.jobs[id] = { level: 1, exp: 0 }; } }); }
     makeEnemy(id, index) {
       const t = D.enemies[id];
       return { ...t, uid: `enemy-${index}`, label: String.fromCharCode(65 + index), stats: { ...t.stats }, hp: t.stats.maxHp, alive: true };
@@ -866,7 +866,7 @@
       if (skill.damageType === 'magical' || skill.kind === 'magical') value *= (1 + this.passiveEffectRate('magicDamageUp'));
       if (skill.element) value *= (1 + this.passiveEffectRate('elementDamageUp'));
       if (skill.element === 'fire') value *= (1 + this.equipmentEffectRate('fireDamagePercent'));
-      // 魔装士《魔力装填》：次の物理攻撃へ魔力依存の追加ダメージ
+      // 魔奏士《魔力装填》：次の物理攻撃へ魔力依存の追加ダメージ
       if (isPhysical && this.player.buffs?.magicCharge) value += this.effectivePlayerStat('mag') * (this.gb().magicChargeRate ?? 0.5);
       value += roll(balance.playerVariance.min, balance.playerVariance.max);
       const critExtra = (skill.criticalModifier || 0) + this.traitCriticalBonus() + this.equipmentEffectRate('criticalRateBonus');
@@ -1108,7 +1108,8 @@
       if (!this.jobUI) this.jobUI = { tab: 'job', detailId: null, modal: null, passiveSlotIdx: null, passiveFilter: 'all' };
       const ui = this.jobUI, unlocked = this.jobSystemUnlocked(), currentId = this.profile.currentJob, curJob = D.jobs[currentId];
       const tabBar = `<div class="job-tabs"><button class="job-tab${ui.tab === 'job' ? ' active' : ''}" data-job-tab="job">JOB</button><button class="job-tab${ui.tab === 'abilitySet' ? ' active' : ''}" data-job-tab="abilitySet">ABILITY SET</button></div>`;
-      const hdr = `<div class="job-hdr"><div class="job-hdr-l"><small>JOB & ABILITY</small><b>雨宮 蓮</b><span>Character Lv.${this.profile.level}</span></div><div class="job-hdr-r"><small>CURRENT JOB</small><strong>${curJob.name}</strong></div></div>`;
+      // キャラクターLvは廃止済み。現在のJOBとそのLvを出す。
+      const hdr = `<div class="job-hdr"><div class="job-hdr-l"><small>JOB & ABILITY</small><b>${this.playerName()}</b><span>武器学 ${this.weaponTypeName(this.equippedWeaponType())} Lv.${this.masteryOf(this.equippedWeaponType()).level}</span></div><div class="job-hdr-r"><small>現在のJOB</small><strong>${curJob.name} Lv.${this.profile.jobs?.[currentId]?.level || 1}</strong></div></div>`;
       let body;
       if (ui.tab === 'job') { body = ui.detailId ? this.jobDetailHtml(ui.detailId, unlocked, currentId) : this.jobListHtml(unlocked, currentId); }
       else { body = this.abilitySetHtml(currentId); }
@@ -1118,18 +1119,26 @@
       panel.innerHTML = `<div class="jpanel">${hdr}${tabBar}<div class="jpanel-body">${body}</div></div>${modal}`;
     }
     jobListHtml(unlocked, currentId) {
-      const adv = ['arcaneMaestro', 'dualBlade'], base = [...(D.startingJobIds || []), 'magicKnight'], special = ['phantomThief'];
+      // 上位JOBは設計見直しのため一旦非表示。D.advancedJobIds に戻せば復活する。
+      const adv = D.advancedJobIds || [], base = [...(D.startingJobIds || []), 'magicKnight'], special = ['phantomThief'];
       // 解放判定は profile.unlockedJobs が唯一の情報源。初期ジョブを固定しない。
       const card = id => { const j = D.jobs[id]; if (!j) return ''; const p = this.profile.jobs[id] || { level: 1 }, isAdv = adv.includes(id), avail = isAdv ? this.isAdvancedJobUnlocked(id) : this.isJobUnlocked(id), isCur = id === currentId; return `<button class="jcard${isCur ? ' cur' : ''}${avail ? '' : ' locked'}" data-job-detail="${id}"><div class="jcard-name">${j.name}</div><div class="jcard-lv">${avail ? `Lv.${p.level}` : 'LOCKED'}</div>${isCur ? '<em class="jcard-cur">●</em>' : ''}</button>`; };
       // ダンジョン名はデータから引く。名前を変えても文言が追従する。
       const d1Name = this.getDungeon('dungeon1')?.name || 'ダンジョン1';
-      const notice = this.isJobUnlocked('magicKnight') ? '' : `<p class="job-lock-notice">《${d1Name}》をクリアして《魔装士の証》を入手すると、残りの基本JOBと魔装士が解放されます。</p>`;
-      return `${notice}<section class="jsec"><h4>基本JOB</h4><div class="jgrid">${base.map(card).join('')}</div></section><section class="jsec"><h4>特殊JOB</h4><div class="jgrid">${special.map(card).join('')}</div></section><section class="jsec"><h4>上位JOB</h4><div class="jgrid">${adv.map(card).join('')}</div></section>`;
+      const notice = this.isJobUnlocked('magicKnight') ? '' : `<p class="job-lock-notice">《${d1Name}》をクリアして《魔奏士の証》を入手すると、残りの基本JOBと魔奏士が解放されます。</p>`;
+      // 上位JOBは中身が無いときは節ごと出さない
+      const advSec = adv.length ? `<section class="jsec"><h4>上位JOB</h4><div class="jgrid">${adv.map(card).join('')}</div></section>` : '';
+      return `${notice}<section class="jsec"><h4>基本JOB</h4><div class="jgrid">${base.map(card).join('')}</div></section><section class="jsec"><h4>特殊JOB</h4><div class="jgrid">${special.map(card).join('')}</div></section>${advSec}`;
     }
     jobDetailHtml(jobId, unlocked, currentId) {
-      const j = D.jobs[jobId], p = this.profile.jobs[jobId], isAdv = ['arcaneMaestro', 'dualBlade'].includes(jobId), avail = isAdv ? this.isAdvancedJobUnlocked(jobId) : unlocked || jobId === 'mage', isCur = jobId === currentId, need = this.jobExpNeeded(p.level), bar = need ? Math.round(100 * p.exp / need) : 100;
+      const j = D.jobs[jobId], p = this.profile.jobs[jobId], isAdv = (D.advancedJobIds || []).includes(jobId), avail = isAdv ? this.isAdvancedJobUnlocked(jobId) : this.isJobUnlocked(jobId), isCur = jobId === currentId, need = this.jobExpNeeded(p.level), bar = need ? Math.round(100 * p.exp / need) : 100;
       const bonuses = this.activeJobBonuses(jobId), bHtml = Object.entries(bonuses).length ? Object.entries(bonuses).map(([k, v]) => `<div class="jbn-item"><span>${statLabels[k] || k}</span><b>${k === 'critBonus' ? `+${Math.round(v * 100)}%` : `+${v}`}</b></div>`).join('') : '<span class="jbn-none">なし</span>';
-      const skillRows = Object.entries(j.skillUnlocks || {}).sort(([a], [b]) => +a - +b).map(([lv, id]) => { const s = D.skills[id], learned = p.level >= +lv; return `<button class="jar${learned ? ' learned' : ' locked'}"${learned ? ` data-job-skill-detail="${id}"` : ''}><span class="jar-lv">Lv.${lv}</span><span class="jar-nm">${s?.name || id}</span><em class="jar-type">${s?.type === 'PASSIVE' ? 'P' : 'A'}</em><small class="jar-st">${learned ? '習得済' : 'LOCK'}</small></button>`; }).join('');
+      // アビリティ一覧＝固有技（Lv1）＋Lv5/10/15のパッシブ＋旧skillUnlocks
+      const abilityEntries = [];
+      if (j.signatureSkillId && D.skills[j.signatureSkillId]) abilityEntries.push([1, j.signatureSkillId]);
+      Object.entries(j.passiveUnlocks || {}).forEach(([lv, id]) => abilityEntries.push([+lv, id]));
+      Object.entries(j.skillUnlocks || {}).forEach(([lv, id]) => abilityEntries.push([+lv, id]));
+      const skillRows = abilityEntries.sort((a, b) => a[0] - b[0]).map(([lv, id]) => { const s = D.skills[id], learned = p.level >= lv; return `<button class="jar${learned ? ' learned' : ' locked'}"${learned ? ` data-job-skill-detail="${id}"` : ''}><span class="jar-lv">Lv.${lv}</span><span class="jar-nm">${s?.name || id}</span><em class="jar-type">${s?.type === 'PASSIVE' ? 'P' : 'A'}</em><small class="jar-st">${learned ? '習得済' : 'LOCK'}</small></button>`; }).join('');
       let condHtml = '';
       if (isAdv && !avail && j.unlockCondition) { const c = j.unlockCondition, bOk = c.bossDefeated ? this.isBossDefeated(c.bossDefeated) : true, bName = c.bossDefeated ? (D.enemies[c.bossDefeated]?.name || c.bossDefeated) : ''; const jcs = Object.entries(c.jobLevels || {}).map(([rid, rlv]) => { const cur = this.profile.jobs[rid]?.level || 0, ok = cur >= rlv; return `<div class="cond-row${ok ? ' ok' : ' ng'}"><b>${ok ? '✓' : '✕'} ${D.jobs[rid]?.name || rid} Lv${rlv}</b><small>現在 Lv.${cur}</small></div>`; }).join(''); condHtml = `<div class="jconds"><h4>解放条件</h4>${bName ? `<div class="cond-row${bOk ? ' ok' : ' ng'}"><b>${bOk ? '✓' : '✕'} ${bName}を撃破</b></div>` : ''}${jcs}</div>`; }
       // JOB補正は「このJOBで育てた成長」を出す。旧テーブル方式のJOBは従来どおり。
@@ -1284,7 +1293,7 @@
       this.startBossEncounter();
     }
     changeJob(id) {
-      const isAdv = ['arcaneMaestro', 'dualBlade'].includes(id);
+      const isAdv = (D.advancedJobIds || []).includes(id);
       if (!D.jobs[id] || id === this.profile.currentJob) return;
       if (isAdv && !this.isAdvancedJobUnlocked(id)) return;
       if (!isAdv && !this.isJobUnlocked(id)) return; const before = this.totalStats(), vitals = this.storedVitals(before); this.profile.currentJob = id; const after = this.totalStats(); this.profile.currentVitals = { hp: Math.min(vitals.hp, after.maxHp), mp: Math.min(vitals.mp, after.maxMp) }; if (this.player) { this.player.stats = after; this.player.hp = Math.min(this.player.hp, after.maxHp); this.player.mp = Math.min(this.player.mp, after.maxMp); } this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('job');
@@ -1307,7 +1316,7 @@
       const dungeonTabs = dungeons.length ? `<div class="recipe-dungeon-tabs"><button data-craft-dungeon="all" class="${filter === 'all' ? 'active' : ''}">すべて</button>${dungeons.map(d => `<button data-craft-dungeon="${d.id}" class="${filter === d.id ? 'active' : ''}">${d.name}</button>`).join('')}</div>` : '';
       const recipes = Object.values(D.recipes || {}).filter(r => { const item = D.items[r.resultItemId]; return !r.legacy && this.isRecipeUnlocked(r) && (r.craftCategory || 'weapon') === craftCategory && (craftCategory !== 'armor' || item?.slot === armorFilter) && (filter === 'all' || r.dungeonId === filter); });
       const recipeCards = recipes.map(r => this.recipeCardHTML(r)).join(''), selectedArmor = (D.workshop.armorTabs || []).find(tab => tab.id === armorFilter);
-      return `<div class="workshop-section-title"><b>${categoryName}製作</b><span>${categoryEn}</span></div>${armorTabs}${dungeonTabs}<div class="recipe-grid">${recipeCards || `<div class="workshop-empty-category"><b>${craftCategory === 'armor' ? `${selectedArmor?.name || '防具'}レシピ` : '武器レシピ'}準備中</b><span>対応する装備データとレシピを追加すると、ここへ自動表示されます。</span></div>`}</div><div class="workshop-material-preview"><b>現在の素材</b>${materialRows}</div>`;
+      return `<div class="workshop-section-title"><b>${categoryName}製作</b><span>${categoryEn}</span></div>${armorTabs}${dungeonTabs}<div class="recipe-grid">${recipeCards || `<div class="workshop-empty-category"><b>${craftCategory === 'armor' ? `${selectedArmor?.name || '防具'}レシピ` : '武器レシピ'}準備中</b><span>対応する装備データとレシピを追加すると、ここへ自動表示されます。</span></div>`}/* 素材一覧は専用タブにあるので、製作タブの下には出さない */</div>`;
     }
     bossEquipmentContent() { const seriesList = this.unlockedBossSeries(); if (!seriesList.length) { this.workshopTab = 'weapon'; return this.workshopContent(); } return seriesList.map(series => { const recipes = (series.recipes || []).map(id => D.recipes[id]).filter(Boolean), count = this.equippedSeriesCount(series.id); return `<section class="boss-series-craft"><header><small>BOSS EQUIPMENT</small><h3>${series.name}</h3><span>${'★'.repeat(series.stars || 5)} // EQUIPPED ${count} / ${series.equipment.length}</span></header><div class="boss-series-effects">${Object.entries(series.setBonuses || {}).map(([needed, bonus]) => `<div class="${count >= Number(needed) ? 'active' : ''}"><b>${needed} SET — ${bonus.name}</b><span>${bonus.description}</span></div>`).join('')}</div><div class="recipe-grid">${recipes.map(recipe => this.recipeCardHTML(recipe)).join('')}</div></section>`; }).join(''); }
     recipeCardHTML(recipe) {
