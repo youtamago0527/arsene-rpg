@@ -108,7 +108,8 @@ window.ARSENE_DATA = {
     maxStacks: 3,          // 重ねがけ上限
     nocturneTurns: 3,      // ノクターンの自然回復ターン数
     nocturneHealRate: 0.08, // 1ターンあたりの回復量（最大HP比）
-    soloTurns: 2           // ソロ（2回行動）の持続ターン
+    soloTurns: 2,          // ソロ（2回行動）の持続ターン
+    soloChance: 0.35       // ソロだけは別の発動率。2回行動は影響が大きいので絞る
   },
   // 上位JOBは設計見直し中のため一旦空。復活させるときはここへIDを戻す。
   advancedJobIds: [],
@@ -540,8 +541,10 @@ window.ARSENE_DATA = {
     ensemble: { id: 'ensemble', name: 'アンサンブル', nameEn: 'ENSEMBLE', source: 'job', jobId: 'magicKnight', unlockJobLevel: 5, type: 'ACTIVE', kind: 'support', target: 'self', mp: 8, cooldown: 4, powerText: '3ターン 発動率 50%→75%', effect: { type: 'ensemble' }, effectText: '3ターン、魔奏士パッシブの発動率が75%になる／CT4', description: '旋律を重ね合わせ、乱れた魔奏を整える。パッシブが格段に発動しやすくなる。' },
     // ── 演奏中だけ解放される専用技 ──
     // requiresBuff を持つ技は、その演奏が鳴っているあいだだけコマンドに出る。
-    sforzando:  { id: 'sforzando',  name: 'スフォルツァンド', nameEn: 'SFORZANDO',  source: 'job', jobId: 'magicKnight', type: 'ACTIVE', kind: 'physical', target: 'single', mp: 5, power: 1.4, agiScale: 0, requiresBuff: 'atkUp',  damageType: 'physical', powerText: '攻撃性能×1.4', effectText: '《フォルテ》発動中のみ使用可能', description: '強奏の勢いをそのまま刃に乗せる。フォルテが鳴っているあいだだけ放てる一撃。' },
-    fortissimo: { id: 'fortissimo', name: 'フォルティッシモ', nameEn: 'FORTISSIMO', source: 'job', jobId: 'magicKnight', type: 'ACTIVE', kind: 'magical',  target: 'single', mp: 7, power: 1.4, agiScale: 0, requiresBuff: 'matkUp', damageType: 'magical',  powerText: '魔法攻撃性能×1.4', effectText: '《クレッシェンド》発動中のみ使用可能', description: '高まりきった旋律を一点へ叩きつける。クレッシェンドが鳴っているあいだだけ放てる魔法。' },
+    // 物理は単体特化、魔法は全体。同じ条件技でも役割を分けている。
+    // 全体は1体あたりの威力を抑える（メテオ1.5/MP18・インフェルノ1.0/MP10と釣り合わせる）。
+    sforzando:  { id: 'sforzando',  name: 'スフォルツァンド', nameEn: 'SFORZANDO',  source: 'job', jobId: 'magicKnight', type: 'ACTIVE', kind: 'physical', target: 'single', mp: 5, power: 1.5, agiScale: 0, requiresBuff: 'atkUp',  damageType: 'physical', powerText: '攻撃性能×1.5', effectText: '敵単体／《フォルテ》発動中のみ使用可能', description: '強奏の勢いをそのまま刃に乗せる。フォルテが鳴っているあいだだけ放てる渾身の一撃。' },
+    fortissimo: { id: 'fortissimo', name: 'フォルティッシモ', nameEn: 'FORTISSIMO', source: 'job', jobId: 'magicKnight', type: 'ACTIVE', kind: 'magical',  target: 'all',    mp: 7, power: 1.0, agiScale: 0, requiresBuff: 'matkUp', damageType: 'magical',  powerText: '魔法攻撃性能×1.0', effectText: '敵全体／《クレッシェンド》発動中のみ使用可能', description: '高まりきった旋律を戦場ぜんぶへ叩きつける。クレッシェンドが鳴っているあいだだけ放てる総奏。' },
     // ── 魔奏士パッシブ（自ターン開始時に抽選で発動）──
     p_solo:      { id: 'p_solo',      name: 'ソロ',         nameEn: 'SOLO',      type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'doubleAct', requiresWeaponType: 'instrument' }, effectText: '楽器装備時のみ。自ターン開始時に抽選で2ターン2回行動', description: '独奏に入る。楽器を手にしているときだけ、一定確率で一度に二度動けるようになる。' },
     p_forte:     { id: 'p_forte',     name: 'フォルテ',     nameEn: 'FORTE',     type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'atkUp',  rate: .10 }, effectText: '自ターン開始時に抽選。攻撃力+10%／専用技が解放', description: '強奏が刃に乗る。自分のターン開始時、一定確率で攻撃力が上がり、専用技が使えるようになる。' },

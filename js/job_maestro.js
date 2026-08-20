@@ -72,8 +72,16 @@
       const need = p.passiveEffect.requiresWeaponType;
       // 武器種の条件があるパッシブは、その武器を持っていないと抽選もしない
       if (need && this.equippedWeaponType() !== need) continue;
-      if (Math.random() >= chance) continue;
       const kind = p.passiveEffect.buff;
+      // ソロ（2回行動）は影響が大きいので専用の発動率を持てる。
+      // アンサンブル中は同じ比率で底上げする。
+      let myChance = chance;
+      if (kind === 'doubleAct' && cfg.soloChance != null) {
+        myChance = this.isEnsembleActive()
+          ? Math.min(1, cfg.soloChance * (cfg.ensembleChance / cfg.procChance))
+          : cfg.soloChance;
+      }
+      if (Math.random() >= myChance) continue;
       let label;
       if (kind === 'regen') {
         // ノクターン：既存のリジェネ枠を使う（重ねがけせず上書き）
