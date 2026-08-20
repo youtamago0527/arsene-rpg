@@ -270,7 +270,7 @@
     // ── 得意武器選択 ──────────────────────────────────────────
     showWeaponSelect() {
       this.setScreen('weapon');
-      const types = this.game.weaponTypeList();
+      const types = this.game.weaponTypeList().filter(t => t.starterWeaponId);
       $('.weapon-grid', this.root).innerHTML = types.map(type => {
         const w = window.ARSENE_DATA.weapons[type.starterWeaponId];
         const bonus = Object.entries(w?.bonuses || {}).map(([k, v]) => `${this.statLabel(k)} ${v >= 0 ? '+' : ''}${v}`).join(' / ') || '補正なし';

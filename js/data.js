@@ -1,25 +1,32 @@
 window.ARSENE_DATA = {
-  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5 },
+  // dungeon2BossWins：ミルティ解放に必要なダンジョン2の勝利数。4時間構想の主調整値。
+  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5, dungeon2BossWins: 100 },
   dualBladeOffHandRate: 0.70,
   // 武器種マスタ。ここに追記すれば得意武器選択・アイテム欄のタブへ自動反映される。
   // damageStats は将来の体術ダメージ計算（力＋素早さ）用の予約情報。
   weaponTypes: [
     { id: 'sword', name: '剣', nameEn: 'SWORD', description: '力で斬り込む近接武器。素直な物理攻撃。', damageStats: ['str'], starterWeaponId: 'phantomSword' },
     { id: 'staff', name: '杖', nameEn: 'STAFF', description: '魔力を導く杖。魔法主体で戦う。', damageStats: ['mag'], starterWeaponId: 'mageStaff' },
-    { id: 'martial', name: '体術', nameEn: 'MARTIAL', description: '爪や籠手を使う徒手格闘。速さで手数を稼ぐ。', damageStats: ['str', 'agi'], starterWeaponId: 'ironClaw' }
+    { id: 'martial', name: '体術', nameEn: 'MARTIAL', description: '爪や籠手を使う徒手格闘。速さで手数を稼ぐ。', damageStats: ['str', 'agi'], starterWeaponId: 'ironClaw' },
+    // 楽器：魔奏士の証を入手するまでロック。器用さを火力へ変換する。
+    { id: 'instrument', name: '楽器', nameEn: 'INSTRUMENT', description: '音に魔を乗せて放つ。器用さがそのまま威力になる。', damageStats: ['dex'], starterWeaponId: null, unlockFlag: 'instrumentUnlocked' }
   ],
   // 武器種ごとの通常攻撃。未定義の武器種は 'attack'（剣と同じ物理攻撃）にフォールバック。
-  basicAttackByWeaponType: { sword: 'attack', staff: 'staffFireball', martial: 'martialStrike' },
+  basicAttackByWeaponType: { sword: 'attack', staff: 'staffFireball', martial: 'martialStrike', instrument: 'resonantNote' },
   // ══════════════════════════════════════════════════════════════
   // 武器種ごとの攻撃性能スケーリング。新武器種はここへ1行足すだけ。
   //   scaling      : 基礎能力をどの割合で攻撃性能へ変換するか
   //   powerKey     : 加算する装備側の戦闘能力キー
   //   damageType   : physical / magical（防御側の参照が変わる）
   // ══════════════════════════════════════════════════════════════
+  // 命中率（隠しステータス／画面には出さない）。器用さで上がり、敵の素早さで下がる。
+  accuracy: { base: 0.90, dexRate: 0.006, enemySpdRate: 0.005, min: 0.55, max: 1.0 },
   weaponScaling: {
     sword:   { scaling: { str: 1.0 },            powerKey: 'attackPower',      damageType: 'physical' },
     martial: { scaling: { str: 0.5, agi: 0.5 },  powerKey: 'attackPower',      damageType: 'physical' },
-    staff:   { scaling: { mag: 1.0 },            powerKey: 'magicAttackPower', damageType: 'magical'  }
+    staff:   { scaling: { mag: 1.0 },            powerKey: 'magicAttackPower', damageType: 'magical'  },
+    // 楽器：器用さを魔法攻撃へ変換する。魔奏士の証で解放。
+    instrument: { scaling: { dex: 1.0 },        powerKey: 'magicAttackPower', damageType: 'magical'  }
   },
   // 防御性能：物理は 体力＋装備防御力 / 魔法は 精神＋装備魔法防御力
   defenseScaling: {
@@ -30,7 +37,8 @@ window.ARSENE_DATA = {
   weaponArtsCommand: {
     sword: { name: '剣技', nameEn: 'SWORD ARTS' },
     staff: { name: '魔法', nameEn: 'MAGIC' },
-    martial: { name: '拳技', nameEn: 'FIST ARTS' }
+    martial: { name: '拳技', nameEn: 'FIST ARTS' },
+    instrument: { name: '楽奏', nameEn: 'SONG ARTS' }
   },
   startingJobIds: ['warrior', 'martialArtist', 'mage', 'priest'],
 
@@ -79,7 +87,8 @@ window.ARSENE_DATA = {
     magicChargeRate: 0.5
   },
 
-  battleProgression: { noelEncounterWins: 3, zenakadoEncounterWins: 7 },
+  // 1面クリア目安30分：通常戦17回（1戦約50秒）＋ボス2戦＋拠点操作
+  battleProgression: { noelEncounterWins: 8, zenakadoEncounterWins: 17 },
   expTable: { 1: 50, 2: 120, 3: 220 },
   jobExpTable: { 1: 25, 2: 45, 3: 70, 4: 100, 5: 135, 6: 175, 7: 220, 8: 270, 9: 330, 10: 400, 11: 480, 12: 570, 13: 670, 14: 780, 15: 900, 16: 1040, 17: 1190, 18: 1360, 19: 1550 },
   jobLevelCap: 20,
@@ -87,8 +96,11 @@ window.ARSENE_DATA = {
   combatBalance: {
     playerVariance: { min: -2, max: 2 },
     critical: { base: .06, luckRate: .008, max: .28, multiplier: 1.65 },
-    enemyPhysical: { attackScale: 2, defenseScale: .45 },
-    enemyMagic: { attackScale: 2.2, defenseScale: .3 },
+    // 敵→プレイヤーのダメージは比率型：atk × attackScale × defenseK/(defenseK+防御)
+    // 引き算型だと工房で装備を更新した瞬間にダメージが 0 か即死かの両極端に振れるため、
+    // 防御が上がるほど緩やかに減衰する比率型へ統一している。
+    enemyPhysical: { attackScale: .70, defenseK: 40 },
+    enemyMagic: { attackScale: .78, defenseK: 40 },
     enemyVariance: { min: -1, max: 2 }
   },
   normalEncounters: [
@@ -234,12 +246,13 @@ window.ARSENE_DATA = {
       description: 'かつて七奏卿の一人が築いた、音なき楽園。音を奪われた者たちの残響が、今もこの殿堂に漂っている。',
       recommendedLevel: 10,
       unlockCondition: 'dungeon1Clear',
+      // ダンジョン2はボス解放まで100勝。難易度カーブもその長さに合わせて引き伸ばしてある。
       encounterProgression: [
         { minWins: 0,  count: [1, 2], pool: [{ id: 'reverbSlime', weight: 8 }, { id: 'echoWraith', weight: 2 }, { id: 'silentHarmonist', weight: 1 }] },
-        { minWins: 3,  count: [1, 2], pool: [{ id: 'reverbSlime', weight: 5 }, { id: 'echoWraith', weight: 4 }, { id: 'nocturneBanshee', weight: 2 }, { id: 'silentHarmonist', weight: 1 }] },
-        { minWins: 5,  count: [2, 2], pool: [{ id: 'echoWraith', weight: 4 }, { id: 'nocturneBanshee', weight: 3 }, { id: 'nocturneChandelier', weight: 2 }, { id: 'reverbSlime', weight: 2 }, { id: 'silentHarmonist', weight: 1 }] },
-        { minWins: 8,  count: [2, 3], pool: [{ id: 'nocturneChandelier', weight: 3 }, { id: 'silentKnight', weight: 2 }, { id: 'muteGargoyle', weight: 2 }, { id: 'echoWraith', weight: 2 }, { id: 'silentHarmonist', weight: 1 }] },
-        { minWins: 12, count: [2, 3], pool: [{ id: 'silentKnight', weight: 3 }, { id: 'muteGargoyle', weight: 2 }, { id: 'nocturneChandelier', weight: 2 }, { id: 'nocturneBanshee', weight: 2 }, { id: 'silentHarmonist', weight: 1 }] }
+        { minWins: 10, count: [1, 2], pool: [{ id: 'reverbSlime', weight: 5 }, { id: 'echoWraith', weight: 4 }, { id: 'nocturneBanshee', weight: 2 }, { id: 'silentHarmonist', weight: 1 }] },
+        { minWins: 25, count: [2, 2], pool: [{ id: 'echoWraith', weight: 4 }, { id: 'nocturneBanshee', weight: 3 }, { id: 'nocturneChandelier', weight: 2 }, { id: 'reverbSlime', weight: 2 }, { id: 'silentHarmonist', weight: 1 }] },
+        { minWins: 45, count: [2, 3], pool: [{ id: 'nocturneChandelier', weight: 3 }, { id: 'silentKnight', weight: 2 }, { id: 'muteGargoyle', weight: 2 }, { id: 'echoWraith', weight: 2 }, { id: 'silentHarmonist', weight: 1 }] },
+        { minWins: 70, count: [2, 3], pool: [{ id: 'silentKnight', weight: 3 }, { id: 'muteGargoyle', weight: 2 }, { id: 'nocturneChandelier', weight: 2 }, { id: 'nocturneBanshee', weight: 2 }, { id: 'silentHarmonist', weight: 1 }] }
       ]
     },
     {
@@ -416,6 +429,7 @@ window.ARSENE_DATA = {
     //   剣 → 力 ／ 爪 → 素早さ ／ 杖 → 魔力
     martialStrike: { id: 'martialStrike', name: 'たたかう', nameEn: 'MARTIAL STRIKE', mp: 0, kind: 'weapon', weaponType: 'martial', target: 'single', agiScale: 0, damageType: 'physical', powerText: 'AGI依存', description: '拳と爪による打撃。素早さを参照する。' },
     staffFireball: { id: 'staffFireball', name: 'ファイアーボール', nameEn: 'FIREBALL', mp: 0, kind: 'weapon', weaponType: 'staff', target: 'single', power: 1.0, agiScale: 0, damageType: 'magical', element: 'fire', powerText: '魔法攻撃性能×1.0', effectText: '炎属性／MP消費なし', description: '杖に灯した炎弾を撃ち出す。杖の通常攻撃。' },
+    resonantNote: { id: 'resonantNote', name: 'たたかう', nameEn: 'RESONANT NOTE', mp: 0, kind: 'weapon', weaponType: 'instrument', target: 'single', power: 1.0, agiScale: 0, damageType: 'magical', powerText: '楽器攻撃性能×1.0', description: '弦を弾き、音の刃を飛ばす。楽器の通常攻撃。' },
 
     // ══ ジョブパッシブ（Lv5 / 10 / 15 で習得。習得後は永久）════
     // passiveEffect の type で効果を分類し、戦闘コードは type だけを見る。
@@ -581,6 +595,7 @@ window.ARSENE_DATA = {
     phantomSword: { id: 'phantomSword', name: '青影の剣', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '青い残光を引く怪盗の細身剣。' },
     ironClaw: { id: 'ironClaw', name: '鉄の爪', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '拳に装着する鋼の爪。素早い連撃に適する。' },
     magicKnightProof: { id: 'magicKnightProof', name: '魔装士の証', nameEn: 'PROOF OF THE MAGIC KNIGHT', category: 'key', rarity: 'epic', description: '刃と魔を繋ぐ古い紋章。新たな生き方を選ぶ資格を示す。' },
+    arcaneMaestroProof: { id: 'arcaneMaestroProof', name: '魔奏士の証', nameEn: 'PROOF OF THE ARCANE MAESTRO', category: 'key', rarity: 'epic', description: '音と魔を繋ぐ古い譜面。楽器を武器として扱う資格を示す。' },
     rebirthArcana: { id: 'rebirthArcana', name: '輪廻のアルカナ', nameEn: 'ARCANA OF REBIRTH', category: 'special', rarity: 'legendary', noSell: true, description: '極めた力を捨て、さらなる高みへ至るためのアルカナ。JOB Lv20からの転生に1個消費する。' },
 
     // ══ D1 通常工房装備（24種）══════════════════════════════════
@@ -847,7 +862,7 @@ window.ARSENE_DATA = {
     shadowSlime: {
       id: 'shadowSlime', name: 'シャドウスライム', enName: 'SHADOW SLIME', element: '闇', weaknesses: ['光', '火'],
       sprite: 'assets/enemy-characters/shadow-slime/battle-idle.png',
-      stats: { maxHp: 65, atk: 7, def: 3, mag: 6, spd: 6 }, exp: 10, gold: { min: 5, max: 10 },
+      stats: { maxHp: 30, atk: 7, def: 4, mag: 5, spd: 6 }, exp: 10, gold: { min: 5, max: 10 },
       dropTable: [
         { itemId: 'slimeJelly', chance: .40 }, { itemId: 'manaPotion', chance: .20 },
         { itemId: 'shadowWand', chance: .10 }, { itemId: 'slimeRing', chance: .08 }, { itemId: 'darkCore', chance: .03 }
@@ -864,7 +879,7 @@ window.ARSENE_DATA = {
       id: 'zenakado', name: 'ゼナカド', enName: 'ZENAKADO — THE SOLOIST', kind: 'boss', encounter: 1,
       title: '独奏卿', element: '闇', weaknesses: ['光', '火'],
       sprite: 'assets/enemy-characters/zenakado/battle-idle-v3.png',
-      stats: { maxHp: 300, atk: 11, def: 8, mag: 10, mnd: 8, spd: 12 },
+      stats: { maxHp: 320, atk: 14, def: 8, mag: 13, mnd: 8, spd: 12 },
       exp: 150, gold: { min: 100, max: 150 },
       dropTable: [
         { itemId: 'cadenza_fragment', chance: 1.0 }, { itemId: 'zenacad_core', chance: .45 },
@@ -881,7 +896,7 @@ window.ARSENE_DATA = {
     soulMage: {
       id: 'soulMage', name: 'ソルメイジ', enName: 'SOUL MAGE', element: '闇', weaknesses: ['光', '火'], resistances: [],
       sprite: 'assets/enemy-characters/soulMage/battle-idle-v1.png',
-      stats: { maxHp: 60, atk: 5, def: 3, mag: 8, spd: 7 }, exp: 20, gold: { min: 8, max: 20 },
+      stats: { maxHp: 38, atk: 5, def: 4, mag: 11, spd: 7 }, exp: 20, gold: { min: 8, max: 20 },
       dropTable: [
         { itemId: 'manaDrop', chance: .40 }, { itemId: 'stardustShard', chance: .25 },
         { itemId: 'magicPowder', chance: .20 }, { itemId: 'moonstone', chance: .10 }, { itemId: 'tatteredRobe', chance: .05 }, { itemId: 'soulRobe', chance: .05 }
@@ -892,7 +907,7 @@ window.ARSENE_DATA = {
     ratThief: {
       id: 'ratThief', name: '盗鼠', enName: 'RAT THIEF', element: '闇', weaknesses: ['光', '火'], resistances: [],
       sprite: 'assets/enemy-characters/ratThief/battle-idle-v1.png',
-      stats: { maxHp: 45, atk: 8, def: 2, mag: 2, spd: 10 }, exp: 18, gold: { min: 5, max: 15 },
+      stats: { maxHp: 36, atk: 8, def: 4, mag: 2, spd: 10 }, exp: 18, gold: { min: 5, max: 15 },
       dropTable: [
         { itemId: 'gnawedBag', chance: .40 }, { itemId: 'ratWhisker', chance: .30 },
         { itemId: 'stolenCoin', chance: .20 }, { itemId: 'ratTail', chance: .10 }, { itemId: 'ratBoots', chance: .05 }
@@ -903,7 +918,7 @@ window.ARSENE_DATA = {
     goblin: {
       id: 'goblin', name: 'ゴブリン', enName: 'GOBLIN', element: '闇', weaknesses: ['火', '光'], resistances: ['毒', '闇'],
       sprite: 'assets/enemy-characters/goblin/battle-idle-v2.png',
-      stats: { maxHp: 58, atk: 9, def: 5, mag: 2, spd: 6 }, exp: 16, gold: { min: 6, max: 14 },
+      stats: { maxHp: 48, atk: 11, def: 6, mag: 2, spd: 6 }, exp: 16, gold: { min: 6, max: 14 },
       dropTable: [
         { itemId: 'rustedKnife', chance: .35 }, { itemId: 'tornCloth', chance: .30 },
         { itemId: 'stolenCoin', chance: .20 }, { itemId: 'goblinMedicine', chance: .10 }, { itemId: 'goblinGloves', chance: .05 }, { itemId: 'goblinEarring', chance: .01 }
@@ -914,7 +929,7 @@ window.ARSENE_DATA = {
     nightBat: {
       id: 'nightBat', name: 'ナイトバット', enName: 'NIGHT BAT', element: '闇', weaknesses: ['光', '雷'], resistances: ['闇', '毒'],
       sprite: 'assets/enemy-characters/nightBat/battle-idle-v2.png',
-      stats: { maxHp: 36, atk: 6, def: 2, mag: 2, spd: 15 }, exp: 14, gold: { min: 5, max: 12 },
+      stats: { maxHp: 34, atk: 7, def: 3, mag: 2, spd: 15 }, exp: 14, gold: { min: 5, max: 12 },
       dropTable: [
         { itemId: 'batFang', chance: .35 }, { itemId: 'tornWingMembrane', chance: .20 },
         { itemId: 'beastBlood', chance: .08 }, { itemId: 'nightHat', chance: .05 }, { itemId: 'obsidianFang', chance: .02 }
@@ -925,7 +940,7 @@ window.ARSENE_DATA = {
     ghostBone: {
       id: 'ghostBone', name: 'ゴーストボーン', enName: 'GHOST BONE', element: '闇', weaknesses: ['光', '聖'], resistances: ['闇', '毒'],
       sprite: 'assets/enemy-characters/ghostBone/battle-idle-v2.png',
-      stats: { maxHp: 40, atk: 4, def: 2, mag: 9, spd: 7 }, exp: 17, gold: { min: 6, max: 15 },
+      stats: { maxHp: 42, atk: 6, def: 7, mag: 12, spd: 7 }, exp: 17, gold: { min: 6, max: 15 },
       dropTable: [
         { itemId: 'spiritFragment', chance: .35 }, { itemId: 'oldBone', chance: .30 },
         { itemId: 'darkSoulStone', chance: .20 }, { itemId: 'resentmentCrystal', chance: .10 }, { itemId: 'cursedNecklace', chance: .02 }
@@ -987,7 +1002,7 @@ window.ARSENE_DATA = {
       kind: 'elite',
       element: '闇', weaknesses: ['光', '雷'], resistances: ['闇'],
       sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.1,
-      stats: { maxHp: 260, atk: 28, def: 20, mag: 28, mnd: 16, spd: 16 }, exp: 85, gold: { min: 35, max: 60 },
+      stats: { maxHp: 140, atk: 22, def: 14, mag: 22, mnd: 16, spd: 16 }, exp: 85, gold: { min: 35, max: 60 },
       dropTable: [
         { itemId: 'silentNote',   chance: .50 },
         { itemId: 'echoShard',    chance: .35 },
@@ -1000,7 +1015,7 @@ window.ARSENE_DATA = {
       id: 'echoWraith', name: 'エコー・レイス', enName: 'ECHO WRAITH', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['聖', '打'], resistances: ['闇', '毒'],
       sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.0,
-      stats: { maxHp: 140, atk: 16, def: 10, mag: 22, mnd: 10, spd: 22 }, exp: 40, gold: { min: 18, max: 35 },
+      stats: { maxHp: 68, atk: 14, def: 6, mag: 16, mnd: 10, spd: 22 }, exp: 40, gold: { min: 18, max: 35 },
       dropTable: [
         { itemId: 'echoShard',    chance: .50 },
         { itemId: 'spectralDust', chance: .25 },
@@ -1012,7 +1027,7 @@ window.ARSENE_DATA = {
       id: 'muteGargoyle', name: 'ムート・ガーゴイル', enName: 'MUTE GARGOYLE', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['打', '風'], resistances: ['闇', '毒', '物理'],
       sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.3,
-      stats: { maxHp: 280, atk: 26, def: 28, mag: 10, mnd: 14, spd: 6 }, exp: 58, gold: { min: 22, max: 42 },
+      stats: { maxHp: 115, atk: 19, def: 16, mag: 10, mnd: 14, spd: 6 }, exp: 58, gold: { min: 22, max: 42 },
       dropTable: [
         { itemId: 'stoneShard',  chance: .55 },
         { itemId: 'silentNote',  chance: .18 },
@@ -1024,7 +1039,7 @@ window.ARSENE_DATA = {
       id: 'nocturneChandelier', name: 'ノクターン・シャンデリア', enName: 'NOCTURNE CHANDELIER', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['炎', '光'], resistances: ['闇', '魔法'],
       sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.1,
-      stats: { maxHp: 170, atk: 12, def: 12, mag: 20, mnd: 14, spd: 7 }, exp: 46, gold: { min: 18, max: 36 },
+      stats: { maxHp: 88, atk: 13, def: 9, mag: 18, mnd: 14, spd: 7 }, exp: 46, gold: { min: 18, max: 36 },
       dropTable: [
         { itemId: 'violinString', chance: .40 },
         { itemId: 'spectralDust', chance: .22 },
@@ -1036,7 +1051,7 @@ window.ARSENE_DATA = {
       id: 'silentKnight', name: 'サイレント・ナイト', enName: 'SILENT KNIGHT', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['炎', '聖'], resistances: ['闇', '物理'],
       sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.2,
-      stats: { maxHp: 200, atk: 32, def: 18, mag: 10, mnd: 10, spd: 14 }, exp: 55, gold: { min: 22, max: 45 },
+      stats: { maxHp: 100, atk: 20, def: 14, mag: 8, mnd: 10, spd: 14 }, exp: 55, gold: { min: 22, max: 45 },
       dropTable: [
         { itemId: 'silentArmor', chance: .38 },
         { itemId: 'stoneShard',  chance: .22 },
@@ -1048,7 +1063,7 @@ window.ARSENE_DATA = {
       id: 'reverbSlime', name: 'リバーブ・スライム', enName: 'REVERB SLIME', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['火', '斬'], resistances: ['闇'],
       sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 0.85,
-      stats: { maxHp: 160, atk: 22, def: 14, mag: 18, mnd: 8, spd: 8 }, exp: 35, gold: { min: 15, max: 30 },
+      stats: { maxHp: 60, atk: 12, def: 8, mag: 10, mnd: 8, spd: 8 }, exp: 35, gold: { min: 15, max: 30 },
       dropTable: [
         { itemId: 'reverbJelly', chance: .55 },
         { itemId: 'echoShard',   chance: .20 },
@@ -1060,7 +1075,7 @@ window.ARSENE_DATA = {
       id: 'nocturneBanshee', name: 'ノクターン・バンシー', enName: 'NOCTURNE BANSHEE', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['雷', '光'], resistances: ['闇', '精神'],
       sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.0,
-      stats: { maxHp: 150, atk: 14, def: 8, mag: 26, mnd: 10, spd: 13 }, exp: 42, gold: { min: 18, max: 35 },
+      stats: { maxHp: 76, atk: 12, def: 6, mag: 20, mnd: 12, spd: 13 }, exp: 42, gold: { min: 18, max: 35 },
       dropTable: [
         { itemId: 'spectralDust', chance: .45 },
         { itemId: 'violinString', chance: .28 },
@@ -1072,7 +1087,7 @@ window.ARSENE_DATA = {
       id: 'myrthi', name: 'ミルティ', enName: 'MYRTHI', kind: 'boss', encounter: 1,
       title: '黒紅の双刃戦姫', element: '物理', weaknesses: ['魔法'],
       sprite: 'assets/enemy-characters/myrthi/battle-idle-v1.jpg', spriteClass: 'myrthi-sprite',
-      stats: { maxHp: 450, atk: 38, def: 14, mag: 8, mnd: 10, spd: 26 },
+      stats: { maxHp: 380, atk: 19, def: 14, mag: 13, mnd: 16, spd: 26 },
       exp: 200, gold: { min: 150, max: 200 },
       dropTable: [
         { itemId: 'myrthi_fragment', chance: 1.0 },

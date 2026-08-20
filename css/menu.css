@@ -248,3 +248,7 @@
 .cbt-def span{font-size:10px;color:#9fb0c4}
 .cbt-def b{font:700 16px/1 Cinzel;color:#7bff9a}
 .cbt-def small{font-size:8px;color:#6f8aa6}
+
+/* 設定画面：タブを切り替えても高さを固定し、中身だけスクロールさせる */
+.menu-panel.panel-tall{display:flex;flex-direction:column}
+.sys-body{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch}
