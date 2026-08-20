@@ -92,7 +92,10 @@ window.ARSENE_DATA = {
   expTable: { 1: 50, 2: 120, 3: 220 },
   jobExpTable: { 1: 25, 2: 45, 3: 70, 4: 100, 5: 135, 6: 175, 7: 220, 8: 270, 9: 330, 10: 400, 11: 480, 12: 570, 13: 670, 14: 780, 15: 900, 16: 1040, 17: 1190, 18: 1360, 19: 1550 },
   jobLevelCap: 20,
-  enchantTable: { successRates: [1.00, 1.00, 1.00, 0.97, 0.93, 0.88, 0.82, 0.75, 0.66, 0.55], goldCosts: [100, 200, 300, 500, 700, 1000, 1400, 1800, 2500, 3500], maxLevel: 10, statBonus: 5 },
+  // 強化は「その装備自身の戦闘能力」を割合で伸ばす（+1ごとに powerRate）。
+  //   弱い装備を強化しても強い装備を追い越さないのが狙い。
+  //   旧 statBonus（基礎能力+5/Lv）は廃止。基礎能力はJOBとキャラだけが伸ばす。
+  enchantTable: { successRates: [1.00, 1.00, 1.00, 0.97, 0.93, 0.88, 0.82, 0.75, 0.66, 0.55], goldCosts: [100, 200, 300, 500, 700, 1000, 1400, 1800, 2500, 3500], maxLevel: 10, powerRate: 0.15 },
   combatBalance: {
     playerVariance: { min: -2, max: 2 },
     critical: { base: .06, luckRate: .008, max: .28, multiplier: 1.65 },
@@ -246,7 +249,47 @@ window.ARSENE_DATA = {
       description: 'かつて七奏卿の一人が築いた、音なき楽園。音を奪われた者たちの残響が、今もこの殿堂に漂っている。',
       recommendedLevel: 10,
       unlockCondition: 'dungeon1Clear',
-      // ダンジョン2はボス解放まで100勝。難易度カーブもその長さに合わせて引き伸ばしてある。
+      // ══ 階層制 ══
+      // 各階33勝でクリア、3階すべて踏破（=99勝）でミルティへ挑戦できる。
+      // 階層ごとに出現モンスターとドロップ素材を分けてあり、
+      // 1F素材→1F装備、2F素材→2F装備…と工房が階層に追従して進む。
+      // floors を持つダンジョンは階層選択画面が出る。持たなければ従来どおり直接潜入。
+      floors: [
+        {
+          id: 'd2f1', name: '残響の回廊', nameEn: '1F ECHOING CORRIDOR', winsToClear: 50,
+          description: '踏み込んだ音が返ってこない廊。まだ弱い残響たちが彷徨っている。',
+          materials: ['reverbJelly', 'echoShard'],
+          encounterProgression: [
+            { minWins: 0,  count: [2, 2], pool: [{ id: 'reverbSlime', weight: 8 }, { id: 'hushMoth', weight: 3 }, { id: 'echoWraith', weight: 2 }] },
+            { minWins: 12, count: [2, 2], pool: [{ id: 'reverbSlime', weight: 5 }, { id: 'hushMoth', weight: 4 }, { id: 'chimeImp', weight: 4 }, { id: 'echoWraith', weight: 3 }] },
+            { minWins: 24, count: [2, 3], pool: [{ id: 'chimeImp', weight: 4 }, { id: 'echoWraith', weight: 4 }, { id: 'fadingChorister', weight: 3 }, { id: 'nocturneBanshee', weight: 2 }, { id: 'reverbSlime', weight: 2 }] },
+            { minWins: 36, count: [2, 3], pool: [{ id: 'fadingChorister', weight: 4 }, { id: 'mutedHound', weight: 4 }, { id: 'nocturneBanshee', weight: 3 }, { id: 'echoWraith', weight: 2 }, { id: 'chimeImp', weight: 2 }] }
+          ]
+        },
+        {
+          id: 'd2f2', name: '沈黙の広間', nameEn: '2F HALL OF HUSH', winsToClear: 50,
+          description: '奏者の姿だけが残された広間。音のない演奏が延々と続いている。',
+          materials: ['spectralDust', 'violinString', 'silentNote'],
+          encounterProgression: [
+            { minWins: 0,  count: [2, 2], pool: [{ id: 'nocturneChandelier', weight: 5 }, { id: 'whisperVeil', weight: 4 }, { id: 'voidVioloncello', weight: 3 }, { id: 'mutedHound', weight: 2 }] },
+            { minWins: 10, count: [2, 2], pool: [{ id: 'voidVioloncello', weight: 4 }, { id: 'whisperVeil', weight: 4 }, { id: 'silentKnight', weight: 3 }, { id: 'nocturneChandelier', weight: 3 }, { id: 'grimMetronome', weight: 2 }] },
+            { minWins: 20, count: [2, 3], pool: [{ id: 'silentKnight', weight: 4 }, { id: 'pallidConductor', weight: 3 }, { id: 'grimMetronome', weight: 3 }, { id: 'voidVioloncello', weight: 3 }, { id: 'whisperVeil', weight: 2 }] },
+            { minWins: 27, count: [2, 3], pool: [{ id: 'noiselessLancer', weight: 4 }, { id: 'pallidConductor', weight: 4 }, { id: 'grimMetronome', weight: 3 }, { id: 'silentKnight', weight: 3 }, { id: 'silentHarmonist', weight: 1 }] }
+          ]
+        },
+        {
+          id: 'd2f3', name: '楽殿最奥', nameEn: '3F INNERMOST HALL', winsToClear: 50,
+          description: '奪われた音の全てが積み上がった最奥。ここを越えれば黒紅の双刃が待つ。',
+          materials: ['silentArmor', 'stoneShard', 'moonstone'],
+          encounterProgression: [
+            { minWins: 0,  count: [2, 2], pool: [{ id: 'muteGargoyle', weight: 5 }, { id: 'stoneChoir', weight: 4 }, { id: 'shatteredDiva', weight: 3 }, { id: 'noiselessLancer', weight: 2 }] },
+            { minWins: 10, count: [2, 3], pool: [{ id: 'stoneChoir', weight: 4 }, { id: 'requiemKnight', weight: 3 }, { id: 'shatteredDiva', weight: 3 }, { id: 'muteGargoyle', weight: 3 }, { id: 'silentHarmonist', weight: 2 }] },
+            { minWins: 20, count: [2, 3], pool: [{ id: 'requiemKnight', weight: 4 }, { id: 'silenceWarden', weight: 3 }, { id: 'stoneChoir', weight: 3 }, { id: 'shatteredDiva', weight: 3 }, { id: 'silentHarmonist', weight: 2 }] },
+            { minWins: 27, count: [2, 3], pool: [{ id: 'silenceWarden', weight: 4 }, { id: 'requiemKnight', weight: 4 }, { id: 'shatteredDiva', weight: 3 }, { id: 'stoneChoir', weight: 3 }, { id: 'silentHarmonist', weight: 2 }] }
+          ]
+        }
+      ],
+      // 階層システム未対応の経路から参照された場合のフォールバック
       encounterProgression: [
         { minWins: 0,  count: [1, 2], pool: [{ id: 'reverbSlime', weight: 8 }, { id: 'echoWraith', weight: 2 }, { id: 'silentHarmonist', weight: 1 }] },
         { minWins: 10, count: [1, 2], pool: [{ id: 'reverbSlime', weight: 5 }, { id: 'echoWraith', weight: 4 }, { id: 'nocturneBanshee', weight: 2 }, { id: 'silentHarmonist', weight: 1 }] },
@@ -346,30 +389,38 @@ window.ARSENE_DATA = {
     // ══════════════════════════════════════════════════════════
     // D2 通常工房（24種）materialUnlockId の素材を初入手でレシピ解放
     // ══════════════════════════════════════════════════════════
-    fenrirSword:    { id: 'fenrirSword',    name: '黒狼剣フェンリル', craftCategory: 'weapon', dungeonId: 'dungeon2', materialUnlockId: 'silentArmor',  resultItemId: 'fenrirSword',    resultCount: 1, gold: 420, materials: [{ itemId: 'silentArmor', count: 4 }, { itemId: 'stoneShard', count: 3 }, { itemId: 'echoShard', count: 2 }] },
-    blackWolfHelm:  { id: 'blackWolfHelm',  name: '黒狼の兜',        craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'silentArmor',  resultItemId: 'blackWolfHelm',  resultCount: 1, gold: 210, materials: [{ itemId: 'silentArmor', count: 3 }, { itemId: 'stoneShard', count: 3 }] },
+    // 素材は階層に沿って並べてある。どのセットも同じ順序で作れるようになっている。
+    //   武器・兜 → 1F素材（リバーブゼリー / エコーの欠片）
+    //   腕・靴   → 2F素材（霊幻の粉塵 / 亡霊のヴァイオリン弦 / 無音の楽譜）
+    //   胴・装飾 → 3F素材（静寂の装甲片 / 石像の破片 / 月光石）
+    // これで「1階を踏破すると武器が新調でき、2階で腕足、3階で胴と装飾が揃う」進行になる。
+    fenrirSword:    { id: 'fenrirSword',    name: '黒狼剣フェンリル', craftCategory: 'weapon', dungeonId: 'dungeon2', materialUnlockId: 'reverbJelly',  resultItemId: 'fenrirSword',    resultCount: 1, gold: 420, materials: [{ itemId: 'reverbJelly', count: 4 }, { itemId: 'echoShard', count: 3 }, { itemId: 'spectralDust', count: 2 }] },
+    blackWolfHelm:  { id: 'blackWolfHelm',  name: '黒狼の兜',        craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'echoShard',    resultItemId: 'blackWolfHelm',  resultCount: 1, gold: 210, materials: [{ itemId: 'echoShard', count: 3 }, { itemId: 'reverbJelly', count: 3 }] },
+    crushGauntlet:  { id: 'crushGauntlet',  name: '破砕の篭手',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'spectralDust', resultItemId: 'crushGauntlet',  resultCount: 1, gold: 240, materials: [{ itemId: 'spectralDust', count: 4 }, { itemId: 'violinString', count: 2 }] },
+    kuroganeBoots:  { id: 'kuroganeBoots',  name: '黒鉄の軍靴',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'violinString', resultItemId: 'kuroganeBoots',  resultCount: 1, gold: 220, materials: [{ itemId: 'violinString', count: 4 }, { itemId: 'silentNote', count: 2 }] },
     blackWolfArmor: { id: 'blackWolfArmor', name: '黒狼の重装',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'silentArmor',  resultItemId: 'blackWolfArmor', resultCount: 1, gold: 540, materials: [{ itemId: 'silentArmor', count: 5 }, { itemId: 'stoneShard', count: 4 }, { itemId: 'silentNote', count: 2 }] },
-    crushGauntlet:  { id: 'crushGauntlet',  name: '破砕の篭手',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'stoneShard',   resultItemId: 'crushGauntlet',  resultCount: 1, gold: 240, materials: [{ itemId: 'stoneShard', count: 4 }, { itemId: 'silentArmor', count: 2 }] },
-    kuroganeBoots:  { id: 'kuroganeBoots',  name: '黒鉄の軍靴',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'stoneShard',   resultItemId: 'kuroganeBoots',  resultCount: 1, gold: 220, materials: [{ itemId: 'stoneShard', count: 4 }, { itemId: 'echoShard', count: 2 }] },
-    warDemonFang:   { id: 'warDemonFang',   name: '戦鬼の牙',        craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'silentNote',   resultItemId: 'warDemonFang',   resultCount: 1, gold: 620, materials: [{ itemId: 'silentNote', count: 4 }, { itemId: 'silentArmor', count: 3 }, { itemId: 'spectralDust', count: 2 }] },
-    yashaClaw:      { id: 'yashaClaw',      name: '夜叉爪アギト',    craftCategory: 'weapon', dungeonId: 'dungeon2', materialUnlockId: 'violinString', resultItemId: 'yashaClaw',      resultCount: 1, gold: 420, materials: [{ itemId: 'violinString', count: 4 }, { itemId: 'spectralDust', count: 3 }, { itemId: 'echoShard', count: 2 }] },
-    yashaHeadband:  { id: 'yashaHeadband',  name: '夜叉の鉢巻',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'violinString', resultItemId: 'yashaHeadband',  resultCount: 1, gold: 210, materials: [{ itemId: 'violinString', count: 3 }, { itemId: 'spectralDust', count: 3 }] },
-    shadowGi:       { id: 'shadowGi',       name: '黒影の闘衣',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'violinString', resultItemId: 'shadowGi',       resultCount: 1, gold: 540, materials: [{ itemId: 'violinString', count: 5 }, { itemId: 'spectralDust', count: 4 }, { itemId: 'reverbJelly', count: 2 }] },
-    rasetsuTekko:   { id: 'rasetsuTekko',   name: '羅刹の手甲',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'spectralDust', resultItemId: 'rasetsuTekko',   resultCount: 1, gold: 240, materials: [{ itemId: 'spectralDust', count: 4 }, { itemId: 'violinString', count: 2 }] },
-    flashGreaves:   { id: 'flashGreaves',   name: '瞬脚の具足',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'spectralDust', resultItemId: 'flashGreaves',   resultCount: 1, gold: 220, materials: [{ itemId: 'spectralDust', count: 4 }, { itemId: 'reverbJelly', count: 2 }] },
-    shuraMagatama:  { id: 'shuraMagatama',  name: '修羅の勾玉',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'silentNote',   resultItemId: 'shuraMagatama',  resultCount: 1, gold: 620, materials: [{ itemId: 'silentNote', count: 4 }, { itemId: 'violinString', count: 3 }, { itemId: 'stoneShard', count: 2 }] },
+    warDemonFang:   { id: 'warDemonFang',   name: '戦鬼の牙',        craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'stoneShard',   resultItemId: 'warDemonFang',   resultCount: 1, gold: 620, materials: [{ itemId: 'stoneShard', count: 4 }, { itemId: 'silentArmor', count: 3 }, { itemId: 'moonstone', count: 2 }] },
+
+    yashaClaw:      { id: 'yashaClaw',      name: '夜叉爪アギト',    craftCategory: 'weapon', dungeonId: 'dungeon2', materialUnlockId: 'reverbJelly',  resultItemId: 'yashaClaw',      resultCount: 1, gold: 420, materials: [{ itemId: 'echoShard', count: 4 }, { itemId: 'reverbJelly', count: 3 }, { itemId: 'violinString', count: 2 }] },
+    yashaHeadband:  { id: 'yashaHeadband',  name: '夜叉の鉢巻',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'reverbJelly',  resultItemId: 'yashaHeadband',  resultCount: 1, gold: 210, materials: [{ itemId: 'reverbJelly', count: 3 }, { itemId: 'echoShard', count: 3 }] },
+    rasetsuTekko:   { id: 'rasetsuTekko',   name: '羅刹の手甲',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'violinString', resultItemId: 'rasetsuTekko',   resultCount: 1, gold: 240, materials: [{ itemId: 'violinString', count: 4 }, { itemId: 'spectralDust', count: 2 }] },
+    flashGreaves:   { id: 'flashGreaves',   name: '瞬脚の具足',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'spectralDust', resultItemId: 'flashGreaves',   resultCount: 1, gold: 220, materials: [{ itemId: 'spectralDust', count: 4 }, { itemId: 'silentNote', count: 2 }] },
+    shadowGi:       { id: 'shadowGi',       name: '黒影の闘衣',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'silentArmor',  resultItemId: 'shadowGi',       resultCount: 1, gold: 540, materials: [{ itemId: 'silentArmor', count: 5 }, { itemId: 'stoneShard', count: 4 }, { itemId: 'violinString', count: 2 }] },
+    shuraMagatama:  { id: 'shuraMagatama',  name: '修羅の勾玉',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'stoneShard',   resultItemId: 'shuraMagatama',  resultCount: 1, gold: 620, materials: [{ itemId: 'stoneShard', count: 4 }, { itemId: 'silentArmor', count: 3 }, { itemId: 'moonstone', count: 2 }] },
+
     ignisStaff:     { id: 'ignisStaff',     name: '獄炎杖イグニス',  craftCategory: 'weapon', dungeonId: 'dungeon2', materialUnlockId: 'echoShard',    resultItemId: 'ignisStaff',     resultCount: 1, gold: 420, materials: [{ itemId: 'echoShard', count: 4 }, { itemId: 'reverbJelly', count: 3 }, { itemId: 'spectralDust', count: 2 }] },
     crimsonHat:     { id: 'crimsonHat',     name: '深紅の魔導帽',    craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'echoShard',    resultItemId: 'crimsonHat',     resultCount: 1, gold: 210, materials: [{ itemId: 'echoShard', count: 3 }, { itemId: 'reverbJelly', count: 3 }] },
-    purgatoryRobe:  { id: 'purgatoryRobe',  name: '煉獄のローブ',    craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'echoShard',    resultItemId: 'purgatoryRobe',  resultCount: 1, gold: 540, materials: [{ itemId: 'echoShard', count: 5 }, { itemId: 'reverbJelly', count: 4 }, { itemId: 'silentNote', count: 2 }] },
-    blazeBangle:    { id: 'blazeBangle',    name: '灼熱の腕輪',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'reverbJelly',  resultItemId: 'blazeBangle',    resultCount: 1, gold: 240, materials: [{ itemId: 'reverbJelly', count: 4 }, { itemId: 'echoShard', count: 2 }] },
-    starfireShoes:  { id: 'starfireShoes',  name: '星火の魔導靴',    craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'reverbJelly',  resultItemId: 'starfireShoes',  resultCount: 1, gold: 220, materials: [{ itemId: 'reverbJelly', count: 4 }, { itemId: 'spectralDust', count: 2 }] },
-    infernoStone:   { id: 'infernoStone',   name: '獄炎の魔石',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'silentNote',   resultItemId: 'infernoStone',   resultCount: 1, gold: 620, materials: [{ itemId: 'silentNote', count: 4 }, { itemId: 'echoShard', count: 3 }, { itemId: 'reverbJelly', count: 2 }] },
-    luminaStaff:    { id: 'luminaStaff',    name: '月白杖ルミナ',    craftCategory: 'weapon', dungeonId: 'dungeon2', materialUnlockId: 'silentNote',   resultItemId: 'luminaStaff',    resultCount: 1, gold: 420, materials: [{ itemId: 'silentNote', count: 4 }, { itemId: 'spectralDust', count: 3 }, { itemId: 'stoneShard', count: 2 }] },
-    moonCrown:      { id: 'moonCrown',      name: '月白の聖冠',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'silentNote',   resultItemId: 'moonCrown',      resultCount: 1, gold: 210, materials: [{ itemId: 'silentNote', count: 3 }, { itemId: 'echoShard', count: 3 }] },
-    moonVestment:   { id: 'moonVestment',   name: '月祈の法衣',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'silentNote',   resultItemId: 'moonVestment',   resultCount: 1, gold: 540, materials: [{ itemId: 'silentNote', count: 5 }, { itemId: 'silentArmor', count: 4 }, { itemId: 'spectralDust', count: 2 }] },
-    mercyBangle:    { id: 'mercyBangle',    name: '慈愛の腕輪',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'spectralDust', resultItemId: 'mercyBangle',    resultCount: 1, gold: 240, materials: [{ itemId: 'spectralDust', count: 4 }, { itemId: 'silentNote', count: 2 }] },
-    sacredShoes:    { id: 'sacredShoes',    name: '聖巡の靴',        craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'stoneShard',   resultItemId: 'sacredShoes',    resultCount: 1, gold: 220, materials: [{ itemId: 'stoneShard', count: 4 }, { itemId: 'silentNote', count: 2 }] },
-    moonlightCharm: { id: 'moonlightCharm', name: '月光の護符',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'silentArmor',  resultItemId: 'moonlightCharm', resultCount: 1, gold: 620, materials: [{ itemId: 'silentArmor', count: 4 }, { itemId: 'silentNote', count: 3 }, { itemId: 'reverbJelly', count: 2 }] },
+    blazeBangle:    { id: 'blazeBangle',    name: '灼熱の腕輪',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'spectralDust', resultItemId: 'blazeBangle',    resultCount: 1, gold: 240, materials: [{ itemId: 'spectralDust', count: 4 }, { itemId: 'violinString', count: 2 }] },
+    starfireShoes:  { id: 'starfireShoes',  name: '星火の魔導靴',    craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'silentNote',   resultItemId: 'starfireShoes',  resultCount: 1, gold: 220, materials: [{ itemId: 'silentNote', count: 4 }, { itemId: 'spectralDust', count: 2 }] },
+    purgatoryRobe:  { id: 'purgatoryRobe',  name: '煉獄のローブ',    craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'silentArmor',  resultItemId: 'purgatoryRobe',  resultCount: 1, gold: 540, materials: [{ itemId: 'silentArmor', count: 5 }, { itemId: 'stoneShard', count: 4 }, { itemId: 'silentNote', count: 2 }] },
+    infernoStone:   { id: 'infernoStone',   name: '獄炎の魔石',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'stoneShard',   resultItemId: 'infernoStone',   resultCount: 1, gold: 620, materials: [{ itemId: 'stoneShard', count: 4 }, { itemId: 'silentArmor', count: 3 }, { itemId: 'moonstone', count: 2 }] },
+
+    luminaStaff:    { id: 'luminaStaff',    name: '月白杖ルミナ',    craftCategory: 'weapon', dungeonId: 'dungeon2', materialUnlockId: 'reverbJelly',  resultItemId: 'luminaStaff',    resultCount: 1, gold: 420, materials: [{ itemId: 'reverbJelly', count: 4 }, { itemId: 'echoShard', count: 3 }, { itemId: 'silentNote', count: 2 }] },
+    moonCrown:      { id: 'moonCrown',      name: '月白の聖冠',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'echoShard',    resultItemId: 'moonCrown',      resultCount: 1, gold: 210, materials: [{ itemId: 'echoShard', count: 3 }, { itemId: 'reverbJelly', count: 3 }] },
+    mercyBangle:    { id: 'mercyBangle',    name: '慈愛の腕輪',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'silentNote',   resultItemId: 'mercyBangle',    resultCount: 1, gold: 240, materials: [{ itemId: 'silentNote', count: 4 }, { itemId: 'spectralDust', count: 2 }] },
+    sacredShoes:    { id: 'sacredShoes',    name: '聖巡の靴',        craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'spectralDust', resultItemId: 'sacredShoes',    resultCount: 1, gold: 220, materials: [{ itemId: 'spectralDust', count: 4 }, { itemId: 'violinString', count: 2 }] },
+    moonVestment:   { id: 'moonVestment',   name: '月祈の法衣',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'silentArmor',  resultItemId: 'moonVestment',   resultCount: 1, gold: 540, materials: [{ itemId: 'silentArmor', count: 5 }, { itemId: 'stoneShard', count: 4 }, { itemId: 'silentNote', count: 2 }] },
+    moonlightCharm: { id: 'moonlightCharm', name: '月光の護符',      craftCategory: 'armor',  dungeonId: 'dungeon2', materialUnlockId: 'stoneShard',   resultItemId: 'moonlightCharm', resultCount: 1, gold: 620, materials: [{ itemId: 'stoneShard', count: 4 }, { itemId: 'silentArmor', count: 3 }, { itemId: 'moonstone', count: 2 }] },
 
     flameStaff: { id: 'flameStaff', name: 'フレイムスタッフ', legacy: true, craftCategory: 'weapon', dungeonId: 'dungeon1', resultItemId: 'flameStaff', resultCount: 1, gold: 120, materials: [{ itemId: 'manaDrop', count: 3 }, { itemId: 'magicPowder', count: 2 }, { itemId: 'stardustShard', count: 2 }] },
     wizardRod: { id: 'wizardRod', name: 'ウィザードロッド', legacy: true, craftCategory: 'weapon', dungeonId: 'dungeon1', resultItemId: 'wizardRod', resultCount: 1, gold: 220, materials: [{ itemId: 'manaDrop', count: 4 }, { itemId: 'moonstone', count: 2 }, { itemId: 'magicPowder', count: 3 }] },
@@ -1002,7 +1053,7 @@ window.ARSENE_DATA = {
       kind: 'elite',
       element: '闇', weaknesses: ['光', '雷'], resistances: ['闇'],
       sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.1,
-      stats: { maxHp: 140, atk: 22, def: 14, mag: 22, mnd: 16, spd: 16 }, exp: 85, gold: { min: 35, max: 60 },
+      stats: { maxHp: 210, atk: 22, def: 14, mag: 22, mnd: 16, spd: 16 }, exp: 85, gold: { min: 35, max: 60 },
       dropTable: [
         { itemId: 'silentNote',   chance: .50 },
         { itemId: 'echoShard',    chance: .35 },
@@ -1015,7 +1066,7 @@ window.ARSENE_DATA = {
       id: 'echoWraith', name: 'エコー・レイス', enName: 'ECHO WRAITH', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['聖', '打'], resistances: ['闇', '毒'],
       sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.0,
-      stats: { maxHp: 68, atk: 14, def: 6, mag: 16, mnd: 10, spd: 22 }, exp: 40, gold: { min: 18, max: 35 },
+      stats: { maxHp: 95, atk: 14, def: 6, mag: 16, mnd: 10, spd: 22 }, exp: 40, gold: { min: 18, max: 35 },
       dropTable: [
         { itemId: 'echoShard',    chance: .50 },
         { itemId: 'spectralDust', chance: .25 },
@@ -1027,7 +1078,7 @@ window.ARSENE_DATA = {
       id: 'muteGargoyle', name: 'ムート・ガーゴイル', enName: 'MUTE GARGOYLE', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['打', '風'], resistances: ['闇', '毒', '物理'],
       sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.3,
-      stats: { maxHp: 115, atk: 19, def: 16, mag: 10, mnd: 14, spd: 6 }, exp: 58, gold: { min: 22, max: 42 },
+      stats: { maxHp: 220, atk: 19, def: 16, mag: 10, mnd: 14, spd: 6 }, exp: 58, gold: { min: 22, max: 42 },
       dropTable: [
         { itemId: 'stoneShard',  chance: .55 },
         { itemId: 'silentNote',  chance: .18 },
@@ -1039,7 +1090,7 @@ window.ARSENE_DATA = {
       id: 'nocturneChandelier', name: 'ノクターン・シャンデリア', enName: 'NOCTURNE CHANDELIER', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['炎', '光'], resistances: ['闇', '魔法'],
       sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.1,
-      stats: { maxHp: 88, atk: 13, def: 9, mag: 18, mnd: 14, spd: 7 }, exp: 46, gold: { min: 18, max: 36 },
+      stats: { maxHp: 140, atk: 13, def: 9, mag: 18, mnd: 14, spd: 7 }, exp: 46, gold: { min: 18, max: 36 },
       dropTable: [
         { itemId: 'violinString', chance: .40 },
         { itemId: 'spectralDust', chance: .22 },
@@ -1051,7 +1102,7 @@ window.ARSENE_DATA = {
       id: 'silentKnight', name: 'サイレント・ナイト', enName: 'SILENT KNIGHT', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['炎', '聖'], resistances: ['闇', '物理'],
       sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.2,
-      stats: { maxHp: 100, atk: 20, def: 14, mag: 8, mnd: 10, spd: 14 }, exp: 55, gold: { min: 22, max: 45 },
+      stats: { maxHp: 165, atk: 20, def: 14, mag: 8, mnd: 10, spd: 14 }, exp: 55, gold: { min: 22, max: 45 },
       dropTable: [
         { itemId: 'silentArmor', chance: .38 },
         { itemId: 'stoneShard',  chance: .22 },
@@ -1063,7 +1114,7 @@ window.ARSENE_DATA = {
       id: 'reverbSlime', name: 'リバーブ・スライム', enName: 'REVERB SLIME', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['火', '斬'], resistances: ['闇'],
       sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 0.85,
-      stats: { maxHp: 60, atk: 12, def: 8, mag: 10, mnd: 8, spd: 8 }, exp: 35, gold: { min: 15, max: 30 },
+      stats: { maxHp: 85, atk: 12, def: 8, mag: 10, mnd: 8, spd: 8 }, exp: 35, gold: { min: 15, max: 30 },
       dropTable: [
         { itemId: 'reverbJelly', chance: .55 },
         { itemId: 'echoShard',   chance: .20 },
@@ -1075,7 +1126,7 @@ window.ARSENE_DATA = {
       id: 'nocturneBanshee', name: 'ノクターン・バンシー', enName: 'NOCTURNE BANSHEE', dungeonId: 'dungeon2',
       element: '闇', weaknesses: ['雷', '光'], resistances: ['闇', '精神'],
       sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.0,
-      stats: { maxHp: 76, atk: 12, def: 6, mag: 20, mnd: 12, spd: 13 }, exp: 42, gold: { min: 18, max: 35 },
+      stats: { maxHp: 105, atk: 12, def: 6, mag: 20, mnd: 12, spd: 13 }, exp: 42, gold: { min: 18, max: 35 },
       dropTable: [
         { itemId: 'spectralDust', chance: .45 },
         { itemId: 'violinString', chance: .28 },
@@ -1083,11 +1134,183 @@ window.ARSENE_DATA = {
       ],
       ai: [{ id: 'soulBolt', name: 'サイレントクライ', kind: 'magic', weight: .50 }, { id: 'shadowBolt', name: 'MPドレインノート', kind: 'magic', weight: .30 }, { id: 'attack', name: '絶望の終曲', kind: 'magic', weight: .20 }]
     },
+
+    // ══════════════════════════════════════════════════════════════
+    // ダンジョン2 追加モンスター（1F〜3F）
+    //   sprite は暫定で既存シートを指している。専用画像ができたら差し替えるだけでよい。
+    //   ドロップは階層ごとに素材を分けてあり、工房のレシピ進行と対応している。
+    //     1F → リバーブゼリー / エコーの欠片
+    //     2F → 霊幻の粉塵 / 亡霊のヴァイオリン弦 / 無音の楽譜
+    //     3F → 静寂の装甲片 / 石像の破片 / 月光石
+    // ══════════════════════════════════════════════════════════════
+
+    // ── 1F 残響の回廊 ──
+    hushMoth: {
+      id: 'hushMoth', name: 'ハッシュ・モス', enName: 'HUSH MOTH', dungeonId: 'dungeon2', floorId: 'd2f1',
+      element: '闇', weaknesses: ['火', '雷'], resistances: ['闇'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 0.8,
+      stats: { maxHp: 75, atk: 10, def: 5, mag: 14, mnd: 9, spd: 18 }, exp: 32, gold: { min: 14, max: 28 },
+      dropTable: [
+        { itemId: 'echoShard',  chance: .48 },
+        { itemId: 'manaDrop',   chance: .22 },
+        { itemId: 'reverbJelly', chance: .18 }
+      ],
+      ai: [{ id: 'shadowBolt', name: '鱗粉のノイズ', kind: 'magic', weight: .50 }, { id: 'attack', name: '羽ばたきの断層', kind: 'physical', weight: .30 }, { id: 'attack', name: '沈黙の粉', kind: 'magic', weight: .20 }]
+    },
+    chimeImp: {
+      id: 'chimeImp', name: 'チャイム・インプ', enName: 'CHIME IMP', dungeonId: 'dungeon2', floorId: 'd2f1',
+      element: '闇', weaknesses: ['光', '斬'], resistances: ['闇'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 0.85,
+      stats: { maxHp: 90, atk: 13, def: 7, mag: 8, mnd: 8, spd: 16 }, exp: 34, gold: { min: 16, max: 30 },
+      dropTable: [
+        { itemId: 'reverbJelly', chance: .46 },
+        { itemId: 'echoShard',   chance: .30 },
+        { itemId: 'stolenCoin',  chance: .14 }
+      ],
+      ai: [{ id: 'attack', name: '鈴鳴りの爪', kind: 'physical', weight: .55 }, { id: 'ratBite', name: '不協和の連打', kind: 'physical', weight: .30 }, { id: 'shadowBolt', name: '高音の悲鳴', kind: 'magic', weight: .15 }]
+    },
+    fadingChorister: {
+      id: 'fadingChorister', name: 'フェイド・クワイア', enName: 'FADING CHORISTER', dungeonId: 'dungeon2', floorId: 'd2f1',
+      element: '闇', weaknesses: ['光'], resistances: ['闇', '精神'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 0.95,
+      stats: { maxHp: 100, atk: 11, def: 6, mag: 18, mnd: 12, spd: 11 }, exp: 38, gold: { min: 17, max: 32 },
+      dropTable: [
+        { itemId: 'echoShard',    chance: .45 },
+        { itemId: 'spectralDust', chance: .24 },
+        { itemId: 'manaDrop',     chance: .18 }
+      ],
+      ai: [{ id: 'soulBolt', name: '消え入る聖歌', kind: 'magic', weight: .50 }, { id: 'shadowBolt', name: '虚ろな輪唱', kind: 'magic', weight: .30 }, { id: 'attack', name: '祈りの残滓', kind: 'physical', weight: .20 }]
+    },
+    mutedHound: {
+      id: 'mutedHound', name: 'ミュート・ハウンド', enName: 'MUTED HOUND', dungeonId: 'dungeon2', floorId: 'd2f1',
+      element: '闇', weaknesses: ['火'], resistances: ['闇'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 0.9,
+      stats: { maxHp: 110, atk: 16, def: 9, mag: 4, mnd: 7, spd: 20 }, exp: 40, gold: { min: 18, max: 34 },
+      dropTable: [
+        { itemId: 'reverbJelly', chance: .44 },
+        { itemId: 'echoShard',   chance: .26 },
+        { itemId: 'oldBone',     chance: .18 }
+      ],
+      ai: [{ id: 'attack', name: '声なき牙', kind: 'physical', weight: .55 }, { id: 'ratBite', name: '疾駆の追撃', kind: 'physical', weight: .35 }, { id: 'clubSmash', name: '押し倒し', kind: 'physical', weight: .10 }]
+    },
+
+    // ── 2F 沈黙の広間 ──
+    voidVioloncello: {
+      id: 'voidVioloncello', name: 'ヴォイド・チェロ', enName: 'VOID VIOLONCELLO', dungeonId: 'dungeon2', floorId: 'd2f2',
+      element: '闇', weaknesses: ['雷'], resistances: ['闇', '精神'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.05,
+      stats: { maxHp: 155, atk: 14, def: 11, mag: 22, mnd: 14, spd: 8 }, exp: 50, gold: { min: 22, max: 40 },
+      dropTable: [
+        { itemId: 'violinString', chance: .46 },
+        { itemId: 'spectralDust', chance: .30 },
+        { itemId: 'silentNote',   chance: .18 }
+      ],
+      ai: [{ id: 'shadowBolt', name: '低弦の唸り', kind: 'magic', weight: .50 }, { id: 'soulBolt', name: '虚無のロングトーン', kind: 'magic', weight: .30 }, { id: 'attack', name: '弓の一閃', kind: 'physical', weight: .20 }]
+    },
+    pallidConductor: {
+      id: 'pallidConductor', name: 'ペイルド・コンダクター', enName: 'PALLID CONDUCTOR', dungeonId: 'dungeon2', floorId: 'd2f2',
+      element: '闇', weaknesses: ['光'], resistances: ['闇', '精神'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.05,
+      stats: { maxHp: 170, atk: 16, def: 12, mag: 24, mnd: 16, spd: 14 }, exp: 56, gold: { min: 25, max: 44 },
+      dropTable: [
+        { itemId: 'silentNote',   chance: .48 },
+        { itemId: 'spectralDust', chance: .28 },
+        { itemId: 'violinString', chance: .20 }
+      ],
+      ai: [{ id: 'soulBolt', name: '蒼白の指揮', kind: 'magic', weight: .45 }, { id: 'shadowBolt', name: '無音のタクト', kind: 'magic', weight: .35 }, { id: 'attack', name: '譜面台の打撃', kind: 'physical', weight: .20 }]
+    },
+    noiselessLancer: {
+      id: 'noiselessLancer', name: 'ノイズレス・ランサー', enName: 'NOISELESS LANCER', dungeonId: 'dungeon2', floorId: 'd2f2',
+      element: '闇', weaknesses: ['雷', '斬'], resistances: ['闇'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.0,
+      stats: { maxHp: 175, atk: 24, def: 15, mag: 6, mnd: 10, spd: 17 }, exp: 58, gold: { min: 26, max: 46 },
+      dropTable: [
+        { itemId: 'silentNote',  chance: .40 },
+        { itemId: 'silentArmor', chance: .26 },
+        { itemId: 'stoneShard',  chance: .20 }
+      ],
+      ai: [{ id: 'attack', name: '無音の刺突', kind: 'physical', weight: .50 }, { id: 'ratBite', name: '三連の刺突', kind: 'physical', weight: .30 }, { id: 'clubSmash', name: '薙ぎ払い', kind: 'physical', weight: .20 }]
+    },
+    grimMetronome: {
+      id: 'grimMetronome', name: 'グリム・メトロノーム', enName: 'GRIM METRONOME', dungeonId: 'dungeon2', floorId: 'd2f2',
+      element: '闇', weaknesses: ['雷'], resistances: ['闇', '打'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.0,
+      stats: { maxHp: 190, atk: 18, def: 18, mag: 12, mnd: 14, spd: 5 }, exp: 54, gold: { min: 24, max: 42 },
+      dropTable: [
+        { itemId: 'stoneShard',   chance: .44 },
+        { itemId: 'silentNote',   chance: .28 },
+        { itemId: 'spectralDust', chance: .20 }
+      ],
+      ai: [{ id: 'clubSmash', name: '刻の一撃', kind: 'physical', weight: .50 }, { id: 'attack', name: '重い拍', kind: 'physical', weight: .30 }, { id: 'shadowBolt', name: '狂ったテンポ', kind: 'magic', weight: .20 }]
+    },
+    whisperVeil: {
+      id: 'whisperVeil', name: 'ウィスパー・ヴェイル', enName: 'WHISPER VEIL', dungeonId: 'dungeon2', floorId: 'd2f2',
+      element: '闇', weaknesses: ['光', '火'], resistances: ['闇', '精神'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 0.95,
+      stats: { maxHp: 150, atk: 12, def: 8, mag: 26, mnd: 16, spd: 15 }, exp: 52, gold: { min: 23, max: 41 },
+      dropTable: [
+        { itemId: 'spectralDust', chance: .50 },
+        { itemId: 'violinString', chance: .26 },
+        { itemId: 'manaDrop',     chance: .20 }
+      ],
+      ai: [{ id: 'soulBolt', name: '囁きの帳', kind: 'magic', weight: .55 }, { id: 'shadowBolt', name: '耳鳴りの呪詛', kind: 'magic', weight: .30 }, { id: 'attack', name: '絡みつく布', kind: 'physical', weight: .15 }]
+    },
+
+    // ── 3F 楽殿最奥 ──
+    stoneChoir: {
+      id: 'stoneChoir', name: 'ストーン・クワイア', enName: 'STONE CHOIR', dungeonId: 'dungeon2', floorId: 'd2f3',
+      element: '闇', weaknesses: ['打'], resistances: ['闇', '斬'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.1,
+      stats: { maxHp: 240, atk: 21, def: 16, mag: 16, mnd: 16, spd: 7 }, exp: 68, gold: { min: 30, max: 52 },
+      dropTable: [
+        { itemId: 'stoneShard',  chance: .52 },
+        { itemId: 'silentArmor', chance: .28 },
+        { itemId: 'silentNote',  chance: .20 }
+      ],
+      ai: [{ id: 'clubSmash', name: '石化の合唱', kind: 'physical', weight: .45 }, { id: 'attack', name: '重厚な唱和', kind: 'physical', weight: .35 }, { id: 'shadowBolt', name: '割れた高音', kind: 'magic', weight: .20 }]
+    },
+    requiemKnight: {
+      id: 'requiemKnight', name: 'レクイエム・ナイト', enName: 'REQUIEM KNIGHT', dungeonId: 'dungeon2', floorId: 'd2f3',
+      element: '闇', weaknesses: ['雷'], resistances: ['闇'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.1,
+      stats: { maxHp: 265, atk: 26, def: 17, mag: 8, mnd: 12, spd: 16 }, exp: 74, gold: { min: 34, max: 58 },
+      dropTable: [
+        { itemId: 'silentArmor', chance: .48 },
+        { itemId: 'stoneShard',  chance: .28 },
+        { itemId: 'moonstone',   chance: .12 }
+      ],
+      ai: [{ id: 'attack', name: '鎮魂の斬撃', kind: 'physical', weight: .45 }, { id: 'ratBite', name: '終曲の連撃', kind: 'physical', weight: .35 }, { id: 'clubSmash', name: '断ち切る一閃', kind: 'physical', weight: .20 }]
+    },
+    shatteredDiva: {
+      id: 'shatteredDiva', name: 'シャッタード・ディーヴァ', enName: 'SHATTERED DIVA', dungeonId: 'dungeon2', floorId: 'd2f3',
+      element: '闇', weaknesses: ['光'], resistances: ['闇', '精神'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.05,
+      stats: { maxHp: 225, atk: 17, def: 12, mag: 28, mnd: 18, spd: 18 }, exp: 72, gold: { min: 32, max: 56 },
+      dropTable: [
+        { itemId: 'silentNote',   chance: .46 },
+        { itemId: 'moonstone',    chance: .20 },
+        { itemId: 'spectralDust', chance: .24 }
+      ],
+      ai: [{ id: 'soulBolt', name: '砕けたアリア', kind: 'magic', weight: .50 }, { id: 'shadowBolt', name: '高音の破砕', kind: 'magic', weight: .32 }, { id: 'attack', name: '爪弾き', kind: 'physical', weight: .18 }]
+    },
+    silenceWarden: {
+      id: 'silenceWarden', name: 'サイレンス・ウォーデン', enName: 'SILENCE WARDEN', dungeonId: 'dungeon2', floorId: 'd2f3',
+      element: '闇', weaknesses: ['打', '雷'], resistances: ['闇', '斬'],
+      sprite: 'assets/enemy-characters/dungeon2/sheet.png', battleScale: 1.15,
+      stats: { maxHp: 285, atk: 24, def: 18, mag: 14, mnd: 18, spd: 9 }, exp: 80, gold: { min: 38, max: 64 },
+      dropTable: [
+        { itemId: 'silentArmor', chance: .52 },
+        { itemId: 'stoneShard',  chance: .32 },
+        { itemId: 'moonstone',   chance: .16 }
+      ],
+      ai: [{ id: 'clubSmash', name: '静寂の制圧', kind: 'physical', weight: .45 }, { id: 'attack', name: '番人の一撃', kind: 'physical', weight: .35 }, { id: 'soulBolt', name: '沈黙の宣告', kind: 'magic', weight: .20 }]
+    },
+
     myrthi: {
       id: 'myrthi', name: 'ミルティ', enName: 'MYRTHI', kind: 'boss', encounter: 1,
       title: '黒紅の双刃戦姫', element: '物理', weaknesses: ['魔法'],
       sprite: 'assets/enemy-characters/myrthi/battle-idle-v1.jpg', spriteClass: 'myrthi-sprite',
-      stats: { maxHp: 380, atk: 19, def: 14, mag: 13, mnd: 16, spd: 26 },
+      stats: { maxHp: 880, atk: 50, def: 25, mag: 30, mnd: 26, spd: 26 },
       exp: 200, gold: { min: 150, max: 200 },
       dropTable: [
         { itemId: 'myrthi_fragment', chance: 1.0 },
