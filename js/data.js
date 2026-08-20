@@ -185,7 +185,7 @@ window.ARSENE_DATA = {
       skillUnlocks: {}
     },
     priest: {
-      id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。長く潜り続け、稼いで帰るのが得意。', signatureSkillId: 'heal', passiveUnlocks: { 1: 'p_tithe', 5: 'p_spirit', 10: 'p_healArt', 15: 'p_wardBarrier' }, growthStats: ['mnd', 'vit'], featureText: '精神・体力を伸ばしやすいジョブ。回復能力や耐久・支援に関係するパッシブを習得できる。',
+      id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。長く潜り続け、稼いで帰るのが得意。', signatureSkillId: 'heal', passiveUnlocks: { 1: 'p_tithe', 5: 'p_spirit', 10: 'p_healArt', 15: 'p_wardBarrier' }, traits: { mealDiscount: { rate: .50, rebirthStep: .08, max: .80, text: 'カズのまかない代 -50%' } }, growthStats: ['mnd', 'vit'], featureText: '精神・体力を伸ばしやすいジョブ。回復能力や耐久・支援に関係するパッシブを習得できる。',
       growth: { 1: { mnd: 2 }, 2: { maxMp: 5 }, 3: { mnd: 2 }, 4: { maxMp: 6 }, 5: { mnd: 2, maxHp: 5 }, 6: { maxMp: 8 }, 7: { mnd: 3 }, 8: { maxMp: 8 }, 9: { mnd: 3 }, 10: { mnd: 4, maxMp: 12 }, 11: { mnd: 3 }, 12: { maxMp: 14, maxHp: 5 }, 13: { mnd: 4 }, 14: { maxMp: 12 }, 15: { mnd: 4 }, 16: { maxMp: 16 }, 17: { mnd: 5 }, 18: { maxMp: 14 }, 19: { mnd: 5 }, 20: { mnd: 6, maxMp: 20, maxHp: 8 } },
       skillUnlocks: {}
     },
@@ -535,9 +535,9 @@ window.ARSENE_DATA = {
     p_spellBoost:  { id: 'p_spellBoost', name: '魔法増幅', nameEn: 'SPELL BOOST', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'magicDamageUp', rate: .10, rebirthStep: .03, max: .30 }, effectText: '攻撃魔法ダメージ +10%', description: '攻撃魔法の威力を高める。' },
     // 僧侶Lv1：長く潜って稼ぐ役どころ。戦闘で得るGOLDが増える。
     p_tithe:       { id: 'p_tithe', name: '施しの祈り', nameEn: 'TITHE', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'goldUp', rate: .40, rebirthStep: .12 }, effectText: '獲得GOLD +40%', description: '善を積む祈り。倒した怪異が遺すものを、余さず拾い上げる。' },
-    p_spirit:      { id: 'p_spirit', name: '精神力', nameEn: 'SPIRIT', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'statPercent', stat: 'mnd', rate: .05 }, effectText: '精神 +5%', description: '揺るがぬ心。精神が5%上昇する。' },
+    p_spirit:      { id: 'p_spirit', name: '祈祷', nameEn: 'PRAYER', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'mpRegen', rate: .03, rebirthStep: .01, max: .08 }, effectText: '自ターン開始時に最大MPの3%回復', description: '絶えず祈りを捧げる。自分のターン開始時、魔力がわずかに満ちる。' },
     p_healArt:     { id: 'p_healArt', name: '治癒術', nameEn: 'HEALING ART', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'healUp', rate: .10 }, effectText: 'HP回復量 +10%', description: '癒やしの術を高める。' },
-    p_wardBarrier: { id: 'p_wardBarrier', name: '托鉢', nameEn: 'ALMS', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'mealDiscount', rate: .50, rebirthStep: .08, max: .80 }, effectText: 'カズのまかない代 -50%', description: '喜捨を受ける身。カズのまかないを安く分けてもらえる。' },
+    p_wardBarrier: { id: 'p_wardBarrier', name: '魔法障壁', nameEn: 'WARD BARRIER', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'magicResist', rate: .10, rebirthStep: .03, max: .30 }, effectText: '被魔法ダメージ -10%', description: '魔を退ける薄い障壁を常に纏う。' },
     p_spellBlade:  { id: 'p_spellBlade', name: '魔剣適性', nameEn: 'SPELL BLADE', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'multiStatPercent', stats: { str: .03, mag: .03 } }, effectText: '力 +3% / 魔力 +3%', description: '刃と魔を同時に扱う適性。' },
     p_manaFlow:    { id: 'p_manaFlow', name: '魔力循環', nameEn: 'MANA FLOW', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'statPercent', stat: 'maxMp', rate: .05 }, effectText: '最大MP +5%', description: '魔力を絶えず巡らせる。最大MPが5%上昇する。' },
     p_elemental:   { id: 'p_elemental', name: '属性増幅', nameEn: 'ELEMENTAL BOOST', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'elementDamageUp', rate: .08 }, effectText: '属性攻撃ダメージ +8%', description: '属性を帯びた攻撃の威力を高める。' },

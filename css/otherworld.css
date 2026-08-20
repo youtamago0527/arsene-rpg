@@ -28,11 +28,6 @@ body.ow-glitch #menu-screen{animation:ow-shake .5s steps(2) 3}
 .ow-lenny-guide .hideout-art-shell>.hideout-fox-hotspot{z-index:902;outline:2px solid #50c8ff;outline-offset:4px;background:radial-gradient(circle,#42c7ff22 0 38%,#168dff12 58%,transparent 72%);box-shadow:0 0 18px #42c7ff,0 0 48px #125eff;animation:ow-guide-pulse 1.05s ease-in-out infinite}
 .ow-lenny-guide-label{position:absolute;z-index:903;left:50%;top:26.5%;translate:-50% 0;width:max-content;max-width:82%;padding:8px 15px;color:#e9f8ff;background:#051326ee;border:1px solid #48beff;border-radius:4px;font-size:11px;font-weight:800;letter-spacing:.08em;text-align:center;pointer-events:none;box-shadow:0 0 18px #168dff88}
 @keyframes ow-guide-pulse{50%{filter:brightness(1.55);box-shadow:0 0 30px #71d8ff,0 0 70px #274fff;transform:scale(1.035)}}
-@media(max-width:520px){
-  .ow-lenny-guide .hideout-art-shell .hideout-scene{z-index:901;overflow:visible}
-  .ow-lenny-guide .hideout-art-shell .hideout-scene .hideout-fox-hotspot{z-index:902;outline:2px solid #50c8ff;outline-offset:4px;background:radial-gradient(circle,#42c7ff22 0 38%,#168dff12 58%,transparent 72%);box-shadow:0 0 18px #42c7ff,0 0 48px #125eff;animation:ow-guide-pulse 1.05s ease-in-out infinite}
-  .ow-lenny-guide-label{position:fixed;left:50%;top:24%;z-index:903}
-}
 
 /* ── 異世界へ飲み込まれる遷移 ── */
 .ow-dive{position:fixed;z-index:12000;inset:0;display:grid;place-items:center;overflow:hidden;background:#01020a00;pointer-events:all;animation:ow-dive-dark 1.55s ease-in forwards}

@@ -352,7 +352,30 @@
     equippedPassiveList() { const slots = this.isPhantomThief() ? (this.profile.ptPassiveSlots || []) : (this.profile.equippedPassives || []); return slots.slice(0, this.passiveSlotCount()).map(id => D.skills[id]).filter(s => s?.type === 'PASSIVE'); }
     // 実際に効果を発揮する全パッシブ（現在ジョブ習得分＋装備分、重複除去）
     activePassives() { return [...new Map([...this.currentJobPassives(), ...this.equippedPassiveList()].map(s => [s.id, s])).values()]; }
-    passiveEffectRate(type) { return this.activePassives().reduce((sum, p) => p.passiveEffect?.type === type ? sum + this.passiveRate(p) : sum, 0); }
+    // ══ JOB特性 ═══════════════════════════════════════════════
+    // パッシブと違い「そのJOBに就いていること自体」で得る効果。
+    // 他JOBへ持ち出せない＝PHANTOM THIEFも盗めない。
+    // 僧侶のまかない割引のように、技術ではなく立場に由来するものを置く。
+    jobTraitRate(type, jobId = this.profile.currentJob) {
+      const t = D.jobs[jobId]?.traits?.[type]; if (!t) return 0;
+      const base = typeof t === 'number' ? t : (t.rate || 0);
+      if (!base) return 0;
+      const n = this.rebirthCount(jobId); if (!n) return base;
+      const step = t.rebirthStep != null ? t.rebirthStep : base * (this.gb().passiveRebirthStepRate ?? 0.4);
+      const grown = base + n * step;
+      return t.max != null ? Math.min(t.max, grown) : grown;
+    }
+    jobTraitList(jobId = this.profile.currentJob) {
+      const traits = D.jobs[jobId]?.traits || {};
+      return Object.entries(traits).map(([type, t]) => {
+        const base = typeof t === 'number' ? t : (t.rate || 0), cur = this.jobTraitRate(type, jobId);
+        const text = (typeof t === 'object' && t.text) ? t.text : type;
+        const label = text.replace(new RegExp(`${Math.round(base * 100)}%`), `${Math.round(cur * 100)}%`);
+        const gain = Math.round((cur - base) * 100);
+        return gain > 0 ? `${label}（転生 +${gain}%）` : label;
+      });
+    }
+    passiveEffectRate(type) { return this.activePassives().reduce((sum, p) => p.passiveEffect?.type === type ? sum + this.passiveRate(p) : sum, 0) + this.jobTraitRate(type); }
     setEquippedPassive(idx, skillId) {
       const key = this.isPhantomThief() ? 'ptPassiveSlots' : 'equippedPassives';
       const max = this.passiveSlotCount();
@@ -902,7 +925,17 @@
       if (this.player.hp <= 0) { await this.defeat(); return; } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands();
     }
     effectivePlayerStat(key) { const base = this.player.stats[key] || 0; return key === 'mag' && (this.player.buffs?.blueEcho || 0) > 0 ? base * 1.10 : base; }
-    async beginPlayerTurn() { if (this.characterHasSkill('blueEcho') && Math.random() < .20) { this.player.buffs.blueEcho = 2; this.flashTitle('BLUE ECHO', 'MAG +10% // 2 TURNS'); this.setLog('蒼の残響が魔力を高める！'); await this.battleSleep(260); } if ((this.player.buffs.regenerate || 0) > 0) { const heal = Math.max(1, Math.ceil(this.player.stats.maxHp * .08)), gained = Math.min(heal, this.player.stats.maxHp - this.player.hp); this.player.hp += gained; if (gained) { this.audio.sfx('heal'); this.floating($('#ren'), `+${gained}`, 'heal'); this.setLog(`リジェネレートでHPが${gained}回復！`); this.updateHUD(); await this.battleSleep(220); } } }
+    // 僧侶《祈祷》などのMP自然回復。ターン開始時に最大MPの一定割合を戻す。
+    async regenMpFromPassives() {
+      const rate = this.passiveEffectRate('mpRegen'); if (!rate) return;
+      const max = this.player.stats.maxMp;
+      const gain = Math.min(Math.max(1, Math.round(max * rate)), max - this.player.mp);
+      if (gain <= 0) return;
+      this.player.mp += gain; this.persistVitals();
+      this.floating($('#ren'), `MP+${gain}`, 'heal'); this.setLog(`祈りが魔力を満たす。MPが${gain}回復！`);
+      this.updateHUD(); await this.battleSleep(200);
+    }
+    async beginPlayerTurn() { await this.regenMpFromPassives(); if (this.characterHasSkill('blueEcho') && Math.random() < .20) { this.player.buffs.blueEcho = 2; this.flashTitle('BLUE ECHO', 'MAG +10% // 2 TURNS'); this.setLog('蒼の残響が魔力を高める！'); await this.battleSleep(260); } if ((this.player.buffs.regenerate || 0) > 0) { const heal = Math.max(1, Math.ceil(this.player.stats.maxHp * .08)), gained = Math.min(heal, this.player.stats.maxHp - this.player.hp); this.player.hp += gained; if (gained) { this.audio.sfx('heal'); this.floating($('#ren'), `+${gained}`, 'heal'); this.setLog(`リジェネレートでHPが${gained}回復！`); this.updateHUD(); await this.battleSleep(220); } } }
     endPlayerTurn() { if ((this.player.buffs.blueEcho || 0) > 0) this.player.buffs.blueEcho--; if ((this.player.buffs.regenerate || 0) > 0) this.player.buffs.regenerate--; if (this.player.buffs.defUp && this.turn > this.player.buffs.defUp.until) delete this.player.buffs.defUp; }
     damageFor(skill, enemy) {
       const s = this.player.stats, w = this.equippedWeapon(), balance = D.combatBalance;
