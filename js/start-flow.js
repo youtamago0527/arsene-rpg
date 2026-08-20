@@ -316,6 +316,7 @@
       this.game.applyStartingChoice(profile, this.chosenWeaponType, this.chosenJob);
       this.game.profile = profile;
       this.game.applyCharacterTheme(character.theme);
+      this.game.applyCharacterPresentation();
       this.game.saveProfile();
       this.writeMeta({ openingWatched: true });
       this.setScreen('game-start');
@@ -330,6 +331,7 @@
       await this.game.audio.unlock();
       this.game.profile = this.game.loadProfile();
       this.game.applyThemeForCharacter(this.game.profile.selectedCharacter, this.characters);
+      this.game.applyCharacterPresentation();
       this.game.profile.openingWatched = true;
       this.game.profile.flags.openingWatched = true;
       this.game.saveProfile();

@@ -182,7 +182,7 @@ window.ARSENE_DATA = {
       skillUnlocks: {}
     },
     priest: {
-      id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。', signatureSkillId: 'heal', passiveUnlocks: { 5: 'p_spirit', 10: 'p_healArt', 15: 'p_wardBarrier' }, growthStats: ['mnd', 'vit'], featureText: '精神・体力を伸ばしやすいジョブ。回復能力や耐久・支援に関係するパッシブを習得できる。',
+      id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。長く潜り続け、稼いで帰るのが得意。', signatureSkillId: 'heal', passiveUnlocks: { 1: 'p_tithe', 5: 'p_spirit', 10: 'p_healArt', 15: 'p_wardBarrier' }, growthStats: ['mnd', 'vit'], featureText: '精神・体力を伸ばしやすいジョブ。回復能力や耐久・支援に関係するパッシブを習得できる。',
       growth: { 1: { mnd: 2 }, 2: { maxMp: 5 }, 3: { mnd: 2 }, 4: { maxMp: 6 }, 5: { mnd: 2, maxHp: 5 }, 6: { maxMp: 8 }, 7: { mnd: 3 }, 8: { maxMp: 8 }, 9: { mnd: 3 }, 10: { mnd: 4, maxMp: 12 }, 11: { mnd: 3 }, 12: { maxMp: 14, maxHp: 5 }, 13: { mnd: 4 }, 14: { maxMp: 12 }, 15: { mnd: 4 }, 16: { maxMp: 16 }, 17: { mnd: 5 }, 18: { maxMp: 14 }, 19: { mnd: 5 }, 20: { mnd: 6, maxMp: 20, maxHp: 8 } },
       skillUnlocks: {}
     },
@@ -528,6 +528,8 @@ window.ARSENE_DATA = {
     p_amplify:     { id: 'p_amplify', name: '魔力増幅', nameEn: 'AMPLIFY', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'statPercent', stat: 'mag', rate: .05 }, effectText: '魔力 +5%', description: '魔力の流れを増幅する。魔力が5%上昇する。' },
     p_manaStore:   { id: 'p_manaStore', name: '魔力貯蔵', nameEn: 'MANA STORAGE', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'statPercent', stat: 'maxMp', rate: .10 }, effectText: '最大MP +10%', description: '体内に魔力を蓄える。最大MPが10%上昇する。' },
     p_spellBoost:  { id: 'p_spellBoost', name: '魔法増幅', nameEn: 'SPELL BOOST', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'magicDamageUp', rate: .10 }, effectText: '攻撃魔法ダメージ +10%', description: '攻撃魔法の威力を高める。' },
+    // 僧侶Lv1：長く潜って稼ぐ役どころ。戦闘で得るGOLDが増える。
+    p_tithe:       { id: 'p_tithe', name: '施しの祈り', nameEn: 'TITHE', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'goldUp', rate: .25 }, effectText: '獲得GOLD +25%', description: '善を積む祈り。倒した怪異が遺すものを、余さず拾い上げる。' },
     p_spirit:      { id: 'p_spirit', name: '精神力', nameEn: 'SPIRIT', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'statPercent', stat: 'mnd', rate: .05 }, effectText: '精神 +5%', description: '揺るがぬ心。精神が5%上昇する。' },
     p_healArt:     { id: 'p_healArt', name: '治癒術', nameEn: 'HEALING ART', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'healUp', rate: .10 }, effectText: 'HP回復量 +10%', description: '癒やしの術を高める。' },
     p_wardBarrier: { id: 'p_wardBarrier', name: '魔法障壁', nameEn: 'WARD BARRIER', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'magicResist', rate: .10 }, effectText: '被魔法ダメージ -10%', description: '魔を退ける薄い障壁を纏う。' },
@@ -555,6 +557,42 @@ window.ARSENE_DATA = {
     // ══ 閃き技（対応する攻撃の使用中に閃く）═══════════════════
     // weaponType / prerequisiteSkill / requiredWeaponLevel / sparkRate で
     // 派生ツリーを構成する。戦闘コードに技ごとの条件は書かない。
+
+    // ── 楽器の閃きツリー ──
+    // 技名は「やられた敵側の実況」。何をされたのか分かっていない。
+    recorderChoking: {
+      id: 'recorderChoking', name: 'リコーダーでチョーキングぅう！？', nameEn: 'RECORDER CHOKING', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'instrument', prerequisiteSkill: 'resonantNote', requiredWeaponLevel: 3, sparkRate: null,
+      mp: 0, kind: 'magical', damageType: 'magical', target: 'single',
+      power: 1.4, agiScale: 0, criticalModifier: 0.15,
+      powerText: '楽器攻撃性能×1.4', effectText: '敵単体／会心率+15%／MP消費なし',
+      description: '指穴を半分ずらして音程を歪ませる。ギター用の技法をリコーダーでやる者がいるとは誰も思わない。'
+    },
+    guitarGigRecorder: {
+      id: 'guitarGigRecorder', name: 'ギターギグからなぜリコーダーが！？', nameEn: 'FROM THE GIG BAG', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'instrument', prerequisiteSkill: 'recorderChoking', requiredWeaponLevel: 7, sparkRate: null,
+      mp: 5, kind: 'magical', damageType: 'magical', target: 'all',
+      power: 0.8, agiScale: 0, effect: { type: 'enemyConfuse', chance: .25, turns: 2 },
+      powerText: '楽器攻撃性能×0.8', effectText: '敵全体／25%で混乱（2ターン）',
+      description: 'ギターケースから取り出されたのはリコーダー。何が起きたのか理解できないまま、敵の足並みが崩れる。'
+    },
+    whoseRecorder: {
+      id: 'whoseRecorder', name: 'それって本当にお前のリコーダーなのか！？', nameEn: 'WHOSE RECORDER', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'instrument', prerequisiteSkill: 'guitarGigRecorder', requiredWeaponLevel: 12, sparkRate: null,
+      mp: 6, kind: 'magical', damageType: 'magical', target: 'single',
+      power: 1.8, agiScale: 0, effect: { type: 'enemyDefDown', rate: .25, turns: 2 },
+      powerText: '楽器攻撃性能×1.8', effectText: '敵単体／精神 -25%（2ターン）',
+      description: '名前欄のシールが剥がれかけている。誰のものか分からない旋律は、聴く者の心を揺さぶって守りを緩ませる。'
+    },
+    cleaningRodStrike: {
+      id: 'cleaningRodStrike', name: 'リコーダーじゃなくて付属のマクガイバーで攻撃だと！？', nameEn: 'CLEANING ROD STRIKE', source: 'weapon', type: 'ACTIVE',
+      weaponType: 'instrument', prerequisiteSkill: 'whoseRecorder', requiredWeaponLevel: 18, sparkRate: null,
+      mp: 10, kind: 'physical', damageType: 'physical', target: 'single',
+      power: 2.2, agiScale: 0, criticalModifier: 0.25,
+      powerText: '楽器攻撃性能×2.2（物理）', effectText: '敵単体／会心率+25%／楽器なのに物理攻撃',
+      description: '本体ではなく、掃除用の細長い棒で殴りかかる。音楽はどこへ行った。'
+    },
+
     doubleSlash: {
       id: 'doubleSlash', name: '二段斬り', nameEn: 'DOUBLE SLASH', source: 'weapon', type: 'ACTIVE',
       weaponType: 'sword', prerequisiteSkill: 'attack', requiredWeaponLevel: 3, sparkRate: null,

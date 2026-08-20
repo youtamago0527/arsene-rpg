@@ -203,7 +203,21 @@
       const entry = list.find(c => c.id === charId);
       return this.applyCharacterTheme(entry?.theme);
     }
-    setCharacterList(list) { this.characterList = Array.isArray(list) ? list : []; this.applyThemeForCharacter(this.profile?.selectedCharacter); }
+    selectedCharacterData() {
+      const list = this.characterList || [];
+      return list.find(c => c.id === (this.profile?.selectedCharacter || 'ren')) || list.find(c => c.id === 'ren') || list[0] || null;
+    }
+    applyCharacterPresentation() {
+      const c = this.selectedCharacterData(); if (!c) return;
+      const safeImage = String(c.image || '').replace(/["\\]/g, '\\$&');
+      const portrait = $('.hideout-player-portrait'), sceneActor = $('.hideout-ren');
+      if (portrait) { portrait.style.backgroundImage = `url("${safeImage}"), radial-gradient(circle,var(--character-secondary),#020713 72%)`; portrait.setAttribute('aria-label', `${c.name}のステータスと装備を確認`); }
+      if (sceneActor) sceneActor.style.backgroundImage = `url("${safeImage}")`;
+      const name = $('#menu-character-name'); if (name) name.textContent = c.name;
+      const phantom = $('#menu-phantom-id'); if (phantom) phantom.textContent = `PHANTOM // ${String(Math.max(1, (this.characterList || []).findIndex(x => x.id === c.id) + 1)).padStart(2, '0')}`;
+      this.applyCharacterTheme(c.theme);
+    }
+    setCharacterList(list) { this.characterList = Array.isArray(list) ? list : []; this.applyCharacterPresentation(); }
     // ══ ジョブ解放 / パッシブ ══════════════════════════════════
     unlockedJobIds() { return this.profile.unlockedJobs ||= [this.profile.currentJob || 'mage']; }
     isJobUnlocked(id) { return this.unlockedJobIds().includes(id); }
@@ -871,7 +885,8 @@
       const attackPower = this.attackPowerFor(wType, s);
       // 強化倍率はここには掛けない。attackPowerFor が読む装備側の攻撃力に既に反映済み。
       const power = (skill.power ?? skill.powerScale ?? 1);
-      const defDown = this.turn <= (enemy.defDownUntil || 0) ? .15 : 0;
+      // 防御低下は技側の rate を尊重する。魔法攻撃のときは精神が下がる。
+      const defDown = this.turn <= (enemy.defDownUntil || 0) ? (enemy.defDownRate || .15) : 0;
       const enemyDefStat = isMagicSkill ? (enemy.stats.mnd ?? enemy.stats.def) : enemy.stats.def;
       const effectiveDef = enemyDefStat * (1 - defDown) * (1 - (skill.ignoreDef || 0));
       let value = skill.kind === 'hybrid' ? (s.str || 0) * skill.strScale + (s.mag || 0) * skill.magScale - effectiveDef : attackPower * power + (s.agi || 0) * (skill.agiScale || 0) - effectiveDef;
@@ -938,7 +953,7 @@
         await this.battleSleep(hits > 1 ? 190 : 420); tEl.classList.remove('hit');
       } if (misses && !total) { this.setLog(`${target.name}${target.label}に攻撃を外した！`); ren.classList.remove('attacking','casting'); return; }
       const hitNames = Object.keys(perHit).map(uid => { const e = this.enemies.find(x => x.uid === uid); return e ? `${e.name}${e.label}` : ''; }).filter(Boolean); const targetLabel = skill.randomTarget && hitNames.length > 1 ? hitNames.join('・') : `${target.name}${target.label}`; this.setLog(`${criticals ? `CRITICAL ×${criticals}! ` : ''}${targetLabel}に${total}ダメージ！${hits > 1 ? `（${hits}HIT）` : ''}`); if (skill.kind === 'physical' || skill.kind === 'weapon') { delete this.player.buffs.atkCharge; delete this.player.buffs.magicCharge; } ren.classList.remove('attacking', 'casting');
-      if (skill.effect?.type === 'enemyDefDown' && target.hp > 0) { target.defDownUntil = this.turn + skill.effect.turns; this.setLog(`${target.name}${target.label}のDEFが15%低下！`); }
+      this.applySkillDebuff(skill, target);
       if (skill.effect?.type === 'selfDefDown') { this.player.defDownUntil = this.turn + skill.effect.turns - 1; this.setLog('捨て身斬りの反動でRENのDEFが20%低下！'); }
       // このターンに攻撃した敵のうち、倒れたものをまとめて処理する（最終targetも含む）
       const defeated = [];
@@ -954,6 +969,21 @@
       if (defeated.length) await this.battleSleep(600);
     }
     async applySelfSkill(skill) { this.flashTitle(skill.name, skill.nameEn || 'SELF SKILL'); const effect = skill.effect || {}, ren = $('#ren'); ren.classList.add('casting'); await this.battleSleep(260); if (effect.type === 'mpRecover') { const amount = Math.max(1, Math.ceil(this.player.stats.maxMp * effect.maxMpRate)), gained = Math.min(amount, this.player.stats.maxMp - this.player.mp); this.player.mp += gained; this.audio.sfx('heal'); this.floating(ren, `MP +${gained}`, 'heal'); this.setLog(`精神集中でMPが${gained}回復！`); } if (effect.type === 'hpRecover') { const baseHeal = effect.baseHeal ?? effect.base ?? 0, spiritScaling = effect.spiritScaling ?? effect.mndScale ?? 0; const amount = Math.max(1, Math.round((baseHeal + this.player.stats.mnd * spiritScaling) * (1 + this.passiveEffectRate('healUp') + this.equipmentEffectRate('healingPowerPercent')) * this.traitHealMult())), gained = Math.min(amount, this.player.stats.maxHp - this.player.hp); this.player.hp += gained; this.audio.sfx('heal'); this.floating(ren, `+${gained}`, 'heal'); this.setLog(`ヒールでHPが${gained}回復！`); } if (effect.type === 'regenerate') { this.player.buffs.regenerate = effect.turns + 1; this.audio.sfx('heal'); this.setLog('リジェネレート！ 3ターンの間、HPが回復する。'); } if (effect.type === 'selfMagicCharge') { this.player.buffs.magicCharge = true; this.audio.sfx('magic'); this.floating(ren, 'MAGIC CHARGE', 'heal'); this.setLog('魔力装填！ 次の物理攻撃に魔力が乗る。'); } if (effect.type === 'selfAtkCharge') { this.player.buffs.atkCharge = { rate: effect.rate }; this.audio.sfx('heal'); this.floating(ren, `ATK +`+Math.round(effect.rate*100)+`%`, 'heal'); this.setLog('ちからため！ 次の物理攻撃の威力が上がる。'); } if (effect.type === 'selfDefUp') { this.player.buffs.defUp = { rate: effect.rate, until: this.turn + effect.turns }; this.audio.sfx('heal'); this.floating(ren, `DEF +${Math.round(effect.rate * 100)}%`, 'heal'); this.setLog(`雄叫びでDEFが${Math.round(effect.rate * 100)}%上昇！ ${effect.turns}ターン持続。`); } this.persistVitals(); this.updateHUD(); await this.battleSleep(350); ren.classList.remove('casting'); }
+    // 技が持つ敵への弱体・状態異常をまとめて適用する。
+    // 単体攻撃も全体攻撃もここを通すので、片方だけ効かない事故が起きない。
+    applySkillDebuff(skill, target) {
+      const e = skill?.effect; if (!e || !target || target.hp <= 0) return;
+      if (e.type === 'enemyDefDown') {
+        const r = e.rate || .15;
+        target.defDownUntil = this.turn + (e.turns || 2); target.defDownRate = r;
+        this.setLog(`${target.name}${target.label}の${skill.damageType === 'magical' ? '精神' : 'DEF'}が${Math.round(r * 100)}%低下！`);
+      }
+      // 混乱：一定ターン、行動が乱れて攻撃をしそこねることがある
+      if (e.type === 'enemyConfuse' && Math.random() < (e.chance ?? 1)) {
+        target.confuseUntil = this.turn + (e.turns || 2);
+        this.setLog(`${target.name}${target.label}は混乱した！`);
+      }
+    }
     async playerAttackAll(skill) {
       const targets = this.enemies.filter(e => e.alive); if (!targets.length) return;
       this.setLog(`${skill.name}！`); this.flashTitle(skill.name, 'AREA MAGIC'); this.audio.sfx('magic');
@@ -965,6 +995,8 @@
         const d = this.damageFor(skill, target); target.hp = target.cannotDefeat ? Math.max(1, target.hp - d.value) : Math.max(0, target.hp - d.value);
         this.floating(el, d.value, d.critical ? 'critical' : 'damage'); this.audio.sfx(d.critical ? 'critical' : 'enemyHit'); this.updateHUD();
         await this.battleSleep(220); el.classList.remove('hit');
+        // 全体攻撃でも状態異常・弱体は個別に判定する（単体攻撃と同じ規則）
+        if (target.hp > 0) this.applySkillDebuff(skill, target);
         if (target.hp <= 0) { target.alive = false; this.audio.sfx('defeat'); el.classList.add('defeated'); target.rolledDrops = this.rollDrops(target); target.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); if (item.rarity === 'epic' || item.rarity === 'legendary') this.announceRareDrop(item); } }); this.grantEnemyReward(target); }
       }
       if (this.player.buffs?.atkCharge && skill.kind === 'physical') delete this.player.buffs.atkCharge;
@@ -973,6 +1005,14 @@
     }
     async magicProjectile(targetEl) { const field = $('#battlefield').getBoundingClientRect(), from = $('#weapon-layer').getBoundingClientRect(), to = targetEl.getBoundingClientRect(), orb = document.createElement('i'), sx = from.right - field.left, sy = from.top - field.top + from.height * .22, ex = to.left - field.left + to.width * .48, ey = to.top - field.top + to.height * .58; orb.className = 'magic-projectile'; orb.style.left = `${sx}px`; orb.style.top = `${sy}px`; orb.style.setProperty('--shot-x', `${ex - sx}px`); orb.style.setProperty('--shot-y', `${ey - sy}px`); $('#battlefield').appendChild(orb); await this.battleSleep(460); orb.remove(); }
     async enemyAttack(enemy) {
+      // 混乱中は半々で行動を空振りする
+      if (this.turn <= (enemy.confuseUntil || 0) && Math.random() < 0.5) {
+        const el = document.getElementById(enemy.uid);
+        this.setLog(`${enemy.name}${enemy.label}は混乱していて動けない！`);
+        this.floating(el, '混乱', 'miss');
+        await this.battleSleep(360);
+        return;
+      }
       if (enemy.kind === 'boss') { await this.bossAttack(enemy); return; }
       let r = Math.random(), chosen = enemy.ai[enemy.ai.length - 1], acc = 0;
       for (const s of enemy.ai) { acc += s.weight; if (r < acc) { chosen = s; break; } }
@@ -1009,7 +1049,9 @@
     async enemyOnlyTurn() { for (const e of this.enemies.filter(e => e.alive)) { await this.enemyAttack(e); if (this.player.hp <= 0) { await this.defeat(); return; } await this.battleSleep(300); } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands(); }
 
     grantEnemyReward(enemy) {
-      const exp = enemy.exp || 0, gold = roll(enemy.gold?.min ?? 0, enemy.gold?.max ?? 0), drops = {};
+      // 僧侶《施しの祈り》などのGOLD増加パッシブをここで反映する
+      const exp = enemy.exp || 0, baseGold = roll(enemy.gold?.min ?? 0, enemy.gold?.max ?? 0);
+      const gold = Math.round(baseGold * (1 + this.passiveEffectRate('goldUp'))), drops = {};
       (enemy.rolledDrops || []).forEach(([id, n]) => { drops[id] = (drops[id] || 0) + n; });
       const levels = this.applyRewards({ exp, gold, drops });
       this.battleRewards.exp += exp; this.battleRewards.gold += gold;

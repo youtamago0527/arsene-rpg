@@ -179,3 +179,12 @@
 .spark-cutin span{font:700 8px/1 Cinzel;letter-spacing:.24em;color:#ffc766}
 .ren.sparking .ren-sprite{animation:sparkGlow .5s ease-in-out infinite}
 @media(max-width:480px){.spark-cutin{padding:11px 20px}.spark-cutin b{font-size:20px}.spark-cutin::before{width:240px;height:240px}}
+
+/* 選択キャラクターに合わせた戦闘UIの装飾色 */
+.battle-console{border-top-color:var(--character-border)}
+.turn-info{border-right-color:color-mix(in srgb,var(--character-border) 65%,transparent)}
+.turn-info span,.command-panel button span{color:var(--character-text-accent)}
+.battle-log{border-left-color:var(--character-primary);background:color-mix(in srgb,var(--character-surface) 72%,#020713)}
+.command-panel button{border-color:color-mix(in srgb,var(--character-border) 72%,#203047);background:linear-gradient(100deg,var(--character-surface),color-mix(in srgb,var(--character-secondary) 55%,#030713))}
+.command-panel button i{background:var(--character-primary);box-shadow:0 0 8px var(--character-glow)}
+.command-panel button:hover,.command-panel button:focus-visible{background:linear-gradient(100deg,var(--character-secondary),var(--character-primary));border-color:var(--character-text-accent)}
