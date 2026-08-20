@@ -10,6 +10,22 @@ window.ARSENE_DATA = {
   ],
   // 武器種ごとの通常攻撃。未定義の武器種は 'attack'（剣と同じ物理攻撃）にフォールバック。
   basicAttackByWeaponType: { sword: 'attack', staff: 'staffFireball', martial: 'martialStrike' },
+  // ══════════════════════════════════════════════════════════════
+  // 武器種ごとの攻撃性能スケーリング。新武器種はここへ1行足すだけ。
+  //   scaling      : 基礎能力をどの割合で攻撃性能へ変換するか
+  //   powerKey     : 加算する装備側の戦闘能力キー
+  //   damageType   : physical / magical（防御側の参照が変わる）
+  // ══════════════════════════════════════════════════════════════
+  weaponScaling: {
+    sword:   { scaling: { str: 1.0 },            powerKey: 'attackPower',      damageType: 'physical' },
+    martial: { scaling: { str: 0.5, agi: 0.5 },  powerKey: 'attackPower',      damageType: 'physical' },
+    staff:   { scaling: { mag: 1.0 },            powerKey: 'magicAttackPower', damageType: 'magical'  }
+  },
+  // 防御性能：物理は 体力＋装備防御力 / 魔法は 精神＋装備魔法防御力
+  defenseScaling: {
+    physical: { stat: 'vit', powerKey: 'defensePower' },
+    magical:  { stat: 'mnd', powerKey: 'magicDefensePower' }
+  },
   // 武器種ごとの技コマンド名。閃いた技はここに集約される。
   weaponArtsCommand: {
     sword: { name: '剣技', nameEn: 'SWORD ARTS' },
@@ -111,22 +127,22 @@ window.ARSENE_DATA = {
     warrior: {
       id: 'warrior', name: '戦士', nameEn: 'WARRIOR', description: '力と耐久力で正面から怪異を打ち破る。', signatureSkillId: 'powerCharge', passiveUnlocks: { 5: 'p_might', 10: 'p_tough', 15: 'p_instinct' }, growthStats: ['str', 'vit'], featureText: '力・体力を伸ばしやすいジョブ。物理攻撃・HP・耐久力などの脳筋系パッシブを習得できる。',
       growth: { 1: { str: 2 }, 2: { maxHp: 5 }, 3: { vit: 1 }, 4: { str: 2, vit: 1 }, 5: { maxHp: 8 }, 6: { str: 2 }, 7: { maxHp: 8, vit: 2 }, 8: { str: 3 }, 9: { vit: 2 }, 10: { str: 4, maxHp: 12 }, 11: { str: 2 }, 12: { maxHp: 10, vit: 2 }, 13: { str: 3 }, 14: { vit: 3, maxHp: 8 }, 15: { str: 4 }, 16: { maxHp: 12, vit: 3 }, 17: { str: 4 }, 18: { vit: 4 }, 19: { str: 5 }, 20: { str: 6, maxHp: 18, vit: 5 } },
-      skillUnlocks: { 3: 'powerStrike', 6: 'breakEdge', 9: 'recklessEdge', 12: 'warCry', 16: 'titanBlow' }
+      skillUnlocks: {}
     },
     mage: {
       id: 'mage', name: '魔導士', nameEn: 'MAGE', description: '魔力を操り、単体・全体魔法を使い分ける。', signatureSkillId: 'meditation', passiveUnlocks: { 5: 'p_amplify', 10: 'p_manaStore', 15: 'p_spellBoost' }, growthStats: ['mag'], featureText: '魔力を伸ばしやすいジョブ。MP上昇・魔法威力などの魔法系パッシブを習得できる。',
       growth: { 1: { mag: 2 }, 2: { maxMp: 5 }, 3: { mag: 2 }, 4: { maxMp: 6 }, 5: { mag: 2 }, 6: { maxMp: 8 }, 7: { mag: 3 }, 8: { maxMp: 8 }, 9: { mag: 3 }, 10: { mag: 4, maxMp: 12 }, 11: { mag: 3 }, 12: { maxMp: 14 }, 13: { mag: 4 }, 14: { maxMp: 12 }, 15: { mag: 4 }, 16: { maxMp: 16 }, 17: { mag: 5 }, 18: { maxMp: 14 }, 19: { mag: 5 }, 20: { mag: 6, maxMp: 20 } },
-      skillUnlocks: { 3: 'blueFlame', 6: 'manaBurst', 9: 'astralRay', 12: 'arcaneExplosion', 16: 'voidNova' }
+      skillUnlocks: {}
     },
     martialArtist: {
       id: 'martialArtist', name: '武道家', nameEn: 'MARTIAL ARTIST', description: '速度と多段攻撃でクリティカルを狙う。', signatureSkillId: 'burstFist', passiveUnlocks: { 5: 'p_gale', 10: 'p_vitalAim', 15: 'p_fortune' }, growthStats: ['agi', 'luk'], featureText: '素早さ・運を伸ばしやすいジョブ。会心率・素早い行動などに関係するパッシブを習得できる。',
       growth: { 1: { agi: 2 }, 2: { str: 2, maxHp: 4 }, 3: { agi: 2 }, 4: { str: 2 }, 5: { agi: 3 }, 6: { str: 2 }, 7: { critBonus: .02 }, 8: { agi: 3, str: 2 }, 9: { critBonus: .03 }, 10: { critBonus: .05, agi: 3 }, 11: { agi: 3 }, 12: { str: 3, critBonus: .02 }, 13: { agi: 4 }, 14: { str: 3 }, 15: { agi: 4, critBonus: .03 }, 16: { str: 4 }, 17: { agi: 4 }, 18: { str: 4, critBonus: .03 }, 19: { agi: 5 }, 20: { critBonus: .07, agi: 5, str: 4 } },
-      skillUnlocks: { 3: 'doubleStrike', 6: 'breakFist', 9: 'shadowRush', 12: 'swiftBarrage', 16: 'shadowSeven' }
+      skillUnlocks: {}
     },
     priest: {
       id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。', signatureSkillId: 'heal', passiveUnlocks: { 5: 'p_spirit', 10: 'p_healArt', 15: 'p_wardBarrier' }, growthStats: ['mnd', 'vit'], featureText: '精神・体力を伸ばしやすいジョブ。回復能力や耐久・支援に関係するパッシブを習得できる。',
       growth: { 1: { mnd: 2 }, 2: { maxMp: 5 }, 3: { mnd: 2 }, 4: { maxMp: 6 }, 5: { mnd: 2, maxHp: 5 }, 6: { maxMp: 8 }, 7: { mnd: 3 }, 8: { maxMp: 8 }, 9: { mnd: 3 }, 10: { mnd: 4, maxMp: 12 }, 11: { mnd: 3 }, 12: { maxMp: 14, maxHp: 5 }, 13: { mnd: 4 }, 14: { maxMp: 12 }, 15: { mnd: 4 }, 16: { maxMp: 16 }, 17: { mnd: 5 }, 18: { maxMp: 14 }, 19: { mnd: 5 }, 20: { mnd: 6, maxMp: 20, maxHp: 8 } },
-      skillUnlocks: { 3: 'heal', 6: 'holyLight', 9: 'regenerate', 12: 'greatHeal', 16: 'divineSmite' }
+      skillUnlocks: {}
     },
     // 1面クリアで解放される新ジョブ。上位職ではなく「新しい選択肢」。
     magicKnight: {
@@ -149,13 +165,13 @@ window.ARSENE_DATA = {
       id: 'arcaneMaestro', name: '魔奏士', nameEn: 'ARCANE MAESTRO', description: '魔法と回復を極めた上位職。ゼナカド撃破後、魔導士と僧侶をLv20にすると解放。',
       unlockCondition: { bossDefeated: 'zenacad', jobLevels: { mage: 20, priest: 20 } },
       growth: { 1: { mag: 3 }, 2: { mnd: 3 }, 3: { mag: 3, maxMp: 8 }, 4: { mnd: 3 }, 5: { mag: 4, maxMp: 8 }, 6: { mnd: 4 }, 7: { mag: 4 }, 8: { mnd: 4, maxMp: 10 }, 9: { mag: 5 }, 10: { mnd: 5, maxMp: 12 }, 11: { mag: 4 }, 12: { mnd: 4, maxMp: 12 }, 13: { mag: 5 }, 14: { mnd: 5 }, 15: { mag: 6, maxMp: 14 }, 16: { mnd: 6 }, 17: { mag: 6 }, 18: { mnd: 6, maxMp: 16 }, 19: { mag: 7 }, 20: { mag: 8, mnd: 8, maxMp: 24 } },
-      skillUnlocks: { 3: 'resonantSpell', 6: 'celestialNote', 9: 'divineMelody', 12: 'grandOrchestra', 16: 'cosmicAria' }
+      skillUnlocks: {}
     },
     dualBlade: {
       id: 'dualBlade', name: '双刃士', nameEn: 'DUAL BLADE', description: '速度と多段クリティカルを極めた上位職。ミルティ撃破後、戦士と武道家をLv20にすると解放。',
       unlockCondition: { bossDefeated: 'myrthi', jobLevels: { warrior: 20, martialArtist: 20 } },
       growth: { 1: { str: 3, agi: 2 }, 2: { critBonus: .02 }, 3: { str: 3, agi: 2 }, 4: { critBonus: .02 }, 5: { str: 4, agi: 3 }, 6: { critBonus: .03 }, 7: { str: 3, agi: 3 }, 8: { critBonus: .03 }, 9: { str: 4, agi: 3 }, 10: { critBonus: .05, str: 5, agi: 3 }, 11: { str: 4, agi: 3 }, 12: { critBonus: .03, str: 4 }, 13: { agi: 4, str: 3 }, 14: { critBonus: .03, agi: 4 }, 15: { str: 5, agi: 5 }, 16: { critBonus: .04 }, 17: { str: 5, agi: 4 }, 18: { critBonus: .04, str: 4 }, 19: { str: 6, agi: 5 }, 20: { critBonus: .08, str: 7, agi: 6, maxHp: 15 } },
-      skillUnlocks: { 3: 'twistingEdge', 6: 'sunderDance', 9: 'crimsonRush', 12: 'dualEdgeBarrage', 16: 'battleDance' }
+      skillUnlocks: {}
     }
   },
   jobCommandAbilities: {
@@ -391,7 +407,7 @@ window.ARSENE_DATA = {
     myrthi_metro_recipe: { id: 'myrthi_metro_recipe', seriesId: 'myrthi', craftCategory: 'boss', resultItemId: 'myrthi_metro', resultCount: 1, gold: 800, materials: [{ itemId: 'myrthi_core', count: 2 }, { itemId: 'myrthi_fragment', count: 6 }, { itemId: 'spectralDust', count: 5 }] }
   },
   skills: {
-    attack: { id: 'attack', name: 'たたかう', mp: 0, kind: 'weapon', target: 'single', power: 2, agiScale: 0 },
+    attack: { id: 'attack', name: 'たたかう', mp: 0, kind: 'weapon', weaponType: null, target: 'single', power: 1.0, agiScale: 0, damageType: 'physical', powerText: '攻撃性能×1.0' },
 
     // ══ 武器カテゴリ別の通常攻撃 ══════════════════════════════
     // 装備武器の weaponType から basicAttackByWeaponType で引かれる。
@@ -399,7 +415,7 @@ window.ARSENE_DATA = {
     // 3種の通常攻撃は同一の計算式（武器power × 参照ステータス）。参照する能力だけが異なる。
     //   剣 → 力 ／ 爪 → 素早さ ／ 杖 → 魔力
     martialStrike: { id: 'martialStrike', name: 'たたかう', nameEn: 'MARTIAL STRIKE', mp: 0, kind: 'weapon', weaponType: 'martial', target: 'single', agiScale: 0, damageType: 'physical', powerText: 'AGI依存', description: '拳と爪による打撃。素早さを参照する。' },
-    staffFireball: { id: 'staffFireball', name: 'ファイアーボール', nameEn: 'FIREBALL', mp: 0, kind: 'weapon', weaponType: 'staff', target: 'single', agiScale: 0, damageType: 'magical', element: 'fire', powerText: 'MAG依存', effectText: '炎属性／MP消費なし', description: '杖に灯した炎弾を撃ち出す。杖の通常攻撃。' },
+    staffFireball: { id: 'staffFireball', name: 'ファイアーボール', nameEn: 'FIREBALL', mp: 0, kind: 'weapon', weaponType: 'staff', target: 'single', power: 1.0, agiScale: 0, damageType: 'magical', element: 'fire', powerText: '魔法攻撃性能×1.0', effectText: '炎属性／MP消費なし', description: '杖に灯した炎弾を撃ち出す。杖の通常攻撃。' },
 
     // ══ ジョブパッシブ（Lv5 / 10 / 15 で習得。習得後は永久）════
     // passiveEffect の type で効果を分類し、戦闘コードは type だけを見る。
@@ -535,7 +551,7 @@ window.ARSENE_DATA = {
     doubleStrike: { id: 'doubleStrike', name: '連撃', nameEn: 'DOUBLE STRIKE', source: 'job', jobId: 'martialArtist', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 6, power: 2.0, hits: 2, agiScale: 0, powerText: 'ATK×2.0×2回', effectText: '2回攻撃／各攻撃で個別クリティカル判定', description: '間を置かず二撃を叩き込む。' },
     breakFist: { id: 'breakFist', name: '崩拳', nameEn: 'BREAK FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 8, power: 3.8, ignoreDef: .40, agiScale: 0, powerText: 'ATK×3.8', effectText: '敵DEFを40%無視', description: '防御の隙間へ衝撃を通し、敵DEFの一部を無視する。' },
     shadowRush: { id: 'shadowRush', name: '無影連舞', nameEn: 'SHADOW RUSH', source: 'job', jobId: 'martialArtist', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 3, agiScale: 0, powerText: 'ATK×2.0×3回', effectText: '3回攻撃／各攻撃で個別クリティカル判定', description: '影すら残さない三連撃。' },
-    heal: { id: 'heal', name: 'ヒール', nameEn: 'HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 3, type: 'ACTIVE', kind: 'support', target: 'self', mp: 6, powerText: 'MND×3.0＋20', effect: { type: 'hpRecover', mndScale: 3, base: 20 }, effectText: 'MND参照で自身のHP回復', description: '精神力を癒やしの力へ変え、自身のHPを回復する。' },
+    heal: { id: 'heal', name: 'ヒール', nameEn: 'HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 3, type: 'ACTIVE', kind: 'support', target: 'self', mp: 6, powerText: 'MND×3.0＋20', effect: { type: 'hpRecover', baseHeal: 30, spiritScaling: 1.0 }, effectText: '精神を参照して自身のHPを回復', description: '精神力を癒やしの力へ変え、自身のHPを回復する。' },
     holyLight: { id: 'holyLight', name: 'ホーリーライト', nameEn: 'HOLY LIGHT', source: 'job', jobId: 'priest', unlockJobLevel: 6, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 8, power: 4.0, agiScale: 0, elementId: 'light', powerText: 'MAG×4.0', effectText: '敵単体へ光属性魔法攻撃', description: '聖なる光を放ち、敵単体へ魔法ダメージを与える。' },
     regenerate: { id: 'regenerate', name: 'リジェネレート', nameEn: 'REGENERATE', source: 'job', jobId: 'priest', unlockJobLevel: 9, type: 'ACTIVE', kind: 'support', target: 'self', mp: 10, powerText: '最大HPの12%×3回', effect: { type: 'regenerate', maxHpRate: .12, turns: 3 }, effectText: '3ターン、ターン開始時にHP回復', description: '継続する癒やしの力を自身へ付与する。' },
     warCry: { id: 'warCry', name: '雄叫び', nameEn: 'WAR CRY', source: 'job', jobId: 'warrior', unlockJobLevel: 12, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 4, powerText: '自身DEF +35%／3T', effect: { type: 'selfDefUp', rate: .35, turns: 3 }, effectText: '自身のDEF +35%／3ターン、CT4', description: '魂の底から放つ雄叫び。一時的に防御力を大幅に高める。' },
@@ -711,20 +727,20 @@ window.ARSENE_DATA = {
     myrthi_metro: { id: 'myrthi_metro', name: '第二奏のメトロノーム', nameEn: 'SECOND BEAT METRO', category: 'equipment', slot: 'accessory', rarity: 'legendary', stars: 5, seriesId: 'myrthi', description: '正確なリズムを刻み続けるメトロノーム。着けた者のあらゆる動作を研ぎ澄ます。' }
   },
   weapons: {
-    mageStaff: { id: 'mageStaff', name: '魔導士の杖', weaponType: 'staff', weaponSprite: 'staff_01', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.2, bonuses: { mag: 2 } },
+    mageStaff: { id: 'mageStaff', name: '魔導士の杖', weaponType: 'staff', weaponSprite: 'staff_01', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 4, bonuses: {} },
     shadowWand: { id: 'shadowWand', name: 'シャドウワンド', weaponType: 'staff', weaponSprite: 'staff_shadow', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.45, bonuses: { mag: 4, mnd: 1 } },
-    phantomSword: { id: 'phantomSword', name: '青影の剣', weaponType: 'sword', weaponSprite: 'sword_01', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 2, bonuses: { str: 2 } },
-    ironClaw: { id: 'ironClaw', name: '鉄の爪', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', damageStat: 'agi', power: 2, bonuses: { agi: 2 } },
+    phantomSword: { id: 'phantomSword', name: '青影の剣', weaponType: 'sword', weaponSprite: 'sword_01', battleSprite: null, attackMotion: 'slash', attackPower: 5, bonuses: {} },
+    ironClaw: { id: 'ironClaw', name: '鉄の爪', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 3, bonuses: { agi: 2 } },
     // ── D1 通常工房武器 ──
-    kurogane_sword: { id: 'kurogane_sword', name: '黒鉄剣クロウ', weaponType: 'sword', weaponSprite: 'sword_01', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 2.6, bonuses: { str: 2 } },
-    fangClaw: { id: 'fangClaw', name: '鋼爪ファング', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', damageStat: 'agi', power: 2.4, bonuses: { agi: 4 }, effects: { criticalRateBonus: 0.02 } },
-    runeFlameStaff: { id: 'runeFlameStaff', name: '緋炎杖ルーン', weaponType: 'staff', weaponSprite: 'staff_flame', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.6, bonuses: { mag: 8, maxMp: 5 } },
-    celesStaff: { id: 'celesStaff', name: '聖杖セレス', weaponType: 'staff', weaponSprite: 'staff_01', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.3, bonuses: { mag: 4, mnd: 6 } },
+    kurogane_sword: { id: 'kurogane_sword', name: '黒鉄剣クロウ', weaponType: 'sword', weaponSprite: 'sword_01', battleSprite: null, attackMotion: 'slash', attackPower: 10, bonuses: {} },
+    fangClaw: { id: 'fangClaw', name: '鋼爪ファング', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 6, bonuses: { agi: 2 }, effects: { criticalRateBonus: 0.02 } },
+    runeFlameStaff: { id: 'runeFlameStaff', name: '緋炎杖ルーン', weaponType: 'staff', weaponSprite: 'staff_flame', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 10, bonuses: { maxMp: 5 } },
+    celesStaff: { id: 'celesStaff', name: '聖杖セレス', weaponType: 'staff', weaponSprite: 'staff_01', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 6, magicDefensePower: 4, bonuses: {}, effects: { healingPowerPercent: 0.05 } },
     // ── D2 通常工房武器 ──
-    fenrirSword: { id: 'fenrirSword', name: '黒狼剣フェンリル', weaponType: 'sword', weaponSprite: 'sword_01', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 3.4, bonuses: { str: 4 } },
-    yashaClaw: { id: 'yashaClaw', name: '夜叉爪アギト', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', damageStat: 'agi', power: 3.0, bonuses: { agi: 6 }, effects: { criticalRateBonus: 0.03 } },
-    ignisStaff: { id: 'ignisStaff', name: '獄炎杖イグニス', weaponType: 'staff', weaponSprite: 'staff_flame', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.3, bonuses: { mag: 15, maxMp: 10 } },
-    luminaStaff: { id: 'luminaStaff', name: '月白杖ルミナ', weaponType: 'staff', weaponSprite: 'staff_sun', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.0, bonuses: { mag: 7, mnd: 12, maxMp: 8 } },
+    fenrirSword: { id: 'fenrirSword', name: '黒狼剣フェンリル', weaponType: 'sword', weaponSprite: 'sword_01', battleSprite: null, attackMotion: 'slash', attackPower: 20, bonuses: {} },
+    yashaClaw: { id: 'yashaClaw', name: '夜叉爪アギト', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 13, bonuses: { agi: 3 }, effects: { criticalRateBonus: 0.03 } },
+    ignisStaff: { id: 'ignisStaff', name: '獄炎杖イグニス', weaponType: 'staff', weaponSprite: 'staff_flame', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 20, bonuses: { maxMp: 10 } },
+    luminaStaff: { id: 'luminaStaff', name: '月白杖ルミナ', weaponType: 'staff', weaponSprite: 'staff_sun', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 12, magicDefensePower: 8, bonuses: { maxMp: 8 }, effects: { healingPowerPercent: 0.07 } },
     flameStaff: { id: 'flameStaff', name: 'フレイムスタッフ', weaponType: 'staff', weaponSprite: 'staff_flame', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.6, bonuses: { mag: 6 }, grantsSkillId: 'flame' },
     wizardRod: { id: 'wizardRod', name: 'ウィザードロッド', weaponType: 'staff', weaponSprite: 'staff_wizard', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.9, bonuses: { mag: 9 }, grantsSkillId: 'fireball' },
     sunStaff: { id: 'sunStaff', name: '太陽の杖', weaponType: 'staff', weaponSprite: 'staff_sun', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.2, bonuses: { mag: 14 } },
@@ -759,39 +775,39 @@ window.ARSENE_DATA = {
   armors: {
     roughHood: { id: 'roughHood', name: '粗削りフード', slot: 'head', bonuses: { vit: 1, mnd: 1 } },
     // ══ D1 通常工房防具（effects は装備特殊効果。加算で累積する）══
-    kurogane_helm:   { id: 'kurogane_helm',   name: '黒鉄の額当て', slot: 'head', bonuses: { vit: 2, def: 4 } },
-    kurogane_armor:  { id: 'kurogane_armor',  name: '黒鉄の戦装',   slot: 'body', bonuses: { def: 8, maxHp: 15 } },
-    mightGauntlet:   { id: 'mightGauntlet',   name: '剛腕の篭手',   slot: 'arms', bonuses: { str: 3 } },
-    ironKnightBoots: { id: 'ironKnightBoots', name: '鉄騎のブーツ', slot: 'feet', bonuses: { def: 3, maxHp: 8 } },
-    galeHeadband:    { id: 'galeHeadband',    name: '疾風の鉢巻',   slot: 'head', bonuses: { agi: 3, luk: 2 } },
-    fistGi:          { id: 'fistGi',          name: '拳闘の胴衣',   slot: 'body', bonuses: { def: 5, agi: 2 } },
-    galeTekko:       { id: 'galeTekko',       name: '疾風の手甲',   slot: 'arms', bonuses: { str: 2 }, effects: { criticalRateBonus: 0.02 } },
-    lightGreaves:    { id: 'lightGreaves',    name: '軽身の脚甲',   slot: 'feet', bonuses: { agi: 4 } },
-    arcaneHood:      { id: 'arcaneHood',      name: '魔導のフード', slot: 'head', bonuses: { mag: 3, maxMp: 4 } },
-    wisdomRobe:      { id: 'wisdomRobe',      name: '叡智のローブ', slot: 'body', bonuses: { mag: 4, mnd: 2 } },
-    arcaneBangle:    { id: 'arcaneBangle',    name: '魔導の腕輪',   slot: 'arms', bonuses: { mag: 3 } },
-    stargazeShoes:   { id: 'stargazeShoes',   name: '星詠みの靴',   slot: 'feet', bonuses: { agi: 2, maxMp: 3 } },
-    prayerHat:       { id: 'prayerHat',       name: '白祈の帽子',   slot: 'head', bonuses: { mnd: 3, maxMp: 3 } },
-    prayerVestment:  { id: 'prayerVestment',  name: '祈祷の法衣',   slot: 'body', bonuses: { def: 4, mnd: 4, maxHp: 8 } },
-    healingBangle:   { id: 'healingBangle',   name: '癒しの腕輪',   slot: 'arms', bonuses: { mnd: 3 }, effects: { healingPowerPercent: 0.05 } },
-    pilgrimShoes:    { id: 'pilgrimShoes',    name: '巡礼の靴',     slot: 'feet', bonuses: { vit: 2, mnd: 2 } },
+    kurogane_helm:   { id: 'kurogane_helm',   name: '黒鉄の額当て', slot: 'head', defensePower: 6, bonuses: {} },
+    kurogane_armor:  { id: 'kurogane_armor',  name: '黒鉄の戦装',   slot: 'body', defensePower: 12, bonuses: { maxHp: 15 } },
+    mightGauntlet:   { id: 'mightGauntlet',   name: '剛腕の篭手',   slot: 'arms', attackPower: 4, defensePower: 2, bonuses: {} },
+    ironKnightBoots: { id: 'ironKnightBoots', name: '鉄騎のブーツ', slot: 'feet', defensePower: 5, bonuses: { maxHp: 8 } },
+    galeHeadband:    { id: 'galeHeadband',    name: '疾風の鉢巻',   slot: 'head', defensePower: 2, bonuses: { agi: 3, luk: 2 } },
+    fistGi:          { id: 'fistGi',          name: '拳闘の胴衣',   slot: 'body', defensePower: 7, bonuses: { agi: 2 } },
+    galeTekko:       { id: 'galeTekko',       name: '疾風の手甲',   slot: 'arms', attackPower: 2, defensePower: 2, bonuses: {}, effects: { criticalRateBonus: 0.02 } },
+    lightGreaves:    { id: 'lightGreaves',    name: '軽身の脚甲',   slot: 'feet', defensePower: 2, bonuses: { agi: 4 } },
+    arcaneHood:      { id: 'arcaneHood',      name: '魔導のフード', slot: 'head', magicAttackPower: 4, magicDefensePower: 3, bonuses: { maxMp: 4 } },
+    wisdomRobe:      { id: 'wisdomRobe',      name: '叡智のローブ', slot: 'body', defensePower: 3, magicAttackPower: 5, magicDefensePower: 6, bonuses: {} },
+    arcaneBangle:    { id: 'arcaneBangle',    name: '魔導の腕輪',   slot: 'arms', magicAttackPower: 4, bonuses: {} },
+    stargazeShoes:   { id: 'stargazeShoes',   name: '星詠みの靴',   slot: 'feet', magicDefensePower: 2, bonuses: { agi: 2, maxMp: 3 } },
+    prayerHat:       { id: 'prayerHat',       name: '白祈の帽子',   slot: 'head', magicDefensePower: 5, bonuses: { maxMp: 3 } },
+    prayerVestment:  { id: 'prayerVestment',  name: '祈祷の法衣',   slot: 'body', defensePower: 5, magicDefensePower: 8, bonuses: { maxHp: 8 } },
+    healingBangle:   { id: 'healingBangle',   name: '癒しの腕輪',   slot: 'arms', magicDefensePower: 3, bonuses: {}, effects: { healingPowerPercent: 0.05 } },
+    pilgrimShoes:    { id: 'pilgrimShoes',    name: '巡礼の靴',     slot: 'feet', defensePower: 2, magicDefensePower: 3, bonuses: {} },
     // ══ D2 通常工房防具 ══
-    blackWolfHelm:   { id: 'blackWolfHelm',   name: '黒狼の兜',     slot: 'head', bonuses: { def: 7, str: 2, vit: 2 } },
-    blackWolfArmor:  { id: 'blackWolfArmor',  name: '黒狼の重装',   slot: 'body', bonuses: { def: 14, maxHp: 30, vit: 3 } },
-    crushGauntlet:   { id: 'crushGauntlet',   name: '破砕の篭手',   slot: 'arms', bonuses: { str: 5 }, effects: { physicalDamagePercent: 0.02 } },
-    kuroganeBoots:   { id: 'kuroganeBoots',   name: '黒鉄の軍靴',   slot: 'feet', bonuses: { def: 5, vit: 3 } },
-    yashaHeadband:   { id: 'yashaHeadband',   name: '夜叉の鉢巻',   slot: 'head', bonuses: { agi: 4, luk: 3 } },
-    shadowGi:        { id: 'shadowGi',        name: '黒影の闘衣',   slot: 'body', bonuses: { def: 8, agi: 4 } },
-    rasetsuTekko:    { id: 'rasetsuTekko',    name: '羅刹の手甲',   slot: 'arms', bonuses: { str: 3 }, effects: { criticalRateBonus: 0.03 } },
-    flashGreaves:    { id: 'flashGreaves',    name: '瞬脚の具足',   slot: 'feet', bonuses: { agi: 6, luk: 2 } },
-    crimsonHat:      { id: 'crimsonHat',      name: '深紅の魔導帽', slot: 'head', bonuses: { mag: 5, maxMp: 6 } },
-    purgatoryRobe:   { id: 'purgatoryRobe',   name: '煉獄のローブ', slot: 'body', bonuses: { mag: 7, mnd: 3, maxMp: 8 } },
-    blazeBangle:     { id: 'blazeBangle',     name: '灼熱の腕輪',   slot: 'arms', bonuses: { mag: 5 }, effects: { fireDamagePercent: 0.03 } },
-    starfireShoes:   { id: 'starfireShoes',   name: '星火の魔導靴', slot: 'feet', bonuses: { agi: 3, mag: 3 } },
-    moonCrown:       { id: 'moonCrown',       name: '月白の聖冠',   slot: 'head', bonuses: { mnd: 5, maxMp: 5 } },
-    moonVestment:    { id: 'moonVestment',    name: '月祈の法衣',   slot: 'body', bonuses: { def: 7, mnd: 7, maxHp: 15 } },
-    mercyBangle:     { id: 'mercyBangle',     name: '慈愛の腕輪',   slot: 'arms', bonuses: { mnd: 5 }, effects: { healingPowerPercent: 0.07 } },
-    sacredShoes:     { id: 'sacredShoes',     name: '聖巡の靴',     slot: 'feet', bonuses: { vit: 3, mnd: 4 } },
+    blackWolfHelm:   { id: 'blackWolfHelm',   name: '黒狼の兜',     slot: 'head', defensePower: 11, bonuses: { vit: 2 } },
+    blackWolfArmor:  { id: 'blackWolfArmor',  name: '黒狼の重装',   slot: 'body', defensePower: 22, bonuses: { maxHp: 30, vit: 3 } },
+    crushGauntlet:   { id: 'crushGauntlet',   name: '破砕の篭手',   slot: 'arms', attackPower: 7, defensePower: 3, bonuses: {}, effects: { physicalDamagePercent: 0.02 } },
+    kuroganeBoots:   { id: 'kuroganeBoots',   name: '黒鉄の軍靴',   slot: 'feet', defensePower: 8, bonuses: { vit: 3 } },
+    yashaHeadband:   { id: 'yashaHeadband',   name: '夜叉の鉢巻',   slot: 'head', defensePower: 4, bonuses: { agi: 4, luk: 3 } },
+    shadowGi:        { id: 'shadowGi',        name: '黒影の闘衣',   slot: 'body', defensePower: 12, bonuses: { agi: 4 } },
+    rasetsuTekko:    { id: 'rasetsuTekko',    name: '羅刹の手甲',   slot: 'arms', attackPower: 4, defensePower: 3, bonuses: {}, effects: { criticalRateBonus: 0.03 } },
+    flashGreaves:    { id: 'flashGreaves',    name: '瞬脚の具足',   slot: 'feet', defensePower: 4, bonuses: { agi: 6, luk: 2 } },
+    crimsonHat:      { id: 'crimsonHat',      name: '深紅の魔導帽', slot: 'head', magicAttackPower: 7, magicDefensePower: 5, bonuses: { maxMp: 6 } },
+    purgatoryRobe:   { id: 'purgatoryRobe',   name: '煉獄のローブ', slot: 'body', defensePower: 5, magicAttackPower: 9, magicDefensePower: 10, bonuses: { maxMp: 8 } },
+    blazeBangle:     { id: 'blazeBangle',     name: '灼熱の腕輪',   slot: 'arms', magicAttackPower: 7, bonuses: {}, effects: { fireDamagePercent: 0.03 } },
+    starfireShoes:   { id: 'starfireShoes',   name: '星火の魔導靴', slot: 'feet', magicAttackPower: 4, magicDefensePower: 3, bonuses: { agi: 3 } },
+    moonCrown:       { id: 'moonCrown',       name: '月白の聖冠',   slot: 'head', magicDefensePower: 9, bonuses: { maxMp: 5 } },
+    moonVestment:    { id: 'moonVestment',    name: '月祈の法衣',   slot: 'body', defensePower: 9, magicDefensePower: 14, bonuses: { maxHp: 15 } },
+    mercyBangle:     { id: 'mercyBangle',     name: '慈愛の腕輪',   slot: 'arms', magicDefensePower: 5, bonuses: {}, effects: { healingPowerPercent: 0.07 } },
+    sacredShoes:     { id: 'sacredShoes',     name: '聖巡の靴',     slot: 'feet', defensePower: 4, magicDefensePower: 6, bonuses: {} },
     shadowCap: { id: 'shadowCap', name: 'シャドウキャップ', slot: 'head', bonuses: { vit: 2, mnd: 2 } },
     arcaneHat: { id: 'arcaneHat', name: '魔導士の帽子', slot: 'head', bonuses: { mnd: 3, mag: 2, vit: 1 } },
     phantomMask: { id: 'phantomMask', name: '怪盗仮面', slot: 'head', bonuses: { vit: 3, mnd: 3, agi: 1 } },

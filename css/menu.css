@@ -230,3 +230,5 @@
 .rb-btn span{font:700 8px/1 Cinzel;letter-spacing:.2em;opacity:.75}
 .rb-btn:not(:disabled):hover{box-shadow:0 0 20px #7a3fd488}
 .rb-btn:disabled{opacity:.45;cursor:default;font-size:11px}
+
+.item-tabs.sys-tabs{grid-template-columns:repeat(3,1fr)}
