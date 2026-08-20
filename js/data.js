@@ -674,7 +674,7 @@ window.ARSENE_DATA = {
     mageStaff: { id: 'mageStaff', name: '魔導士の杖', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '青い魔力を導く魔導士の基本杖。' },
     phantomSword: { id: 'phantomSword', name: '青影の剣', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '青い残光を引く怪盗の細身剣。' },
     ironClaw: { id: 'ironClaw', name: '鉄の爪', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '拳に装着する鋼の爪。素早い連撃に適する。' },
-    magicKnightProof: { id: 'magicKnightProof', name: '魔奏士の証', nameEn: 'PROOF OF THE MAGIC KNIGHT', category: 'key', rarity: 'epic', description: '刃と魔を繋ぐ古い紋章。新たな生き方を選ぶ資格を示す。' },
+    magicKnightProof: { id: 'magicKnightProof', name: '魔奏士の証', nameEn: 'PROOF OF THE ARCANE PLAYER', category: 'key', rarity: 'epic', description: '旋律と魔を繋ぐ古い紋章。新たな生き方を選ぶ資格を示す。' },
     arcaneMaestroProof: { id: 'arcaneMaestroProof', name: '楽奏の証', nameEn: 'PROOF OF THE ARCANE MAESTRO', category: 'key', rarity: 'epic', description: '音と魔を繋ぐ古い譜面。楽器を武器として扱う資格を示す。' },
     rebirthArcana: { id: 'rebirthArcana', name: '輪廻のアルカナ', nameEn: 'ARCANA OF REBIRTH', category: 'special', rarity: 'legendary', noSell: true, description: '極めた力を捨て、さらなる高みへ至るためのアルカナ。JOB Lv20からの転生に1個消費する。' },
 

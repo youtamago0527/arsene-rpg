@@ -373,7 +373,14 @@
       this.profile.inventory.arcaneMaestroProof = (this.profile.inventory.arcaneMaestroProof || 0) + 1;
       this.profile.flags.instrumentUnlocked = true;
       this.saveProfile();
-      return { keyItem: D.items.magicKnightProof, extraKeyItem: D.items.arcaneMaestroProof, jobs: newly, weaponType: this.weaponTypeDef('instrument') };
+      // 2つまとめて入手する。どちらが何を解放したのかを添えて返す。
+      return {
+        keyItems: [
+          { ...D.items.magicKnightProof, unlockNote: '新たなJOBが解放された' },
+          { ...D.items.arcaneMaestroProof, unlockNote: '武器学《楽器》が解放された' }
+        ],
+        jobs: newly, weaponType: this.weaponTypeDef('instrument')
+      };
     }
     // ══ 転生（輪廻のアルカナ）══════════════════════════════════
     rebirthCount(jobId) { return (this.profile.jobRebirths || {})[jobId] || 0; }
@@ -493,10 +500,14 @@
     }
     stageOneRewardHTML(reward) {
       if (!reward) return '';
+      // 鍵アイテムは複数まとめて入手するので、見出しは1つにして個数を出す。
+      // それぞれが何を解放したのかも並べて分かるようにする。
+      const keys = (reward.keyItems || [reward.keyItem, reward.extraKeyItem]).filter(Boolean);
+      const keyRows = keys.map(k => `<div class="sr-key-row"><b>《${k.name}》</b><span>${k.description || ''}</span>${k.unlockNote ? `<em>${k.unlockNote}</em>` : ''}</div>`).join('');
+      const keyBlock = keys.length ? `<div class="sr-key"><small>KEY ITEM GET${keys.length > 1 ? ` ×${keys.length}` : ''}</small>${keyRows}</div>` : '';
       const jobs = (reward.jobs || []).map(j => `<mark>${j.name}</mark>`).join('');
-      const extra = reward.extraKeyItem ? `<div class="sr-key"><small>KEY ITEM GET</small><b>《${reward.extraKeyItem.name}》</b><span>${reward.extraKeyItem.description || ''}</span></div>` : '';
       const wt = reward.weaponType ? `<div class="sr-jobs"><small>NEW WEAPON MASTERY</small><div><mark>${reward.weaponType.name}が扱えるようになった</mark></div></div>` : '';
-      return `<div class="stage-reward"><div class="sr-key"><small>KEY ITEM GET</small><b>《${reward.keyItem?.name || '魔奏士の証'}》</b><span>${reward.keyItem?.description || ''}</span></div>${extra}${jobs ? `<div class="sr-jobs"><small>NEW JOBS UNLOCKED</small><div>${jobs}</div></div>` : ''}${wt}</div>`;
+      return `<div class="stage-reward">${keyBlock}${jobs ? `<div class="sr-jobs"><small>NEW JOBS UNLOCKED</small><div>${jobs}</div></div>` : ''}${wt}</div>`;
     }
 
     // ══ 武器学 / 成長 / 閃き ═══════════════════════════════════
