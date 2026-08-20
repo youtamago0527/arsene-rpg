@@ -535,6 +535,10 @@
     // 得意武器と初期ジョブを新規プロフィールへ反映する（初期装備の付与を含む）
     applyStartingChoice(profile, weaponTypeId, jobId) {
       const type = this.weaponTypeDef(weaponTypeId), job = D.jobs[jobId];
+      // キャラクター固有の初期ステータス（characters.json の baseStats）を反映する。
+      // 未設定のキャラは共通初期値のまま。既存セーブには影響しない。
+      const charBase = (this.characterList || []).find(c => c.id === profile.selectedCharacter)?.baseStats;
+      if (charBase) { Object.assign(profile.baseStats, charBase); profile.currentVitals = { hp: profile.baseStats.maxHp, mp: profile.baseStats.maxMp }; }
       if (type) {
         profile.preferredWeaponType = type.id;
         const wid = type.starterWeaponId;

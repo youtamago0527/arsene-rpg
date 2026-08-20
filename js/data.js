@@ -56,7 +56,7 @@ window.ARSENE_DATA = {
     // ── 閃き ────────────────────────────────────────────────
     sparkBaseRate: 0.05,
     // キャラクター固有特性 "small" が何倍になるか（characters.json 側は記号のみ保持）
-    traitBonusScale: { small: { weaponExp: 1.15, spark: 1.5, mpGrowth: 1.3, heal: 1.15, critical: 0.03 } },
+    traitBonusScale: { small: { weaponExp: 1.2, spark: 1.5, mpGrowth: 1.3, heal: 1.3, critical: 0.03 } },
 
     // ── 成長しないジョブ ────────────────────────────────────
     noGrowthJobs: ['phantomThief'],

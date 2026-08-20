@@ -18,7 +18,7 @@
       }
     },
     "tendency": { "str": 2, "vit": 3, "mag": 5, "mnd": 4, "agi": 3, "luk": 3 },
-    "baseStats": null,
+    "baseStats": { "str": 10, "vit": 12, "mag": 16, "mnd": 14, "agi": 12, "luk": 12, "maxHp": 78, "maxMp": 46 },
     "image": "assets/playable-characters/amamiya-ren/body-no-weapon.png",
     "portraitMode": "cutout",
     "imageFocus": "50% 20%",
@@ -56,7 +56,7 @@
       }
     },
     "tendency": { "str": 5, "vit": 5, "mag": 2, "mnd": 2, "agi": 3, "luk": 3 },
-    "baseStats": null,
+    "baseStats": { "str": 16, "vit": 16, "mag": 10, "mnd": 10, "agi": 12, "luk": 12, "maxHp": 88, "maxMp": 32 },
     "image": "assets/op/op-private-01-roga-ramen.webp",
     "portraitMode": "scene",
     "imageFocus": "62% 22%",
@@ -95,7 +95,7 @@
       }
     },
     "tendency": { "str": 3, "vit": 3, "mag": 2, "mnd": 2, "agi": 5, "luk": 5 },
-    "baseStats": null,
+    "baseStats": { "str": 12, "vit": 12, "mag": 10, "mnd": 10, "agi": 16, "luk": 16, "maxHp": 80, "maxMp": 36 },
     "image": "assets/op/op-private-03-sho-bookstore.webp",
     "portraitMode": "scene",
     "imageFocus": "52% 18%",
@@ -131,8 +131,8 @@
         "healBonus": "small"
       }
     },
-    "tendency": { "str": 2, "vit": 3, "mag": 3, "mnd": 5, "agi": 2, "luk": 3 },
-    "baseStats": null,
+    "tendency": { "str": 2, "vit": 3, "mag": 4, "mnd": 5, "agi": 3, "luk": 3 },
+    "baseStats": { "str": 10, "vit": 12, "mag": 14, "mnd": 16, "agi": 12, "luk": 12, "maxHp": 80, "maxMp": 44 },
     "image": "assets/op/op-private-04-kurosaki-childcare.webp",
     "portraitMode": "scene",
     "imageFocus": "47% 16%",
