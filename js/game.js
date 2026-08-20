@@ -467,6 +467,23 @@
     // 装備中カテゴリの通常攻撃
     basicAttackSkill() { const map = D.basicAttackByWeaponType || {}; return D.skills[map[this.equippedWeaponType()]] || D.skills.attack; }
     weaponTypeName(id) { return (D.weaponTypes || []).find(t => t.id === id)?.name || id; }
+    // ステータス画面：装備由来の戦闘能力と、現在武器での攻撃性能
+    combatStatsSectionHTML(total = this.totalStats()) {
+      const cs = this.equipmentCombatStats();
+      const wType = this.equippedWeaponType(), wName = this.weaponTypeName(wType);
+      const atk = Math.round(this.attackPowerFor(wType, total));
+      const rule = (D.weaponScaling || {})[wType] || {};
+      const scaleText = Object.entries(rule.scaling || {}).map(([k, v]) => `${statLabels[k] || k}×${Math.round(v * 100)}%`).join(' ＋ ');
+      const rows = [
+        ['攻撃力', cs.attackPower], ['防御力', cs.defensePower],
+        ['魔法攻撃力', cs.magicAttackPower], ['魔法防御力', cs.magicDefensePower]
+      ].map(([label, v]) => `<div class="cbt-row"><span>${label}</span><b>${v}</b></div>`).join('');
+      return `<div class="st-section"><h3>戦闘能力 <span>COMBAT</span></h3>
+        <div class="cbt-grid">${rows}</div>
+        <div class="cbt-total"><div><small>${wName}の攻撃性能</small><b>${atk}</b></div><em>${scaleText} ＋ 装備${rule.powerKey === 'magicAttackPower' ? '魔法攻撃力' : '攻撃力'}</em></div>
+        <div class="cbt-def"><div><span>物理防御</span><b>${Math.round(this.defensePowerFor('physical', total))}</b><small>体力＋防御力</small></div><div><span>魔法防御</span><b>${Math.round(this.defensePowerFor('magical', total))}</b><small>精神＋魔法防御力</small></div></div>
+      </div>`;
+    }
     // ステータス画面：3武器学の一覧と習得済み武器技
     masterySectionHTML() {
       const cur = this.equippedWeaponType();
@@ -796,8 +813,7 @@
         const d = this.damageFor(skill, target); target.hp = target.cannotDefeat ? Math.max(1, target.hp - d.value) : Math.max(0, target.hp - d.value);
         this.floating(el, d.value, d.critical ? 'critical' : 'damage'); this.audio.sfx(d.critical ? 'critical' : 'enemyHit'); this.updateHUD();
         await this.battleSleep(220); el.classList.remove('hit');
-        for (const uid of Object.keys(perHit)) { const t = this.enemies.find(x => x.uid === uid); if (!t || t.hp > 0 || t.rolledDrops) continue; if (t === target) continue; t.alive = false; const tEl = document.getElementById(t.uid); this.audio.sfx('defeat'); tEl.classList.add('defeated'); t.rolledDrops = this.rollDrops(t); t.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(tEl, item.name, 'heal'); if (item.rarity === 'epic' || item.rarity === 'legendary') this.announceRareDrop(item); } }); this.grantEnemyReward(t); }
-      if (target.hp <= 0) { target.alive = false; this.audio.sfx('defeat'); el.classList.add('defeated'); target.rolledDrops = this.rollDrops(target); target.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); if (item.rarity === 'epic' || item.rarity === 'legendary') this.announceRareDrop(item); } }); this.grantEnemyReward(target); }
+        if (target.hp <= 0) { target.alive = false; this.audio.sfx('defeat'); el.classList.add('defeated'); target.rolledDrops = this.rollDrops(target); target.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); if (item.rarity === 'epic' || item.rarity === 'legendary') this.announceRareDrop(item); } }); this.grantEnemyReward(target); }
       }
       if (this.player.buffs?.atkCharge && skill.kind === 'physical') delete this.player.buffs.atkCharge;
       ren.classList.remove('casting'); const defeatedNames = targets.filter(t => !t.alive).map(t => `${t.name}${t.label}`);
@@ -1169,7 +1185,7 @@
         <div class="st-head"><div class="st-portrait" aria-hidden="true"></div><div class="st-id"><strong>雨宮 蓮</strong><span>AMAMIYA REN</span><b>LV.${String(this.profile.level).padStart(2,'0')}</b><em>${D.jobs[jid]?.name || ''} Lv.${jlv}</em></div></div>
         <div class="st-meters"><div class="st-meter hp"><span>HP</span><i style="width:${100*vitals.hp/total.maxHp}%"></i><output>${vitals.hp} / ${total.maxHp}</output></div><div class="st-meter mp"><span>MP</span><i style="width:${100*vitals.mp/total.maxMp}%"></i><output>${vitals.mp} / ${total.maxMp}</output></div><div class="st-meter exp"><span>EXP</span><i style="width:${expPct}%"></i><output>${expPct.toFixed(2)}%</output></div><div class="st-meter jexp"><span>JEXP</span><i style="width:${jpct}%"></i><output>${jneed ? jpct.toFixed(2)+'%' : 'MASTER'}</output></div></div>
         <div class="st-section"><h3>装備 <span>EQUIPMENT</span></h3><div class="st-eq">${eqRows}</div></div>
-        <div class="st-section"><h3>能力値 <span>STATS</span></h3><div class="stat-grid">${statRows}</div></div>${this.masterySectionHTML()}${jobHtml}${passiveHtml}`;
+        <div class="st-section"><h3>能力値 <span>STATS</span></h3><div class="stat-grid">${statRows}</div></div>${this.combatStatsSectionHTML(total)}${this.masterySectionHTML()}${jobHtml}${passiveHtml}`;
     }
     enchantLevel(id) { return (D.weapons[id] ? (this.profile.weaponEnchants || {})[id] : (this.profile.armorEnchants || {})[id]) || 0; }
     enchantSuffix(id) { const lv = this.enchantLevel(id); return lv > 0 ? `<em class="ench-lv">+${lv}</em>` : ''; }

@@ -232,3 +232,19 @@
 .rb-btn:disabled{opacity:.45;cursor:default;font-size:11px}
 
 .item-tabs.sys-tabs{grid-template-columns:repeat(3,1fr)}
+
+/* ══ ステータス：戦闘能力 ═══════════════════════════════════ */
+.cbt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}
+.cbt-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border:1px solid #1d3550;background:#050c17}
+.cbt-row>span{font-size:10px;color:#9fb0c4}
+.cbt-row>b{font:700 15px/1 Cinzel;color:#7bd3ff}
+.cbt-total{display:grid;gap:2px;margin-top:6px;padding:9px 11px;border:1px solid #3fa6ff;background:linear-gradient(#0b2340,#050c17)}
+.cbt-total>div{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.cbt-total small{font:700 9px Cinzel;letter-spacing:.12em;color:#9fc4e4}
+.cbt-total b{font:700 22px/1 Cinzel;color:#fff;text-shadow:0 0 10px #3fa6ff88}
+.cbt-total em{font-size:9px;font-style:normal;color:#7f9dba}
+.cbt-def{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-top:5px}
+.cbt-def>div{display:grid;gap:1px;padding:7px 10px;border:1px solid #1d3550;background:#050c17}
+.cbt-def span{font-size:10px;color:#9fb0c4}
+.cbt-def b{font:700 16px/1 Cinzel;color:#7bff9a}
+.cbt-def small{font-size:8px;color:#6f8aa6}
