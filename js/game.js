@@ -455,6 +455,7 @@
     helpUnlocked(key) {
       if (key === 'rebirth') return this.rebirthUnlocked();
       if (key === 'phantomThief') return this.isJobUnlocked('phantomThief');
+      if (key === 'otherWorld') return !!this.profile.flags.otherWorldUnlocked;
       return true;
     }
     helpSectionHTML() {
@@ -1512,7 +1513,8 @@
       const list = owned.filter(([id]) => { const it = D.items[id]; if (!it) return false; const w = D.weapons[id]; if (this.itemTab === 'consumable') return it.category === 'consumable'; if (this.itemTab === 'weapon') return !!w && w.weaponType === sub; return it.category === 'equipment' && !w && it.slot === sub; });
       const rows = list.map(([id, n]) => {
         const it = D.items[id], w = D.weapons[id];
-        if (this.itemTab === 'consumable') { const recoverable = it.effect?.hp || it.effect?.mp, full = it.effect?.hp ? vitals.hp >= stats.maxHp : it.effect?.mp ? vitals.mp >= stats.maxMp : true; return `<div class="item-row rarity-${it.rarity}"><div><b>${it.name}</b><small>${it.description}</small></div><strong>×${n}</strong>${recoverable ? `<button data-use-item="${id}" ${full ? 'disabled' : ''}>${full ? '満タン' : '使う'}</button>` : ''}</div>`; }
+        // アルカナ（arcanaStat）は回復アイテムではないが「使う」で恒久強化するので常に押せる
+        if (this.itemTab === 'consumable') { const usable = it.effect?.hp || it.effect?.mp || it.arcanaStat, full = it.arcanaStat ? false : (it.effect?.hp ? vitals.hp >= stats.maxHp : it.effect?.mp ? vitals.mp >= stats.maxMp : true); return `<div class="item-row rarity-${it.rarity}"><div><b>${it.name}</b><small>${it.description}</small></div><strong>×${n}</strong>${usable ? `<button ${it.arcanaStat ? `data-use-arcana="${id}"` : `data-use-item="${id}"`} ${full ? 'disabled' : ''}>${full ? '満タン' : '使う'}</button>` : ''}</div>`; }
         const equipped = Object.values(this.profile.equipment).includes(id), slot = w ? 'rightHand' : it.slot;
         return `<div class="item-row rarity-${it.rarity}${equipped ? ' item-equipped' : ''}"><div><b>${it.name}${this.enchantSuffix(id)}${equipped ? '<mark class="eq-badge">装備中</mark>' : ''}</b><small>${this.bonusText(id)}</small></div><strong>×${n}</strong><button data-equip-item="${id}" data-equip-slot="${slot}" ${equipped ? 'disabled' : ''}>${equipped ? '装備中' : '装備'}</button></div>`;
       }).join('');
@@ -1748,5 +1750,6 @@
       bubble.addEventListener('click', () => { clearTimeout(timer); bubble.remove(); });
     }
   }
+  window.BattleGame = BattleGame; // 異世界モジュールから prototype を拡張するため公開する
   addEventListener('DOMContentLoaded', () => { window.arseneGame = new BattleGame(); });
 })();
