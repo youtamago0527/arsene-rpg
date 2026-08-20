@@ -173,9 +173,9 @@ window.ARSENE_DATA = {
     },
     // 特殊ジョブ。自身では成長せず、将来的に他ジョブの成長を盗む。
     phantomThief: {
-      id: 'phantomThief', name: 'ファントムシーフ', nameEn: 'PHANTOM THIEF', description: '自らは育たず、他のジョブで培った力を盗み取る怪盗の本質。',
+      id: 'phantomThief', name: 'ファントムシーフ', nameEn: 'PHANTOM THIEF', description: '他JOBのレベルアップ成長を常に半分引き継ぎ、MASTER時に固有技を盗む怪盗の本質。',
       signatureSkillId: null, passiveUnlocks: {}, growthStats: [],
-      featureText: '自身では成長しない特殊ジョブ。各ジョブをMASTERすることで能力と固有スキルを継承する。',
+      featureText: '自身では成長しない特殊ジョブ。通常JOBの成長能力を常に50%引き継ぎ、MASTER時に固有スキルを獲得する。',
       special: true, noGrowth: true,
       unlockCondition: { story: 'phantomThiefAwakening' },
       skillUnlocks: {}
@@ -231,7 +231,7 @@ window.ARSENE_DATA = {
   },
   dungeons: [
     {
-      id: 'dungeon1', name: 'ダンジョン1', enName: 'DUNGEON I',
+      id: 'dungeon1', name: '迷宮の入口', enName: 'THE LABYRINTH GATE',
       background: 'assets/bg/dungeon-battle-01.png',
       thumbnail: 'assets/bg/dungeon-battle-01.png',
       description: '怪異の気配が漂う闇のダンジョン。怪盗団最初の潜入先。',

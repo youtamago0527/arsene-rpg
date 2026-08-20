@@ -11,7 +11,7 @@
   if (!D) { console.error('[otherworld] ARSENE_DATA が見つかりません'); return; }
 
   // ── PHANTOM THIEF 設定 ──────────────────────────────────────
-  // stealRate      : JOB MASTER時に継承する「育成で増えた基礎能力」の割合
+  // stealRate      : 通常JOBのレベルアップ成長を常時引き継ぐ割合
   // actionSlotCount: 戦闘へ持ち込める盗んだACTIONの数
   D.phantomThief = {
     stealRate: 0.5,          // 端数は切り捨て

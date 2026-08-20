@@ -66,27 +66,19 @@
   };
 
   // ════════════════════════════════════════════════════════════
-  // PHANTOM THIEF：JOB MASTER時の 50% STEAL
+  // PHANTOM THIEF：能力は常時50%継承、JOB MASTER時は固有ACTIONをSTEAL
   // ════════════════════════════════════════════════════════════
   P.ptCfg = function () { return D().phantomThief || { stealRate: 0.5, actionSlotCount: 2, signatureActions: {} }; };
   P.ptStealRate = function () { return this.ptCfg().stealRate ?? 0.5; };
   P.ptActionSlotMax = function () { return this.ptCfg().actionSlotCount ?? 2; };
 
-  // MASTERしたJOBから「育成で実際に増えた基礎能力」の50%とACTIONを1度だけ継承する。
-  // 初期ステータスや装備の50%ではない点に注意。
+  // MASTERしたJOBから固有ACTIONだけを1度取得する。
+  // 能力値は game.js の jobStatBonuses がレベルアップ成長の50%を常時反映する。
   P.stealFromJob = function (jobId) {
     if (!jobId || jobId === 'phantomThief') return null;
     this.profile.ptStealDone ||= {};
     if (this.profile.ptStealDone[jobId]) return null;   // 重複STEAL禁止
-    const gained = (this.profile.jobGrowthGained || {})[jobId] || {};
-    const rate = this.ptStealRate(), stats = {};
-    this.profile.ptStolenStats ||= {};
-    for (const [k, v] of Object.entries(gained)) {
-      const add = Math.floor((v || 0) * rate);          // 端数は切り捨てで統一
-      if (!add) continue;
-      stats[k] = add;
-      this.profile.ptStolenStats[k] = (this.profile.ptStolenStats[k] || 0) + add;
-    }
+    const stats = {};
     const actionId = (this.ptCfg().signatureActions || {})[jobId];
     let action = null;
     if (actionId && D().skills[actionId]) {
@@ -126,18 +118,15 @@
   P.jobResultHTML = function (result) {
     const base = origJobResultHTML.call(this, result);
     const s = result?.steal; if (!s) return base;
-    const stats = Object.entries(s.stats).map(([k, v]) => `<b>${STAT_LABEL[k] || k} +${v}</b>`).join('');
     return base + `<div class="pt-steal-result"><small>PHANTOM STEAL</small>
       <strong>${esc(s.jobName)} MASTER</strong>
-      <span>育てた力の50%をPHANTOM THIEFへ盗んだ！</span>
-      <div class="pt-steal-stats">${stats || '<b>継承なし</b>'}</div>
-      ${s.action ? `<em>ACTION《${esc(s.action.name)}》を盗んだ！</em>` : ''}</div>`;
+      <span>JOB固有技の解析が完了した！</span>
+      ${s.action ? `<em>ACTION《${esc(s.action.name)}》を盗んだ！</em>` : '<em>取得できる固有ACTIONはなかった。</em>'}</div>`;
   };
 
-  // PHANTOM THIEF の能力補正は「継承済みの値」。他JOBは従来どおり。
+  // PHANTOM THIEFも game.js 側の「全JOB成長の50%」を常時参照する。
   const origJobStat = P.jobStatBonuses;
   P.jobStatBonuses = function (jobId = this.profile.currentJob) {
-    if (this.isPhantomThief(jobId)) return { ...(this.profile.ptStolenStats || {}) };
     return origJobStat.call(this, jobId);
   };
 
@@ -332,13 +321,13 @@
   const TUTORIAL = [
     { h: 'PHANTOM THIEFは成長しない', talk: ['まず覚えとけ。', 'PHANTOM THIEFは、普通のJOBみたいには成長しない。', 'こいつ自身を鍛えて、力や魔力を上げることはできない。', 'じゃあどうやって強くなるのかって？', '簡単だ。'], big: '他のJOBから盗むんだよ。',
       note: ['PHANTOM THIEF中はJOBによる基礎ステータス成長がありません。', 'HP / MPの通常成長も発生しません。'] },
-    { h: '育てた力の50%を盗む', talk: ['現実世界でJOBを育てろ。', '戦士でも、武道家でも、魔導士でもいい。', 'そいつらが鍛え上げた力を――'], big: '異世界へ半分、盗んで持ってこい。',
-      note: ['通常JOBを育成して実際に増えた基礎能力（力・体力・魔力・精神・素早さ・運）の50%を、JOB MASTER時にPHANTOM THIEFへ永久継承します。',
+    { h: '育てた力の50%が届く', talk: ['現実世界でJOBを育てろ。', '戦士でも、武道家でも、魔導士でもいい。', 'レベルが上がるたび、その成長は――'], big: '異世界へ半分、流れ込んでくる。',
+      note: ['通常JOBのレベルアップで実際に増えた基礎能力（力・体力・魔力・精神・素早さ・運）の50%が、その時点からPHANTOM THIEFへ常時反映されます。',
              '初期ステータスの50%でも、装備能力の50%でもありません。育成で増えた分の50%です。',
-             '端数は切り捨て。同じJOBから二重に盗むことはできません。'],
+             '端数は切り捨て。JOB MASTERを待つ必要はありません。'],
       example: true },
-    { h: 'JOB固有スキルも盗める', talk: ['盗めるのは能力だけじゃない。', 'MASTERしたJOBなら――'], big: 'そいつの技まで盗める。',
-      note: ['JOB MASTERすると、そのJOBの固有ACTIONがPHANTOM THIEFのABILITY COLLECTIONへ追加されます。'], actions: true },
+    { h: 'MASTERで固有技を盗む', talk: ['能力はレベルアップのたびに届く。', 'だが、技はそう簡単には盗めない。', 'そのJOBを極めたとき――'], big: '最後に固有技をいただく。',
+      note: ['JOB MASTER時にのみ、そのJOBの固有ACTIONがPHANTOM THIEFのABILITY COLLECTIONへ追加されます。', 'MASTER時に能力値をまとめて受け取る処理はありません。'], actions: true },
     { h: 'ACTIONは2枠', talk: ['盗んだ技を全部使えると思うなよ。', '一度に持っていけるのは2つまでだ。', '何を組み合わせるかは、お前次第。'], big: '脳筋ってのも立派な作戦だ。',
       note: ['盗んだACTIONは何個でも保存できますが、戦闘へ持ち込めるのは2つまでです。',
              '例：《ちからため》×《ばくれつけん》＝脳筋型 ／ 《ばくれつけん》×《ヒール》＝攻撃回復型 ／ 《魔力装填》×《精神集中》＝魔法戦士型。'] },
@@ -361,11 +350,11 @@
     }).join('')}</div>` : '';
     const exampleHtml = p.example ? `<div class="pt-example"><b>例：戦士をLv1→20まで育てて</b>
       <div class="pt-ex-grid"><span>力 +38</span><em>→</em><b>力 +19</b><span>体力 +38</span><em>→</em><b>体力 +19</b><span>精神 +19</span><em>→</em><b>精神 +9</b><span>素早さ +19</span><em>→</em><b>素早さ +9</b></div>
-      <small>MASTER時にこの分がPHANTOM THIEFへ永久継承されます。</small></div>` : '';
+      <small>各レベルアップの時点から、増えた能力の50%がPHANTOM THIEFへ反映されます。</small></div>` : '';
     const cycleHtml = p.cycle ? `<div class="pt-cycle">
-      <div class="pt-cy-box"><small>REAL WORLD</small><b>JOBを育てる</b><span>↓</span><b>JOB MASTER</b><span>↓</span><b>能力・固有技を獲得</b></div>
+      <div class="pt-cy-box"><small>REAL WORLD</small><b>JOBを育てる</b><span>↓</span><b>LEVEL UPごとに能力供給</b><span>↓</span><b>JOB MASTERで固有技解放</b></div>
       <div class="pt-cy-arrow">▼ STEAL ▼</div>
-      <div class="pt-cy-box steal"><b>成長能力の50%を盗む</b><b>固有ACTIONを盗む</b></div>
+      <div class="pt-cy-box steal"><b>成長能力の50%を常時引き継ぐ</b><b>MASTER時に固有ACTIONを盗む</b></div>
       <div class="pt-cy-arrow">▼</div>
       <div class="pt-cy-box other"><small>OTHER WORLD</small><b>PHANTOM THIEFとして戦う</b><span>↓</span><b>アルカナを盗む</b><span>↓</span><b>さらに強くなる</b></div>
     </div>` : '';
@@ -402,7 +391,6 @@
     const cfg = this.owCfg(), inf = this.owInterference(), a = this.owTodayArcana();
     const item = D().items[a?.id];
     const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-    const isPT = this.isPhantomThief();
     const canGo = inf.left > 0;
     return void (panel.innerHTML = `<button class="panel-home" data-lenny="menu">レニーへ戻る</button>
       <small>OTHER WORLD</small><h2>異世界</h2>
@@ -417,7 +405,8 @@
         <div><span>雑魚ドロップ</span><b>${((cfg.zakoArcanaRate ?? 0.01) * 100).toFixed(1)}%</b></div>
         <div><span>経験値・GOLD</span><b>なし</b></div>
       </div>
-      ${isPT ? '' : '<p class="ow-warn">PHANTOM THIEF以外でも侵入できますが、この世界ではJOB経験値も武器学も伸びません。</p>'}
+      <p class="ow-rule">異世界へ侵入できるのは <b>PHANTOM THIEF</b> のみ。</p>
+      <button class="ow-ability-link" data-lenny="abilities"><b>アビリティ設定</b><span>突入前にPHANTOM THIEFのACTION / PASSIVEを設定する</span></button>
       ${canGo
         ? '<button class="ow-enter" data-lenny="select">侵入先を選択する</button>'
         : '<p class="ow-warn ow-stop">「今日はもうやめとけ。」<br>「今のお前じゃ、これ以上向こう側に干渉したら身体がもたねえ。」</p>'}`);
@@ -443,6 +432,42 @@
       </div>`;
   };
 
+  P.openOwAbilitySettings = function () {
+    this.jobUI ||= { tab: 'abilitySet', detailId: null, modal: null, passiveSlotIdx: null, passiveFilter: 'all' };
+    this.jobUI.tab = 'abilitySet';
+    this.jobUI.detailId = null;
+    this.jobUI.modal = null;
+    this.renderMenuPanel('job');
+  };
+
+  P.owSelectDungeon = function (dungeonId = null) {
+    if (this.isPhantomThief()) { this.owEnter(dungeonId); return; }
+    this.pendingOwDungeonId = dungeonId || this.owDungeonChoices()[0]?.id || null;
+    this.renderMenuPanel('otherworld-job-confirm');
+  };
+
+  P.renderOwJobConfirm = function (panel) {
+    const current = D().jobs[this.profile.currentJob];
+    const phantom = D().jobs.phantomThief;
+    panel.innerHTML = `<button class="panel-home" data-lenny="cancel-job-change">ダンジョン選択へ戻る</button>
+      <small>JOB CHANGE REQUIRED</small><h2>異世界侵入確認</h2>
+      <div class="ow-job-confirm">
+        <p>異世界へ侵入できるのは<br><b>PHANTOM THIEF</b> のみ。</p>
+        <div class="ow-job-swap"><span>${esc(current?.name || this.profile.currentJob)}</span><i>▶</i><b>${esc(phantom?.name || 'PHANTOM THIEF')}</b></div>
+        <p class="ow-job-note">ジョブを切り替えて、このダンジョンへ突入しますか？</p>
+        <button class="ow-ability-link" data-lenny="abilities"><b>アビリティ設定</b><span>PHANTOM THIEFのACTION / PASSIVEを設定してから突入できます</span></button>
+        <div class="ow-confirm-actions"><button class="yes" data-lenny="confirm-job-change">YES ／ 切り替えて突入</button><button data-lenny="cancel-job-change">NO ／ 戻る</button></div>
+      </div>`;
+  };
+
+  P.confirmOwJobChange = function () {
+    const dungeonId = this.pendingOwDungeonId;
+    if (!this.isJobUnlocked('phantomThief')) { this.renderMenuPanel('otherworld-select'); return; }
+    this.changeJob('phantomThief');
+    this.pendingOwDungeonId = null;
+    this.owEnter(dungeonId);
+  };
+
   // ════════════════════════════════════════════════════════════
   // 異世界：1周（雑魚9＋BOSS1）
   // ════════════════════════════════════════════════════════════
@@ -458,6 +483,8 @@
   };
 
   P.owEnter = async function (dungeonId = null) {
+    // 異世界はPHANTOM THIEF専用。別経路から呼ばれても必ず確認へ戻す。
+    if (!this.isPhantomThief()) { this.owSelectDungeon(dungeonId); return; }
     const inf = this.owInterference();
     if (inf.left <= 0) return;
     this.profile.flags.owUsedToday = (this.profile.flags.owUsedToday || 0) + 1;
@@ -648,6 +675,7 @@
       if (name === 'phantom-tutorial') { panel.hidden = false; this.ptTutorialPage = 0; this.renderPhantomTutorial(panel); return; }
       if (name === 'otherworld') { panel.hidden = false; this.renderOtherWorldPanel(panel); return; }
       if (name === 'otherworld-select') { panel.hidden = false; this.renderOwDungeonSelect(panel); return; }
+      if (name === 'otherworld-job-confirm') { panel.hidden = false; this.renderOwJobConfirm(panel); return; }
     }
     return origRenderPanel.call(this, name);
   };
@@ -680,7 +708,10 @@
       else if (a === 'otherworld') g.renderMenuPanel('otherworld');
       else if (a === 'select') g.renderMenuPanel('otherworld-select');
       else if (a === 'tutorial') { g.ptTutorialPage = 0; g.renderMenuPanel('phantom-tutorial'); }
-      else if (a === 'enter') g.owEnter(lenny.dataset.owDungeon || null);
+      else if (a === 'abilities') g.openOwAbilitySettings();
+      else if (a === 'enter') g.owSelectDungeon(lenny.dataset.owDungeon || null);
+      else if (a === 'confirm-job-change') g.confirmOwJobChange();
+      else if (a === 'cancel-job-change') { g.pendingOwDungeonId = null; g.renderMenuPanel('otherworld-select'); }
       else if (a === 'next') g.owNextBattle();
       else if (a === 'retreat') g.owRetreat();
       return;

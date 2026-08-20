@@ -112,6 +112,10 @@ body.ow-glitch #menu-screen{animation:ow-shake .5s steps(2) 3}
 .ow-info b{color:#cfe0f2}
 .ow-warn{margin:0 0 10px;padding:10px 12px;font-size:11px;line-height:1.9;color:#f0a24b;background:#16100a;border:1px solid #5c3f16;border-radius:4px}
 .ow-warn.ow-stop{color:#ff9d86;background:#170a0a;border-color:#6b2a2a}
+.ow-rule{margin:0 0 8px;padding:9px 12px;text-align:center;font-size:11px;line-height:1.7;color:#a9bad0;background:#080d17;border:1px solid #253851;border-radius:4px}
+.ow-rule b{color:#b891ff;letter-spacing:.08em}
+.ow-ability-link{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin:0 0 9px;padding:10px 12px;text-align:left;color:#cae7ff;background:linear-gradient(110deg,#08182b,#111026);border:1px solid #315d8c;border-radius:5px;cursor:pointer}
+.ow-ability-link b{font-size:13px;color:#75caff}.ow-ability-link span{font-size:9px;color:#829bb5}
 .ow-enter{width:100%;padding:14px;background:linear-gradient(120deg,#43128f,#1c4b7d);color:#fff;border:1px solid #a86bff;border-radius:5px;font-size:15px;letter-spacing:.1em;cursor:pointer}
 .ow-enter:hover{box-shadow:0 0 20px #a86bff55}
 .ow-dungeon-list{display:grid;gap:10px;margin-top:12px}
@@ -124,6 +128,12 @@ body.ow-glitch #menu-screen{animation:ow-shake .5s steps(2) 3}
 .ow-dungeon-card em{justify-self:start;padding:3px 8px;color:#d9c4ff;background:#42167599;border:1px solid #7e46b8;border-radius:99px;font-size:9px;font-style:normal}
 .ow-dungeon-card.locked{min-height:76px;place-content:center;filter:saturate(.35);opacity:.48;border-color:#283647;background:#070b12}
 .ow-dungeon-card.locked strong{font:800 12px Cinzel,serif;letter-spacing:.14em}.ow-dungeon-card.locked span{letter-spacing:.1em}
+.ow-job-confirm{display:grid;gap:12px;padding:16px 13px;text-align:center;background:linear-gradient(145deg,#10081d,#071426);border:1px solid #6940a2;border-radius:7px;box-shadow:inset 0 0 28px #45188833}
+.ow-job-confirm>p{margin:0;font-size:12px;line-height:1.8;color:#aebed0}.ow-job-confirm>p b{color:#c49cff;letter-spacing:.1em}
+.ow-job-swap{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:9px;padding:12px 8px;background:#050a12;border:1px solid #263c57;border-radius:5px}
+.ow-job-swap span{color:#899db3;font-size:12px}.ow-job-swap i{color:#5fc6ff;font-style:normal}.ow-job-swap b{color:#c49cff;font-size:12px}
+.ow-job-confirm .ow-job-note{color:#e2eaf4}.ow-job-confirm .ow-ability-link{margin:0}
+.ow-confirm-actions{display:grid;grid-template-columns:1.45fr 1fr;gap:8px}.ow-confirm-actions button{padding:12px 8px;color:#adbed0;background:#101b2a;border:1px solid #354b65;border-radius:5px;font-size:11px;cursor:pointer}.ow-confirm-actions button.yes{color:#fff;background:linear-gradient(120deg,#4d168e,#1a4e80);border-color:#a66aff;box-shadow:0 0 15px #7b43c733}
 @keyframes ow-card-scan{0%,52%{translate:-110% 0}100%{translate:130% 0}}
 
 /* ── 異世界：周回中 ── */
