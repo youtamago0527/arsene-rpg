@@ -1,7 +1,7 @@
 window.ARSENE_DATA = {
   // dungeon2BossWins：ミルティ解放に必要なダンジョン2の勝利数。4時間構想の主調整値。
   // debugPassword：拠点の狐を長押しで開くデバッグルームのパスワード
-  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5, dungeon2BossWins: 100, debugPassword: '1229' },
+  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5, dungeon2BossWins: 100, debugPassword: '1229', mealGoldRate: 0.3 },
   dualBladeOffHandRate: 0.70,
   // 武器種マスタ。ここに追記すれば得意武器選択・アイテム欄のタブへ自動反映される。
   // damageStats は将来の体術ダメージ計算（力＋素早さ）用の予約情報。
@@ -519,20 +519,20 @@ window.ARSENE_DATA = {
 
     // ══ ジョブパッシブ（Lv5 / 10 / 15 で習得。習得後は永久）════
     // passiveEffect の type で効果を分類し、戦闘コードは type だけを見る。
-    p_might:       { id: 'p_might', name: '剛力', nameEn: 'MIGHT', type: 'PASSIVE', jobId: 'warrior', passiveEffect: { type: 'statPercent', stat: 'str', rate: .05 }, effectText: '力 +5%', description: '鍛え上げた膂力。力が5%上昇する。' },
+    p_might:       { id: 'p_might', name: '練達', nameEn: 'MASTERY', type: 'PASSIVE', jobId: 'warrior', passiveEffect: { type: 'skillMpDiscount', rate: .40 }, effectText: '武器技の消費MP -40%', description: '振り慣れた身体は無駄がない。武器技の消費MPが軽くなる。力が5%上昇する。' },
     p_tough:       { id: 'p_tough', name: '強靭', nameEn: 'TOUGHNESS', type: 'PASSIVE', jobId: 'warrior', passiveEffect: { type: 'statPercent', stat: 'vit', rate: .05 }, effectText: '体力 +5%', description: '打たれ強い肉体。体力が5%上昇する。' },
     p_instinct:    { id: 'p_instinct', name: '闘争本能', nameEn: 'BATTLE INSTINCT', type: 'PASSIVE', jobId: 'warrior', passiveEffect: { type: 'lowHpPhysicalUp', rate: .10, hpThreshold: .5 }, effectText: 'HP50%以下で物理ダメージ +10%', description: '追い詰められるほど牙を剥く。' },
     p_gale:        { id: 'p_gale', name: '疾風', nameEn: 'GALE', type: 'PASSIVE', jobId: 'martialArtist', passiveEffect: { type: 'statPercent', stat: 'agi', rate: .05 }, effectText: '素早さ +5%', description: '風のような身のこなし。素早さが5%上昇する。' },
-    p_vitalAim:    { id: 'p_vitalAim', name: '急所狙い', nameEn: 'VITAL AIM', type: 'PASSIVE', jobId: 'martialArtist', passiveEffect: { type: 'criticalUp', rate: .03 }, effectText: '会心率 +3%', description: '急所を見抜く眼。会心率が上昇する。' },
+    p_vitalAim:    { id: 'p_vitalAim', name: '急所狙い', nameEn: 'VITAL AIM', type: 'PASSIVE', jobId: 'martialArtist', passiveEffect: { type: 'criticalUp', rate: .10 }, effectText: '会心率 +10%', description: '急所を見抜く眼。会心率が上昇する。' },
     p_fortune:     { id: 'p_fortune', name: '幸運', nameEn: 'FORTUNE', type: 'PASSIVE', jobId: 'martialArtist', passiveEffect: { type: 'statPercent', stat: 'luk', rate: .05 }, effectText: '運 +5%', description: '天運を引き寄せる。運が5%上昇する。' },
     p_amplify:     { id: 'p_amplify', name: '魔力増幅', nameEn: 'AMPLIFY', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'statPercent', stat: 'mag', rate: .05 }, effectText: '魔力 +5%', description: '魔力の流れを増幅する。魔力が5%上昇する。' },
     p_manaStore:   { id: 'p_manaStore', name: '魔力貯蔵', nameEn: 'MANA STORAGE', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'statPercent', stat: 'maxMp', rate: .10 }, effectText: '最大MP +10%', description: '体内に魔力を蓄える。最大MPが10%上昇する。' },
     p_spellBoost:  { id: 'p_spellBoost', name: '魔法増幅', nameEn: 'SPELL BOOST', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'magicDamageUp', rate: .10 }, effectText: '攻撃魔法ダメージ +10%', description: '攻撃魔法の威力を高める。' },
     // 僧侶Lv1：長く潜って稼ぐ役どころ。戦闘で得るGOLDが増える。
-    p_tithe:       { id: 'p_tithe', name: '施しの祈り', nameEn: 'TITHE', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'goldUp', rate: .25 }, effectText: '獲得GOLD +25%', description: '善を積む祈り。倒した怪異が遺すものを、余さず拾い上げる。' },
+    p_tithe:       { id: 'p_tithe', name: '施しの祈り', nameEn: 'TITHE', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'goldUp', rate: .40 }, effectText: '獲得GOLD +40%', description: '善を積む祈り。倒した怪異が遺すものを、余さず拾い上げる。' },
     p_spirit:      { id: 'p_spirit', name: '精神力', nameEn: 'SPIRIT', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'statPercent', stat: 'mnd', rate: .05 }, effectText: '精神 +5%', description: '揺るがぬ心。精神が5%上昇する。' },
     p_healArt:     { id: 'p_healArt', name: '治癒術', nameEn: 'HEALING ART', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'healUp', rate: .10 }, effectText: 'HP回復量 +10%', description: '癒やしの術を高める。' },
-    p_wardBarrier: { id: 'p_wardBarrier', name: '魔法障壁', nameEn: 'WARD BARRIER', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'magicResist', rate: .10 }, effectText: '被魔法ダメージ -10%', description: '魔を退ける薄い障壁を纏う。' },
+    p_wardBarrier: { id: 'p_wardBarrier', name: '托鉢', nameEn: 'ALMS', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'mealDiscount', rate: .50 }, effectText: 'カズのまかない代 -50%', description: '喜捨を受ける身。カズのまかないを安く分けてもらえる。' },
     p_spellBlade:  { id: 'p_spellBlade', name: '魔剣適性', nameEn: 'SPELL BLADE', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'multiStatPercent', stats: { str: .03, mag: .03 } }, effectText: '力 +3% / 魔力 +3%', description: '刃と魔を同時に扱う適性。' },
     p_manaFlow:    { id: 'p_manaFlow', name: '魔力循環', nameEn: 'MANA FLOW', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'statPercent', stat: 'maxMp', rate: .05 }, effectText: '最大MP +5%', description: '魔力を絶えず巡らせる。最大MPが5%上昇する。' },
     p_elemental:   { id: 'p_elemental', name: '属性増幅', nameEn: 'ELEMENTAL BOOST', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'elementDamageUp', rate: .08 }, effectText: '属性攻撃ダメージ +8%', description: '属性を帯びた攻撃の威力を高める。' },
@@ -563,7 +563,7 @@ window.ARSENE_DATA = {
     recorderChoking: {
       id: 'recorderChoking', name: 'リコーダーでチョーキングぅう！？', nameEn: 'RECORDER CHOKING', source: 'weapon', type: 'ACTIVE',
       weaponType: 'instrument', prerequisiteSkill: 'resonantNote', requiredWeaponLevel: 3, sparkRate: null,
-      mp: 0, kind: 'magical', damageType: 'magical', target: 'single',
+      mp: 3, kind: 'magical', damageType: 'magical', target: 'single',
       power: 1.4, agiScale: 0, criticalModifier: 0.15,
       powerText: '楽器攻撃性能×1.4', effectText: '敵単体／会心率+15%／MP消費なし',
       description: '指穴を半分ずらして音程を歪ませる。ギター用の技法をリコーダーでやる者がいるとは誰も思わない。'
@@ -587,7 +587,7 @@ window.ARSENE_DATA = {
     cleaningRodStrike: {
       id: 'cleaningRodStrike', name: 'リコーダーじゃなくて付属のマクガイバーで攻撃だと！？', nameEn: 'CLEANING ROD STRIKE', source: 'weapon', type: 'ACTIVE',
       weaponType: 'instrument', prerequisiteSkill: 'whoseRecorder', requiredWeaponLevel: 18, sparkRate: null,
-      mp: 10, kind: 'physical', damageType: 'physical', target: 'single',
+      mp: 14, kind: 'physical', damageType: 'physical', target: 'single',
       power: 2.2, agiScale: 0, criticalModifier: 0.25,
       powerText: '楽器攻撃性能×2.2（物理）', effectText: '敵単体／会心率+25%／楽器なのに物理攻撃',
       description: '本体ではなく、掃除用の細長い棒で殴りかかる。音楽はどこへ行った。'
@@ -596,14 +596,14 @@ window.ARSENE_DATA = {
     doubleSlash: {
       id: 'doubleSlash', name: '二段斬り', nameEn: 'DOUBLE SLASH', source: 'weapon', type: 'ACTIVE',
       weaponType: 'sword', prerequisiteSkill: 'attack', requiredWeaponLevel: 3, sparkRate: null,
-      mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
+      mp: 2, kind: 'physical', damageType: 'physical', target: 'single',
       power: 0.7, hitCount: 2, hits: 2, agiScale: 0, criticalModifier: 0,
       powerText: 'STR×0.7×2回', effectText: '2連撃／合計1.4倍', description: '踏み込みから返す刃で二度斬りつける。'
     },
     doubleClaw: {
       id: 'doubleClaw', name: 'ダブルクロー', nameEn: 'DOUBLE CLAW', source: 'weapon', type: 'ACTIVE',
       weaponType: 'martial', prerequisiteSkill: 'martialStrike', requiredWeaponLevel: 3, sparkRate: null,
-      mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
+      mp: 3, kind: 'physical', damageType: 'physical', target: 'single',
       power: 0.65, hitCount: 2, hits: 2, agiScale: 0, criticalModifier: 0.08,
       powerText: 'AGI×0.65×2回', effectText: '2連撃／各撃で会心判定＋会心率上昇', description: '両の爪で切り裂く連撃。会心を狙いやすい。'
     },
@@ -619,21 +619,21 @@ window.ARSENE_DATA = {
     tripleSlash: {
       id: 'tripleSlash', name: '三段斬り', nameEn: 'TRIPLE SLASH', source: 'weapon', type: 'ACTIVE',
       weaponType: 'sword', prerequisiteSkill: 'doubleSlash', requiredWeaponLevel: 7, sparkRate: null,
-      mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
+      mp: 3, kind: 'physical', damageType: 'physical', target: 'single',
       power: 0.55, hitCount: 3, hits: 3, agiScale: 0, criticalModifier: 0,
       powerText: 'STR×0.55×3回', effectText: '3連撃／合計1.65倍', description: '流れるような三連の斬撃。'
     },
     sonicBlade: {
       id: 'sonicBlade', name: '音速剣', nameEn: 'SONIC BLADE', source: 'weapon', type: 'ACTIVE',
       weaponType: 'sword', prerequisiteSkill: 'tripleSlash', requiredWeaponLevel: 12, sparkRate: null,
-      mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
+      mp: 5, kind: 'physical', damageType: 'physical', target: 'single',
       power: 1.6, hitCount: 1, agiScale: 0, criticalModifier: 0, speedBonus: 40,
       powerText: 'STR×1.6', effectText: '強い先制補正', description: '音を置き去りにする神速の一閃。'
     },
     afterimageBlade: {
       id: 'afterimageBlade', name: '残像剣', nameEn: 'AFTERIMAGE BLADE', source: 'weapon', type: 'ACTIVE',
       weaponType: 'sword', prerequisiteSkill: 'sonicBlade', requiredWeaponLevel: 18, sparkRate: null,
-      mp: 0, kind: 'physical', damageType: 'physical', target: 'all',
+      mp: 8, kind: 'physical', damageType: 'physical', target: 'all',
       power: 0.9, hitCount: 1, agiScale: 0, criticalModifier: 0,
       powerText: 'STR×0.9（全体）', effectText: '敵全体へ物理攻撃', description: '無数の残像が同時に敵を薙ぐ。剣の最初の全体攻撃。'
     },
@@ -642,21 +642,21 @@ window.ARSENE_DATA = {
     vitalPierce: {
       id: 'vitalPierce', name: '急所突き', nameEn: 'VITAL PIERCE', source: 'weapon', type: 'ACTIVE',
       weaponType: 'martial', prerequisiteSkill: 'doubleClaw', requiredWeaponLevel: 7, sparkRate: null,
-      mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
+      mp: 5, kind: 'physical', damageType: 'physical', target: 'single',
       power: 1.2, hitCount: 1, agiScale: 0, criticalModifier: 0.25,
       powerText: 'AGI×1.2', effectText: '会心率 大幅上昇', description: '一点の急所を穿つ。会心を狙う技。'
     },
     galeFist: {
       id: 'galeFist', name: '疾風拳', nameEn: 'GALE FIST', source: 'weapon', type: 'ACTIVE',
       weaponType: 'martial', prerequisiteSkill: 'doubleClaw', requiredWeaponLevel: 12, sparkRate: null,
-      mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
+      mp: 8, kind: 'physical', damageType: 'physical', target: 'single',
       power: 1.4, hitCount: 1, agiScale: 0.3, criticalModifier: 0, speedBonus: 40,
       powerText: 'AGI×1.4＋AGI×0.3', effectText: '強い先制補正', description: '疾風のごとき踏み込みから放つ拳。'
     },
     shadowStitch: {
       id: 'shadowStitch', name: '影縫い', nameEn: 'SHADOW STITCH', source: 'weapon', type: 'ACTIVE',
       weaponType: 'martial', prerequisiteSkill: 'galeFist', requiredWeaponLevel: 18, sparkRate: null,
-      mp: 0, kind: 'physical', damageType: 'physical', target: 'single',
+      mp: 11, kind: 'physical', damageType: 'physical', target: 'single',
       power: 1.3, hitCount: 1, agiScale: 0, criticalModifier: 0,
       inflict: { type: 'slow', chance: 0.5, turns: 2, speedPenalty: 40 },
       powerText: 'AGI×1.3', effectText: '50%で対象の行動順を大きく低下（2ターン）', description: '影を縫い止め、動きを鈍らせる。'
