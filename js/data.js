@@ -84,6 +84,9 @@ window.ARSENE_DATA = {
     // 通常ジョブが他ジョブから持ち込めるパッシブ枠数 / PHANTOM THIEF の枠数
     passiveSlotCount: { normal: 1, phantomThief: 2 },
     actionSlotCount: { normal: 0, phantomThief: 2 },
+    // JOB成長は「今就いているJOBで育てた分」だけ乗る。
+    // PHANTOM THIEF だけは全JOBの合算をこの割合で引き継げる。
+    phantomThiefInheritRate: 0.5,
     // 魔装士《魔力装填》の追加ダメージ係数
     magicChargeRate: 0.5
   },

@@ -35,6 +35,12 @@
         if (unequip) { this.unequipSlot(unequip.dataset.unequipSlot); return; }
         const equipTab = e.target.closest('[data-equip-tab]');
         if (equipTab) { this.equipTab = equipTab.dataset.equipTab; this.audio.sfx('ui'); this.renderMenuPanel('equipment'); return; }
+        const arcDun = e.target.closest('[data-archive-dungeon]');
+        if (arcDun) { this.archiveDungeon = arcDun.dataset.archiveDungeon; this.audio.sfx('ui'); this.renderMenuPanel('archive'); return; }
+        const artsType = e.target.closest('[data-arts-type]');
+        if (artsType) { this.artsType = artsType.dataset.artsType; this.artsOpenId = null; this.audio.sfx('ui'); this.renderMenuPanel('equipment'); return; }
+        const artsOpen = e.target.closest('[data-arts-open]');
+        if (artsOpen) { const id = artsOpen.dataset.artsOpen; this.artsOpenId = this.artsOpenId === id ? null : id; this.audio.sfx('ui'); this.renderMenuPanel('equipment'); return; }
         const itemTab = e.target.closest('[data-item-tab]');
         if (itemTab) { this.itemTab = itemTab.dataset.itemTab; this.pickFirstStockedSub(); this.audio.sfx('ui'); this.renderMenuPanel('items'); return; }
         const itemWSub = e.target.closest('[data-item-wsub]');
@@ -128,7 +134,7 @@
     }
 
     freshProfile() {
-      const p = D.player; return { version: 11, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), musicScores: {}, bossDefeated: { zenacad: false, myrthi: false }, currentJob: 'mage', jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], subCommand: null, passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, unlockedJobs: ['mage'], initialJob: 'mage', jobGrowthGained: {}, jobRebirths: {}, jobMastered: [], growthFraction: {}, learnedPassives: [], equippedPassives: [null], ptActionSlots: [null, null], ptPassiveSlots: [null, null], weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 }, instrument: { level: 1, exp: 0 } }, learnedWeaponSkills: [], playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0, instrument: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0 }, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, floorWins: {}, dungeon3BattleWins: 0, dungeon3NewSeen: false, lastBattleResult: null, consecutiveDefeats: 0 }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
+      const p = D.player; return { version: 11, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), musicScores: {}, bossDefeated: { zenacad: false, myrthi: false }, currentJob: 'mage', jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], subCommand: null, passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, unlockedJobs: ['mage'], initialJob: 'mage', jobGrowthGained: {}, jobRebirths: {}, jobMastered: [], growthFraction: {}, learnedPassives: [], equippedPassives: [null], ptActionSlots: [null, null], ptPassiveSlots: [null, null], weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 }, instrument: { level: 1, exp: 0 } }, learnedWeaponSkills: [], seenEnemies: [], playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0, instrument: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0 }, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, floorWins: {}, dungeon3BattleWins: 0, dungeon3NewSeen: false, lastBattleResult: null, consecutiveDefeats: 0 }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
     }
     loadProfile() {
       try {
@@ -139,6 +145,15 @@
         if (profile.flags.zenakadoDefeated) profile.bossDefeated.zenacad = true;
         if (!D.jobs[profile.currentJob]) profile.currentJob = 'mage';
         if (!profile.weaponEnchants) profile.weaponEnchants = {};
+        // v12：JOB成長を baseStats へ焼き込む方式をやめ、JOBごとの取得分として持つ方式へ移行。
+        // 旧セーブは全JOB分が baseStats に足し込まれているので、記録済みの取得分を引き戻す。
+        if ((saved.version || 0) < 12 && saved.jobGrowthGained) {
+          for (const table of Object.values(saved.jobGrowthGained)) {
+            for (const [k, v] of Object.entries(table || {})) {
+              if (typeof profile.baseStats[k] === 'number') profile.baseStats[k] = Math.max(1, profile.baseStats[k] - v);
+            }
+          }
+        }
         // 階層ごとの勝利数。旧セーブには無いので必ず補う。
         if (!profile.flags) profile.flags = {};
         if (!profile.flags.floorWins) profile.flags.floorWins = {};
@@ -152,7 +167,9 @@
         if (!Array.isArray(profile.kazuSeenOnce)) profile.kazuSeenOnce = [];
         if (profile.flags.consecutiveDefeats == null) profile.flags.consecutiveDefeats = 0;
         if (profile.flags.lastBattleResult === undefined) profile.flags.lastBattleResult = null;
-        profile.version = 11;
+        // 図鑑用：一度でも戦闘で出会った敵のID
+        if (!Array.isArray(profile.seenEnemies)) profile.seenEnemies = [];
+        profile.version = 12;
         return profile;
       } catch { return this.freshProfile(); }
     }
@@ -317,9 +334,26 @@
         const total = Math.floor(raw);
         frac[k] = raw - total;
         if (!total) continue;
-        this.profile.baseStats[k] = (this.profile.baseStats[k] || 0) + total; track[k] = (track[k] || 0) + total; gained[k] = total;
+        // baseStats へは書き込まない。JOBごとの取得分として記録し、
+        // 現在のJOBのぶんだけを totalStats() で加算する。
+        track[k] = (track[k] || 0) + total; gained[k] = total;
       }
       return Object.keys(gained).length ? gained : null;
+    }
+    // ══ JOBによる能力補正 ══════════════════════════════════════
+    // 通常JOB      … 今就いているJOBで育てた分だけ乗る（転職すると乗り換わる）
+    // PHANTOM THIEF … 全JOBで育てた分を合算し、各能力50%だけ引き継ぐ
+    jobStatBonuses(jobId = this.profile.currentJob) {
+      const gained = this.profile.jobGrowthGained || {}, out = {};
+      if (this.isPhantomThief(jobId)) {
+        const rate = this.gb().phantomThiefInheritRate ?? 0.5;
+        for (const table of Object.values(gained))
+          for (const [k, v] of Object.entries(table || {})) out[k] = (out[k] || 0) + v;
+        for (const k of Object.keys(out)) out[k] = Math.floor(out[k] * rate);
+        return out;
+      }
+      for (const [k, v] of Object.entries(gained[jobId] || {})) if (v) out[k] = v;
+      return out;
     }
     // ジョブLvアップ時：到達Lvのパッシブを永久習得
     grantJobPassives(jobId, level) {
@@ -545,7 +579,7 @@
         ['攻撃力', cs.attackPower], ['防御力', cs.defensePower],
         ['魔法攻撃力', cs.magicAttackPower], ['魔法防御力', cs.magicDefensePower]
       ].map(([label, v]) => `<div class="cbt-row"><span>${label}</span><b>${v}</b></div>`).join('');
-      return `<div class="st-section"><h3>戦闘能力 <span>COMBAT</span></h3>
+      return `<div class="st-section"><h3>戦闘能力</h3>
         <div class="cbt-grid">${rows}</div>
         <div class="cbt-total"><div><small>${wName}の攻撃性能</small><b>${atk}</b></div><em>${scaleText} ＋ 装備${rule.powerKey === 'magicAttackPower' ? '魔法攻撃力' : '攻撃力'}</em></div>
         <div class="cbt-def"><div><span>物理防御</span><b>${Math.round(this.defensePowerFor('physical', total))}</b><small>体力＋防御力</small></div><div><span>魔法防御</span><b>${Math.round(this.defensePowerFor('magical', total))}</b><small>精神＋魔法防御力</small></div></div>
@@ -559,7 +593,7 @@
         const skills = this.learnedWeaponSkills().filter(s => s.weaponType === t.id);
         return `<div class="mst-row${cur === t.id ? ' current' : ''}"><div class="mst-head"><span>${t.name}</span><b>Lv.${m.level}</b>${cur === t.id ? '<em>装備中</em>' : ''}</div><i class="mst-bar"><em style="width:${pct}%"></em></i><small>${m.exp} / ${need}（${pct.toFixed(2)}%）</small>${skills.length ? `<div class="mst-skills">${skills.map(s => `<mark>${s.name}</mark>`).join('')}</div>` : ''}</div>`;
       }).join('');
-      return `<div class="st-section"><h3>武器学 <span>WEAPON MASTERY</span></h3><div class="mst-list">${rows}</div></div>`;
+      return `<div class="st-section"><h3>武器学</h3><div class="mst-list">${rows}</div></div>`;
     }
     // テストプレイ用の集計。コンソールから arseneGame.playtestReport() で確認できる。
     playtestReport() {
@@ -641,7 +675,7 @@
     equippedSeriesCount(seriesId, equipment = this.profile.equipment) { return Object.values(equipment).filter(id => id && (D.items[id]?.seriesId === seriesId || this.equipmentDefinition(id)?.seriesId === seriesId)).length; }
     activeSetEffects(equipment = this.profile.equipment) { const effects = {}; this.unlockedBossSeries().forEach(series => { const count = this.equippedSeriesCount(series.id, equipment); Object.entries(series.setBonuses || {}).forEach(([needed, bonus]) => { if (count >= Number(needed)) Object.assign(effects, bonus.effect || {}); }); }); return effects; }
     totalStats(equipment = this.profile.equipment) {
-      const total = clone(this.profile.baseStats), bonuses = this.equipmentBonuses(equipment), jobBonuses = this.activeJobBonuses(); Object.entries(bonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobBonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); const setEffects = this.activeSetEffects(equipment); if (setEffects.magPercent) total.mag = Math.max(total.mag + 1, Math.floor(total.mag * (1 + setEffects.magPercent / 100))); if (setEffects.critBonusFlat) total.critBonus = (total.critBonus || 0) + setEffects.critBonusFlat; if (this.profile.flags.ramenBuffActive) total.maxHp = Math.ceil(total.maxHp * 1.03); total.critBonus ||= 0; this.applyPassiveStats(total); total.def = total.vit; /* 旧互換：def は体力と同義。装備防御力は defensePowerFor() 側で加算する */ /* 強化は基礎能力ではなく装備自身の戦闘能力を伸ばす（equipmentCombatStats で加算） */ return total;
+      const total = clone(this.profile.baseStats), bonuses = this.equipmentBonuses(equipment), jobBonuses = this.activeJobBonuses(), jobGrowth = this.jobStatBonuses(); Object.entries(bonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobBonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobGrowth).forEach(([k, v]) => total[k] = (total[k] || 0) + v); const setEffects = this.activeSetEffects(equipment); if (setEffects.magPercent) total.mag = Math.max(total.mag + 1, Math.floor(total.mag * (1 + setEffects.magPercent / 100))); if (setEffects.critBonusFlat) total.critBonus = (total.critBonus || 0) + setEffects.critBonusFlat; if (this.profile.flags.ramenBuffActive) total.maxHp = Math.ceil(total.maxHp * 1.03); total.critBonus ||= 0; this.applyPassiveStats(total); total.def = total.vit; /* 旧互換：def は体力と同義。装備防御力は defensePowerFor() 側で加算する */ /* 強化は基礎能力ではなく装備自身の戦闘能力を伸ばす（equipmentCombatStats で加算） */ return total;
     }
     getDungeon(id = this.currentDungeonId) { return (D.dungeons || []).find(d => d.id === id) || (D.dungeons || [])[0]; }
     isDungeonUnlocked(id) { const d = this.getDungeon(id); if (!d) return false; if (!d.unlockCondition) return true; if (d.unlockCondition === 'dungeon1Clear') return this.isBossDefeated('zenacad'); if (d.unlockCondition === 'dungeon2Clear') return this.isBossDefeated('myrthi'); return false; }
@@ -740,7 +774,15 @@
       for (let i = 0; i < count; i++) { let cursor = Math.random() * totalWeight, selected = tier.pool[tier.pool.length - 1].id; for (const entry of tier.pool) { cursor -= entry.weight; if (cursor <= 0) { selected = entry.id; break; } } lineup.push(selected); }
       return lineup;
     }
-    renderEnemies() { $('#enemies').classList.toggle('boss-party', this.battleMode !== 'slime'); $('#enemies').innerHTML = this.enemies.map((e, i) => e.kind === 'boss' ? `<button class="enemy boss-enemy fighter idle" id="${e.uid}" data-enemy="${i}" aria-label="${e.name}"><div class="enemy-hud boss-hud"><span>${e.name} // ${e.title}</span><div><i style="width:100%"></i></div><small>???? / ????</small></div><div class="slime-shadow boss-shadow"></div><div class="noel-sprite${e.spriteClass ? ' ' + e.spriteClass : ''}"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div></button>` : `<button class="enemy enemy-${e.id} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" aria-label="${e.name}${e.label}"><div class="enemy-hud"><span>${e.name} ${e.label}</span><div><i style="width:100%"></i></div></div><div class="slime-shadow"></div><div class="slime"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div></button>`).join(''); }
+    // 図鑑用：戦闘に出た敵を「遭遇済み」として記録する。
+    // ボス戦も通常戦もここを通るので、1か所で拾える。
+    noteEnemiesSeen() {
+      const seen = this.profile.seenEnemies ||= [];
+      let added = false;
+      for (const e of this.enemies || []) if (e.id && !seen.includes(e.id)) { seen.push(e.id); added = true; }
+      if (added) this.saveProfile();
+    }
+    renderEnemies() { this.noteEnemiesSeen(); $('#enemies').classList.toggle('boss-party', this.battleMode !== 'slime'); $('#enemies').innerHTML = this.enemies.map((e, i) => e.kind === 'boss' ? `<button class="enemy boss-enemy fighter idle" id="${e.uid}" data-enemy="${i}" aria-label="${e.name}"><div class="enemy-hud boss-hud"><span>${e.name} // ${e.title}</span><div><i style="width:100%"></i></div><small>???? / ????</small></div><div class="slime-shadow boss-shadow"></div><div class="noel-sprite${e.spriteClass ? ' ' + e.spriteClass : ''}"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div></button>` : `<button class="enemy enemy-${e.id} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" aria-label="${e.name}${e.label}"><div class="enemy-hud"><span>${e.name} ${e.label}</span><div><i style="width:100%"></i></div></div><div class="slime-shadow"></div><div class="slime"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div></button>`).join(''); }
     applyEquipmentVisual() {
       const w = this.equippedWeapon(), layer = $('#weapon-layer'); layer.className = `weapon-layer weapon-${w.weaponType} sprite-${w.weaponSprite}`; layer.dataset.weaponId = w.id; layer.dataset.weaponType = w.weaponType; layer.title = w.name; $('#weapon-name').textContent = `RIGHT HAND // ${w.name}`;
       if (w.battleSprite) layer.style.backgroundImage = `url("${w.battleSprite}")`; else layer.style.removeProperty('background-image');
@@ -993,7 +1035,7 @@
     }
     isRecipeUnlocked(recipe) { if (!recipe.materialUnlockId) return true; return (this.profile.unlockedRecipes || []).includes(recipe.id); }
     grantJobExp(amount) { const jobId = this.profile.currentJob, job = D.jobs[jobId], progress = this.profile.jobs[jobId], from = progress.level, learnedBefore = new Set(this.profile.learnedJobSkills || []); const gained = Math.floor(Math.max(0, amount) / 4); progress.exp += gained; while (progress.level < D.jobLevelCap) { const need = this.jobExpNeeded(progress.level); if (!need || progress.exp < need) break; progress.exp -= need; progress.level++; } if (progress.level >= D.jobLevelCap) { progress.exp = 0; this.markJobMastered(jobId); } const gainedLevels = progress.level - from; const statGain = gainedLevels > 0 ? this.applyJobLevelGrowth(jobId, gainedLevels) : null; const newPassives = gainedLevels > 0 ? this.grantJobPassives(jobId, progress.level) : []; this.syncSkillUnlocks(); this.checkAdvancedJobUnlocks(); const learned = (this.profile.learnedJobSkills || []).filter(id => !learnedBefore.has(id)); this.saveProfile(); return { jobId, jobName: job.name, jobNameEn: job.nameEn, exp: gained, from, to: progress.level, learned, statGain, newPassives }; }
-    jobResultHTML(result) { if (!result) return ''; return `<div class="job-result"><small>JOB EXPERIENCE</small><strong>${result.jobName} <em>${result.jobNameEn}</em></strong><span>JEXP <b>+${result.exp}</b></span>${result.to > result.from ? `<h3>JOB LEVEL UP!　Lv.${result.from} → Lv.${result.to}</h3>` : ''}${result.learned.length ? `<div>${result.learned.map(id => `<b>NEW SKILL　${D.skills[id].name}</b>`).join('')}</div>` : ''}</div>`; }
+    jobResultHTML(result) { if (!result) return ''; return `<div class="job-result"><small>JOB EXPERIENCE</small><strong>${result.jobName}</strong><span>JEXP <b>+${result.exp}</b></span>${result.to > result.from ? `<h3>JOB LEVEL UP!　Lv.${result.from} → Lv.${result.to}</h3>` : ''}${result.learned.length ? `<div>${result.learned.map(id => `<b>NEW SKILL　${D.skills[id].name}</b>`).join('')}</div>` : ''}</div>`; }
     rewardHTML(reward, levels) {
       const drops = Object.entries(reward.drops); let html = `<div class="reward-summary"><span>EXP <b>+${reward.exp}</b></span><span>GOLD <b>+${reward.gold}</b></span></div>`;
       html += `<div class="drop-list"><h3>DROPS</h3>${drops.length ? drops.map(([id,n]) => { const i=D.items[id]; return `<p class="rarity-${i.rarity}">${i.name}<b>×${n}</b></p>`; }).join('') : '<p>ドロップなし</p>'}</div>`;
@@ -1051,7 +1093,7 @@
       if (name === 'equipment') this.renderEquipmentPanel(panel);
       if (name === 'workshop') this.renderWorkshop(panel);
       if (name === 'food') { const active = !!this.profile.flags.ramenBuffActive, stats = this.totalStats(), vitals = this.storedVitals(stats), full = vitals.hp >= stats.maxHp && vitals.mp >= stats.maxMp, price = Math.floor(this.profile.gold * .3), canEat = !active || !full, coming = (D.foodMenu?.comingSoon || []).map(item => `<article class="food-coming-card" aria-disabled="true"><i aria-hidden="true"></i><b>${item.name}</b><span>COMING SOON</span></article>`).join(''); panel.innerHTML = `<small>KAZU'S SPECIAL</small><h2>カズのまかない</h2><div class="food-panel"><div class="food-bowl" aria-hidden="true"></div><div class="food-copy"><strong>店主特製・怪盗まかない</strong><span>HP・MPを全回復。次のダンジョン1回だけ最大HPが3%上昇します。</span><em>料金：所持GOLDの30％　<b>${price.toLocaleString('ja-JP')} GOLD</b></em><button class="eat-food" data-eat-food ${canEat ? '' : 'disabled'}>${canEat ? 'まかないを食べる' : '全回復・効果発動中'}</button></div></div><section class="food-coming"><header><b>NEXT MENU</b><span>COMING SOON</span></header><div>${coming}</div></section>`; }
-      if (name === 'archive') { const noelSeen = this.profile.flags.noelFirstEncounterCleared, zenakadoSeen = this.profile.flags.zenakadoDefeated || (this.profile.flags.postNoelBattleWins || 0) >= D.battleProgression.zenakadoEncounterWins; panel.innerHTML = `<small>PHANTOM ARCHIVE</small><h2>図鑑</h2><div class="hideout-feature"><article><b>ダンジョン1の怪異</b><span>スライム、ソルメイジ、鼠賊、ゴブリン、ナイトバット、ゴーストボーンを確認。</span></article>${noelSeen ? '<article><b>ノエル // 永遠の裁定者</b><span>初回遭遇記録。現在の戦力では討伐不能。</span></article>' : '<article><b>未確認の裁定者</b><span>通常戦を3回制すると反応を追跡できます。</span></article>'}${zenakadoSeen ? '<article><b>ゼナカド // 独奏卿</b><span>静寂のホールを支配するダンジョン1ボス。</span></article>' : ''}</div>`; }
+      if (name === 'archive') { this.renderArchivePanel(panel); return; }
       if (name === 'job') this.renderJobPanel(panel);
       if (name === 'system') { this.renderSystemPanel(panel); return; }
       panel.insertAdjacentHTML('afterbegin', '<button class="panel-home" data-menu="home">拠点へ戻る</button>');
@@ -1081,9 +1123,9 @@
     jobListHtml(unlocked, currentId) {
       const adv = ['arcaneMaestro', 'dualBlade'], base = [...(D.startingJobIds || []), 'magicKnight'], special = ['phantomThief'];
       // 解放判定は profile.unlockedJobs が唯一の情報源。初期ジョブを固定しない。
-      const card = id => { const j = D.jobs[id]; if (!j) return ''; const p = this.profile.jobs[id] || { level: 1 }, isAdv = adv.includes(id), avail = isAdv ? this.isAdvancedJobUnlocked(id) : this.isJobUnlocked(id), isCur = id === currentId; return `<button class="jcard${isCur ? ' cur' : ''}${avail ? '' : ' locked'}" data-job-detail="${id}"><div class="jcard-name">${j.name}<small>${j.nameEn}</small></div><div class="jcard-lv">${avail ? `Lv.${p.level}` : 'LOCKED'}</div>${isCur ? '<em class="jcard-cur">●</em>' : ''}</button>`; };
+      const card = id => { const j = D.jobs[id]; if (!j) return ''; const p = this.profile.jobs[id] || { level: 1 }, isAdv = adv.includes(id), avail = isAdv ? this.isAdvancedJobUnlocked(id) : this.isJobUnlocked(id), isCur = id === currentId; return `<button class="jcard${isCur ? ' cur' : ''}${avail ? '' : ' locked'}" data-job-detail="${id}"><div class="jcard-name">${j.name}</div><div class="jcard-lv">${avail ? `Lv.${p.level}` : 'LOCKED'}</div>${isCur ? '<em class="jcard-cur">●</em>' : ''}</button>`; };
       const notice = this.isJobUnlocked('magicKnight') ? '' : '<p class="job-lock-notice">1面クリアで《魔装士の証》を入手すると、残りの基本JOBと魔装士が解放されます。</p>';
-      return `${notice}<section class="jsec"><h4>基本JOB <span>BASE JOB</span></h4><div class="jgrid">${base.map(card).join('')}</div></section><section class="jsec"><h4>特殊JOB <span>SPECIAL JOB</span></h4><div class="jgrid">${special.map(card).join('')}</div></section><section class="jsec"><h4>上位JOB <span>ADVANCED JOB</span></h4><div class="jgrid">${adv.map(card).join('')}</div></section>`;
+      return `${notice}<section class="jsec"><h4>基本JOB</h4><div class="jgrid">${base.map(card).join('')}</div></section><section class="jsec"><h4>特殊JOB</h4><div class="jgrid">${special.map(card).join('')}</div></section><section class="jsec"><h4>上位JOB</h4><div class="jgrid">${adv.map(card).join('')}</div></section>`;
     }
     jobDetailHtml(jobId, unlocked, currentId) {
       const j = D.jobs[jobId], p = this.profile.jobs[jobId], isAdv = ['arcaneMaestro', 'dualBlade'].includes(jobId), avail = isAdv ? this.isAdvancedJobUnlocked(jobId) : unlocked || jobId === 'mage', isCur = jobId === currentId, need = this.jobExpNeeded(p.level), bar = need ? Math.round(100 * p.exp / need) : 100;
@@ -1091,7 +1133,11 @@
       const skillRows = Object.entries(j.skillUnlocks || {}).sort(([a], [b]) => +a - +b).map(([lv, id]) => { const s = D.skills[id], learned = p.level >= +lv; return `<button class="jar${learned ? ' learned' : ' locked'}"${learned ? ` data-job-skill-detail="${id}"` : ''}><span class="jar-lv">Lv.${lv}</span><span class="jar-nm">${s?.name || id}</span><em class="jar-type">${s?.type === 'PASSIVE' ? 'P' : 'A'}</em><small class="jar-st">${learned ? '習得済' : 'LOCK'}</small></button>`; }).join('');
       let condHtml = '';
       if (isAdv && !avail && j.unlockCondition) { const c = j.unlockCondition, bOk = c.bossDefeated ? this.isBossDefeated(c.bossDefeated) : true, bName = c.bossDefeated ? (D.enemies[c.bossDefeated]?.name || c.bossDefeated) : ''; const jcs = Object.entries(c.jobLevels || {}).map(([rid, rlv]) => { const cur = this.profile.jobs[rid]?.level || 0, ok = cur >= rlv; return `<div class="cond-row${ok ? ' ok' : ' ng'}"><b>${ok ? '✓' : '✕'} ${D.jobs[rid]?.name || rid} Lv${rlv}</b><small>現在 Lv.${cur}</small></div>`; }).join(''); condHtml = `<div class="jconds"><h4>解放条件</h4>${bName ? `<div class="cond-row${bOk ? ' ok' : ' ng'}"><b>${bOk ? '✓' : '✕'} ${bName}を撃破</b></div>` : ''}${jcs}</div>`; }
-      return `<div class="jdetail"><button class="jback-btn" data-job-back>← JOB一覧</button><div class="jdetail-hdr"><div><b>${j.name}</b><small>${j.nameEn}</small></div><em class="jdetail-badge">${isCur ? 'CURRENT' : avail ? `Lv.${p.level}` : 'LOCKED'}</em></div>${avail ? `<div class="jexp-wrap"><div class="jlv-row"><b>JOB Lv.${p.level}</b><span>JEXP ${need ? `${p.exp} / ${need}` : 'MASTER'}</span></div><div class="jexp-bar"><i style="width:${bar}%"></i></div></div><div class="jbonus"><h4>JOB BONUS</h4><div class="jbn-grid">${bHtml}</div></div>${isCur ? '<div class="jcur-badge">現在のJOB</div>' : `<button class="jchange-btn" data-job-change="${jobId}">このJOBに変更<span>JOB CHANGE</span></button>`}${this.rebirthSectionHTML(jobId)}<div class="jskills"><h4>ABILITY</h4><div class="jar-list">${skillRows}</div></div>` : `<p class="jlocked-note">${j.description}</p>${condHtml}`}</div>`;
+      // JOB補正は「このJOBで育てた成長」を出す。旧テーブル方式のJOBは従来どおり。
+      const grown = (this.profile.jobGrowthGained || {})[jobId] || {};
+      const gHtml = Object.entries(grown).filter(([, v]) => v).map(([k, v]) => `<div class="jbn-item"><span>${statLabels[k] || k}</span><b>+${v}</b></div>`).join('');
+      const bonusGrid = gHtml || bHtml;
+      return `<div class="jdetail"><button class="jback-btn" data-job-back>← JOB一覧</button><div class="jdetail-hdr"><div><b>${j.name}</b></div><em class="jdetail-badge">${isCur ? '現在' : avail ? `Lv.${p.level}` : 'LOCKED'}</em></div>${avail ? `<div class="jexp-wrap"><div class="jlv-row"><b>JOB Lv.${p.level}</b><span>JEXP ${need ? `${p.exp} / ${need}` : 'MASTER'}</span></div><div class="jexp-bar"><i style="width:${bar}%"></i></div></div><div class="jbonus"><h4>このJOBで育てた能力</h4><div class="jbn-grid">${bonusGrid}</div><p class="jbn-note">${this.isPhantomThief() ? 'PHANTOM THIEF は全JOBの成長を半分引き継ぎます。' : 'この成長は、このJOBに就いている間だけ乗ります。'}</p></div>${isCur ? '<div class="jcur-badge">現在のJOB</div>' : `<button class="jchange-btn" data-job-change="${jobId}">このJOBに変更</button>`}${this.rebirthSectionHTML(jobId)}<div class="jskills"><h4>アビリティ</h4><div class="jar-list">${skillRows}</div></div>` : `<p class="jlocked-note">${j.description}</p>${condHtml}`}</div>`;
     }
     abilitySetHtml(currentId) {
       const mainCmd = this.jobCommand(currentId), subId = this.profile.subCommand, subCmd = subId ? this.jobCommand(subId) : null, subJob = subId ? D.jobs[subId] : null;
@@ -1331,23 +1377,107 @@
         alert(`武器強化FAILED！\n${w.name}は粉砕された……`);
       }
     }
+    // ══ 図鑑（モンスター）══════════════════════════════════════
+    // ダンジョンごとにタブ分け。工房で素材を集めるときに見るので
+    // ドロップ率を必ず出す。ステータスも併記する。
+    // ノエルのように正体不明の相手は ??? のまま伏せる。
+    archiveDungeons() {
+      return [
+        { id: 'dungeon1', label: 'D1' },
+        { id: 'dungeon2', label: 'D2' },
+        { id: 'dungeon3', label: 'D3' }
+      ];
+    }
+    // その敵がどのダンジョンのものか。dungeonId が無い旧データは出現表から逆引きする。
+    enemyDungeonId(e) {
+      if (e.dungeonId) return e.dungeonId;
+      for (const d of D.dungeons || []) {
+        const tiers = [...(d.encounterProgression || []), ...(d.floors || []).flatMap(f => f.encounterProgression || [])];
+        if (tiers.some(t => (t.pool || []).some(p => p.id === e.id))) return d.id;
+      }
+      return null;
+    }
+    // 図鑑で伏せる相手
+    //   ・ノエルのように正体が明かされていない相手は、遭遇しても伏せたまま
+    //   ・まだ一度も戦闘で出会っていない敵も伏せる
+    hasMetEnemy(id) { return (this.profile.seenEnemies || []).includes(id); }
+    isArchiveHidden(e) { return e.id === 'noelFirstEncounter' || e.hideInArchive || !this.hasMetEnemy(e.id); }
+    renderArchivePanel(panel) {
+      const dungeons = this.archiveDungeons();
+      if (!dungeons.some(d => d.id === this.archiveDungeon)) this.archiveDungeon = 'dungeon1';
+      const dunId = this.archiveDungeon;
+      const bossIds = new Set(['zenakado', 'myrthi', 'noelFirstEncounter']);
+      const all = Object.values(D.enemies).filter(e => this.enemyDungeonId(e) === dunId || (dunId === 'dungeon1' && bossIds.has(e.id) && e.id !== 'myrthi'));
+      // 雑魚 → ボスの順。ボスは末尾へ。
+      const list = [...all].sort((a, b) => (bossIds.has(a.id) ? 1 : 0) - (bossIds.has(b.id) ? 1 : 0) || (a.stats?.maxHp || 0) - (b.stats?.maxHp || 0));
+      const tabs = dungeons.map(d => `<button data-archive-dungeon="${d.id}" class="${d.id === dunId ? 'active' : ''}"><b>${d.label}</b></button>`).join('');
+      const statRow = s => !s ? '' : `<div class="ar-stats">
+        <span>HP</span><b>${s.maxHp ?? '—'}</b><span>攻撃</span><b>${s.atk ?? '—'}</b><span>防御</span><b>${s.def ?? '—'}</b>
+        <span>魔力</span><b>${s.mag ?? '—'}</b><span>精神</span><b>${s.mnd ?? s.def ?? '—'}</b><span>素早さ</span><b>${s.spd ?? '—'}</b></div>`;
+      const dropRow = e => {
+        const t = e.dropTable || [];
+        if (!t.length) return '<p class="ar-nodrop">ドロップなし</p>';
+        return `<div class="ar-drops">${t.map(d => {
+          const it = D.items[d.itemId] || D.weapons[d.itemId] || D.armors[d.itemId] || D.accessories[d.itemId];
+          const pct = Math.round((d.chance || 0) * 1000) / 10;
+          return `<div class="ar-drop"><span>${it?.name || d.itemId}</span><b>${pct}%</b><i><em style="width:${Math.min(100, pct)}%"></em></i></div>`;
+        }).join('')}</div>`;
+      };
+      const cards = list.map(e => {
+        if (this.isArchiveHidden(e)) {
+          return `<article class="ar-card ar-hidden"><header><b>？？？</b><small>未確認</small></header><p class="ar-nodrop">正体が判明していません。</p></article>`;
+        }
+        const isBoss = bossIds.has(e.id);
+        const gold = e.gold ? `${e.gold.min}〜${e.gold.max}` : '—';
+        return `<article class="ar-card${isBoss ? ' ar-boss' : ''}">
+          <header><b>${e.name}</b><small>${isBoss ? 'BOSS' : (e.element ? `属性 ${e.element}` : '')}</small></header>
+          ${statRow(e.stats)}
+          <div class="ar-meta"><span>EXP</span><b>${e.exp ?? 0}</b><span>GOLD</span><b>${gold}</b>${e.weaknesses?.length ? `<span>弱点</span><b>${e.weaknesses.join('・')}</b>` : ''}</div>
+          ${dropRow(e)}
+        </article>`;
+      }).join('');
+      const met = list.filter(e => !this.isArchiveHidden(e)).length;
+      panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>PHANTOM ARCHIVE</small><h2>図鑑</h2>
+        <div class="item-tabs ar-tabs">${tabs}</div>
+        <p class="ar-hint">記録 ${met} / ${list.length}　—　一度戦った怪異が記録されます。数値はドロップ率です。</p>
+        <div class="ar-list">${cards || '<p class="item-empty">このダンジョンの記録はまだありません。</p>'}</div>`;
+    }
+    // 選択キャラの名前。未選択時は蓮。
+    playerName() { return (this.characterList || []).find(c => c.id === this.profile.selectedCharacter)?.name || '雨宮 蓮'; }
     renderStatusPanel(panel, withTabs = false) {
       const base = this.profile.baseStats, bonus = this.equipmentBonuses(), total = this.totalStats(), vitals = this.storedVitals(total);
       const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {}, jlv = jst.level || 1, jneed = this.jobExpNeeded(jlv), jexp = jst.exp || 0;
-      const need = this.expNeeded(), expPct = Math.min(100, 100 * this.profile.exp / need), jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100;
+      // キャラLvは廃止済み。EXPバーは装備中の武器の武器学に置き換える。
+      const mType = this.equippedWeaponType(), mst = this.masteryOf(mType), mNeed = this.masteryExpNeeded(mst.level);
+      const mPct = Math.min(100, 100 * (mst.exp || 0) / mNeed), jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100;
       const slots = D.equipmentSlots || [{ id: 'rightHand', name: '右手', enName: 'MAIN' }, { id: 'leftHand', name: '左手', enName: 'OFF' }, { id: 'head', name: '頭', enName: 'HEAD' }, { id: 'body', name: '体', enName: 'BODY' }, { id: 'arms', name: '腕', enName: 'ARMS' }, { id: 'feet', name: '足', enName: 'FEET' }, { id: 'accessory', name: 'アクセ', enName: 'ACC' }];
       const eqRows = slots.map(s => { const id = this.profile.equipment[s.id], it = D.items[id]; return `<div class="st-eq-row ${id ? 'filled' : 'empty'}"><span>${s.name}</span><b>${it?.name || '—'}${id ? this.enchantSuffix(id) : ''}</b><small>${id ? this.bonusText(id) : ''}</small></div>`; }).join('');
-      const jobBonus = this.activeJobBonuses();
-      const statRows = Object.keys(statLabels).map(k => { const parts = [`基本 ${base[k]}`]; if (bonus[k]) parts.push(`<i class="src-eq">装備 +${bonus[k]}</i>`); if (jobBonus[k]) parts.push(`<i class="src-job">JOB +${jobBonus[k]}</i>`); return `<div class="st-stat"><span>${statLabels[k]}</span><b>${total[k]}</b><em>${parts.join(' / ')}</em></div>`; }).join('');
+      // JOB補正 = 旧テーブル方式の補正 ＋ 今のJOBで育てた成長分
+      const legacyJob = this.activeJobBonuses(), growthJob = this.jobStatBonuses(), jobBonus = {};
+      for (const src of [legacyJob, growthJob]) for (const [k, v] of Object.entries(src)) if (v) jobBonus[k] = (jobBonus[k] || 0) + v;
+      // 基礎値 ＋ JOB ＋ 装備 が合計と一致するように並べる
+      const statRows = Object.keys(statLabels).map(k => {
+        const b = base[k] || 0, j = jobBonus[k] || 0, e = bonus[k] || 0;
+        const parts = [`<i class="src-base">基礎 ${b}</i>`];
+        if (j) parts.push(`<i class="src-job">JOB +${j}</i>`);
+        if (e) parts.push(`<i class="src-eq">装備 +${e}</i>`);
+        // パッシブ・セット効果・まかないバフなど、上記以外の加算分
+        const rest = total[k] - b - j - e;
+        const mismatch = rest ? `<i class="src-etc">パッシブ他 ${rest > 0 ? '+' : ''}${rest}</i>` : '';
+        return `<div class="st-stat"><span>${statLabels[k]}</span><b>${total[k]}</b><em>${parts.join('<u>+</u>')}${mismatch}</em></div>`;
+      }).join('');
       const jobBonusRows = Object.entries(jobBonus).filter(([, v]) => v).map(([k, v]) => `<div class="st-jb-row"><span>${statLabels[k] || k.toUpperCase()}</span><b>+${v}</b></div>`).join('');
-      const jobHtml = `<div class="st-section"><h3>ジョブ補正 <span>JOB BONUS</span></h3><div class="st-jb-head"><b>${D.jobs[jid]?.name || ''}</b><em>Lv.${jlv} まで習得</em></div>${jobBonusRows ? `<div class="st-jb">${jobBonusRows}</div>` : '<p class="item-empty">まだ補正はありません。</p>'}</div>`;
+      const ptNote = this.isPhantomThief()
+        ? `<p class="st-jb-note">全JOBで育てた成長を ${Math.round((this.gb().phantomThiefInheritRate ?? 0.5) * 100)}% 引き継いでいます。</p>`
+        : `<p class="st-jb-note">JOBで育てた成長は、そのJOBに就いている間だけ乗ります。</p>`;
+      const jobHtml = `<div class="st-section"><h3>ジョブ補正</h3><div class="st-jb-head"><b>${D.jobs[jid]?.name || ''}</b><em>Lv.${jlv}</em></div>${jobBonusRows ? `<div class="st-jb">${jobBonusRows}</div>` : '<p class="item-empty">まだ補正はありません。</p>'}${ptNote}</div>`;
       const passives = (this.profile.passiveSlots || []).map(id => D.skills[id]).filter(Boolean);
-      const passiveHtml = passives.length ? `<div class="st-section"><h3>パッシブ <span>PASSIVE</span></h3><div class="st-passives">${passives.map(s => `<div><b>${s.name}</b><small>${s.description || ''}</small></div>`).join('')}</div></div>` : '';
+      const passiveHtml = passives.length ? `<div class="st-section"><h3>パッシブ</h3><div class="st-passives">${passives.map(s => `<div><b>${s.name}</b><small>${s.description || ''}</small></div>`).join('')}</div></div>` : '';
       panel.innerHTML = `<small>CHARACTER DATA</small><h2>${withTabs ? '装備・ステータス' : 'ステータス'}</h2>${withTabs ? this.equipTabsHtml() : ''}
-        <div class="st-head"><div class="st-portrait" aria-hidden="true"></div><div class="st-id"><strong>雨宮 蓮</strong><span>AMAMIYA REN</span><b>LV.${String(this.profile.level).padStart(2,'0')}</b><em>${D.jobs[jid]?.name || ''} Lv.${jlv}</em></div></div>
-        <div class="st-meters"><div class="st-meter hp"><span>HP</span><i style="width:${100*vitals.hp/total.maxHp}%"></i><output>${vitals.hp} / ${total.maxHp}</output></div><div class="st-meter mp"><span>MP</span><i style="width:${100*vitals.mp/total.maxMp}%"></i><output>${vitals.mp} / ${total.maxMp}</output></div><div class="st-meter exp"><span>EXP</span><i style="width:${expPct}%"></i><output>${expPct.toFixed(2)}%</output></div><div class="st-meter jexp"><span>JEXP</span><i style="width:${jpct}%"></i><output>${jneed ? jpct.toFixed(2)+'%' : 'MASTER'}</output></div></div>
-        <div class="st-section"><h3>装備 <span>EQUIPMENT</span></h3><div class="st-eq">${eqRows}</div></div>
-        <div class="st-section"><h3>能力値 <span>STATS</span></h3><div class="stat-grid">${statRows}</div></div>${this.combatStatsSectionHTML(total)}${this.masterySectionHTML()}${jobHtml}${passiveHtml}`;
+        <div class="st-head"><div class="st-portrait" aria-hidden="true"></div><div class="st-id"><strong>${this.playerName()}</strong><em>${D.jobs[jid]?.name || ''} Lv.${jlv}</em></div></div>
+        <div class="st-meters"><div class="st-meter hp"><span>HP</span><i style="width:${100*vitals.hp/total.maxHp}%"></i><output>${vitals.hp} / ${total.maxHp}</output></div><div class="st-meter mp"><span>MP</span><i style="width:${100*vitals.mp/total.maxMp}%"></i><output>${vitals.mp} / ${total.maxMp}</output></div><div class="st-meter exp"><span>${this.weaponTypeName(mType)} Lv.${mst.level}</span><i style="width:${mPct}%"></i><output>${mPct.toFixed(2)}%</output></div><div class="st-meter jexp"><span>${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}</span><i style="width:${jpct}%"></i><output>${jneed ? jpct.toFixed(2)+'%' : 'MASTER'}</output></div></div>
+        <div class="st-section"><h3>装備</h3><div class="st-eq">${eqRows}</div></div>
+        <div class="st-section"><h3>能力値</h3><div class="stat-grid">${statRows}</div></div>${this.combatStatsSectionHTML(total)}${this.masterySectionHTML()}${jobHtml}${passiveHtml}`;
     }
     enchantLevel(id) { return (D.weapons[id] ? (this.profile.weaponEnchants || {})[id] : (this.profile.armorEnchants || {})[id]) || 0; }
     enchantSuffix(id) { const lv = this.enchantLevel(id); return lv > 0 ? `<em class="ench-lv">+${lv}</em>` : ''; }
@@ -1448,9 +1578,66 @@
     }
     musicScoreSectionHTML() { const scores = Object.values(D.musicScores || {}); return `<section class="music-score-section"><h3>楽曲 <span>MUSIC SCORE // PRIVATE MODE</span></h3><div>${scores.map(score => { const owned = !!this.profile.musicScores?.[score.id]; return `<article class="music-score-card ${owned ? 'owned' : 'locked'}"><i>♪</i><div><small>${owned ? 'PLAYABLE SCORE' : 'LOCKED SCORE'}</small><b>${owned ? score.title : '????????'}</b><strong>${owned ? `（${score.subtitle}）` : 'ゼナカド初回撃破で解放'}</strong><span>${owned ? score.description : 'まだ演奏できません。'}</span></div><em>${owned ? 'PRIVATE MODE ITEM' : 'LOCKED'}</em></article>`; }).join('')}</div></section>`; }
     bossSetBonusSectionHTML() { const seriesList = this.unlockedBossSeries(); if (!seriesList.length) return ''; return seriesList.map(series => { const count = this.equippedSeriesCount(series.id); return `<section class="boss-set-section"><header><div><small>BOSS EQUIPMENT SET</small><h3>${series.name}</h3></div><strong>${count} / ${series.equipment.length} EQUIPPED</strong></header><div>${Object.entries(series.setBonuses || {}).map(([needed, bonus]) => `<article class="${count >= Number(needed) ? 'active' : ''}"><b>${needed} SET — ${bonus.name}</b><span>${bonus.description}</span></article>`).join('')}</div></section>`; }).join(''); }
-    equipTabsHtml() { const t = this.equipTab || 'equip'; return `<div class="item-tabs eq-tabs"><button data-equip-tab="equip" class="${t === 'equip' ? 'active' : ''}"><b>装備</b><span>EQUIPMENT</span></button><button data-equip-tab="status" class="${t === 'status' ? 'active' : ''}"><b>ステータス</b><span>STATUS</span></button><button data-equip-tab="score" class="${t === 'score' ? 'active' : ''}"><b>楽曲</b><span>SCORE</span></button></div>`; }
+    equipTabsHtml() {
+      const t = this.equipTab || 'equip';
+      const tabs = [['equip', '装備'], ['status', 'ステータス'], ['arts', '武器技'], ['score', '楽曲']];
+      return `<div class="item-tabs eq-tabs">${tabs.map(([id, name]) => `<button data-equip-tab="${id}" class="${t === id ? 'active' : ''}"><b>${name}</b></button>`).join('')}</div>`;
+    }
+    // ══ 武器技タブ ══════════════════════════════════════════════
+    // 武器学ごとに分け、閃いて習得済みの技を並べる。タップで効果を開く。
+    renderWeaponArtsPanel(panel) {
+      const types = this.unlockedWeaponTypes();
+      if (!types.some(t => t.id === this.artsType)) this.artsType = this.equippedWeaponType() || types[0]?.id;
+      const type = this.artsType;
+      const subTabs = types.map(t => {
+        const m = this.masteryOf(t.id);
+        return `<button data-arts-type="${t.id}" class="${t.id === type ? 'active' : ''}"><b>${t.name}</b><span>Lv.${m.level}</span></button>`;
+      }).join('');
+      // その武器種の技を「習得済み → 未習得」の順で並べる
+      // 通常攻撃は技ではないので除き、閃きで覚える技だけを並べる
+      const all = Object.values(D.skills).filter(s => s.weaponType === type && s.prerequisiteSkill)
+        .sort((a, b) => (a.requiredWeaponLevel ?? 1) - (b.requiredWeaponLevel ?? 1));
+      const learned = this.learnedWeaponSkillIds();
+      const mst = this.masteryOf(type);
+      const rows = all.map(s => {
+        const has = learned.includes(s.id);
+        const open = this.artsOpenId === s.id;
+        const from = s.prerequisiteSkill ? (D.skills[s.prerequisiteSkill]?.name || s.prerequisiteSkill) : null;
+        const req = s.requiredWeaponLevel ?? 1;
+        const meta = has
+          ? `${s.mp ? `MP ${s.mp}` : 'MP 0'}${s.hits > 1 ? ` / ${s.hits}回攻撃` : ''}${s.aoe ? ' / 全体' : ''}`
+          : `武器学 Lv.${req} 必要${from ? `／${from}から派生` : ''}`;
+        const detail = open && has
+          ? `<div class="wa-detail"><p>${s.description || ''}</p><div class="wa-facts">
+              <span>威力</span><b>${s.power != null ? `攻撃性能×${s.power}${s.hits > 1 ? ` を${s.hits}回` : ''}` : '—'}</b>
+              <span>消費MP</span><b>${s.mp || 0}</b>
+              ${s.hits > 1 ? `<span>ヒット数</span><b>${s.hits}回</b>` : ''}
+              ${s.aoe ? '<span>対象</span><b>敵全体</b>' : '<span>対象</span><b>敵単体</b>'}
+              ${s.element ? `<span>属性</span><b>${s.element}</b>` : ''}
+              ${from ? `<span>派生元</span><b>${from}</b>` : ''}
+            </div></div>`
+          : '';
+        return `<div class="wa-item ${has ? 'has' : 'lock'}${open ? ' open' : ''}">
+          <button class="wa-head" ${has ? `data-arts-open="${s.id}"` : 'disabled'}>
+            <b>${has ? s.name : '？？？'}</b><small>${meta}</small>${has ? `<em>${open ? '▲' : '▼'}</em>` : '<em class="wa-lock">未修得</em>'}
+          </button>${detail}</div>`;
+      }).join('');
+      const nextHint = (() => {
+        const next = all.find(s => !learned.includes(s.id));
+        if (!next) return 'この武器の技はすべて習得しています。';
+        const from = D.skills[next.prerequisiteSkill]?.name || '通常攻撃';
+        return mst.level >= (next.requiredWeaponLevel ?? 1)
+          ? `《${from}》を使い続けると、次の技を閃くことがあります。`
+          : `次の技は武器学 Lv.${next.requiredWeaponLevel} から閃けます（現在 Lv.${mst.level}）。`;
+      })();
+      panel.innerHTML = `<small>WEAPON ARTS</small><h2>装備・ステータス</h2>${this.equipTabsHtml()}
+        <div class="item-tabs wa-tabs">${subTabs}</div>
+        <p class="wa-hint">${nextHint}</p>
+        <div class="wa-list">${rows || '<p class="item-empty">この武器種の技はまだありません。</p>'}</div>`;
+    }
     renderEquipmentPanel(panel) {
       if (this.equipTab === 'status') { this.renderStatusPanel(panel, true); return; }
+      if (this.equipTab === 'arts') { this.renderWeaponArtsPanel(panel); return; }
       if (this.equipTab === 'score') { panel.innerHTML = `<small>MUSIC SCORE</small><h2>楽曲</h2>${this.equipTabsHtml()}<div class="score-note"><b>今後プライベートモードで使用します</b><span>入手した楽曲は、実装予定のプライベートモードで演奏できるようになります。</span></div>${this.musicScoreSectionHTML()}`; return; }
       const slots = D.equipmentSlots || [], owned = Object.entries(this.profile.inventory).filter(([id, n]) => n > 0 && D.items[id]?.category === 'equipment');
       if (this.selectedEquipmentId && !(this.profile.inventory[this.selectedEquipmentId] > 0)) this.selectedEquipmentId = null;
