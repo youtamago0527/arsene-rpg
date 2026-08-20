@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════════════════════════
 // 或世盗 -ARSÈNE-  デバッグルーム（データ編集専用）
 //
-//  入り方 : 拠点のテーブルにいる狐を長押し（700ms）→ パスワード入力
+//  入り方 : 拠点 → 設定 → デバッグタブ → パスワード入力
 //  用途   : モンスター・武器・防具・武器技・JOB・武器学・ダンジョン・
 //           各種バランス値の 確認 / 調整 / 追加 / 削除。
 //           UIの見た目調整は対象外（データだけを扱う）。
@@ -25,7 +25,6 @@
 
   const STORE_KEY = 'arsene-debug-overrides-v1';
   const UNLOCK_KEY = 'arsene-debug-unlocked-v1';
-  const LONG_PRESS_MS = 700;
 
   const isPassive = s => s.kind === 'passive' || /^p_/.test(s.id || '');
   const isJobSkill = s => s.source === 'job' || !!s.jobId;
@@ -251,15 +250,6 @@
   .dbg-msg.err{color:#ff9d86}
   .dbg-hint{font-size:11px;color:#67809a}
   .dbg-foot{padding:8px 12px;background:#0a1120;border-top:1px solid #1d3a5c;font-size:11px;color:#67809a}
-  #dbg-gate{position:fixed;inset:0;z-index:100000;display:none;place-items:center;background:#02040ae6}
-  #dbg-gate.open{display:grid}
-  .dbg-gate-box{width:min(320px,86vw);padding:20px;background:#08111f;border:1px solid #2f6ea8;border-radius:6px;text-align:center}
-  .dbg-gate-box b{display:block;margin-bottom:4px;font-size:13px;letter-spacing:.14em;color:#5fc6ff}
-  .dbg-gate-box small{display:block;margin-bottom:12px;font-size:11px;color:#67809a}
-  .dbg-gate-box input{width:100%;padding:9px;margin-bottom:10px;background:#050a13;color:#cfe0f2;border:1px solid #1d3a5c;border-radius:4px;text-align:center;font-size:16px;letter-spacing:.3em}
-  .dbg-gate-box .row{display:flex;gap:8px}
-  .dbg-gate-box button{flex:1;padding:8px;background:#122744;color:#cfe0f2;border:1px solid #2f6ea8;border-radius:4px;cursor:pointer}
-  .dbg-gate-box p{margin:8px 0 0;font-size:11px;color:#ff9d86;min-height:16px}
   `;
 
   let state = { cat: 0, id: null, raw: false, draft: null };
@@ -600,75 +590,27 @@
       if (e.target.id === 'dbg-close') return close();
     });
     root.addEventListener('input', e => { if (e.target.id === 'dbg-q') render(); });
-
-    const gate = document.createElement('div');
-    gate.id = 'dbg-gate';
-    gate.innerHTML = `<div class="dbg-gate-box">
-      <b>DEBUG ROOM</b><small>パスワードを入力</small>
-      <input id="dbg-pw" type="password" inputmode="numeric" autocomplete="off">
-      <div class="row"><button id="dbg-pw-ok">入る</button><button id="dbg-pw-ng">やめる</button></div>
-      <p id="dbg-pw-err"></p></div>`;
-    document.body.appendChild(gate);
-    gate.addEventListener('click', e => {
-      if (e.target.id === 'dbg-pw-ok') return tryPassword();
-      if (e.target.id === 'dbg-pw-ng') return gate.classList.remove('open');
-    });
-    gate.addEventListener('keydown', e => { if (e.key === 'Enter') tryPassword(); });
-  }
-
-  function tryPassword() {
-    const input = document.getElementById('dbg-pw'), err = document.getElementById('dbg-pw-err');
-    const pw = String(D().settings?.debugPassword ?? '1229');
-    if (input.value === pw) {
-      sessionStorage.setItem(UNLOCK_KEY, '1');
-      document.getElementById('dbg-gate').classList.remove('open');
-      input.value = ''; err.textContent = '';
-      open();
-    } else { err.textContent = 'パスワードが違います'; input.value = ''; }
   }
 
   function open() { build(); document.getElementById('dbg-root').classList.add('open'); render(); }
   function close() { document.getElementById('dbg-root')?.classList.remove('open'); }
 
+  // 認証はゲーム側（設定 → デバッグタブ）から行う。
+  // 解除状態はタブを閉じるまで（sessionStorage）保持する。
+  const isUnlocked = () => sessionStorage.getItem(UNLOCK_KEY) === '1';
+  function unlock(input) {
+    const pw = String(D().settings?.debugPassword ?? '1229');
+    if (String(input) !== pw) return false;
+    sessionStorage.setItem(UNLOCK_KEY, '1');
+    return true;
+  }
+  function lock() { sessionStorage.removeItem(UNLOCK_KEY); close(); }
+
   function requestOpen() {
     build();
-    if (sessionStorage.getItem(UNLOCK_KEY) === '1') { open(); return; }
-    document.getElementById('dbg-gate').classList.add('open');
-    setTimeout(() => document.getElementById('dbg-pw')?.focus(), 50);
+    if (isUnlocked()) { open(); return true; }
+    return false;
   }
 
-  // ── 入口：拠点の狐を長押し ────────────────────────────────────
-  // 拠点は再描画されることがあるので、要素ではなく document 側で拾う。
-  function bindLongPress() {
-    let timer = null, sx = 0, sy = 0;
-    const isFox = t => t && t.closest && t.closest('.hideout-fox');
-    const cancel = () => { clearTimeout(timer); timer = null; };
-    const start = e => {
-      if (!isFox(e.target)) return;
-      const p = e.touches ? e.touches[0] : e;
-      sx = p.clientX; sy = p.clientY; cancel();
-      timer = setTimeout(() => { timer = null; requestOpen(); }, LONG_PRESS_MS);
-    };
-    const move = e => {
-      if (!timer) return;
-      const p = e.touches ? e.touches[0] : e;
-      if (Math.abs(p.clientX - sx) > 12 || Math.abs(p.clientY - sy) > 12) cancel();
-    };
-    document.addEventListener('touchstart', start, { passive: true });
-    document.addEventListener('touchmove', move, { passive: true });
-    document.addEventListener('touchend', cancel);
-    document.addEventListener('touchcancel', cancel);
-    document.addEventListener('mousedown', start);
-    document.addEventListener('mousemove', move);
-    document.addEventListener('mouseup', cancel);
-    document.addEventListener('mouseleave', cancel);
-    document.addEventListener('dragstart', e => { if (isFox(e.target)) e.preventDefault(); });
-    document.addEventListener('contextmenu', e => { if (isFox(e.target)) e.preventDefault(); });
-  }
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindLongPress);
-  else bindLongPress();
-
-  // 実機で長押しが効かないときの逃げ道
-  window.arseneDebugRoom = { open: requestOpen, overrides: loadOverrides, reset: resetAll };
+  window.arseneDebugRoom = { open: requestOpen, unlock, lock, isUnlocked, overrides: loadOverrides, reset: resetAll };
 })();

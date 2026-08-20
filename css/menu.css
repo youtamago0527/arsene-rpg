@@ -231,7 +231,8 @@
 .rb-btn:not(:disabled):hover{box-shadow:0 0 20px #7a3fd488}
 .rb-btn:disabled{opacity:.45;cursor:default;font-size:11px}
 
-.item-tabs.sys-tabs{grid-template-columns:repeat(3,1fr)}
+.item-tabs.sys-tabs{grid-template-columns:repeat(4,1fr)}
+@media(max-width:560px){.item-tabs.sys-tabs{grid-template-columns:repeat(2,1fr)}}
 
 /* ══ ステータス：戦闘能力 ═══════════════════════════════════ */
 .cbt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}
@@ -268,3 +269,9 @@
 .floor-tag-floor-open{color:#5fc6ff;border:1px solid #2f6ea8}
 .floor-tag-floor-cleared{color:#7fd6a5;border:1px solid #2c6b4e}
 .floor-tag-floor-locked{color:#6a7383;border:1px solid #2a2f3a}
+
+/* ── 設定：デバッグタブ ── */
+.debug-pw-row{display:flex;gap:8px;margin:8px 0}
+.debug-pw-row input{flex:1;min-width:0;padding:9px 12px;background:#050a13;color:#cfe0f2;border:1px solid #1d3a5c;border-radius:4px;font-size:16px;letter-spacing:.24em;text-align:center}
+.debug-pw-row button{padding:9px 18px;background:#122744;color:#cfe0f2;border:1px solid #2f6ea8;border-radius:4px;cursor:pointer;font-size:13px}
+.debug-pw-err{margin:2px 0 0;font-size:12px;color:#ff9d86}

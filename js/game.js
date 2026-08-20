@@ -86,7 +86,19 @@
         const setSubCmd = e.target.closest('[data-set-sub-command]');
         if (setSubCmd) { this.setSubCommand(setSubCmd.dataset.setSubCommand || null); return; }
         const systemTab = e.target.closest('[data-system-tab]');
-        if (systemTab) { this.systemTab = systemTab.dataset.systemTab; this.audio.sfx('ui'); this.renderMenuPanel('system'); return; }
+        if (systemTab) { this.systemTab = systemTab.dataset.systemTab; this.debugPwError = false; this.audio.sfx('ui'); this.renderMenuPanel('system'); return; }
+        // ── デバッグタブ ──
+        if (e.target.closest('[data-debug-enter]')) {
+          const input = $('[data-debug-pw]');
+          const ok = window.arseneDebugRoom?.unlock(input?.value || '');
+          this.debugPwError = !ok;
+          this.audio.sfx(ok ? 'ui' : 'playerHit');
+          this.renderMenuPanel('system');
+          if (ok) window.arseneDebugRoom.open();
+          return;
+        }
+        if (e.target.closest('[data-debug-open]')) { this.audio.sfx('ui'); window.arseneDebugRoom?.open(); return; }
+        if (e.target.closest('[data-debug-lock]')) { window.arseneDebugRoom?.lock(); this.audio.sfx('ui'); this.renderMenuPanel('system'); return; }
         const helpToggle = e.target.closest('[data-help-toggle]');
         if (helpToggle) { const id = helpToggle.dataset.helpToggle; this.helpOpenId = this.helpOpenId === id ? null : id; this.audio.sfx('ui'); this.renderMenuPanel('system'); return; }
         const jobRebirth = e.target.closest('[data-job-rebirth]');
@@ -370,7 +382,9 @@
       const tabs = [
         { id: 'sound', name: 'サウンド', enName: 'SOUND' },
         { id: 'help', name: 'HELP', enName: 'GUIDE' },
-        { id: 'data', name: 'データ', enName: 'DATA' }
+        { id: 'data', name: 'データ', enName: 'DATA' },
+        // デバッグ：パスワードを入れるとデータ編集ルームへ入れる
+        { id: 'debug', name: 'デバッグ', enName: 'DEBUG' }
       ];
       if (!tabs.some(t => t.id === this.systemTab)) this.systemTab = 'sound';
       const tabHtml = tabs.map(t => `<button data-system-tab="${t.id}" class="${this.systemTab === t.id ? 'active' : ''}"><b>${t.name}</b><span>${t.enName}</span></button>`).join('');
@@ -381,12 +395,26 @@
         body = `<section class="sound-settings"><header><b>サウンド音量</b><span>変更はこの端末へ自動保存されます</span></header>${row('bgm', 'BGM', '戦闘・拠点・ボス戦の音楽')}${row('sfx', '効果音', '攻撃・被弾・決定音')}${row('voice', 'VOICE', '戦闘ボイス用の予約設定', 'COMING SOON')}</section>`;
       } else if (this.systemTab === 'help') {
         body = this.helpSectionHTML();
+      } else if (this.systemTab === 'debug') {
+        body = this.debugTabHTML();
       } else {
         body = `<div class="system-actions"><button data-watch-opening>WATCH OPENING<span>オープニングを再生</span></button><button class="danger" data-reset-data>DATA RESET<span>セーブデータを消去</span></button></div>
           <section class="sound-settings save-transfer"><header><b>セーブデータの引き継ぎ</b><span>別ブラウザ・別URLでも復元できます</span></header><p class="save-transfer-note">「コードを書き出す」で表示される文字列をコピーし、別のブラウザ側の設定画面で「コードを読み込む」に貼り付けてください。</p><div class="system-actions"><button data-export-save>コードを書き出す<span>EXPORT CODE</span></button><button data-import-save>コードを読み込む<span>IMPORT CODE</span></button></div>${this.saveTransferMode === 'export' ? `<div class="save-transfer-box"><textarea readonly rows="4" data-transfer-output onclick="this.select()">${this.saveTransferExportCode || ''}</textarea><small>自動でコピーしました。コピーされない場合は上の文字列を選択してコピーしてください。</small></div>` : ''}${this.saveTransferMode === 'import' ? `<div class="save-transfer-box"><textarea rows="4" placeholder="ここにコードを貼り付け" data-transfer-input></textarea><button data-import-save-confirm>この内容で読み込む</button></div>` : ''}</section>
           <div class="hideout-feature system-info"><article><b>自動セーブ</b><span>ジョブ・武器学・装備・所持品・GOLD・解放状態をこの端末に保存中。</span></article><article><b>Ver.0.4</b><span>武器学・閃き・転生システムを実装。</span></article></div>`;
       }
       panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>AUDIO & SYSTEM</small><h2>設定</h2><div class="item-tabs sys-tabs">${tabHtml}</div><div class="sys-body">${body}</div>`;
+    }
+    // デバッグタブ：パスワードを通すとデータ編集ルームを開ける。
+    // 実処理は debug_room.js 側。読み込まれていない場合は案内だけ出す。
+    debugTabHTML() {
+      if (!window.arseneDebugRoom) return `<section class="sound-settings"><header><b>デバッグ</b><span>この環境では利用できません</span></header><p class="save-transfer-note">debug_room.js が読み込まれていません。</p></section>`;
+      const unlocked = window.arseneDebugRoom.isUnlocked();
+      const err = this.debugPwError ? `<p class="debug-pw-err">パスワードが違います</p>` : '';
+      return `<section class="sound-settings"><header><b>デバッグルーム</b><span>モンスター・装備・技・バランス値をこの場で調整できます</span></header>
+        ${unlocked
+          ? `<p class="save-transfer-note">認証済みです。</p><div class="system-actions"><button data-debug-open>デバッグルームを開く<span>OPEN DEBUG ROOM</span></button><button data-debug-lock>ロックする<span>LOCK</span></button></div>`
+          : `<p class="save-transfer-note">パスワードを入力してください。</p><div class="debug-pw-row"><input type="password" inputmode="numeric" autocomplete="off" data-debug-pw placeholder="パスワード"><button data-debug-enter>入る</button></div>${err}`}
+        <p class="save-transfer-note">変更はこの端末に保存され、次回起動時にも適用されます。「書き出し」で差分を取り出せます。</p></section>`;
     }
     // ══ HELP / 遊び方 ══════════════════════════════════════════
     // 文章は js/help_data.js（window.ARSENE_HELP）側で管理する。
