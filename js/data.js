@@ -1,6 +1,7 @@
 window.ARSENE_DATA = {
   // dungeon2BossWins：ミルティ解放に必要なダンジョン2の勝利数。4時間構想の主調整値。
-  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5, dungeon2BossWins: 100 },
+  // debugPassword：拠点の狐を長押しで開くデバッグルームのパスワード
+  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5, dungeon2BossWins: 100, debugPassword: '1229' },
   dualBladeOffHandRate: 0.70,
   // 武器種マスタ。ここに追記すれば得意武器選択・アイテム欄のタブへ自動反映される。
   // damageStats は将来の体術ダメージ計算（力＋素早さ）用の予約情報。
