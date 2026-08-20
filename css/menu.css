@@ -378,3 +378,6 @@
 .stat-grid>div,.item-row{border-left-color:var(--character-primary)}
 .equipment-list button:hover,.equipment-list button.equipped-now{background:color-mix(in srgb,var(--character-secondary) 58%,#071528);border-color:var(--character-text-accent)}
 .st-passives em{display:block;font-style:normal;font-size:11px;color:#7fd6a5}
+.jtraits{border-color:#5c3f16}
+.jtrait-list{display:grid;gap:4px}
+.jtrait-list div{padding:6px 10px;background:#16100a;border:1px solid #5c3f16;border-radius:4px;font-size:12px;color:#ffdc94}
