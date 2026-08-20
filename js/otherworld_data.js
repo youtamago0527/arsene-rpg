@@ -34,13 +34,13 @@
   // stat: 使用すると恒久的に +1 される基礎能力。random は6能力からランダム。
   D.arcana = {
     weekly: [
-      { day: 0, id: 'arcanaChaos',  stat: 'random', name: '混沌のアルカナ' },
-      { day: 1, id: 'arcanaMight',  stat: 'str',    name: '剛力のアルカナ' },
-      { day: 2, id: 'arcanaGuard',  stat: 'vit',    name: '堅牢のアルカナ' },
-      { day: 3, id: 'arcanaMagic',  stat: 'mag',    name: '魔導のアルカナ' },
-      { day: 4, id: 'arcanaSpirit', stat: 'mnd',    name: '精神のアルカナ' },
-      { day: 5, id: 'arcanaGale',   stat: 'agi',    name: '疾風のアルカナ' },
-      { day: 6, id: 'arcanaLuck',   stat: 'luk',    name: '幸運のアルカナ' }
+      { day: 0, id: 'arcanaChaos',  stat: 'random', name: '混沌のアルカナ', background: 'assets/bg/otherworld/sunday.png' },
+      { day: 1, id: 'arcanaMight',  stat: 'str',    name: '剛力のアルカナ', background: 'assets/bg/otherworld/monday.png' },
+      { day: 2, id: 'arcanaGuard',  stat: 'vit',    name: '堅牢のアルカナ', background: 'assets/bg/otherworld/tuesday.png' },
+      { day: 3, id: 'arcanaMagic',  stat: 'mag',    name: '魔導のアルカナ', background: 'assets/bg/otherworld/wednesday.png' },
+      { day: 4, id: 'arcanaSpirit', stat: 'mnd',    name: '精神のアルカナ', background: 'assets/bg/otherworld/thursday.png' },
+      { day: 5, id: 'arcanaGale',   stat: 'agi',    name: '疾風のアルカナ', background: 'assets/bg/otherworld/friday.png' },
+      { day: 6, id: 'arcanaLuck',   stat: 'luk',    name: '幸運のアルカナ', background: 'assets/bg/otherworld/saturday.png' }
     ],
     randomStats: ['str', 'vit', 'mag', 'mnd', 'agi', 'luk']
   };

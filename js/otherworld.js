@@ -160,6 +160,7 @@
     const day = new Date().getDay();
     return (D().arcana?.weekly || []).find(a => a.day === day) || (D().arcana?.weekly || [])[0];
   };
+  P.owTodayBackground = function () { return this.owTodayArcana()?.background || this.owCfg().background || 'assets/bg/dungeon-battle-03.png'; };
   // 日付が変わっていれば干渉力を回復させる
   P.owRefreshDaily = function () {
     const key = this.owDateKey();
@@ -414,15 +415,16 @@
 
   P.owDungeonChoices = function () {
     const cfg = this.owCfg();
-    if (Array.isArray(cfg.dungeons) && cfg.dungeons.length) return cfg.dungeons;
-    return [{ id: cfg.id || 'otherWorld', name: '境界の裂け目', nameEn: 'BOUNDARY RIFT', description: cfg.description, background: cfg.background, available: true }];
+    const todayBackground = this.owTodayBackground();
+    if (Array.isArray(cfg.dungeons) && cfg.dungeons.length) return cfg.dungeons.map(d => ({ ...d, background: d.background || todayBackground }));
+    return [{ id: cfg.id || 'otherWorld', name: '境界の裂け目', nameEn: 'BOUNDARY RIFT', description: cfg.description, background: todayBackground, available: true }];
   };
 
   P.renderOwDungeonSelect = function (panel) {
     const cfg = this.owCfg(), inf = this.owInterference(), arcana = this.owTodayArcana();
     const cards = this.owDungeonChoices().map(d => `<button class="ow-dungeon-card active" data-lenny="enter" data-ow-dungeon="${esc(d.id)}">
-      <small>${esc(d.nameEn || 'OTHER WORLD')}</small><strong>${esc(d.name)}</strong>
-      <span>${esc(d.description || '')}</span><em>${cfg.battlesPerRun ?? 10} BATTLES ／ ${esc(arcana?.name || '本日のアルカナ')}</em></button>`).join('');
+      <i class="ow-dungeon-thumb" style="background-image:url('${esc(d.background || this.owTodayBackground())}')"></i><div><small>${esc(d.nameEn || 'OTHER WORLD')}</small><strong>${esc(d.name)}</strong>
+      <span>${esc(d.description || '')}</span><em>${cfg.battlesPerRun ?? 10} BATTLES ／ ${esc(arcana?.name || '本日のアルカナ')}</em></div></button>`).join('');
     panel.innerHTML = `<button class="panel-home" data-menu="lenny">レニーへ戻る</button>
       <small>RIFT DESTINATION</small><h2>異世界ダンジョン選択</h2>
       <div class="ow-power"><span>異界干渉力</span><b>${inf.left} / ${inf.max}</b></div>
@@ -491,7 +493,7 @@
     this.saveProfile();
     const cfg = this.owCfg();
     const selected = this.owDungeonChoices().find(d => d.id === dungeonId) || this.owDungeonChoices()[0];
-    this.owRun = { dungeonId: selected?.id || cfg.id, battle: 1, total: cfg.battlesPerRun ?? 10, arcana: 0, rebirth: 0, gold: 0, mats: {} };
+    this.owRun = { dungeonId: selected?.id || cfg.id, background: selected?.background || this.owTodayBackground(), battle: 1, total: cfg.battlesPerRun ?? 10, arcana: 0, rebirth: 0, gold: 0, mats: {} };
     await this.audio.playTrack(this.otherWorldMusic || this.bossMusic);
     await this.playOwTransition();
     this.startOwBattle();
@@ -527,7 +529,7 @@
   };
 
   P.applyOwBackground = function () {
-    const bg = this.owCfg().background || 'assets/bg/dungeon-battle-03.png', bf = $('#battlefield');
+    const bg = this.owRun?.background || this.owTodayBackground(), bf = $('#battlefield');
     bf.dataset.dungeon = 'otherWorld';
     bf.style.backgroundImage = `linear-gradient(#1a032b55,#05001033 58%,#02040b66),url("${bg}")`;
     bf.style.backgroundSize = 'auto,cover';

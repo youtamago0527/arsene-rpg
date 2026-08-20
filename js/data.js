@@ -76,7 +76,7 @@ window.ARSENE_DATA = {
       // どのJOBも合計6/Lvで揃える（Lv1→20で114ポイント）。
       // 器用さを伸ばすのは魔奏士だけ。楽器のダメージと命中に直結する。
       warrior:       { str: 2, vit: 2, mag: 0, mnd: 1, agi: 1, dex: 0, luk: 0 },
-      martialArtist: { str: 1, vit: 1, mag: 0, mnd: 0, agi: 2, dex: 0, luk: 2 },
+      martialArtist: { str: 2, vit: 1, mag: 0, mnd: 0, agi: 2, dex: 0, luk: 1 }, // 体術は力0.5+素早さ0.5なので力を上げて伸び幅を戦士に揃える
       mage:          { str: 0, vit: 0, mag: 2, mnd: 2, agi: 1, dex: 0, luk: 1 },
       priest:        { str: 0, vit: 2, mag: 1, mnd: 2, agi: 0, dex: 0, luk: 1 },
       // 魔奏士：器用さ最優先。マジックナイトなので力と魔力も伸びる。
@@ -847,15 +847,15 @@ window.ARSENE_DATA = {
     mageStaff: { id: 'mageStaff', name: '魔導士の杖', weaponType: 'staff', weaponSprite: 'staff_01', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 4, bonuses: {} },
     shadowWand: { id: 'shadowWand', name: 'シャドウワンド', weaponType: 'staff', weaponSprite: 'staff_shadow', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.45, bonuses: { mag: 4, mnd: 1 } },
     phantomSword: { id: 'phantomSword', name: '青影の剣', weaponType: 'sword', weaponSprite: 'sword_01', battleSprite: null, attackMotion: 'slash', attackPower: 5, bonuses: {} },
-    ironClaw: { id: 'ironClaw', name: '鉄の爪', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 3, bonuses: { agi: 2 } },
+    ironClaw: { id: 'ironClaw', name: '鉄の爪', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 4, bonuses: { agi: 2 } },
     // ── D1 通常工房武器 ──
     kurogane_sword: { id: 'kurogane_sword', name: '黒鉄剣クロウ', weaponType: 'sword', weaponSprite: 'sword_01', battleSprite: null, attackMotion: 'slash', attackPower: 10, bonuses: {} },
-    fangClaw: { id: 'fangClaw', name: '鋼爪ファング', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 6, bonuses: { agi: 2 }, effects: { criticalRateBonus: 0.02 } },
+    fangClaw: { id: 'fangClaw', name: '鋼爪ファング', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 8, bonuses: { agi: 2 }, effects: { criticalRateBonus: 0.02 } },
     runeFlameStaff: { id: 'runeFlameStaff', name: '緋炎杖ルーン', weaponType: 'staff', weaponSprite: 'staff_flame', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 10, bonuses: { maxMp: 5 } },
     celesStaff: { id: 'celesStaff', name: '聖杖セレス', weaponType: 'staff', weaponSprite: 'staff_01', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 6, magicDefensePower: 4, bonuses: {}, effects: { healingPowerPercent: 0.05 } },
     // ── D2 通常工房武器 ──
     fenrirSword: { id: 'fenrirSword', name: '黒狼剣フェンリル', weaponType: 'sword', weaponSprite: 'sword_01', battleSprite: null, attackMotion: 'slash', attackPower: 20, bonuses: {} },
-    yashaClaw: { id: 'yashaClaw', name: '夜叉爪アギト', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 13, bonuses: { agi: 3 }, effects: { criticalRateBonus: 0.03 } },
+    yashaClaw: { id: 'yashaClaw', name: '夜叉爪アギト', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 17, bonuses: { agi: 3 }, effects: { criticalRateBonus: 0.03 } },
     ignisStaff: { id: 'ignisStaff', name: '獄炎杖イグニス', weaponType: 'staff', weaponSprite: 'staff_flame', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 20, bonuses: { maxMp: 10 } },
     luminaStaff: { id: 'luminaStaff', name: '月白杖ルミナ', weaponType: 'staff', weaponSprite: 'staff_sun', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 12, magicDefensePower: 8, bonuses: { maxMp: 8 }, effects: { healingPowerPercent: 0.07 } },
     // ── 楽器（魔奏士）──
@@ -914,20 +914,20 @@ window.ARSENE_DATA = {
     healingBangle:   { id: 'healingBangle',   name: '癒しの腕輪',   slot: 'arms', magicDefensePower: 3, bonuses: {}, effects: { healingPowerPercent: 0.05 } },
     pilgrimShoes:    { id: 'pilgrimShoes',    name: '巡礼の靴',     slot: 'feet', defensePower: 2, magicDefensePower: 3, bonuses: {} },
     // ══ D2 通常工房防具 ══
-    blackWolfHelm:   { id: 'blackWolfHelm',   name: '黒狼の兜',     slot: 'head', defensePower: 11, bonuses: { vit: 2 } },
-    blackWolfArmor:  { id: 'blackWolfArmor',  name: '黒狼の重装',   slot: 'body', defensePower: 22, bonuses: { maxHp: 30, vit: 3 } },
+    blackWolfHelm:   { id: 'blackWolfHelm',   name: '黒狼の兜',     slot: 'head', attackPower: 6, defensePower: 11, bonuses: { vit: 2 } },
+    blackWolfArmor:  { id: 'blackWolfArmor',  name: '黒狼の重装',   slot: 'body', attackPower: 11, defensePower: 22, bonuses: { maxHp: 30, vit: 3 } },
     crushGauntlet:   { id: 'crushGauntlet',   name: '破砕の篭手',   slot: 'arms', attackPower: 7, defensePower: 3, bonuses: {}, effects: { physicalDamagePercent: 0.02 } },
     kuroganeBoots:   { id: 'kuroganeBoots',   name: '黒鉄の軍靴',   slot: 'feet', defensePower: 8, bonuses: { vit: 3 } },
-    yashaHeadband:   { id: 'yashaHeadband',   name: '夜叉の鉢巻',   slot: 'head', defensePower: 4, bonuses: { agi: 4, luk: 3 } },
-    shadowGi:        { id: 'shadowGi',        name: '黒影の闘衣',   slot: 'body', defensePower: 12, bonuses: { agi: 4 } },
+    yashaHeadband:   { id: 'yashaHeadband',   name: '夜叉の鉢巻',   slot: 'head', attackPower: 6, defensePower: 4, bonuses: { agi: 4, luk: 3 } },
+    shadowGi:        { id: 'shadowGi',        name: '黒影の闘衣',   slot: 'body', attackPower: 12, defensePower: 12, bonuses: { agi: 4 } },
     rasetsuTekko:    { id: 'rasetsuTekko',    name: '羅刹の手甲',   slot: 'arms', attackPower: 4, defensePower: 3, bonuses: {}, effects: { criticalRateBonus: 0.03 } },
     flashGreaves:    { id: 'flashGreaves',    name: '瞬脚の具足',   slot: 'feet', defensePower: 4, bonuses: { agi: 6, luk: 2 } },
     crimsonHat:      { id: 'crimsonHat',      name: '深紅の魔導帽', slot: 'head', magicAttackPower: 7, magicDefensePower: 5, bonuses: { maxMp: 6 } },
     purgatoryRobe:   { id: 'purgatoryRobe',   name: '煉獄のローブ', slot: 'body', defensePower: 5, magicAttackPower: 9, magicDefensePower: 10, bonuses: { maxMp: 8 } },
     blazeBangle:     { id: 'blazeBangle',     name: '灼熱の腕輪',   slot: 'arms', magicAttackPower: 7, bonuses: {}, effects: { fireDamagePercent: 0.03 } },
     starfireShoes:   { id: 'starfireShoes',   name: '星火の魔導靴', slot: 'feet', magicAttackPower: 4, magicDefensePower: 3, bonuses: { agi: 3 } },
-    moonCrown:       { id: 'moonCrown',       name: '月白の聖冠',   slot: 'head', magicDefensePower: 9, bonuses: { maxMp: 5 } },
-    moonVestment:    { id: 'moonVestment',    name: '月祈の法衣',   slot: 'body', defensePower: 9, magicDefensePower: 14, bonuses: { maxHp: 15 } },
+    moonCrown:       { id: 'moonCrown',       name: '月白の聖冠',   slot: 'head', magicAttackPower: 4, magicDefensePower: 9, bonuses: { maxMp: 5 } },
+    moonVestment:    { id: 'moonVestment',    name: '月祈の法衣',   slot: 'body', magicAttackPower: 6, defensePower: 9, magicDefensePower: 14, bonuses: { maxHp: 15 } },
     mercyBangle:     { id: 'mercyBangle',     name: '慈愛の腕輪',   slot: 'arms', magicDefensePower: 5, bonuses: {}, effects: { healingPowerPercent: 0.07 } },
     sacredShoes:     { id: 'sacredShoes',     name: '聖巡の靴',     slot: 'feet', defensePower: 4, magicDefensePower: 6, bonuses: {} },
     shadowCap: { id: 'shadowCap', name: 'シャドウキャップ', slot: 'head', bonuses: { vit: 2, mnd: 2 } },

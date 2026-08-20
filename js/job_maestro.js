@@ -121,6 +121,26 @@
     return [...base, ...this.conditionalJobSkills()];
   };
 
+  // 検証用：演出を挟まず抽選だけ回す同期版
+  P.rollMaestroPassivesSync = function () {
+    const passives = this.activePassives().filter(p => p.passiveEffect?.type === 'turnStartBuff');
+    if (!passives.length) return;
+    const cfg = CFG(), chance = this.maestroProcChance();
+    for (const p of passives) {
+      const need = p.passiveEffect.requiresWeaponType;
+      if (need && this.equippedWeaponType() !== need) continue;
+      const kind = p.passiveEffect.buff;
+      let myChance = chance;
+      if (kind === 'doubleAct' && cfg.soloChance != null) {
+        myChance = this.isEnsembleActive() ? Math.min(1, cfg.soloChance * (cfg.ensembleChance / cfg.procChance)) : cfg.soloChance;
+      }
+      if (Math.random() >= myChance) continue;
+      if (kind === 'regen') this.player.buffs.regenerate = Math.max(this.player.buffs.regenerate || 0, cfg.nocturneTurns);
+      else if (kind === 'doubleAct') { if (!this.isDoubleActActive()) this.player.buffs.doubleActUntil = this.turn + Math.max(1, cfg.soloTurns) - 1; }
+      else this.addSongStack(kind);
+    }
+  };
+
   // 既存のターン開始処理へ差し込む
   const origBegin = P.beginPlayerTurn;
   P.beginPlayerTurn = async function () {
