@@ -31,6 +31,13 @@ window.ARSENE_DATA = {
   //   damageType   : physical / magical（防御側の参照が変わる）
   // ══════════════════════════════════════════════════════════════
   // 命中率（隠しステータス／画面には出さない）。器用さで上がり、敵の素早さで下がる。
+  // 回避はここだけで決める。将来「回避でカウンター」「回避特化キャラ」を足すとき、
+  // 判定が各所に散らばっていると破綻するため一本化するための設定。
+  //   rate            素早さ差1あたりの回避率
+  //   min/max         下限・上限
+  //   bossMultiplier  ボス戦での倍率（通常の半分）
+  // 敵ごとの命中は D.enemies[].accuracy で調整する（未設定なら1＝素の回避率）。
+  evasion: { rate: .008, min: .02, max: .16, bossMultiplier: .5 },
   accuracy: { base: 0.90, dexRate: 0.006, enemySpdRate: 0.005, min: 0.55, max: 1.0 },
   weaponScaling: {
     sword:   { scaling: { str: 1.0 },            powerKey: 'attackPower',      damageType: 'physical' },

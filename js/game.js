@@ -325,6 +325,30 @@
       return (s[rule.stat] || 0) + (this.equipmentCombatStats(equipment)[rule.powerKey] || 0);
     }
     canEquipRightHand(id, jobId = this.profile.currentJob) { const w = D.weapons[id]; return !!w && (w.weaponType !== 'shield' || jobId === 'guardian'); }
+    // ══ 回避 ═══════════════════════════════════════════════════
+    // 回避判定はここだけ。以前は通常敵の攻撃にだけインラインで書かれていて、
+    // ボス4種（ノエル・ゼナカド・ミルティ・セリペス）は判定そのものが無く、
+    // 素早さをいくら上げてもボスの攻撃は必ず当たっていた。
+    // 「回避したらカウンター」「回避特化キャラ」を足すときの入口もここにする。
+    playerEvadeChance(enemy, isBoss = false) {
+      const cfg = D.evasion || { rate: .008, min: .02, max: .16, bossMultiplier: .5 };
+      const spd = Number(enemy?.stats?.spd) || 0;
+      const agi = Number(this.player?.stats?.agi) || 0;
+      let chance = clamp((agi - spd) * cfg.rate, cfg.min, cfg.max);
+      if (isBoss) chance *= (cfg.bossMultiplier ?? .5);
+      // 敵ごとの命中補正。1が既定で、大きいほど当てやすい＝避けにくい。
+      const acc = Number(enemy?.accuracy);
+      if (Number.isFinite(acc) && acc > 0) chance /= acc;
+      return clamp(chance, 0, cfg.max);
+    }
+    // 回避できたら true。演出とログもここで出す。
+    // カウンターなど「回避に反応する処理」は今後ここへ足す。
+    tryPlayerEvade(enemy, isBoss = false) {
+      if (Math.random() >= this.playerEvadeChance(enemy, isBoss)) return false;
+      this.floating($('#ren'), 'MISS', 'miss');
+      this.setLog('RENは攻撃をかわした！');
+      return true;
+    }
     // ══ 敵→プレイヤーのダメージ ════════════════════════════════
     // 比率型：atk × attackScale × K/(K+防御)。
     // 引き算型だと装備更新のたびにダメージが 0 か即死かの両極端に振れるため、
@@ -954,6 +978,7 @@
           const defUpBuff = (this.player.buffs?.defUp && this.turn <= this.player.buffs.defUp.until) ? (1 + (this.player.buffs.defUp.rate || 0)) : 1;
           const raw = this.enemyRawDamage('physical', enemy.stats.atk, defUpBuff);
           const dmg = Math.max(1, Math.round(raw + roll(balance.enemyVariance.min, balance.enemyVariance.max)));
+          if (this.tryPlayerEvade(enemy, true)) { this.updateHUD(); await this.battleSleep(200); ren.classList.remove('hit'); continue; }
           const actual = this.receivePlayerDamage(dmg, 'physical'); this.audio.sfx('playerHit'); this.floating(ren, actual, 'enemy-damage'); this.updateHUD(); await this.battleSleep(200); ren.classList.remove('hit');
         }
         el.classList.remove('enemy-attacking'); await this.tryCounter(enemy); return;
@@ -965,7 +990,9 @@
       const raw = this.enemyRawDamage('physical', enemy.stats.atk, defUpBuff);
       let damage = Math.max(1, Math.round(raw + roll(balance.enemyVariance.min, balance.enemyVariance.max)));
       if (enemy.accelerandoActivated && Math.random() < 0.22) { damage = Math.floor(damage * 1.5); this.flashTitle('BEAT CRIT', '乱打の一閃'); }
-      enemy.beat++; this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, 'physical'); this.floating(ren, actual, 'enemy-damage');
+      enemy.beat++;
+      if (this.tryPlayerEvade(enemy, true)) { this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); ren.classList.remove('hit'); return; }
+      this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, 'physical'); this.floating(ren, actual, 'enemy-damage');
       this.setLog(`ミルティの${chosen.name}！ RENは${actual}ダメージを受けた！ 【BEAT ${enemy.beat}/4】`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
       await this.tryCounter(enemy);
     }
@@ -1439,6 +1466,7 @@
       const defUp = (!magical && this.player.buffs?.defUp && this.turn <= this.player.buffs.defUp.until) ? 1 + (this.player.buffs.defUp.rate || 0) : 1;
       const base = this.enemyRawDamage(magical ? 'magical' : 'physical', (magical ? enemy.stats.mag : enemy.stats.atk) * power, defUp);
       const reflected = recorded * (grand ? (D.seripesBalance?.grandRepriseDamageRate ?? .48) : (D.seripesBalance?.repriseDamageRate ?? .32));
+      if (this.tryPlayerEvade(enemy, true)) { this.updateHUD(); await this.battleSleep(480); el.classList.remove('enemy-attacking'); ren.classList.remove('hit'); return; }
       const actual = this.receivePlayerDamage(Math.max(1, base + reflected + roll(-1, 2)), magical ? 'magical' : 'physical'); this.audio.sfx('playerHit'); this.floating(ren, actual, 'enemy-damage'); this.setLog(`セリペスの${name}！ ${actual}ダメージ。`); this.updateHUD(); await this.battleSleep(480); el.classList.remove('enemy-attacking'); ren.classList.remove('hit'); await this.tryCounter(enemy);
     }
     async bossAttackSeripes(enemy) {
@@ -1480,8 +1508,8 @@
       this.setLog(`${enemy.name}${enemy.label}の${chosen.name}！`); if (isMagic) { this.flashTitle(chosen.name, 'SHADOW MAGIC'); this.audio.sfx('dark'); } const el = document.getElementById(enemy.uid), ren = $('#ren'); el.classList.add('enemy-attacking'); await this.battleSleep(300); ren.classList.add('hit');
       const balance = D.combatBalance, attackStat = isMagic ? enemy.stats.mag : enemy.stats.atk;
       const defMul = isMagic ? 1 : (this.turn <= (this.player.defDownUntil || 0) ? .8 : 1);
-      const raw = this.enemyRawDamage(isMagic ? 'magical' : 'physical', attackStat, defMul), miss = Math.random() < clamp((this.player.stats.agi - enemy.stats.spd) * .008, .02, .16), damage = miss ? 0 : Math.max(1, Math.round(raw + roll(balance.enemyVariance.min, balance.enemyVariance.max)));
-      if (miss) { this.floating(ren, 'MISS', 'miss'); this.setLog('RENは攻撃をかわした！'); } else { this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, isMagic ? 'magical' : 'physical'); this.floating(ren, actual, 'enemy-damage'); this.setLog(`RENは${actual}ダメージを受けた！`); } this.updateHUD(); await this.battleSleep(420); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
+      const raw = this.enemyRawDamage(isMagic ? 'magical' : 'physical', attackStat, defMul), miss = this.tryPlayerEvade(enemy, false), damage = miss ? 0 : Math.max(1, Math.round(raw + roll(balance.enemyVariance.min, balance.enemyVariance.max)));
+      if (miss) { /* 演出は tryPlayerEvade 側 */ } else { this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, isMagic ? 'magical' : 'physical'); this.floating(ren, actual, 'enemy-damage'); this.setLog(`RENは${actual}ダメージを受けた！`); } this.updateHUD(); await this.battleSleep(420); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
       if (!miss) await this.tryCounter(enemy);
     }
     async bossAttack(enemy) {
@@ -1502,6 +1530,7 @@
       const raw = this.enemyRawDamage(isMagic ? 'magical' : 'physical', attackStat, defMul);
       let damage = Math.max(1, Math.round(raw + roll(balance.enemyVariance.min, balance.enemyVariance.max)));
       if (isMagic) damage = Math.max(1, Math.round(damage * (1 - this.passiveEffectRate('magicResist') - this.equipmentEffectRate('magicDamageReductionPercent'))));
+      if (this.tryPlayerEvade(enemy, true)) { this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); ren.classList.remove('hit'); return; }
       this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, isMagic ? 'magical' : 'physical'); this.floating(ren, actual, 'enemy-damage'); this.setLog(`RENは${actual}ダメージを受けた！`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
       await this.tryCounter(enemy);
     }
