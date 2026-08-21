@@ -72,6 +72,51 @@
   P.ptStealRate = function () { return this.ptCfg().stealRate ?? 0.5; };
   P.ptActionSlotMax = function () { return this.ptCfg().actionSlotCount ?? 2; };
 
+  // PHANTOM THIEFはJEXPを持たないため、同じ欄を「盗奪進行度」として使う。
+  // MASTER数はJOB Lv20と同じ到達を指すので表示内訳だけに使い、二重加点しない。
+  P.applyPhantomStealProgressHud = function () {
+    if (!this.isPhantomThief() || typeof this.phantomStealProgress !== 'function') return;
+    const p = this.phantomStealProgress(), pct = p.percent.toFixed(2);
+    const hint = `JOB ${p.jobLevels.current}/${p.jobLevels.max}（MASTER ${p.mastered}/${p.jobCount}）・PASSIVE ${p.passives.current}/${p.passives.max}・武器学 ${p.weaponMastery.current}/${p.weaponMastery.max}`;
+    const set = (name, bar, out, label) => {
+      const n = $(name), b = $(bar), o = $(out);
+      if (n) { n.textContent = label; n.title = hint; }
+      if (b) { b.style.width = `${p.percent}%`; b.parentElement?.setAttribute('aria-label', `盗奪進行度 ${pct}%。${hint}`); }
+      if (o) { o.textContent = `${pct}%`; o.title = hint; }
+    };
+    set('#menu-jexp-label', '#menu-jexp-bar', '#menu-jexp-text', 'STEAL PROGRESS');
+    set('#player-jexp-name', '#player-jexp-bar', '#player-jexp-label', 'STEAL PROGRESS');
+    const menuJob = $('#menu-level'), battleJob = $('#player-job-label');
+    if (menuJob) menuJob.textContent = D().jobs.phantomThief?.name || 'ファントムシーフ';
+    if (battleJob) battleJob.textContent = D().jobs.phantomThief?.name || 'ファントムシーフ';
+  };
+
+  const origRenderMenuSummary = P.renderMenuSummary;
+  P.renderMenuSummary = function () { const r = origRenderMenuSummary.call(this); this.applyPhantomStealProgressHud(); return r; };
+  const origUpdateHUD = P.updateHUD;
+  P.updateHUD = function () { const r = origUpdateHUD.call(this); this.applyPhantomStealProgressHud(); return r; };
+
+  const origJobDetailHtml = P.jobDetailHtml;
+  P.jobDetailHtml = function (jobId, unlocked, currentId) {
+    let html = origJobDetailHtml.call(this, jobId, unlocked, currentId);
+    if (jobId === 'phantomThief' && this.isJobUnlocked(jobId)) {
+      html = html.replace(/<div class="jexp-wrap"><div class="jlv-row">[\s\S]*?<\/div><div class="jexp-bar">[\s\S]*?<\/div><\/div>/, this.phantomStealProgressHTML());
+    }
+    return html;
+  };
+
+  const origRenderStatusPanel = P.renderStatusPanel;
+  P.renderStatusPanel = function (panel, withTabs = false) {
+    const r = origRenderStatusPanel.call(this, panel, withTabs);
+    if (this.isPhantomThief()) {
+      const section = [...panel.querySelectorAll('.st-section')].find(el => el.querySelector('h3')?.textContent === 'JOB経験値');
+      if (section) { section.querySelector('h3').textContent = '盗奪進行度'; section.insertAdjacentHTML('beforeend', this.phantomStealProgressHTML()); section.querySelector('.st-meter')?.remove(); }
+      const level = panel.querySelector('.st-id2 em'); if (level) level.textContent = D().jobs.phantomThief?.name || 'ファントムシーフ';
+      const jobHead = panel.querySelector('.st-jb-head em'); if (jobHead) jobHead.textContent = 'SPECIAL';
+    }
+    return r;
+  };
+
   // MASTERしたJOBから固有ACTIONだけを1度取得する。
   // 能力値は game.js の jobStatBonuses がレベルアップ成長の50%を常時反映する。
   P.stealFromJob = function (jobId) {
@@ -515,7 +560,10 @@
       this.enemies = lineup.map((id, i) => this.makeEnemy(id, i));
     }
     this.turn = 1; this.locked = false; this.finished = false;
-    this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [] };
+    // 敵撃破時は通常戦と同じ共通報酬処理を通るため、EXP/GOLDが0でも
+    // すべての結果配列を用意する。jobResults欠落は勝利直前のpushで停止する原因になる。
+    this.resetBattleLog();
+    this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [], newRecipes: [] };
     $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none';
     $('#game').hidden = false; $('#game').style.display = 'grid';
     $('#result').hidden = true; $('#result').style.display = 'none';

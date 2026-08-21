@@ -277,6 +277,43 @@
     isJobUnlocked(id) { return this.unlockedJobIds().includes(id); }
     unlockJob(id) { if (!D.jobs[id] || this.isJobUnlocked(id)) return false; this.unlockedJobIds().push(id); this.profile.jobs ||= {}; this.profile.jobs[id] ||= { level: 1, exp: 0 }; return true; }
     isPhantomThief(jobId = this.profile.currentJob) { return jobId === 'phantomThief'; }
+    phantomStealProgress() {
+      const cfg = this.gb().phantomStealProgress || {}, jobCap = cfg.jobLevelCap || D.jobLevelCap || 20, weaponCap = cfg.weaponLevelCap || 20;
+      const noGrowth = new Set(this.gb().noGrowthJobs || []);
+      const jobIds = [...new Set(this.unlockedJobIds())].filter(id => D.jobs[id] && !noGrowth.has(id));
+      let jobLevels = 0, mastered = 0;
+      for (const id of jobIds) {
+        const isMastered = this.isJobMastered(id) || (this.profile.jobs?.[id]?.level || 1) >= jobCap;
+        if (isMastered) mastered++;
+        jobLevels += isMastered ? jobCap : Math.min(jobCap, Math.max(0, this.profile.jobs?.[id]?.level || 1));
+      }
+      const jobMax = jobIds.length * jobCap;
+
+      const passiveIds = [...new Set(jobIds.flatMap(id => Object.entries(D.jobs[id]?.passiveUnlocks || {})
+        .filter(([level, skillId]) => Number(level) <= jobCap && D.skills[skillId]?.type === 'PASSIVE')
+        .map(([, skillId]) => skillId)))];
+      const learned = new Set(this.learnedPassiveIds());
+      const passiveCount = passiveIds.filter(id => learned.has(id)).length;
+
+      const weaponTypes = this.unlockedWeaponTypes();
+      const weaponLevels = weaponTypes.reduce((sum, type) => sum + Math.min(weaponCap, Math.max(0, this.profile.weaponMastery?.[type.id]?.level || 1)), 0);
+      const weaponMax = weaponTypes.length * weaponCap;
+      const parts = {
+        jobLevels: { current: jobLevels, max: jobMax, ratio: jobMax ? jobLevels / jobMax : 1 },
+        passives: { current: passiveCount, max: passiveIds.length, ratio: passiveIds.length ? passiveCount / passiveIds.length : 1 },
+        weaponMastery: { current: weaponLevels, max: weaponMax, ratio: weaponMax ? weaponLevels / weaponMax : 1 }
+      };
+      const weights = cfg.weights || { jobLevels: .5, passives: .25, weaponMastery: .25 };
+      const active = Object.keys(parts).filter(key => parts[key].max > 0 && (weights[key] || 0) > 0);
+      const weightTotal = active.reduce((sum, key) => sum + weights[key], 0) || 1;
+      const percent = Math.min(100, Math.max(0, 100 * active.reduce((sum, key) => sum + parts[key].ratio * weights[key], 0) / weightTotal));
+      return { percent, mastered, jobCount: jobIds.length, ...parts };
+    }
+    phantomStealProgressHTML() {
+      const p = this.phantomStealProgress();
+      const row = (label, part, note = '') => `<div class="pt-progress-row"><div><b>${label}</b><span>${part.current} / ${part.max}${note}</span></div><i><em style="width:${Math.min(100, part.ratio * 100)}%"></em></i></div>`;
+      return `<div class="pt-progress"><div class="pt-progress-head"><span>STEAL PROGRESS</span><strong>${p.percent.toFixed(2)}%</strong></div><div class="jexp-bar"><i style="width:${p.percent}%"></i></div>${row('JOB育成', p.jobLevels, `　MASTER ${p.mastered}/${p.jobCount}`)}${row('盗得パッシブ', p.passives)}${row('武器学', p.weaponMastery)}<p>転生回数は含みません。MASTER済みJOBはLv.20として集計し、MASTER数を重複加点しません。</p></div>`;
+    }
     // 通常ジョブ=他職パッシブ1枠 / PHANTOM THIEF=2枠
     passiveSlotCount() { const c = this.gb().passiveSlotCount || {}; return this.isPhantomThief() ? (c.phantomThief ?? 2) : (c.normal ?? 1); }
     actionSlotCount() { const c = this.gb().actionSlotCount || {}; return this.isPhantomThief() ? (c.phantomThief ?? 2) : (c.normal ?? 0); }
@@ -313,12 +350,60 @@
       return v + (this.equipmentCombatStats(equipment)[rule.powerKey] || 0);
     }
     weaponDamageType(weaponType = this.equippedWeaponType()) { const w = this.equippedWeapon(); return w?.damageType || ((D.weaponScaling || {})[weaponType] || {}).damageType || 'physical'; }
-    // 命中率（隠しステータス）：器用さで上がり、敵の素早さで下がる
-    hitChanceAgainst(enemy, stats = this.player?.stats || this.totalStats()) {
-      const a = D.accuracy || { base: 0.9, dexRate: 0.006, enemySpdRate: 0.005, min: 0.55, max: 1 };
-      const raw = a.base + (stats.dex || 0) * a.dexRate - (enemy?.stats?.spd || 0) * a.enemySpdRate;
-      return clamp(raw, a.min, a.max);
+    // ══ 命中・回避・会心の共通判定 ═════════════════════════════
+    // 攻撃側DEX vs 防御側AGI。敵の旧データはDEX/AGIが無ければSPDへフォールバックする。
+    combatDex(stats = {}) { return Number(stats.dex ?? stats.spd ?? 0) || 0; }
+    combatAgi(stats = {}) { return Number(stats.agi ?? stats.spd ?? 0) || 0; }
+    weaponAccuracyModifier(weaponType, weapon = null) {
+      const rule = (D.weaponScaling || {})[weaponType] || {};
+      return Number(weapon?.accuracyModifier ?? rule.accuracyModifier ?? 0) || 0;
     }
+    hitChanceBetween(attackerStats, defenderStats, options = {}) {
+      const a = D.accuracy || { base: .9, dexRate: .006, defenderAgiRate: .005, min: .05, max: 1 };
+      const weaponModifier = this.weaponAccuracyModifier(options.weaponType, options.weapon);
+      const skillModifier = Number(options.skill?.accuracyModifier ?? 0) || 0;
+      const otherModifier = Number(options.otherModifier ?? attackerStats?.accuracyModifier ?? 0) || 0;
+      const agiRate = a.defenderAgiRate ?? a.enemySpdRate ?? .005;
+      const raw = a.base + this.combatDex(attackerStats) * a.dexRate - this.combatAgi(defenderStats) * agiRate + weaponModifier + skillModifier + otherModifier;
+      return clamp(raw, a.min ?? .05, a.max ?? 1);
+    }
+    criticalChanceFor(skill, stats = this.player?.stats || this.totalStats()) {
+      if (skill?.kind === 'neutral' || skill?.damageType === 'neutral') return 0;
+      const c = D.combatBalance?.critical || { base: .06, luckRate: .008, max: .28 };
+      const extra = (Number(skill?.criticalModifier) || 0) + this.traitCriticalBonus() + this.equipmentEffectRate('criticalRateBonus');
+      const statBonus = Number(stats?.critBonus) || 0;
+      return clamp(c.base + (Number(stats?.luk) || 0) * c.luckRate + statBonus + extra, c.base, c.max + statBonus + extra);
+    }
+    rollAttackOutcome(attackerStats, defenderStats, options = {}) {
+      const skill = options.skill || {};
+      if (skill.unavoidable || options.unavoidable) return { hit: true, critical: false, unavoidable: true, hitChance: 1, criticalChance: 0 };
+      const criticalChance = Math.max(0, Number(options.criticalChance) || 0);
+      const critical = criticalChance > 0 && Math.random() < criticalChance;
+      if (critical) return { hit: true, critical: true, unavoidable: false, hitChance: 1, criticalChance };
+      const hitChance = this.hitChanceBetween(attackerStats, defenderStats, options);
+      return { hit: Math.random() < hitChance, critical: false, unavoidable: false, hitChance, criticalChance };
+    }
+    rollPlayerAttackOutcome(skill, enemy, options = {}) {
+      const weapon = options.weapon || this.equippedWeapon();
+      const weaponType = options.weaponType || skill?.weaponType || weapon?.weaponType || this.equippedWeaponType();
+      return this.rollAttackOutcome(this.player?.stats || this.totalStats(), enemy?.stats || {}, { ...options, skill, weapon, weaponType, criticalChance: this.criticalChanceFor(skill) });
+    }
+    rollEnemyAttackOutcome(enemy, action = {}, options = {}) {
+      return this.rollAttackOutcome(enemy?.stats || {}, this.player?.stats || {}, { ...options, skill: action, weaponType: action.weaponType || null, criticalChance: options.criticalChance || 0 });
+    }
+    // 旧呼び出し互換。新規処理はrollPlayerAttackOutcomeで会心→命中の順に判定する。
+    hitChanceAgainst(enemy, stats = this.player?.stats || this.totalStats(), skill = {}, weapon = this.equippedWeapon()) {
+      return this.hitChanceBetween(stats, enemy?.stats || {}, { skill, weapon, weaponType: skill.weaponType || weapon?.weaponType || this.equippedWeaponType() });
+    }
+    emitBattleEvent(type, detail = {}) {
+      const event = { type, turn: this.turn || 0, timestamp: Date.now(), ...detail };
+      this.battleEvents ||= []; this.battleEvents.push(event); if (this.battleEvents.length > 100) this.battleEvents.shift();
+      if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') window.dispatchEvent(new CustomEvent(`arsene:${type}`, { detail: event }));
+      const hook = type === 'evade' ? this.onEvade : null; if (typeof hook === 'function') hook.call(this, event);
+      return event;
+    }
+    onEvade(_event) { /* D4以降の回避時カウンター・回復・ゲージ処理用フック */ }
+    triggerEvade(attacker, defender, skill, context = {}) { return this.emitBattleEvent('evade', { attacker, defender, skillId: skill?.id || null, ...context }); }
     // 楽器は魔奏士の証を入手するまで使用不可
     isWeaponTypeUnlocked(id) { const t = this.weaponTypeDef(id); if (!t?.unlockFlag) return true; return !!this.profile.flags[t.unlockFlag]; }
     unlockedWeaponTypes() { return this.weaponTypeList().filter(t => this.isWeaponTypeUnlocked(t.id)); }
@@ -950,26 +1035,34 @@
       }
       if (enemy.beat >= 4) {
         enemy.beat = 0; this.flashTitle('DEADLY RHYTHM', '4HIT COMBO'); this.setLog(`ミルティのDEADLY RHYTHM！ 四連撃が迸る……！`);
-        el.classList.add('enemy-attacking'); await this.battleSleep(300);
+        el.classList.add('enemy-attacking'); await this.battleSleep(300); let anyHit = false;
         const balance = D.combatBalance;
         for (let i = 0; i < 4; i++) {
           if (this.player.hp <= 0) break;
+          const action = enemy.specialAttacks?.deadlyRhythm || { id: 'deadlyRhythm', name: 'DEADLY RHYTHM', kind: 'physical' };
+          const outcome = this.rollEnemyAttackOutcome(enemy, action);
+          if (!outcome.hit) { this.triggerEvade(enemy, 'player', action, { hitIndex: i, source: 'myrthiDeadlyRhythm' }); this.floating(ren, 'EVADE', 'miss'); await this.battleSleep(200); continue; }
+          anyHit = true;
           ren.classList.add('hit');
           const defUpBuff = (this.player.buffs?.defUp && this.turn <= this.player.buffs.defUp.until) ? (1 + (this.player.buffs.defUp.rate || 0)) : 1;
           const raw = this.enemyRawDamage('physical', enemy.stats.atk, defUpBuff);
           const dmg = Math.max(1, Math.round(raw + roll(balance.enemyVariance.min, balance.enemyVariance.max)));
           const actual = this.receivePlayerDamage(dmg, 'physical'); this.audio.sfx('playerHit'); this.floating(ren, actual, 'enemy-damage'); this.updateHUD(); await this.battleSleep(200); ren.classList.remove('hit');
         }
-        el.classList.remove('enemy-attacking'); await this.tryCounter(enemy); return;
+        el.classList.remove('enemy-attacking'); if (anyHit) await this.tryCounter(enemy); return;
       }
       let r = Math.random(), chosen = enemy.ai[enemy.ai.length - 1], acc = 0;
       for (const s of enemy.ai) { acc += s.weight; if (r < acc) { chosen = s; break; } }
-      this.flashTitle(chosen.name, 'BOSS STRIKE'); this.audio.sfx('slash'); el.classList.add('enemy-attacking'); await this.battleSleep(400); ren.classList.add('hit');
+      this.flashTitle(chosen.name, 'BOSS STRIKE'); this.audio.sfx('slash'); el.classList.add('enemy-attacking'); await this.battleSleep(400);
       const balance = D.combatBalance, defUpBuff = (this.player.buffs?.defUp && this.turn <= this.player.buffs.defUp.until) ? (1 + (this.player.buffs.defUp.rate || 0)) : 1;
       const raw = this.enemyRawDamage('physical', enemy.stats.atk, defUpBuff);
       let damage = Math.max(1, Math.round(raw + roll(balance.enemyVariance.min, balance.enemyVariance.max)));
-      if (enemy.accelerandoActivated && Math.random() < 0.22) { damage = Math.floor(damage * 1.5); this.flashTitle('BEAT CRIT', '乱打の一閃'); }
-      enemy.beat++; this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, 'physical'); this.floating(ren, actual, 'enemy-damage');
+      const outcome = this.rollEnemyAttackOutcome(enemy, chosen, { criticalChance: enemy.accelerandoActivated ? .22 : 0 });
+      if (outcome.critical) { damage = Math.floor(damage * 1.5); this.flashTitle('BEAT CRIT', '乱打の一閃'); }
+      enemy.beat++;
+      if (!outcome.hit) { this.triggerEvade(enemy, 'player', chosen, { source: 'myrthiAttack' }); this.floating(ren, 'EVADE', 'miss'); this.setLog(`ミルティの${chosen.name}！ RENは攻撃をかわした！ 【BEAT ${enemy.beat}/4】`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); return; }
+      ren.classList.add('hit');
+      this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, 'physical'); this.floating(ren, actual, 'enemy-damage');
       this.setLog(`ミルティの${chosen.name}！ RENは${actual}ダメージを受けた！ 【BEAT ${enemy.beat}/4】`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
       await this.tryCounter(enemy);
     }
@@ -1084,7 +1177,7 @@
         strip.innerHTML = chips.join(''); strip.dataset.statusOwner = `${e.name}${e.label || ''}`; strip.dataset.enemyUid = e.uid; strip.tabIndex = 0; strip.setAttribute('role', 'button'); strip.title = 'タップで敵の状態と解析情報を確認'; strip.onclick = event => { event.preventDefault(); event.stopPropagation(); this.showStatusGroup(strip.dataset.statusOwner, strip); };
       });
     }
-    resetBattleLog() { this.battleLogHistory = []; this.battleLogExpanded = false; $('#log')?.classList.remove('expanded'); }
+    resetBattleLog() { this.battleLogHistory = []; this.battleEvents = []; this.battleLogExpanded = false; $('#log')?.classList.remove('expanded'); }
     setLog(text) { if (!text) return; this.battleLogHistory ||= []; this.battleLogHistory.push(text); if (this.battleLogHistory.length > 100) this.battleLogHistory.shift(); this.renderBattleLog(); }
     renderBattleLog() { const log = $('#log'); if (!log) return; const rows = this.battleLogExpanded ? this.battleLogHistory : this.battleLogHistory.slice(-3); log.innerHTML = `<small>COMBAT LOG // ${this.battleLogExpanded ? 'TAP TO CLOSE' : 'TAP FOR HISTORY'}</small><div class="battle-log-lines">${rows.map(t => `<p>${t}</p>`).join('')}</div>`; log.scrollTop = this.battleLogExpanded ? log.scrollHeight : 0; }
     toggleBattleLog() { this.battleLogExpanded = !this.battleLogExpanded; $('#log')?.classList.toggle('expanded', this.battleLogExpanded); this.renderBattleLog(); }
@@ -1165,7 +1258,7 @@
     }
     async beginPlayerTurn() { await this.regenMpFromPassives(); if (this.characterHasSkill('blueEcho') && Math.random() < .20) { this.player.buffs.blueEcho = 2; this.flashTitle('BLUE ECHO', 'MAG +10% // 2 TURNS'); this.setLog('蒼の残響が魔力を高める！'); await this.battleSleep(260); } if ((this.player.buffs.regenerate || 0) > 0) { const heal = Math.max(1, Math.ceil(this.player.stats.maxHp * .08)), gained = Math.min(heal, this.player.stats.maxHp - this.player.hp); this.player.hp += gained; if (gained) { this.audio.sfx('heal'); this.floating($('#ren'), `+${gained}`, 'heal'); this.setLog(`リジェネレートでHPが${gained}回復！`); this.updateHUD(); await this.battleSleep(220); } } }
     endPlayerTurn() { if ((this.player.buffs.blueEcho || 0) > 0) this.player.buffs.blueEcho--; if ((this.player.buffs.regenerate || 0) > 0) this.player.buffs.regenerate--; if (this.player.buffs.defUp && this.turn > this.player.buffs.defUp.until) delete this.player.buffs.defUp; }
-    damageFor(skill, enemy) {
+    damageFor(skill, enemy, outcome = null) {
       const s = this.player.stats, w = this.equippedWeapon(), balance = D.combatBalance;
       // ── 攻撃性能：装備武器の weaponType から D.weaponScaling で決まる ──
       //   剣 = 力×1.0 ／ 爪 = 力×0.5＋素早さ×0.5 ／ 杖 = 魔力×1.0  （＋装備の攻撃力）
@@ -1198,8 +1291,9 @@
       // 魔奏士《魔力装填》：次の物理攻撃へ魔力依存の追加ダメージ
       if (isPhysical && this.player.buffs?.magicCharge) value += this.effectivePlayerStat('mag') * (this.gb().magicChargeRate ?? 0.5);
       value += roll(balance.playerVariance.min, balance.playerVariance.max);
-      const critExtra = (skill.criticalModifier || 0) + this.traitCriticalBonus() + this.equipmentEffectRate('criticalRateBonus');
-      const critical = neutral ? false : Math.random() < clamp(balance.critical.base + s.luk * balance.critical.luckRate + (s.critBonus || 0) + critExtra, balance.critical.base, balance.critical.max + (s.critBonus || 0) + critExtra);
+      // 会心抽選は命中抽選より先にrollPlayerAttackOutcome()で行う。
+      // outcome未指定は外部拡張との互換用で、従来どおり会心だけを抽選する。
+      const critical = neutral ? false : (outcome ? !!outcome.critical : Math.random() < this.criticalChanceFor(skill, s));
       if (critical) value *= balance.critical.multiplier; return { value: Math.max(1, Math.round(value)), critical };
     }
     // 閃き演出：画面フラッシュ＋効果音＋カットインを見せてから技を発動する
@@ -1236,10 +1330,11 @@
         if (skill.randomTarget) { const alive = this.enemies.filter(e => e.alive && e.hp > 0); if (!alive.length) break; target = alive[Math.floor(Math.random() * alive.length)]; }
         if (!target || target.hp <= 0) break;
         const tEl = document.getElementById(target.uid);
-        // 命中判定（隠しステータス）。外れたヒットはダメージ0で MISS 表示。
-        if (Math.random() > this.hitChanceAgainst(target)) { misses++; this.floating(tEl, 'MISS', 'miss'); this.audio.sfx('quick'); await this.battleSleep(hits > 1 ? 170 : 320); continue; }
+        // 1Hitごとに「会心（必中）→通常命中」の順で独立判定する。
+        const outcome = this.rollPlayerAttackOutcome(skill, target);
+        if (!outcome.hit) { misses++; this.triggerEvade('player', target, skill, { hitIndex: hit, source: 'playerAttack' }); this.floating(tEl, 'EVADE', 'miss'); this.audio.sfx('quick'); await this.battleSleep(hits > 1 ? 170 : 320); continue; }
         tEl.classList.add('hit');
-        const d = this.damageFor(skill, target); total += d.value; if (d.critical) criticals++;
+        const d = this.damageFor(skill, target, outcome); total += d.value; if (d.critical) criticals++;
         this.refundMpFromSpell(d.value, skill); // 魔導士《魔力還流》
         perHit[target.uid] = (perHit[target.uid] || 0) + d.value;
         target.hp = target.cannotDefeat ? Math.max(1, target.hp - d.value) : Math.max(0, target.hp - d.value);
@@ -1284,7 +1379,9 @@
       this.audio.sfx('slash');
       const ren = $('#ren'); ren.classList.add('attacking');
       await this.battleSleep(200);
-      const d = this.damageFor(strike, enemy);
+      const outcome = this.rollPlayerAttackOutcome(strike, enemy, { weapon: lw, weaponType: lw.weaponType });
+      if (!outcome.hit) { this.triggerEvade('player', enemy, strike, { source: 'offHandStrike' }); this.floating(el, 'EVADE', 'miss'); this.setLog(`${enemy.name}${enemy.label}は左手の追撃をかわした！`); await this.battleSleep(240); ren.classList.remove('attacking'); return; }
+      const d = this.damageFor(strike, enemy, outcome);
       enemy.hp = enemy.cannotDefeat ? Math.max(1, enemy.hp - d.value) : Math.max(0, enemy.hp - d.value);
       el.classList.add('hit');
       this.floating(el, d.value, d.critical ? 'critical' : 'damage');
@@ -1341,7 +1438,9 @@
       this.audio.sfx('slash');
       const ren = $('#ren'); ren.classList.add('attacking');
       await this.battleSleep(240);
-      const d = this.damageFor(skill, enemy);
+      const outcome = this.rollPlayerAttackOutcome(skill, enemy);
+      if (!outcome.hit) { this.triggerEvade('player', enemy, skill, { source: 'counter' }); this.floating(el, 'EVADE', 'miss'); this.setLog(`${enemy.name}${enemy.label}は反撃をかわした！`); await this.battleSleep(260); ren.classList.remove('attacking'); return; }
+      const d = this.damageFor(skill, enemy, outcome);
       enemy.hp = enemy.cannotDefeat ? Math.max(1, enemy.hp - d.value) : Math.max(0, enemy.hp - d.value);
       el.classList.add('hit');
       this.floating(el, d.value, d.critical ? 'critical' : 'damage');
@@ -1409,9 +1508,10 @@
       const ren = $('#ren'); ren.classList.add('casting');
       for (const target of targets) {
         const el = document.getElementById(target.uid); await this.magicProjectile(el);
-        if (Math.random() > this.hitChanceAgainst(target)) { this.floating(el, 'MISS', 'miss'); await this.battleSleep(180); continue; }
+        const outcome = this.rollPlayerAttackOutcome(skill, target);
+        if (!outcome.hit) { this.triggerEvade('player', target, skill, { source: 'playerAttackAll' }); this.floating(el, 'EVADE', 'miss'); await this.battleSleep(180); continue; }
         el.classList.add('hit');
-        const d = this.damageFor(skill, target); target.hp = target.cannotDefeat ? Math.max(1, target.hp - d.value) : Math.max(0, target.hp - d.value);
+        const d = this.damageFor(skill, target, outcome); target.hp = target.cannotDefeat ? Math.max(1, target.hp - d.value) : Math.max(0, target.hp - d.value);
         this.refundMpFromSpell(d.value, skill); // 魔導士《魔力還流》
         this.recordSeripesHit(target, skill, d.value);
         this.floating(el, d.value, d.critical ? 'critical' : 'damage'); this.audio.sfx(d.critical ? 'critical' : 'enemyHit'); this.updateHUD();
@@ -1442,7 +1542,12 @@
     }
     async seripesAura(enemy, mode = 'guard') { const el = document.getElementById(enemy.uid); if (!el) return; el.classList.remove('aura-guard','aura-heal','aura-reprise'); el.classList.add('seripes-aura', `aura-${mode}`); await this.battleSleep(560); setTimeout(() => el.classList.remove('seripes-aura', `aura-${mode}`), 900); }
     async seripesStrike(enemy, name, type = 'physical', power = 1, recorded = 0, grand = false) {
-      const el = document.getElementById(enemy.uid), ren = $('#ren'), magical = type === 'magical'; this.flashTitle(name, grand ? 'GRAND REPRISE' : 'BOSS ACTION'); this.audio.sfx(magical ? 'dark' : 'slash'); el.classList.add('enemy-attacking'); await this.battleSleep(380); ren.classList.add('hit');
+      const el = document.getElementById(enemy.uid), ren = $('#ren'), magical = type === 'magical'; this.flashTitle(name, grand ? 'GRAND REPRISE' : 'BOSS ACTION'); this.audio.sfx(magical ? 'dark' : 'slash'); el.classList.add('enemy-attacking'); await this.battleSleep(380);
+      const key = grand ? 'grandReprise' : name.includes('ミラー') ? 'repriseMirror' : name.includes('ブレイド') ? 'repriseBlade' : 'repriseSword';
+      const action = enemy.specialAttacks?.[key] || { id: key, name, kind: magical ? 'magic' : 'physical', unavoidable: grand };
+      const outcome = this.rollEnemyAttackOutcome(enemy, action);
+      if (!outcome.hit) { this.triggerEvade(enemy, 'player', action, { source: 'seripesStrike' }); this.floating(ren, 'EVADE', 'miss'); this.setLog(`セリペスの${name}！ RENは攻撃をかわした！`); this.updateHUD(); await this.battleSleep(480); el.classList.remove('enemy-attacking'); return; }
+      ren.classList.add('hit');
       const defUp = (!magical && this.player.buffs?.defUp && this.turn <= this.player.buffs.defUp.until) ? 1 + (this.player.buffs.defUp.rate || 0) : 1;
       const base = this.enemyRawDamage(magical ? 'magical' : 'physical', (magical ? enemy.stats.mag : enemy.stats.atk) * power, defUp);
       const reflected = recorded * (grand ? (D.seripesBalance?.grandRepriseDamageRate ?? .48) : (D.seripesBalance?.repriseDamageRate ?? .32));
@@ -1484,12 +1589,12 @@
       for (const s of enemy.ai) { acc += s.weight; if (r < acc) { chosen = s; break; } }
       if (['heal','defBuff','mdefBuff'].includes(chosen.kind)) { await this.enemySupportAction(enemy, chosen); return; }
       const isMagic = chosen.kind === 'magic';
-      this.setLog(`${enemy.name}${enemy.label}の${chosen.name}！`); if (isMagic) { this.flashTitle(chosen.name, 'SHADOW MAGIC'); this.audio.sfx('dark'); } const el = document.getElementById(enemy.uid), ren = $('#ren'); el.classList.add('enemy-attacking'); await this.battleSleep(300); ren.classList.add('hit');
+      this.setLog(`${enemy.name}${enemy.label}の${chosen.name}！`); if (isMagic) { this.flashTitle(chosen.name, 'SHADOW MAGIC'); this.audio.sfx('dark'); } const el = document.getElementById(enemy.uid), ren = $('#ren'); el.classList.add('enemy-attacking'); await this.battleSleep(300);
       const balance = D.combatBalance, attackStat = isMagic ? enemy.stats.mag : enemy.stats.atk;
       const defMul = isMagic ? 1 : (this.turn <= (this.player.defDownUntil || 0) ? .8 : 1);
-      const raw = this.enemyRawDamage(isMagic ? 'magical' : 'physical', attackStat, defMul), miss = Math.random() < clamp((this.player.stats.agi - enemy.stats.spd) * .008, .02, .16), damage = miss ? 0 : Math.max(1, Math.round(raw + roll(balance.enemyVariance.min, balance.enemyVariance.max)));
-      if (miss) { this.floating(ren, 'MISS', 'miss'); this.setLog('RENは攻撃をかわした！'); } else { this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, isMagic ? 'magical' : 'physical'); this.floating(ren, actual, 'enemy-damage'); this.setLog(`RENは${actual}ダメージを受けた！`); } this.updateHUD(); await this.battleSleep(420); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
-      if (!miss) await this.tryCounter(enemy);
+      const raw = this.enemyRawDamage(isMagic ? 'magical' : 'physical', attackStat, defMul), outcome = this.rollEnemyAttackOutcome(enemy, chosen), damage = Math.max(1, Math.round(raw + roll(balance.enemyVariance.min, balance.enemyVariance.max)));
+      if (!outcome.hit) { this.triggerEvade(enemy, 'player', chosen, { source: 'enemyAttack' }); this.floating(ren, 'EVADE', 'miss'); this.setLog('RENは攻撃をかわした！'); } else { ren.classList.add('hit'); this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, isMagic ? 'magical' : 'physical'); this.floating(ren, actual, 'enemy-damage'); this.setLog(`RENは${actual}ダメージを受けた！`); } this.updateHUD(); await this.battleSleep(420); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
+      if (outcome.hit) await this.tryCounter(enemy);
     }
     async bossAttack(enemy) {
       if (enemy.id === 'myrthi') { await this.bossAttackMyrthi(enemy); return; }
@@ -1502,13 +1607,16 @@
       const isMagic = chosen.kind === 'magic', el = document.getElementById(enemy.uid), ren = $('#ren');
       this.setLog(`${enemy.name}の${chosen.name}！`);
       if (isMagic) { this.flashTitle(chosen.name, 'BOSS MAGIC'); this.audio.sfx('dark'); } else { this.flashTitle(chosen.name, 'BOSS STRIKE'); this.audio.sfx('slash'); }
-      el.classList.add('enemy-attacking'); await this.battleSleep(400); ren.classList.add('hit');
+      el.classList.add('enemy-attacking'); await this.battleSleep(400);
       const balance = D.combatBalance, formula = isMagic ? balance.enemyMagic : balance.enemyPhysical;
       const defUpBuff = (this.player.buffs?.defUp && this.turn <= this.player.buffs.defUp.until) ? (1 + (this.player.buffs.defUp.rate || 0)) : 1; const attackStat = isMagic ? enemy.stats.mag : enemy.stats.atk;
       const defMul = isMagic ? 1 : defUpBuff * (this.turn <= (this.player.defDownUntil || 0) ? .8 : 1);
       const raw = this.enemyRawDamage(isMagic ? 'magical' : 'physical', attackStat, defMul);
       let damage = Math.max(1, Math.round(raw + roll(balance.enemyVariance.min, balance.enemyVariance.max)));
       if (isMagic) damage = Math.max(1, Math.round(damage * (1 - this.passiveEffectRate('magicResist') - this.equipmentEffectRate('magicDamageReductionPercent'))));
+      const outcome = this.rollEnemyAttackOutcome(enemy, chosen);
+      if (!outcome.hit) { this.triggerEvade(enemy, 'player', chosen, { source: 'bossAttack' }); this.floating(ren, 'EVADE', 'miss'); this.setLog(`RENは${chosen.name}をかわした！`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); return; }
+      ren.classList.add('hit');
       this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, isMagic ? 'magical' : 'physical'); this.floating(ren, actual, 'enemy-damage'); this.setLog(`RENは${actual}ダメージを受けた！`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
       await this.tryCounter(enemy);
     }
@@ -1521,15 +1629,19 @@
     async enemyOnlyTurn() { for (const e of this.enemies.filter(e => e.alive)) { await this.enemyAttack(e); if (this.player.hp <= 0) { await this.defeat(); return; } await this.battleSleep(300); } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands(); }
 
     grantEnemyReward(enemy) {
+      // 特殊戦闘モード側で一部の器だけを初期化していても撃破処理を止めない。
+      const rewards = (this.battleRewards ||= {});
+      rewards.exp ??= 0; rewards.gold ??= 0; rewards.drops ||= {}; rewards.levels ||= [];
+      rewards.masteryResults ||= []; rewards.jobResults ||= []; rewards.newRecipes ||= [];
       // 僧侶《施しの祈り》などのGOLD増加パッシブをここで反映する
       const exp = enemy.exp || 0, baseGold = roll(enemy.gold?.min ?? 0, enemy.gold?.max ?? 0);
       const gold = Math.round(baseGold * (1 + this.passiveEffectRate('goldUp'))), drops = {};
       (enemy.rolledDrops || []).forEach(([id, n]) => { drops[id] = (drops[id] || 0) + n; });
       const levels = this.applyRewards({ exp, gold, drops });
       const mastery = this.grantWeaponExp(exp), job = this.grantJobExp(exp);
-      this.battleRewards.exp += exp; this.battleRewards.gold += gold;
-      Object.entries(drops).forEach(([id, n]) => { this.battleRewards.drops[id] = (this.battleRewards.drops[id] || 0) + n; });
-      this.battleRewards.levels.push(...levels); if (mastery) this.battleRewards.masteryResults.push(mastery); if (job) this.battleRewards.jobResults.push(job);
+      rewards.exp += exp; rewards.gold += gold;
+      Object.entries(drops).forEach(([id, n]) => { rewards.drops[id] = (rewards.drops[id] || 0) + n; });
+      rewards.levels.push(...levels); if (mastery) rewards.masteryResults.push(mastery); if (job) rewards.jobResults.push(job);
       if (mastery?.leveled) this.queueGrowthBubble(`${this.weaponTypeName(mastery.type)}武器学 Lv.UP!`, `Lv.${mastery.before} → ${mastery.after}`);
       if (job?.to > job?.from) this.queueGrowthBubble('JOB Lv.UP!', `${job.jobName} Lv.${job.from} → ${job.to}`);
       this.updateHUD();

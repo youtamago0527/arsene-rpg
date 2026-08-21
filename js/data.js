@@ -30,15 +30,16 @@ window.ARSENE_DATA = {
   //   powerKey     : 加算する装備側の戦闘能力キー
   //   damageType   : physical / magical（防御側の参照が変わる）
   // ══════════════════════════════════════════════════════════════
-  // 命中率（隠しステータス／画面には出さない）。器用さで上がり、敵の素早さで下がる。
-  accuracy: { base: 0.90, dexRate: 0.006, enemySpdRate: 0.005, min: 0.55, max: 1.0 },
+  // 命中率（隠しステータス／画面には出さない）。攻撃側DEXと防御側AGIで共通判定する。
+  // 数値は小数（0.05 = 5%）。既存敵にDEX/AGIが無い場合は戦闘側でSPDへフォールバックする。
+  accuracy: { base: 0.90, dexRate: 0.006, defenderAgiRate: 0.005, min: 0.05, max: 1.0 },
   weaponScaling: {
-    sword:   { scaling: { str: 1.0 },            powerKey: 'attackPower',      damageType: 'physical' },
-    martial: { scaling: { str: 0.5, agi: 0.5 },  powerKey: 'attackPower',      damageType: 'physical' },
-    staff:   { scaling: { mag: 1.0 },            powerKey: 'magicAttackPower', damageType: 'magical'  },
+    sword:   { scaling: { str: 1.0 },            powerKey: 'attackPower',      damageType: 'physical', accuracyModifier:  0.00 },
+    martial: { scaling: { str: 0.5, agi: 0.5 },  powerKey: 'attackPower',      damageType: 'physical', accuracyModifier:  0.05 },
+    staff:   { scaling: { mag: 1.0 },            powerKey: 'magicAttackPower', damageType: 'magical',  accuracyModifier:  0.00 },
     // 楽器：器用さを魔法攻撃へ変換する。魔奏士の証で解放。
-    instrument: { scaling: { dex: 1.0 },        powerKey: 'magicAttackPower', damageType: 'magical'  },
-    shield: { scaling: {}, powerKey: 'defensePower', damageType: 'physical' }
+    instrument: { scaling: { dex: 1.0 },        powerKey: 'magicAttackPower', damageType: 'magical',  accuracyModifier:  0.05 },
+    shield: { scaling: {}, powerKey: 'defensePower', damageType: 'physical', accuracyModifier: -0.10 }
   },
   // 防御性能：物理は 体力＋装備防御力 / 魔法は 精神＋装備魔法防御力
   defenseScaling: {
@@ -106,6 +107,13 @@ window.ARSENE_DATA = {
     // JOB成長は「今就いているJOBで育てた分」だけ乗る。
     // PHANTOM THIEF だけは全JOBの合算をこの割合で引き継げる。
     phantomThiefInheritRate: 0.5,
+    // PHANTOM THIEF専用「盗奪進行度」。転生回数は含めず、MASTER済みJOBはLv20として扱う。
+    // JOB MASTERはJOBレベル到達と重複するため、別枠の加点にはしない。
+    phantomStealProgress: {
+      jobLevelCap: 20,
+      weaponLevelCap: 20,
+      weights: { jobLevels: 0.50, passives: 0.25, weaponMastery: 0.25 }
+    },
     // 魔奏士《魔力装填》の追加ダメージ係数
     magicChargeRate: 0.5
   },
@@ -631,7 +639,7 @@ window.ARSENE_DATA = {
       id: 'doubleSlash', name: '二段斬り', nameEn: 'DOUBLE SLASH', source: 'weapon', type: 'ACTIVE',
       weaponType: 'sword', prerequisiteSkill: 'attack', requiredWeaponLevel: 3, sparkRate: null,
       mp: 2, kind: 'physical', damageType: 'physical', target: 'single',
-      power: 0.7, hitCount: 2, hits: 2, agiScale: 0, criticalModifier: 0,
+      power: 0.7, hitCount: 2, hits: 2, agiScale: 0, criticalModifier: 0, accuracyModifier: 0,
       powerText: 'STR×0.7×2回', effectText: '2連撃／合計1.4倍', description: '踏み込みから返す刃で二度斬りつける。'
     },
     doubleClaw: {
@@ -645,7 +653,7 @@ window.ARSENE_DATA = {
       id: 'fireStorm', name: 'ファイアストーム', nameEn: 'FIRE STORM', source: 'weapon', type: 'ACTIVE',
       weaponType: 'staff', prerequisiteSkill: 'staffFireball', requiredWeaponLevel: 3, sparkRate: null,
       mp: 5, kind: 'magical', damageType: 'magical', element: 'fire', target: 'all',
-      power: 0.7, hitCount: 1, agiScale: 0, criticalModifier: 0,
+      power: 0.7, hitCount: 1, agiScale: 0, criticalModifier: 0, accuracyModifier: 0.10,
       powerText: 'MAG×0.7（全体）', effectText: '敵全体へ炎属性魔法', description: '渦巻く業火が戦場を包む。'
     },
 
@@ -654,21 +662,21 @@ window.ARSENE_DATA = {
       id: 'tripleSlash', name: '三段斬り', nameEn: 'TRIPLE SLASH', source: 'weapon', type: 'ACTIVE',
       weaponType: 'sword', prerequisiteSkill: 'doubleSlash', requiredWeaponLevel: 7, sparkRate: null,
       mp: 3, kind: 'physical', damageType: 'physical', target: 'single',
-      power: 0.55, hitCount: 3, hits: 3, agiScale: 0, criticalModifier: 0,
+      power: 0.55, hitCount: 3, hits: 3, agiScale: 0, criticalModifier: 0, accuracyModifier: -0.05,
       powerText: 'STR×0.55×3回', effectText: '3連撃／合計1.65倍', description: '流れるような三連の斬撃。'
     },
     sonicBlade: {
       id: 'sonicBlade', name: '音速剣', nameEn: 'SONIC BLADE', source: 'weapon', type: 'ACTIVE',
       weaponType: 'sword', prerequisiteSkill: 'tripleSlash', requiredWeaponLevel: 12, sparkRate: null,
       mp: 5, kind: 'physical', damageType: 'physical', target: 'single',
-      power: 1.6, hitCount: 1, agiScale: 0, criticalModifier: 0, speedBonus: 40,
+      power: 1.6, hitCount: 1, agiScale: 0, criticalModifier: 0, accuracyModifier: 0.15, speedBonus: 40,
       powerText: 'STR×1.6', effectText: '強い先制補正', description: '音を置き去りにする神速の一閃。'
     },
     afterimageBlade: {
       id: 'afterimageBlade', name: '残像剣', nameEn: 'AFTERIMAGE BLADE', source: 'weapon', type: 'ACTIVE',
       weaponType: 'sword', prerequisiteSkill: 'sonicBlade', requiredWeaponLevel: 18, sparkRate: null,
       mp: 8, kind: 'physical', damageType: 'physical', target: 'all',
-      power: 1.3, hitCount: 1, agiScale: 0, criticalModifier: 0,
+      power: 1.3, hitCount: 1, agiScale: 0, criticalModifier: 0, accuracyModifier: -0.10,
       powerText: '攻撃性能×1.3（全体）', effectText: '敵全体へ物理攻撃', description: '無数の残像が同時に敵を薙ぐ。剣の唯一の全体攻撃。'
     },
 
@@ -677,7 +685,7 @@ window.ARSENE_DATA = {
       id: 'vitalPierce', name: '急所突き', nameEn: 'VITAL PIERCE', source: 'weapon', type: 'ACTIVE',
       weaponType: 'martial', prerequisiteSkill: 'doubleClaw', requiredWeaponLevel: 7, sparkRate: null,
       mp: 5, kind: 'physical', damageType: 'physical', target: 'single',
-      power: 1.2, hitCount: 1, agiScale: 0, criticalModifier: 0.25,
+      power: 1.2, hitCount: 1, agiScale: 0, criticalModifier: 0.25, accuracyModifier: -0.05,
       powerText: 'AGI×1.2', effectText: '会心率 大幅上昇', description: '一点の急所を穿つ。会心を狙う技。'
     },
     galeFist: {
@@ -708,14 +716,14 @@ window.ARSENE_DATA = {
       id: 'inferno', name: 'インフェルノ', nameEn: 'INFERNO', source: 'weapon', type: 'ACTIVE',
       weaponType: 'staff', prerequisiteSkill: 'fireStorm', requiredWeaponLevel: 12, sparkRate: null,
       mp: 10, kind: 'magical', damageType: 'magical', element: 'fire', target: 'all',
-      power: 1.0, hitCount: 1, agiScale: 0, criticalModifier: 0,
+      power: 1.0, hitCount: 1, agiScale: 0, criticalModifier: 0, accuracyModifier: 0.15,
       powerText: 'MAG×1.0（全体）', effectText: '敵全体を焼き尽くす炎', description: '地を舐める獄炎が全てを飲み込む。'
     },
     meteor: {
       id: 'meteor', name: 'メテオ', nameEn: 'METEOR', source: 'weapon', type: 'ACTIVE',
       weaponType: 'staff', prerequisiteSkill: 'inferno', requiredWeaponLevel: 18, sparkRate: null,
       mp: 18, kind: 'magical', damageType: 'magical', element: 'fire', target: 'all',
-      power: 1.5, hitCount: 1, agiScale: 0, criticalModifier: 0,
+      power: 1.5, hitCount: 1, agiScale: 0, criticalModifier: 0, unavoidable: true,
       powerText: 'MAG×1.5（全体）', effectText: '高コストの大魔法', description: '天より降る星の礫が戦場を穿つ。'
     },
 
@@ -765,7 +773,7 @@ window.ARSENE_DATA = {
     magicRepulse: { id: 'magicRepulse', name: 'マジックリパルス', nameEn: 'MAGIC REPULSE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'guardImpact', requiredWeaponLevel: 7, sparkRate: null, mp: 7, kind: 'magical', damageType: 'magical', shieldFormula: 'magicRepulse', target: 'single', power: 1.0, powerText: 'MDEF×1.2＋DEF×0.3', effectText: '魔法防御寄りの盾技', description: '魔力を盾面で反転させ、魔法防御性能から衝撃を生む。' },
     fortress: { id: 'fortress', name: 'フォートレス', nameEn: 'FORTRESS', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'magicRepulse', requiredWeaponLevel: 12, sparkRate: null, mp: 8, kind: 'support', target: 'self', effect: { type: 'fortress', reduction: .30, turns: 1 }, powerText: '被ダメージ -30%', effectText: '1ターン防御。軽減後ダメージはRESONANCEへ蓄積', description: '盾を大地へ固定し、攻撃を真正面から受け止める。' },
     revengeForce: { id: 'revengeForce', name: 'リベンジ・フォース', nameEn: 'REVENGE FORCE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'fortress', requiredWeaponLevel: 18, sparkRate: null, mp: 12, kind: 'physical', damageType: 'physical', shieldFormula: 'revenge', target: 'single', power: 1.65, powerText: '直前の被弾タイプに応じDEF/MDEF参照', effectText: '物理被弾ならDEF、魔法被弾ならMDEFを強く参照', description: '直前に受けた攻撃の性質を読み、最適な防御性能で打ち返す盾学奥義。' },
-    resonanceBreak: { id: 'resonanceBreak', name: 'RESONANCE BREAK', nameEn: 'RESONANCE BREAK', source: 'job', jobId: 'guardian', unlockJobLevel: 1, type: 'ACTIVE', kind: 'neutral', damageType: 'neutral', target: 'single', mp: 0, power: 1.0, ignoreDef: 1, powerText: '現在武器の攻撃性能×共鳴倍率', effectText: '全RESONANCE消費／DEF・MDEF・物理魔法耐性を無視', description: '受けた痛みを共鳴へ変え、現在の武器性能から無属性の一撃を放つ。' }
+    resonanceBreak: { id: 'resonanceBreak', name: 'RESONANCE BREAK', nameEn: 'RESONANCE BREAK', source: 'job', jobId: 'guardian', unlockJobLevel: 1, type: 'ACTIVE', kind: 'neutral', damageType: 'neutral', target: 'single', mp: 0, power: 1.0, ignoreDef: 1, unavoidable: true, powerText: '現在武器の攻撃性能×共鳴倍率', effectText: '全RESONANCE消費／DEF・MDEF・物理魔法耐性を無視／必中', description: '受けた痛みを共鳴へ変え、現在の武器性能から無属性の一撃を放つ。' }
   },
   items: {
     potion: { id: 'potion', name: '回復薬', category: 'consumable', rarity: 'common', description: 'HPを30回復する。', effect: { hp: 30 } },
@@ -1068,13 +1076,13 @@ window.ARSENE_DATA = {
       music: '音楽系/ダンジョン/ダンジョン1ノエルのテーマ.mp3',
       title: '永遠の裁定者', element: '闇 / 裁定', sprite: 'assets/enemy-characters/noel/battle-first-encounter.png',
       dynamicScale: 100, cannotDefeat: true, exp: 0, gold: { min: 0, max: 0 }, dropTable: [],
-      ai: [{ id: 'eternalJudgement', name: 'エターナル・ジャッジメント', weight: 1 }]
+      ai: [{ id: 'eternalJudgement', name: 'エターナル・ジャッジメント', kind: 'magic', unavoidable: true, weight: 1 }]
     },
     zenakado: {
       id: 'zenakado', name: 'ゼナカド', enName: 'ZENAKADO — THE SOLOIST', kind: 'boss', encounter: 1,
       title: '独奏卿', element: '闇', weaknesses: ['光', '火'],
       sprite: 'assets/enemy-characters/zenakado/battle-idle-v3.png',
-      stats: { maxHp: 320, atk: 14, def: 8, mag: 13, mnd: 8, spd: 12 },
+      stats: { maxHp: 320, atk: 14, def: 8, mag: 13, mnd: 8, dex: 12, agi: 12, spd: 12 },
       exp: 150, gold: { min: 100, max: 150 },
       dropTable: [
         { itemId: 'cadenza_fragment', chance: 1.0 }, { itemId: 'zenacad_core', chance: .45 },
@@ -1083,9 +1091,9 @@ window.ARSENE_DATA = {
         { itemId: 'maestro_gloves', chance: .03 }, { itemId: 'finale_boots', chance: .03 }, { itemId: 'maestri_baton', chance: .03 }
       ],
       ai: [
-        { id: 'shadowClaw', name: '影裂斬', kind: 'physical', weight: 0.45 },
-        { id: 'darkBlast', name: '暗黒爆破', kind: 'magic', weight: 0.35 },
-        { id: 'attack', name: '斬りつける', kind: 'physical', weight: 0.20 }
+        { id: 'shadowClaw', name: '影裂斬', kind: 'physical', accuracyModifier: 0, weight: 0.45 },
+        { id: 'darkBlast', name: '暗黒爆破', kind: 'magic', accuracyModifier: 0.05, weight: 0.35 },
+        { id: 'attack', name: '斬りつける', kind: 'physical', accuracyModifier: 0, weight: 0.20 }
       ]
     },
     soulMage: {
@@ -1483,8 +1491,14 @@ window.ARSENE_DATA = {
       title: '第三奏卿《不落の反奏騎士》', role: 'BOSS / DEFENSE & REPRISE', roleDescription: '超耐久・防御・反奏型。攻撃タイプを切り替えて攻略する。',
       element: '聖 / 反奏', weaknesses: ['無属性'], resistances: ['物理', '魔'],
       sprite: 'assets/enemy-characters/seripes/seripes-battle-cutout.png', spriteClass: 'seripes-sprite',
-      stats: { maxHp: 2400, atk: 48, def: 82, mag: 44, mnd: 68, spd: 15 },
+      stats: { maxHp: 2400, atk: 48, def: 82, mag: 44, mnd: 68, dex: 18, agi: 15, spd: 15 },
       exp: 420, gold: { min: 280, max: 380 }, dropTable: [{ itemId: 'voidEssence', chance: 1.0 }, { itemId: 'phantomCore', chance: .65 }, { itemId: 'darkIron', chance: .80 }],
+      specialAttacks: {
+        repriseBlade: { id: 'repriseBlade', name: 'リプライズ・ブレイド', kind: 'physical', accuracyModifier: 0.05 },
+        repriseMirror: { id: 'repriseMirror', name: 'リプライズ・ミラー', kind: 'magic', accuracyModifier: 0.05 },
+        grandReprise: { id: 'grandReprise', name: 'グランド・リプライズ', kind: 'magic', unavoidable: true },
+        repriseSword: { id: 'repriseSword', name: '反奏剣', kind: 'physical', accuracyModifier: 0 }
+      },
       ai: [
         { id: 'repriseSword', name: '反奏剣', kind: 'physical', weight: .38 },
         { id: 'fortisGuard', name: 'フォルティス・ガード', kind: 'selfDefBuff', rate: .30, turns: 3, weight: .16 },
@@ -1498,7 +1512,7 @@ window.ARSENE_DATA = {
       id: 'myrthi', name: 'ミルティ', enName: 'MYRTHI', kind: 'boss', encounter: 1,
       title: '黒紅の双刃戦姫', element: '物理', weaknesses: ['魔法'],
       sprite: 'assets/enemy-characters/myrthi/battle-idle-v1.jpg', spriteClass: 'myrthi-sprite',
-      stats: { maxHp: 880, atk: 50, def: 25, mag: 30, mnd: 26, spd: 26 },
+      stats: { maxHp: 880, atk: 50, def: 25, mag: 30, mnd: 26, dex: 30, agi: 26, spd: 26 },
       exp: 200, gold: { min: 150, max: 200 },
       dropTable: [
         { itemId: 'myrthi_fragment', chance: 1.0 },
@@ -1510,10 +1524,11 @@ window.ARSENE_DATA = {
         { itemId: 'myrthi_boots', chance: .03 },
         { itemId: 'myrthi_metro', chance: .03 }
       ],
+      specialAttacks: { deadlyRhythm: { id: 'deadlyRhythm', name: 'DEADLY RHYTHM', kind: 'physical', accuracyModifier: -0.05 } },
       ai: [
-        { id: 'attack', name: '双刃連撃', kind: 'physical', weight: .50 },
-        { id: 'clubSmash', name: '乱舞の踏み込み', kind: 'physical', weight: .30 },
-        { id: 'ratBite', name: '黒紅の一閃', kind: 'physical', weight: .20 }
+        { id: 'attack', name: '双刃連撃', kind: 'physical', accuracyModifier: -0.03, weight: .50 },
+        { id: 'clubSmash', name: '乱舞の踏み込み', kind: 'physical', accuracyModifier: 0.05, weight: .30 },
+        { id: 'ratBite', name: '黒紅の一閃', kind: 'physical', accuracyModifier: 0.10, weight: .20 }
       ]
     }
   }
