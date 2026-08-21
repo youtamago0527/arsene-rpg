@@ -515,7 +515,7 @@
     </div>` : '';
     panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button>
       <small>PHANTOM THIEF TUTORIAL</small><h2>${esc(p.h)}</h2>
-      <div class="pt-progress">${TUTORIAL.map((_, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('')}</div>
+      <div class="pt-dots">${TUTORIAL.map((_, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('')}</div>
       <div class="pt-talk">${p.talk.map(t => `<p>「${esc(t)}」</p>`).join('')}</div>
       <p class="pt-big">「${esc(p.big)}」</p>
       ${cycleHtml}${exampleHtml}${actionsHtml}

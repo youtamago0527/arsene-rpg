@@ -51,9 +51,9 @@ body.ow-glitch #menu-screen{animation:ow-shake .5s steps(2) 3}
 .lenny-menu button mark{position:absolute;right:12px;top:12px;padding:1px 8px;border-radius:99px;background:#c40044;color:#fff;font-size:9px;letter-spacing:.12em}
 
 /* ── PHANTOM THIEF チュートリアル ── */
-.pt-progress{display:flex;gap:5px;margin:0 0 12px}
-.pt-progress i{flex:1;height:3px;border-radius:2px;background:#182a40}
-.pt-progress i.on{background:linear-gradient(90deg,#a86bff,#5fc6ff)}
+.pt-dots{display:flex;gap:5px;margin:0 0 12px}
+.pt-dots i{flex:1;height:3px;border-radius:2px;background:#182a40}
+.pt-dots i.on{background:linear-gradient(90deg,#a86bff,#5fc6ff)}
 .pt-talk{display:grid;gap:4px;margin-bottom:10px}
 .pt-talk p{margin:0;font-size:13px;line-height:1.9;color:#c6d8ea}
 .pt-big{margin:0 0 14px;padding:12px;text-align:center;font:700 17px/1.6 serif;color:#ffb4c6;background:#170a14;border:1px solid #6b2740;border-radius:5px}

@@ -134,7 +134,18 @@
         if (e.target.closest('[data-debug-open]')) { this.audio.sfx('ui'); window.arseneDebugRoom?.open(); return; }
         if (e.target.closest('[data-debug-lock]')) { window.arseneDebugRoom?.lock(); this.audio.sfx('ui'); this.renderMenuPanel('system'); return; }
         const helpToggle = e.target.closest('[data-help-toggle]');
-        if (helpToggle) { const id = helpToggle.dataset.helpToggle; this.helpOpenId = this.helpOpenId === id ? null : id; this.audio.sfx('ui'); this.renderMenuPanel('system'); return; }
+        if (helpToggle) {
+          // 再描画でスクロールが先頭に戻ってしまうので、押した項目の画面上の位置を保つ。
+          // スクロールしているのは #menu-panel とは限らないので、実際のスクロール親を探す。
+          const id = helpToggle.dataset.helpToggle;
+          const keepTop = helpToggle.getBoundingClientRect().top;
+          this.helpOpenId = this.helpOpenId === id ? null : id; this.audio.sfx('ui'); this.renderMenuPanel('system');
+          // 再描画でスクロール要素ごと作り直されるので、探すのは描画後の新しいDOMから
+          const after = document.querySelector(`[data-help-toggle="${id}"]`);
+          const scroller = after && this.scrollParentOf(after);
+          if (scroller) scroller.scrollTop += after.getBoundingClientRect().top - keepTop;
+          return;
+        }
         const jobRebirth = e.target.closest('[data-job-rebirth]');
         if (jobRebirth) { if (!jobRebirth.disabled) { const r = this.doRebirth(jobRebirth.dataset.jobRebirth); if (!r.ok) window.arseneStartFlow?.toast(r.reason); } return; }
         const setPassive = e.target.closest('[data-set-passive]');
@@ -278,6 +289,14 @@
     unlockedJobIds() { return this.profile.unlockedJobs ||= [this.profile.currentJob || 'mage']; }
     isJobUnlocked(id) { return this.unlockedJobIds().includes(id); }
     unlockJob(id) { if (!D.jobs[id] || this.isJobUnlocked(id)) return false; this.unlockedJobIds().push(id); this.profile.jobs ||= {}; this.profile.jobs[id] ||= { level: 1, exp: 0 }; return true; }
+    // 実際にスクロールしている祖先要素を返す（無ければページ本体）
+    scrollParentOf(el) {
+      for (let n = el?.parentElement; n; n = n.parentElement) {
+        const ov = getComputedStyle(n).overflowY;
+        if ((ov === 'auto' || ov === 'scroll') && n.scrollHeight > n.clientHeight + 1) return n;
+      }
+      return document.scrollingElement;
+    }
     isPhantomThief(jobId = this.profile.currentJob) { return jobId === 'phantomThief'; }
     phantomStealProgress() {
       const cfg = this.gb().phantomStealProgress || {}, jobCap = cfg.jobLevelCap || D.jobLevelCap || 20, weaponCap = cfg.weaponLevelCap || 20;
@@ -1838,6 +1857,7 @@
     }
     jobDetailHtml(jobId, unlocked, currentId) {
       const j = D.jobs[jobId], p = this.profile.jobs[jobId], isAdv = (D.advancedJobIds || []).includes(jobId), avail = isAdv ? this.isAdvancedJobUnlocked(jobId) : this.isJobUnlocked(jobId), isCur = jobId === currentId, need = this.jobExpNeeded(p.level), bar = need ? Math.round(100 * p.exp / need) : 100;
+      const noGrow = this.isNoGrowthJob(jobId) || !!j.noGrowth;
       const bonuses = this.activeJobBonuses(jobId), bHtml = Object.entries(bonuses).length ? Object.entries(bonuses).map(([k, v]) => `<div class="jbn-item"><span>${statLabels[k] || k}</span><b>${k === 'critBonus' ? `+${Math.round(v * 100)}%` : `+${v}`}</b></div>`).join('') : '<span class="jbn-none">なし</span>';
       // アビリティ一覧＝固有技＋パッシブ＋旧skillUnlocks＋条件つき専用技
       const abilityEntries = [];
@@ -1858,7 +1878,7 @@
       // JOB特性：そのJOBに就いている間だけの効果（他JOBへ持ち出せない）
       const traits = this.jobTraitEntries(jobId);
       const traitHtml = traits.length ? `<div class="jbonus jtraits"><h4>JOB特性</h4><div class="jtrait-list">${traits.map(t => `<button type="button" class="jtrait-row" data-job-trait-detail="${jobId}:${t.key}"><b>${t.name}</b><span>${t.label}${t.gain > 0 ? `（転生 +${t.gain}%）` : ''}</span><em>▶</em></button>`).join('')}</div><p class="jbn-note">このJOBに就いている間だけ有効。他JOBへは持ち出せません。</p></div>` : '';
-      return `<div class="jdetail"><button class="jback-btn" data-job-back>← JOB一覧</button><div class="jdetail-hdr"><div><b>${j.name}</b></div><em class="jdetail-badge">${isCur ? '現在' : avail ? `Lv.${p.level}` : 'LOCKED'}</em></div>${avail ? `<div class="jexp-wrap"><div class="jlv-row"><b>JOB Lv.${p.level}</b><span>JEXP ${need ? `${p.exp} / ${need}` : 'MASTER'}</span></div><div class="jexp-bar"><i style="width:${bar}%"></i></div></div><div class="jbonus"><h4>このJOBで育てた能力</h4><div class="jbn-grid">${bonusGrid}</div><p class="jbn-note">${this.isPhantomThief() ? 'PHANTOM THIEF は全JOBの成長を半分引き継ぎます。' : 'この成長は、このJOBに就いている間だけ乗ります。'}</p></div>${traitHtml}${isCur ? '<div class="jcur-badge">現在のJOB</div>' : `<button class="jchange-btn" data-job-change="${jobId}">このJOBに変更</button>`}${this.rebirthSectionHTML(jobId)}<div class="jskills"><h4>アビリティ</h4><div class="jar-list">${skillRows}</div></div>` : `<p class="jlocked-note">${j.description}</p>${condHtml}`}</div>`;
+      return `<div class="jdetail"><button class="jback-btn" data-job-back>← JOB一覧</button><div class="jdetail-hdr"><div><b>${j.name}</b></div><em class="jdetail-badge">${isCur ? '現在' : !avail ? 'LOCKED' : noGrow ? 'SPECIAL' : `Lv.${p.level}`}</em></div>${avail ? `<div class="jexp-wrap"><div class="jlv-row"><b>JOB Lv.${p.level}</b><span>JEXP ${need ? `${p.exp} / ${need}` : 'MASTER'}</span></div><div class="jexp-bar"><i style="width:${bar}%"></i></div></div>${noGrow ? `<p class="jfeature">${j.featureText || j.description || ''}</p><div class="jbonus">` : `<div class="jbonus"><h4>このJOBで育てた能力</h4><div class="jbn-grid">${bonusGrid}</div>`}<p class="jbn-note">${noGrow ? '全JOBのレベルアップ成長を常に50%引き継ぎます。この一覧には引き継ぎ分は出ません。' : 'この成長は、このJOBに就いている間だけ乗ります。'}</p></div>${traitHtml}${isCur ? '<div class="jcur-badge">現在のJOB</div>' : `<button class="jchange-btn" data-job-change="${jobId}">このJOBに変更</button>`}${this.rebirthSectionHTML(jobId)}${skillRows ? `<div class="jskills"><h4>アビリティ</h4><div class="jar-list">${skillRows}</div></div>` : ''}` : `<p class="jlocked-note">${j.description}</p>${condHtml}`}</div>`;
     }
     abilitySetHtml(currentId) {
       const ps = this.profile.passiveSlots || [null, null], p0 = ps[0] ? D.skills[ps[0]] : null, p1 = ps[1] ? D.skills[ps[1]] : null;
@@ -2130,8 +2150,12 @@
       const goldRow = recipe.gold ? `<div class="recipe-gold ${goldOk ? '' : 'insufficient'}"><span>GOLD</span><b>${this.profile.gold} / ${recipe.gold}</b></div>` : '';
       const craftable = this.canCraft(recipe);
       const isNewRecipe = (this.profile.newlyUnlockedRecipes || []).includes(recipe.id);
-      const lacking = (recipe.materials || []).filter(m => this.craftMaterialAvailable(m.itemId) < m.count).length + (goldOk ? 0 : 1);
-      return `<article class="recipe-card rarity-${item.rarity}${isNewRecipe ? ' recipe-newly-unlocked' : ''}${craftable ? ' can-craft' : ''}"><div class="recipe-info"><div class="recipe-title"><b>${item.name}${item.stars ? `<small>${'★'.repeat(item.stars)}</small>` : ''}</b>${isNewRecipe ? '<mark class="recipe-new">NEW</mark>' : ''}${owned ? `<em>×${owned}</em>` : ''}</div><span class="recipe-bonus">${this.bonusText(recipe.resultItemId)}</span></div><details class="recipe-detail"><summary>必要素材${lacking ? `<b class="lack">あと${lacking}種</b>` : '<b class="ok">そろっています</b>'}</summary><div class="recipe-materials">${materialsHtml}${goldRow}</div><p class="recipe-desc">${item.description}</p></details><button class="recipe-craft" data-craft="${recipe.id}" ${craftable ? '' : 'disabled'}>${craftable ? '製作する' : '素材不足'}</button></article>`;
+      // 不足表示は素材優先。素材がそろっていてGOLDだけ足りない場合は「ゴールド不足」と出す。
+      const lackingMaterials = (recipe.materials || []).filter(m => this.craftMaterialAvailable(m.itemId) < m.count).length;
+      const lacking = lackingMaterials + (goldOk ? 0 : 1);
+      const lackLabel = lackingMaterials ? `あと${lackingMaterials}種` : 'GOLD不足';
+      const craftLabel = craftable ? '製作する' : (lackingMaterials ? '素材不足' : 'ゴールド不足');
+      return `<article class="recipe-card rarity-${item.rarity}${isNewRecipe ? ' recipe-newly-unlocked' : ''}${craftable ? ' can-craft' : ''}"><div class="recipe-info"><div class="recipe-title"><b>${item.name}${item.stars ? `<small>${'★'.repeat(item.stars)}</small>` : ''}</b>${isNewRecipe ? '<mark class="recipe-new">NEW</mark>' : ''}${owned ? `<em>×${owned}</em>` : ''}</div><span class="recipe-bonus">${this.bonusText(recipe.resultItemId)}</span></div><details class="recipe-detail"><summary>必要素材${lacking ? `<b class="lack">${lackLabel}</b>` : '<b class="ok">そろっています</b>'}</summary><div class="recipe-materials">${materialsHtml}${goldRow}</div><p class="recipe-desc">${item.description}</p></details><button class="recipe-craft" data-craft="${recipe.id}" ${craftable ? '' : 'disabled'}>${craftLabel}</button></article>`;
     }
     craftMaterialAvailable(id) { const equipped = Object.values(this.profile.equipment || {}).filter(eid => eid === id).length; return Math.max(0, (this.profile.inventory[id] || 0) - equipped); }
     canCraft(recipe) { if (!recipe) return false; if (this.profile.gold < (recipe.gold || 0)) return false; return (recipe.materials || []).every(m => this.craftMaterialAvailable(m.itemId) >= m.count); }
