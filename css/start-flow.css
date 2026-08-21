@@ -180,3 +180,9 @@
   .stars{font-size:9px;letter-spacing:.06em}
   .cc-select{padding:8px;font-size:11px;letter-spacing:.18em}
 }
+@media(max-width:699px) and (min-height:720px){
+  .mini-card small,.cc-type small,.cc-trait>small,.cc-trait-en,.cc-tendency>small{font-size:7px}
+  .mini-card b{font-size:10px}
+  .cc-desc p,.cc-trait-desc p{font-size:9px}
+  .cc-select{min-height:40px}
+}

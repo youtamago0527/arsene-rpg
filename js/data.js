@@ -194,7 +194,7 @@ window.ARSENE_DATA = {
       id: 'magicKnight', name: '魔奏士', nameEn: 'MAGIC KNIGHT', description: '刃に魔力を纏わせ、物理と魔法を組み合わせて戦う。',
       signatureSkillId: 'ensemble', passiveUnlocks: { 1: 'p_solo', 5: 'p_forte', 10: 'p_crescendo', 15: 'p_nocturne' },
       growthStats: ['mag', 'str'], featureText: '魔力を軸に物理も扱うハイブリッド型。武器を選ばず戦えるジョブ。',
-      unlockCondition: { keyItem: 'magicKnightProof' },
+      unlockCondition: { bossDefeated: 'zenacad' },
       skillUnlocks: {}
     },
     // 特殊ジョブ。自身では成長せず、将来的に他ジョブの成長を盗む。

@@ -53,6 +53,13 @@
   .meter-row{grid-template-columns:21px minmax(62px,1fr) minmax(68px,max-content);gap:5px}
   .meter-row output{font-size:9px}
 }
+@media(max-width:480px){
+  .battle-log p{font-size:12px;line-height:1.45}
+  .command-panel button{min-height:54px;padding-block:8px}
+  .command-panel button strong{font-size:13px}.command-panel button span{font-size:8px}
+  .player-card{max-width:calc(100vw - 14px)}
+  .rare-drop-banner{max-width:calc(100vw - 24px)}.rare-drop-banner b{overflow-wrap:anywhere;white-space:normal}
+}
 @media(max-width:760px){.game-header{display:none}}
 
 /* First encounter event boss: NOËL. */

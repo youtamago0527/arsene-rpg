@@ -10,6 +10,9 @@ const assert = (condition, message) => { if (!condition) errors.push(message); }
 const equipmentDef = id => D.weapons[id] || D.armors[id] || D.accessories[id];
 const progressionRecipes = Object.values(D.recipes).filter(recipe => recipe.progressionRecipe && !recipe.seriesId);
 assert(D.settings.dungeon3TargetWins === 300, 'D3進行目標が300戦ではない');
+assert(D.jobs.magicKnight?.unlockCondition?.bossDefeated === 'zenacad', '魔奏士の解放条件がD1ボス撃破ではない');
+assert(D.jobs.dualBlade?.unlockCondition?.bossDefeated === 'myrthi', '双刃士の解放条件がD2ボス撃破ではない');
+assert(D.weapons.myrthi_blade_noctis?.offHandOnly === true, '双刃士の左手専用武器フラグがない');
 
 for (const recipe of Object.values(D.recipes).filter(recipe => !recipe.legacy)) {
   assert(Boolean(D.items[recipe.resultItemId]), `完成品が未定義: ${recipe.id} -> ${recipe.resultItemId}`);

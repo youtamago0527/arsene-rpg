@@ -390,3 +390,32 @@
 .jtraits{border-color:#5c3f16}
 .jtrait-list{display:grid;gap:4px}
 .jtrait-list div{padding:6px 10px;background:#16100a;border:1px solid #5c3f16;border-radius:4px;font-size:12px;color:#ffdc94}
+
+/* Mobile readability audit: every panel stays inside 390px and keeps reliable tap targets. */
+@media(max-width:480px){
+  .hideout-panel,.menu-panel{max-width:100%;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+  .hideout-panel button,.menu-panel button{touch-action:manipulation}
+  .panel-home{min-height:38px;padding:9px 13px;font-size:11px}
+  .item-tabs button,.archive-mode-tabs button{min-height:42px}
+  .item-tabs button b,.archive-mode-tabs button b{font-size:12px}
+  .item-tabs button span,.archive-mode-tabs button span{font-size:8px}
+  .equipment-slot{min-height:54px;padding:8px 7px}
+  .equipment-slot>span{font-size:10px}.equipment-slot small{font-size:7px}
+  .equipment-candidate{min-height:58px}.equipment-candidate>small{white-space:normal;line-height:1.45}
+  .equip-sort-btns button{min-height:34px;padding:6px 10px}
+  .equip-confirm,.equip-unequip,.recipe-craft,.recipe-dungeon-tabs button{min-height:42px}
+  .recipe-armor-tabs button{min-height:40px}.recipe-armor-tabs button span{font-size:7px}
+  .workshop-layout aside nav button{min-height:42px}.workshop-layout aside nav button span{font-size:7px}
+  .st-head{align-items:flex-start}.st-id{min-width:0;padding-top:2px}.st-id>small{max-width:160px;font-size:8px}
+  .st-avatar-upload,.st-avatar-reset{min-height:30px;font-size:8px}
+  .st-eq-row>small{overflow-wrap:anywhere;line-height:1.4}
+  .stat-grid>div{min-width:0;padding:10px}.stat-grid b{font-size:17px}.stat-grid em{overflow-wrap:anywhere;line-height:1.4}
+  .ar-card>header{align-items:flex-start;flex-wrap:wrap}.ar-card>header b{font-size:13px;overflow-wrap:anywhere}
+  .ar-stats{grid-template-columns:repeat(2,auto minmax(0,1fr));font-size:10px}
+  .ar-meta{grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);font-size:10px}
+  .ar-drop{font-size:10px}.ar-hint,.wa-hint{font-size:10px;line-height:1.5}
+  .jcard{min-height:44px}.jcard-name{font-size:11px}.job-tab{min-height:38px;font-size:9px}
+  .jback-btn,.jchange-btn,.modal-row,.ab-row{min-height:42px}
+  .ab-val{min-width:104px}.per-row{grid-template-columns:36px minmax(0,1fr) auto auto;gap:5px;padding-inline:7px}
+  .result-card{width:calc(100vw - 18px);max-width:none}.reward-summary{gap:14px;flex-wrap:wrap}
+}
