@@ -1065,6 +1065,7 @@ window.ARSENE_DATA = {
     },
     noelFirstEncounter: {
       id: 'noelFirstEncounter', name: 'ノエル', enName: 'NOËL — THE ETERNAL JUDGE', kind: 'boss', encounter: 1,
+      music: '音楽系/ダンジョン/ダンジョン1ノエルのテーマ.mp3',
       title: '永遠の裁定者', element: '闇 / 裁定', sprite: 'assets/enemy-characters/noel/battle-first-encounter.png',
       dynamicScale: 100, cannotDefeat: true, exp: 0, gold: { min: 0, max: 0 }, dropTable: [],
       ai: [{ id: 'eternalJudgement', name: 'エターナル・ジャッジメント', weight: 1 }]

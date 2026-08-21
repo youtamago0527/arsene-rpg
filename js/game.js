@@ -19,7 +19,7 @@
       $('#audio-toggle').addEventListener('click', async () => { await this.audio.unlock(); const on = this.audio.toggle(); $('#audio-toggle').classList.toggle('muted', !on); $('#audio-toggle span').textContent = on ? 'SOUND ON' : 'SOUND OFF'; });
       document.addEventListener('click', e => { if (e.target.closest('[data-go-menu], #result-menu')) { e.preventDefault(); this.showMenu('home'); } });
       $('#result-menu').addEventListener('pointerup', e => { e.preventDefault(); this.showMenu('home'); });
-      $('#menu-screen').addEventListener('click', async e => { const b = e.target.closest('[data-menu]'); if (!b || b.disabled) return; await this.audio.unlock(); this.audio.sfx('ui'); if (b.dataset.menu === 'battle') { this.renderMenuPanel('dungeon-select'); } else if (b.dataset.menu === 'boss') { await this.audio.playTrack(this.bossMusic); if (this.isMyrthiUnlocked() && !this.isBossDefeated('myrthi')) { this.currentDungeonId = 'dungeon2'; this.startMyrthiBoss(); } else this.startBossEncounter(); } else { if (b.dataset.menu === 'equipment') this.equipTab = b.hasAttribute('data-open-status') ? 'status' : 'equip'; this.renderMenuPanel(b.dataset.menu); } });
+      $('#menu-screen').addEventListener('click', async e => { const b = e.target.closest('[data-menu]'); if (!b || b.disabled) return; await this.audio.unlock(); this.audio.sfx('ui'); if (b.dataset.menu === 'battle') { this.renderMenuPanel('dungeon-select'); } else if (b.dataset.menu === 'boss') { if (this.isMyrthiUnlocked() && !this.isBossDefeated('myrthi')) { this.currentDungeonId = 'dungeon2'; this.startMyrthiBoss(); } else this.startBossEncounter(); } else { if (b.dataset.menu === 'equipment') this.equipTab = b.hasAttribute('data-open-status') ? 'status' : 'equip'; this.renderMenuPanel(b.dataset.menu); } });
       $('#menu-panel').addEventListener('click', async e => {
         const avatarReset = e.target.closest('[data-status-avatar-reset]');
         if (avatarReset) { this.profile.customStatusPortrait = null; this.saveProfile(); this.audio.sfx('ui'); this.renderMenuPanel('equipment'); window.arseneStartFlow?.toast('初期画像に戻しました'); return; }
@@ -57,7 +57,7 @@
         const equipFromItem = e.target.closest('[data-equip-item]');
         if (equipFromItem) { if (!equipFromItem.disabled) this.equipFromInventory(equipFromItem.dataset.equipItem); return; }
         const bossChallenge = e.target.closest('[data-boss-challenge]');
-        if (bossChallenge) { await this.audio.playTrack(this.bossMusic); this.startBossByKey(bossChallenge.dataset.bossChallenge); return; }
+        if (bossChallenge) { this.startBossByKey(bossChallenge.dataset.bossChallenge); return; }
         const watchOpening = e.target.closest('[data-watch-opening]');
         if (watchOpening) { window.arseneStartFlow?.watchOpening(); return; }
         const resetData = e.target.closest('[data-reset-data]');
@@ -887,11 +887,20 @@
       this.turn = 1; this.locked = false; this.finished = false; this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [] }; $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyDungeonBackground();
       this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); const names = [...new Set(this.enemies.map(e => e.name))]; this.setLog(`${count}体の${names.join('と')}が現れた！`); this.flashTitle('ENCOUNTER', '怪異反応を検知'); this.showMainCommands();
     }
+    // ボスのBGM。敵データに music があればそれを、無ければ共通のボス戦BGMを使う。
+    // 曲を足すときは data.js の敵に music を書くだけで済む。
+    bossMusicFor(bossId) {
+      const track = D.enemies[bossId]?.music;
+      return track ? encodeURI(track) : this.bossMusic;
+    }
+    // ボス戦の開始点はメニュー・再戦・ダンジョン内と複数あるので、
+    // 曲の切り替えは各 start 関数の中でまとめて行う。
+    playBossMusic(bossId) { this.audio.playTrack(this.bossMusicFor(bossId)); }
     startBossEncounter(forceBossId = null, forcePhase = null) {
       const progress = this.progressState();
       const bossId = forceBossId || progress.bossId, phase = forcePhase || progress.phase;
       if (!bossId || (!forceBossId && !progress.ready)) { this.showMenu('home'); return; }
-      this.battleMode = phase; const hadRamenBuff = !!this.profile.flags.ramenBuffActive, stats = this.totalStats(), template = D.enemies[bossId]; if (!template) { this.showMenu('home'); return; } if (hadRamenBuff) { this.profile.flags.ramenBuffActive = false; this.saveProfile(); }
+      this.battleMode = phase; const hadRamenBuff = !!this.profile.flags.ramenBuffActive, stats = this.totalStats(), template = D.enemies[bossId]; if (!template) { this.showMenu('home'); return; } this.playBossMusic(bossId); if (hadRamenBuff) { this.profile.flags.ramenBuffActive = false; this.saveProfile(); }
       const vitals = this.storedVitals(stats); this.player = { stats, hp: vitals.hp, mp: vitals.mp, inventory: this.profile.inventory, buffs: {}, cooldowns: {}, resonance: 0, lastReceivedType: null };
       const bossStats = template.dynamicScale ? { maxHp: stats.maxHp * template.dynamicScale, atk: Math.max(stats.str, stats.mag) * template.dynamicScale, def: stats.def * template.dynamicScale, mag: stats.mag * template.dynamicScale, mnd: stats.mnd * template.dynamicScale, spd: stats.agi * template.dynamicScale } : { ...template.stats };
       this.enemies = [{ ...template, uid: `${template.id}-boss`, label: '', stats: bossStats, hp: bossStats.maxHp, alive: true }];
@@ -900,6 +909,7 @@
     }
     startMyrthiBoss() {
       this.battleMode = 'myrthi'; const hadRamenBuff = !!this.profile.flags.ramenBuffActive, stats = this.totalStats(), template = D.enemies.myrthi;
+      this.playBossMusic('myrthi');
       if (hadRamenBuff) { this.profile.flags.ramenBuffActive = false; this.saveProfile(); }
       const vitals = this.storedVitals(stats); this.player = { stats, hp: vitals.hp, mp: vitals.mp, inventory: this.profile.inventory, buffs: {}, cooldowns: {}, resonance: 0, lastReceivedType: null };
       const bossStats = { ...template.stats };
@@ -911,6 +921,7 @@
     }
     startSeripesBoss() {
       this.battleMode = 'seripes'; const stats = this.totalStats(), template = D.enemies.seripes, vitals = this.storedVitals(stats);
+      this.playBossMusic('seripes');
       this.player = { stats, hp: vitals.hp, mp: vitals.mp, inventory: this.profile.inventory, buffs: {}, cooldowns: {}, resonance: 0, lastReceivedType: null };
       const bossStats = { ...template.stats };
       this.enemies = [{ ...template, uid: 'seripes-boss', label: '', stats: bossStats, hp: bossStats.maxHp, alive: true, phase2: false, finalPhase: false, repriseStance: null, pendingReprise: null, recentDamageTypes: [] }];
