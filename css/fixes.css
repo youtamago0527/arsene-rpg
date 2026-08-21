@@ -3,3 +3,11 @@
 /* 発動条件つきの専用技（魔奏士のスフォルツァンド等）をアビリティ一覧で見分ける */
 .jar.jar-cond { border-left: 2px solid #b090ff }
 .jar.jar-cond .jar-st { color: #c8aaff }
+
+/* JOB特性の行：タップで説明モーダルを開く */
+.jtrait-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 11px; text-align: left; color: inherit; background: #0a1a35; border: 1px solid #2a5a8c; border-left: 3px solid #ffcf58; cursor: pointer; transition: .15s }
+.jtrait-row + .jtrait-row { margin-top: 6px }
+.jtrait-row:hover, .jtrait-row:focus-visible { background: #0f2647; border-color: #6ce5ff; outline: 0 }
+.jtrait-row b { flex: none; font-size: 12px; font-weight: 900; color: #ffcf58 }
+.jtrait-row span { flex: 1; min-width: 0; font-size: 10px; color: #b8d4ec }
+.jtrait-row em { flex: none; font-style: normal; font-size: 10px; color: #56a8ff }
