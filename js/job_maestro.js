@@ -102,6 +102,7 @@
       this.audio?.sfx?.('heal');
       await this.battleSleep(260);
     }
+    this.updateHUD();
   };
 
   // ── 演奏中だけ使える専用技 ────────────────────────────────
@@ -231,26 +232,10 @@
   };
 
   // ── HUDへ現在のバフを出す ─────────────────────────────────
+  // game.js の共通ステータス欄へ統合。旧フローティング欄は残さない。
   const origHud = P.updateHUD;
   P.updateHUD = function () {
     origHud.call(this);
-    if (!this.player) return;
-    let box = document.getElementById('maestro-buffs');
-    const atk = this.songStacks('atkUp'), matk = this.songStacks('matkUp');
-    const regen = this.player.buffs?.regenerate || 0, ens = this.isEnsembleActive();
-    const cfg = CFG(), chips = [];
-    if (atk) chips.push(`<i class="mb-atk">フォルテ +${Math.round(atk * cfg.buffRate * 100)}%</i>`);
-    if (matk) chips.push(`<i class="mb-matk">クレッシェンド +${Math.round(matk * cfg.buffRate * 100)}%</i>`);
-    if (regen) chips.push(`<i class="mb-regen">ノクターン ${regen}T</i>`);
-    if (this.isDoubleActActive()) chips.push(`<i class="mb-solo">ソロ 2回行動</i>`);
-    if (ens) chips.push(`<i class="mb-ens">アンサンブル</i>`);
-    if (!chips.length) { box?.remove(); return; }
-    if (!box) {
-      const host = document.querySelector('#ren')?.parentElement || document.querySelector('#battlefield');
-      if (!host) return;
-      box = document.createElement('div'); box.id = 'maestro-buffs'; box.className = 'maestro-buffs';
-      host.appendChild(box);
-    }
-    box.innerHTML = chips.join('');
+    document.getElementById('maestro-buffs')?.remove();
   };
 })();
