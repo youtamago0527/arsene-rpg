@@ -367,7 +367,7 @@ window.ARSENE_DATA = {
       id: 'dungeon3', name: '崩界の深廊', nameEn: 'DEPTHS OF THE VOID',
       background: 'assets/bg/dungeon-battle-03.png',
       thumbnail: 'assets/bg/dungeon-battle-03.png',
-      music: encodeURI('音楽系/ダンジョン/零時侵蝕ダンジョン3Version.mp3'),
+      music: encodeURI('音楽系/ダンジョン/ダンジョン3Mastering_Cathedral Heist.mp3'),
       description: 'かつて怪盗団の先人が封じた「崩界の門」の深部。混沌と虚無が渦巻く、最深層への試練。',
       recommendedLevel: 20,
       unlockCondition: 'dungeon2Clear',
