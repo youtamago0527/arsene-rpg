@@ -141,22 +141,26 @@
       // ティアごとの予算（def+mdef）は据え置き、その配分を部位で変える。
       const budget = p.def + p.mdef;
       const r = n => Math.round(budget * n);
+      // HPは戦闘ごとの抽選で自然に伸びる（15%で3〜6、100戦で約+68）ので、
+      // 装備でHPを盛っても価値が薄い。逆にMPは8%で1〜3としか伸びないため、
+      // 「MPを増やす装備」が魔法職の実質的な選択肢になる。
+      // D1〜D2は選択肢を絞り、物理なら防御・魔法ならMPの二択で足りるようにする。
       const profile = isAccessory
-        ? { defensePower: Math.floor(p.def * .35), magicDefensePower: p.mdef, bonuses: {}, role: '補助' }
+        ? { defensePower: 0, magicDefensePower: 0, bonuses: { luk: Math.max(1, r(.14)) }, role: '運' }
         : isShield
-          // 盾：防御2種を両方持つ唯一の部位。物理寄りだが魔法もそこそこ受ける。
-          ? { defensePower: r(.60), magicDefensePower: r(.45), bonuses: {}, role: '物理・魔法の両受け' }
+          // 盾：物理に寄せる。魔法を受けたいなら頭で魔防を稼ぐ、という住み分け。
+          ? { defensePower: r(.85), magicDefensePower: r(.20), bonuses: {}, role: '物理防御' }
           : slot === 'head'
-            // 頭：魔防とMP。物理防御は持たない。
-            ? { defensePower: 0, magicDefensePower: r(.70), bonuses: { maxMp: r(.45) }, role: '魔法防御とMP' }
+            // 頭：魔防とMP。魔法職の主力枠。物理防御は持たない。
+            ? { defensePower: 0, magicDefensePower: r(.65), bonuses: { maxMp: r(.55) }, role: '魔法防御とMP' }
             : slot === 'body'
-              // 体：物理防御とHP。魔法防御は持たない。
-              ? { defensePower: r(.70), magicDefensePower: 0, bonuses: { maxHp: r(1.1) }, role: '物理防御とHP' }
+              // 体：物理防御の主力。HPはおまけ程度に留める。
+              ? { defensePower: r(.85), magicDefensePower: 0, bonuses: { maxHp: r(.35) }, role: '物理防御' }
               : slot === 'arms'
-                // 手：攻撃と器用さが主で、防御は控えめ。
-                ? { defensePower: r(.20), magicDefensePower: 0, attackPower: r(.45), bonuses: { dex: Math.max(1, r(.16)) }, role: '攻撃と器用さ' }
+                // 手：素の力と器用さを伸ばす。装備の攻撃力ではなく能力値で効かせる。
+                ? { defensePower: r(.20), magicDefensePower: 0, bonuses: { str: Math.max(1, r(.20)), dex: Math.max(1, r(.16)) }, role: '力と器用さ' }
                 // 足：防御は薄く、素早さで避ける。
-                : { defensePower: r(.22), magicDefensePower: r(.22), bonuses: { agi: Math.max(1, r(.20)) }, role: '素早さ' };
+                : { defensePower: r(.20), magicDefensePower: r(.20), bonuses: { agi: Math.max(1, r(.22)) }, role: '素早さ' };
       addArmor(id, {
         name, nameEn: `${stage.toUpperCase()} ${slot.toUpperCase()}`, dungeonId, catalogDungeon: dungeonId,
         slot, stars: p.stars, rarity: rarityFor(p.stars), source: 'workshop',
