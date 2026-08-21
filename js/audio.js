@@ -70,6 +70,26 @@
         case 'victory': chord([523,659,784,1047],.12); break;
         case 'escape': this.tone(760,.3,'sine',.12,2); break;
         case 'rareDrop': chord([659,880,1109,1319],.075); this.tone(1760,.5,'sine',.09,1,.3); break;
+        // ── 武器種ごとの通常攻撃 ──────────────────────────────
+        // 剣：風切り＋刃鳴り。抜けの良い高域を短く。
+        case 'swordSwing': this.noise(.13,.17,0,2400); this.tone(1180,.10,'sawtooth',.05,.32); break;
+        case 'swordHit': this.noise(.09,.20,0,1800); this.tone(2350,.26,'sine',.055,.45,.01); this.tone(430,.14,'triangle',.10,.5); break;
+        // 爪：短い裂き音を3連。剣より高く、粒を細かく。
+        case 'clawSwing': [0,.05,.1].forEach(d => this.noise(.08,.12,d,3000)); break;
+        case 'clawHit': [0,.045,.09].forEach((d,i) => { this.noise(.07,.15,d,2600); this.tone(1500+i*260,.07,'sawtooth',.045,.4,d); }); break;
+        // 杖：火球。溜めの唸り→着弾の炸裂→燃え残りのパチパチ。
+        case 'fireCast': this.tone(180,.34,'sawtooth',.09,3.2); this.noise(.30,.10,0,220); this.tone(520,.24,'triangle',.06,2.2,.06); break;
+        case 'fireHit': this.tone(90,.32,'square',.20,.35); this.noise(.34,.17,0,300);
+          [.06,.13,.19,.26,.33].forEach(d => this.noise(.07,.05,d,1600)); break;
+        // 楽器：弦を弾いて和音が広がる感じ。倍音を薄く重ねる。
+        case 'noteSwing': [784,988,1175].forEach((n,i) => { this.tone(n,.26,'triangle',.075,1,i*.055); this.tone(n*2,.18,'sine',.03,1,i*.055); }); break;
+        case 'noteHit': [1319,1568,1976,2637].forEach((n,i) => { this.tone(n,.34,'triangle',.07,1,i*.045); this.tone(n*1.5,.2,'sine',.025,1,i*.045); }); break;
+        // 盾：打撃の鈍い衝撃。
+        case 'shieldSwing': this.noise(.16,.14,0,500); this.tone(210,.16,'square',.10,.6); break;
+        case 'shieldHit': this.tone(120,.26,'square',.20,.4); this.noise(.20,.16,0,400); this.tone(680,.18,'triangle',.06,.5,.02); break;
+        // クリティカル：既存の衝撃に、抜けの良い鐘と余韻を重ねる。
+        case 'criticalHit': this.tone(130,.30,'square',.22,.45); this.noise(.26,.20,0,500);
+          this.tone(1760,.34,'sine',.13,.85,.02); this.tone(2637,.44,'sine',.07,.9,.05); break;
       }
     }
   }

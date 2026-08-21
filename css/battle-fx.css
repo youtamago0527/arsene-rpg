@@ -1,0 +1,127 @@
+/* ══════════════════════════════════════════════════════════════
+   戦闘エフェクト。画像素材は使わず、グラデーションと図形だけで描く。
+   すべて pointer-events:none で、タップ操作を邪魔しない。
+   ══════════════════════════════════════════════════════════════ */
+.fx,.fx-crit-flash,.fx-fireball{position:absolute;pointer-events:none;z-index:6}
+.fx{transform:translate(-50%,-50%);width:0;height:0}
+.fx i,.fx b{position:absolute;display:block;pointer-events:none}
+
+/* ── 剣：一閃 ─────────────────────────────────────────── */
+.fx-slash-line{left:0;top:0;width:var(--fx-size);height:5px;margin:-2.5px 0 0 calc(var(--fx-size) / -2);
+  background:linear-gradient(90deg,transparent,#eafaff 18%,#fff 50%,#8fe6ff 82%,transparent);
+  border-radius:3px;transform-origin:50% 50%;transform:rotate(-38deg) scaleX(.15);
+  filter:drop-shadow(0 0 8px #6fdcff);animation:fx-slash .34s cubic-bezier(.2,.85,.3,1) forwards}
+.fx-slash-glow{left:0;top:0;width:var(--fx-size);height:var(--fx-size);
+  margin:calc(var(--fx-size) / -2) 0 0 calc(var(--fx-size) / -2);border-radius:50%;
+  background:radial-gradient(circle,#bff0ff55,transparent 62%);animation:fx-fade .4s ease-out forwards}
+@keyframes fx-slash{0%{transform:rotate(-38deg) scaleX(.1);opacity:0}
+  22%{opacity:1}55%{transform:rotate(-38deg) scaleX(1.05);opacity:1}
+  100%{transform:rotate(-38deg) scaleX(1.15);opacity:0}}
+
+/* ── 爪：3本の裂傷 ───────────────────────────────────── */
+.fx-claw i{left:0;top:0;width:var(--fx-size);height:4px;
+  margin:calc((var(--n) - 1) * 15px - 2px) 0 0 calc(var(--fx-size) / -2);
+  background:linear-gradient(90deg,transparent,#ffd9f2 20%,#fff 48%,#ff7ad0 80%,transparent);
+  border-radius:3px;transform-origin:50% 50%;transform:rotate(-24deg) scaleX(.12);
+  filter:drop-shadow(0 0 7px #ff5fc4);
+  animation:fx-claw .32s cubic-bezier(.2,.85,.3,1) forwards;animation-delay:calc(var(--n) * .045s);opacity:0}
+@keyframes fx-claw{0%{transform:rotate(-24deg) scaleX(.1);opacity:0}
+  25%{opacity:1}60%{transform:rotate(-24deg) scaleX(1);opacity:1}
+  100%{transform:rotate(-24deg) scaleX(1.1);opacity:0}}
+
+/* ── 杖：着弾の炎 ────────────────────────────────────── */
+.fx-blast{left:0;top:0;width:var(--fx-size);height:var(--fx-size);
+  margin:calc(var(--fx-size) / -2) 0 0 calc(var(--fx-size) / -2);border-radius:50%;
+  background:radial-gradient(circle,#fffbe8 0%,#ffd24a 22%,#ff8a1e 46%,#e0380a99 66%,transparent 76%);
+  filter:blur(1px);animation:fx-blast .42s cubic-bezier(.15,.8,.35,1) forwards}
+@keyframes fx-blast{0%{transform:scale(.2);opacity:0}18%{opacity:1}100%{transform:scale(1.35);opacity:0}}
+.fx-flame{left:calc(var(--dx) * var(--fx-size) * .34);bottom:calc(var(--fx-size) * -.32);width:calc(var(--fx-size) * .115);
+  height:calc(var(--fx-size) * .46 * var(--sc));margin-left:calc(var(--fx-size) * -.0575);
+  border-radius:50% 50% 44% 44% / 82% 82% 18% 18%;
+  background:linear-gradient(0deg,#ff3c06,#ff8a14 40%,#ffcf4e 72%,#fff3c0);
+  filter:blur(1px);mix-blend-mode:screen;transform-origin:50% 100%;opacity:0;
+  animation:fx-flame .72s ease-out forwards;animation-delay:var(--dly)}
+@keyframes fx-flame{0%{transform:scaleY(.15) scaleX(.6);opacity:0}
+  16%{opacity:.9}40%{transform:scaleY(1.1) scaleX(1.05)}
+  62%{transform:scaleY(.9) scaleX(.85);opacity:.75}
+  100%{transform:scaleY(.3) scaleX(.4) translateY(-12px);opacity:0}}
+.fx-ember{left:calc(var(--dx) * var(--fx-size) * .34);top:calc(var(--fx-size) * .22);width:4px;height:4px;border-radius:50%;
+  background:radial-gradient(circle,#fff3c4,#ff9420 60%,transparent);opacity:0;
+  animation:fx-ember .95s ease-out forwards;animation-delay:var(--dly)}
+@keyframes fx-ember{0%{transform:translate(0,10px) scale(.5);opacity:0}
+  25%{opacity:1}100%{transform:translate(calc(var(--dx) * 26px),-58px) scale(.2);opacity:0}}
+
+/* 飛んでいく火球 */
+.fx-fireball{width:26px;height:26px;transform:translate(-50%,-50%);
+  animation:fx-shot .46s cubic-bezier(.35,.05,.6,1) forwards}
+.fb-core{position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle,#fffdf0 0%,#fff1b0 14%,#ffd24a 34%,#ff7a12 62%,#d8330788 82%,transparent);
+  filter:drop-shadow(0 0 12px #ff8a1e);animation:fx-flicker .16s steps(2) infinite}
+.fb-trail{position:absolute;top:50%;right:60%;width:52px;height:10px;margin-top:-5px;border-radius:6px;
+  background:linear-gradient(90deg,transparent,#ff6a0a55 35%,#ffb43ccc);filter:blur(3px)}
+@keyframes fx-shot{0%{transform:translate(-50%,-50%) scale(.55);opacity:0}
+  14%{opacity:1}100%{transform:translate(calc(-50% + var(--shot-x)),calc(-50% + var(--shot-y))) scale(1.15);opacity:1}}
+@keyframes fx-flicker{0%{filter:drop-shadow(0 0 12px #ff8a1e) brightness(1)}100%{filter:drop-shadow(0 0 16px #ffb43c) brightness(1.18)}}
+
+/* ── 楽器：音符 ──────────────────────────────────────── */
+.fx-notes .fx-ring{left:-34px;top:-34px;width:68px;height:68px;border-radius:50%;
+  border:2px solid #9fd0ff;box-shadow:0 0 14px #6fb6ff88 inset,0 0 12px #6fb6ff66;
+  animation:fx-ring .5s ease-out forwards}
+@keyframes fx-ring{0%{transform:scale(.3);opacity:0}25%{opacity:.9}100%{transform:scale(1.5);opacity:0}}
+.fx-note{left:0;top:0;font-size:27px;line-height:1;color:#eaf4ff;
+  text-shadow:0 0 8px #fff,0 0 16px #6fb6ff,0 0 28px #3a7fe0;opacity:0;
+  animation:fx-note .78s cubic-bezier(.2,.7,.3,1) forwards;animation-delay:var(--dly)}
+@keyframes fx-note{0%{transform:translate(-50%,-50%) scale(.4) rotate(0);opacity:0}
+  22%{opacity:1}
+  100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy) - 22px)) scale(1) rotate(var(--rot));opacity:0}}
+.fx-notes-self .fx-note{font-size:21px;color:#dbe9ff}
+
+/* ── 盾：衝撃の輪 ────────────────────────────────────── */
+.fx-impact i{left:0;top:0;width:var(--fx-size);height:var(--fx-size);
+  margin:calc(var(--fx-size) / -2) 0 0 calc(var(--fx-size) / -2);border-radius:50%;
+  border:3px solid #cfe4ff;box-shadow:0 0 14px #7fb4ff88;
+  animation:fx-ring .4s ease-out forwards}
+.fx-impact i.d2{animation-delay:.09s;border-color:#8fc4ff88}
+
+/* ── クリティカル ────────────────────────────────────── */
+.fx-crit-flash{inset:0;background:radial-gradient(circle at 50% 50%,#fff6d055,#ffbe3a22 40%,transparent 72%);
+  animation:fx-fade .34s ease-out forwards}
+.fx-crit-ring{left:-46px;top:-46px;width:92px;height:92px;border-radius:50%;
+  border:3px solid #ffe27a;box-shadow:0 0 22px #ffbe3a,0 0 30px #ffbe3a55 inset;
+  animation:fx-critring .52s cubic-bezier(.15,.75,.3,1) forwards}
+.fx-crit-ring.d2{animation-delay:.1s;border-color:#fff6d0}
+@keyframes fx-critring{0%{transform:scale(.25);opacity:0}20%{opacity:1}100%{transform:scale(1.9);opacity:0}}
+.fx-crit-ray{left:0;top:0;width:76px;height:4px;margin:-2px 0 0 0;border-radius:3px;transform-origin:0 50%;
+  background:linear-gradient(90deg,#fff8dc,#ffbe3a 55%,transparent);
+  transform:rotate(var(--a)) scaleX(.1);opacity:0;animation:fx-ray .46s ease-out forwards}
+@keyframes fx-ray{0%{transform:rotate(var(--a)) scaleX(.1);opacity:0}
+  25%{opacity:1}100%{transform:rotate(var(--a)) scaleX(1.25);opacity:0}}
+.fx-crit-label{left:0;top:-58px;transform:translateX(-50%);white-space:nowrap;
+  font:900 15px Cinzel,serif;letter-spacing:.18em;color:#fff6d0;
+  text-shadow:0 0 12px #ffbe3a,0 2px 0 #8a4a00;opacity:0;animation:fx-critlabel .62s ease-out forwards}
+@keyframes fx-critlabel{0%{transform:translateX(-50%) scale(.6);opacity:0}
+  22%{transform:translateX(-50%) scale(1.12);opacity:1}
+  60%{transform:translateX(-50%) scale(1);opacity:1}
+  100%{transform:translateX(-50%) translateY(-14px) scale(1);opacity:0}}
+.fx-shake{animation:fx-shake .3s ease-in-out}
+@keyframes fx-shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-5px,3px)}
+  45%{transform:translate(4px,-3px)}70%{transform:translate(-3px,-2px)}}
+
+@keyframes fx-fade{0%{opacity:1}100%{opacity:0}}
+
+/* ── 振りかぶりのモーション ──────────────────────────── */
+.fx-swing-sword .ren-sprite,.fx-swing-shield .ren-sprite{animation:fx-lunge .4s ease-out}
+.fx-swing-martial .ren-sprite{animation:fx-lunge-fast .34s ease-out}
+.fx-swing-staff .ren-sprite,.fx-swing-instrument .ren-sprite{animation:fx-cast .42s ease-out}
+@keyframes fx-lunge{0%{transform:translateX(0)}35%{transform:translateX(-9px) rotate(-4deg)}
+  60%{transform:translateX(16px) rotate(3deg)}100%{transform:translateX(0)}}
+@keyframes fx-lunge-fast{0%{transform:translateX(0)}25%{transform:translateX(-6px)}
+  50%{transform:translateX(13px)}72%{transform:translateX(7px)}100%{transform:translateX(0)}}
+@keyframes fx-cast{0%{transform:translateY(0)}40%{transform:translateY(-8px) scale(1.03)}100%{transform:translateY(0)}}
+
+/* 動きを減らす設定の端末では、光るだけに留める */
+@media(prefers-reduced-motion:reduce){
+  .fx-shake,.fx-swing-sword .ren-sprite,.fx-swing-martial .ren-sprite,
+  .fx-swing-shield .ren-sprite,.fx-swing-staff .ren-sprite,.fx-swing-instrument .ren-sprite{animation:none}
+  .fx-ember,.fx-crit-ray{display:none}
+}
