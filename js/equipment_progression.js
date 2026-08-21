@@ -17,7 +17,7 @@
     return D.items[id];
   };
   const addWeapon = (id, data) => {
-    const item = addItem(id, data);
+    const item = addItem(id, { slot: 'rightHand', ...data });
     D.weapons[id] = {
       id, name: item.name, nameEn: item.nameEn, dungeonId: item.dungeonId,
       weaponType: data.weaponType, weaponSprite: data.weaponSprite || `${data.weaponType}_progression`,
@@ -26,6 +26,8 @@
       damageStat: data.damageStat || (data.weaponType === 'staff' ? 'mag' : data.weaponType === 'instrument' ? 'dex' : 'str'),
       power: data.power || 2.5, attackPower: data.attackPower || 0,
       magicAttackPower: data.magicAttackPower || 0, bonuses: data.bonuses || {}, effects: data.effects || {},
+      scaling: data.scaling || null, powerKey: data.powerKey || null, damageType: data.damageType || null,
+      offHandOnly: !!data.offHandOnly,
       seriesId: data.seriesId || null, source: data.source
     };
   };
@@ -102,6 +104,8 @@
         name, nameEn, dungeonId, catalogDungeon: dungeonId, weaponType: type, stars: p.stars,
         rarity: rarityFor(p.stars), source: 'workshop', attackPower: magical ? 0 : p.attack,
         magicAttackPower: magical ? p.magic : 0, power: p.power, bonuses: {},
+        scaling: type === 'instrument' ? { dex: .65, mag: .35 } : null,
+        powerKey: magical ? 'magicAttackPower' : 'attackPower', damageType: magical ? 'magical' : 'physical',
         description: `${dungeonId.toUpperCase().replace('UNGEON', '')}工房規格。基本能力を変えず、${magical ? '術式出力' : '武器攻撃力'}だけを高める。`
       });
       const prior = previousStage[stage] ? weaponLines[type][previousStage[stage]]?.[0] : null;
@@ -194,7 +198,9 @@
       } else {
         addArmor(id, { ...common, slot: kind, defensePower: 9 + rank * 5, magicDefensePower: 8 + rank * 5 });
       }
-      if (!enemy.dropTable.some(drop => drop.itemId === id)) enemy.dropTable.push({ itemId: id, chance: dungeonChance[dungeonId] });
+      const uniqueDrop = enemy.dropTable.find(drop => drop.itemId === id);
+      if (uniqueDrop) uniqueDrop.chance = dungeonChance[dungeonId];
+      else enemy.dropTable.push({ itemId: id, chance: dungeonChance[dungeonId] });
       monsterGearByDungeon[dungeonId].push(id);
     });
   });
@@ -217,7 +223,7 @@
     4: { id: 'orchestrator', name: 'ORCHESTRATOR', description: '魔力 +8% / 魔法使用時12%でMP消費なし', effect: { magPercent: 8, freeMagicMpChance: .12 } },
     6: { id: 'cadenza', name: 'CADENZA', description: '魔法使用時8%で追加発動（MP再消費なし）', effect: { magicRepeatChance: .08 } }
   });
-  Object.assign(D.weapons.cadenza_staff, { magicAttackPower: 46, bonuses: { dex: 9, mag: 6, maxMp: 6 } });
+  Object.assign(D.weapons.cadenza_staff, { magicAttackPower: 46, scaling: { dex: .7, mag: .3 }, powerKey: 'magicAttackPower', damageType: 'magical', bonuses: { dex: 9, mag: 6, maxMp: 6 } });
   Object.assign(D.armors.soloist_mask, { bonuses: { dex: 7, mag: 4, mnd: 2 } });
   Object.assign(D.armors.soloist_coat, { defensePower: 15, magicDefensePower: 20, bonuses: { maxHp: 12, maxMp: 10, dex: 5, mag: 4 } });
   Object.assign(D.armors.maestro_gloves, { bonuses: { dex: 9, mag: 5 } });
@@ -229,7 +235,7 @@
   Object.assign(D.weapons.myrthi_blade, { name: '黒紅双刃・赫牙', nameEn: 'CRIMSON FANG', attackPower: 48, bonuses: { str: 9, agi: 8 } });
   addWeapon('myrthi_blade_noctis', {
     name: '黒紅双刃・影牙', nameEn: 'SHADOW FANG', dungeonId: 'dungeon2', catalogDungeon: 'dungeon2',
-    slot: 'rightHand', weaponType: 'sword', stars: 5, rarity: 'legendary', seriesId: 'myrthi', source: 'boss',
+    slot: 'leftHand', weaponType: 'sword', offHandOnly: true, stars: 5, rarity: 'legendary', seriesId: 'myrthi', source: 'boss',
     attackPower: 45, power: 3.05, bonuses: { str: 7, agi: 10 },
     description: '赫牙と対を成す左の黒刃。双刃士が左手へ装備した時、黒紅の軌跡が完成する。'
   });
