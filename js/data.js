@@ -181,7 +181,7 @@ window.ARSENE_DATA = {
     id: 'ren', name: '蓮', shortName: 'REN', level: 1, exp: 0, gold: 0,
     baseStats: { maxHp: 80, maxMp: 40, str: 12, vit: 10, mag: 10, mnd: 14, agi: 18, dex: 12, luk: 14 },
     growth: { maxHp: 8, maxMp: 5, str: 0, vit: 0, mag: 0, mnd: 0, agi: 0, dex: 0, luk: 0 },
-    skills: ['quickSlash'], inventory: { potion: 3, mageStaff: 1, phantomSword: 1 },
+    skills: ['quickSlash'], inventory: { potion: 3, manaPotion: 2, mageStaff: 1, phantomSword: 1 },
     equipment: { rightHand: 'mageStaff', leftHand: null, head: null, body: null, arms: null, feet: null, accessory: null }
   },
   characterSkillProgression: [
@@ -1073,7 +1073,7 @@ window.ARSENE_DATA = {
       sprite: 'assets/enemy-characters/shadow-slime/battle-idle.png',
       stats: { maxHp: 30, atk: 7, def: 4, mag: 5, spd: 6 }, exp: 10, gold: { min: 5, max: 10 },
       dropTable: [
-        { itemId: 'slimeJelly', chance: .40 }, { itemId: 'manaPotion', chance: .20 },
+        { itemId: 'slimeJelly', chance: .40 },
         { itemId: 'shadowWand', chance: .10 }, { itemId: 'slimeRing', chance: .08 }, { itemId: 'darkCore', chance: .03 }
       ],
       ai: [{ id: 'shadowBolt', name: '闇の魔弾', kind: 'magic', weight: .28 }, { id: 'attack', name: '体当たり', kind: 'physical', weight: .72 }]
