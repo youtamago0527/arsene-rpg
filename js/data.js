@@ -1,7 +1,7 @@
 window.ARSENE_DATA = {
   // dungeon2BossWins：ミルティ解放に必要なダンジョン2の勝利数。4時間構想の主調整値。
   // debugPassword：拠点の狐を長押しで開くデバッグルームのパスワード
-  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5, dungeon2BossWins: 100, dungeon3TargetWins: 300, debugPassword: '1229', mealGoldRate: 0.3, counterPowerRate: 0.7 },
+  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5, dungeon2BossWins: 100, dungeon3MidBossWins: 150, dungeon3TargetWins: 300, debugPassword: '1229', mealGoldRate: 0.3, counterPowerRate: 0.7 },
   guardianBalance: {
     shieldDefRate: 0.5, shieldMdefRate: 0.5, resonanceGainPerDamage: 0.05,
     fortressReduction: 0.30, resonanceMax: 100,
@@ -775,7 +775,11 @@ window.ARSENE_DATA = {
     magicRepulse: { id: 'magicRepulse', name: 'マジックリパルス', nameEn: 'MAGIC REPULSE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'guardImpact', requiredWeaponLevel: 7, sparkRate: null, mp: 7, kind: 'magical', damageType: 'magical', shieldFormula: 'magicRepulse', target: 'single', power: 1.0, powerText: 'MDEF×1.2＋DEF×0.3', effectText: '魔法防御寄りの盾技', description: '魔力を盾面で反転させ、魔法防御性能から衝撃を生む。' },
     fortress: { id: 'fortress', name: 'フォートレス', nameEn: 'FORTRESS', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'magicRepulse', requiredWeaponLevel: 12, sparkRate: null, mp: 8, kind: 'support', target: 'self', effect: { type: 'fortress', reduction: .30, turns: 1 }, powerText: '被ダメージ -30%', effectText: '1ターン防御。軽減後ダメージはRESONANCEへ蓄積', description: '盾を大地へ固定し、攻撃を真正面から受け止める。' },
     revengeForce: { id: 'revengeForce', name: 'リベンジ・フォース', nameEn: 'REVENGE FORCE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'fortress', requiredWeaponLevel: 18, sparkRate: null, mp: 12, kind: 'physical', damageType: 'physical', shieldFormula: 'revenge', target: 'single', power: 1.65, powerText: '直前の被弾タイプに応じDEF/MDEF参照', effectText: '物理被弾ならDEF、魔法被弾ならMDEFを強く参照', description: '直前に受けた攻撃の性質を読み、最適な防御性能で打ち返す盾学奥義。' },
-    resonanceBreak: { id: 'resonanceBreak', name: 'RESONANCE BREAK', nameEn: 'RESONANCE BREAK', source: 'job', jobId: 'guardian', unlockJobLevel: 1, type: 'ACTIVE', kind: 'neutral', damageType: 'neutral', target: 'single', mp: 0, power: 1.0, ignoreDef: 1, unavoidable: true, powerText: '現在武器の攻撃性能×共鳴倍率', effectText: '全RESONANCE消費／DEF・MDEF・物理魔法耐性を無視／必中', description: '受けた痛みを共鳴へ変え、現在の武器性能から無属性の一撃を放つ。' }
+    resonanceBreak: { id: 'resonanceBreak', name: 'RESONANCE BREAK', nameEn: 'RESONANCE BREAK', source: 'job', jobId: 'guardian', unlockJobLevel: 1, type: 'ACTIVE', kind: 'neutral', damageType: 'neutral', target: 'single', mp: 0, power: 1.0, ignoreDef: 1, unavoidable: true, powerText: '現在武器の攻撃性能×共鳴倍率', effectText: '全RESONANCE消費／DEF・MDEF・物理魔法耐性を無視／必中', description: '受けた痛みを共鳴へ変え、現在の武器性能から無属性の一撃を放つ。' },
+    preciousSky: { id: 'preciousSky', name: 'プレシャススカイ', nameEn: 'PRECIOUS SKY', source: 'weapon', type: 'ACTIVE', weaponType: 'instrument', prerequisiteSkill: 'resonantNote', requiredWeaponLevel: 8, sparkRate: .035, guitarTreeId: 'versicrellGuitar', requiredWeaponId: 'parentGiftGuitar', mp: 12, kind: 'magical', damageType: 'magical', element: 'sound', target: 'all', power: 1.65, selfHealRate: .08, powerText: 'DEX参照×1.65（敵全体）', effectText: '敵全体へ音属性攻撃／与ダメージ後に最大HPの8%回復', description: '人として残った最初の音を、青空のような音圧へ変える。リコーダー系とは異なるギター専用武器技。' }
+  },
+  guitarSkillTrees: {
+    versicrellGuitar: { id: 'versicrellGuitar', weaponId: 'parentGiftGuitar', name: 'SILVER CIRCLE GUITAR', skills: ['preciousSky', null, null, null] }
   },
   items: {
     potion: { id: 'potion', name: '回復薬', category: 'consumable', rarity: 'common', description: 'HPを30回復する。', effect: { hp: 30 } },
@@ -921,6 +925,7 @@ window.ARSENE_DATA = {
     chaosDust: { id: 'chaosDust', name: '混沌の粉塵', nameEn: 'CHAOS DUST', category: 'material', rarity: 'rare', dungeonId: 'dungeon3', description: 'カオス・ウィッチが操る混沌エネルギーが粉末状に凝固したもの。魔力増幅素材。' },
     phantomCore: { id: 'phantomCore', name: '幻影核', nameEn: 'PHANTOM CORE', category: 'material', rarity: 'rare', dungeonId: 'dungeon3', description: '幻影皇の核心部から生まれる幻影の結晶。高度な装備製作に用いられる。' },
     voidEssence: { id: 'voidEssence', name: '虚無の精髄', nameEn: 'VOID ESSENCE', category: 'material', rarity: 'epic', dungeonId: 'dungeon3', description: '虚無の楽団が奏でる虚空の旋律が液化したもの。最高位のダンジョン素材。' },
+    parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', category: 'equipment', slot: 'rightHand', rarity: 'epic', stars: 4, dungeonId: 'dungeon3', guitarSkillTree: 'versicrellGuitar', description: '昔、親に買ってもらったギター。少し変わった形をしているが、最初に触れた「音」は今でも重い。' },
     voidHelm: { id: 'voidHelm', name: '虚空の兜', nameEn: 'VOID HELM', category: 'equipment', slot: 'head', rarity: 'epic', dungeonId: 'dungeon3', description: '崩界の深廊の素材で鍛えた兜。精神と防御を高める。' },
     abyssalArmor: { id: 'abyssalArmor', name: '深淵の鎧', nameEn: 'ABYSSAL ARMOR', category: 'equipment', slot: 'body', rarity: 'epic', dungeonId: 'dungeon3', description: '深淵鉄鉱を用いた最高位の鎧。強靭な防御力を誇る。' },
     phantomGauntlet: { id: 'phantomGauntlet', name: '幻影拳甲', nameEn: 'PHANTOM GAUNTLET', category: 'equipment', slot: 'arms', rarity: 'epic', dungeonId: 'dungeon3', description: '幻影核の力が宿る拳甲。攻撃力と俊敏を高める。' },
@@ -972,6 +977,7 @@ window.ARSENE_DATA = {
     lunaEdge: { id: 'lunaEdge', name: '月影剣ルナエッジ', dungeonId: 'dungeon2', weaponType: 'sword', weaponSprite: 'sword_luna', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 2.8, bonuses: { str: 14, dex: 4, critBonus: 0.05 } },
     voidBlade: { id: 'voidBlade', name: '虚空刃ヴォイドブレード', nameEn: 'VOID BLADE', dungeonId: 'dungeon3', weaponType: 'sword', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 3.4, bonuses: { str: 18, agi: 6, critBonus: 0.06 } },
     chaosRod: { id: 'chaosRod', name: '混沌の魔杖カオスロッド', nameEn: 'CHAOS ROD', dungeonId: 'dungeon3', weaponType: 'staff', weaponSprite: 'staff_chaos', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.6, bonuses: { mag: 20, maxMp: 10 } },
+    parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', dungeonId: 'dungeon3', weaponType: 'instrument', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', damageStat: 'dex', power: 4.0, guitarSkillTree: 'versicrellGuitar', bonuses: { dex: 10, mag: 5, critBonus: 0.04 } },
     myrthi_blade: { id: 'myrthi_blade', name: '黒紅刃ミルティア', nameEn: 'MYRTHI BLADE', seriesId: 'myrthi', dungeonId: 'dungeon2', weaponType: 'sword', weaponSprite: 'sword_myrthi', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 3.0, bonuses: { str: 16, agi: 8, critBonus: .06 } }
   },
   accessories: {
@@ -1219,14 +1225,14 @@ window.ARSENE_DATA = {
       element: '闇', weaknesses: ['魔', '雷'], resistances: ['物理'], spriteClass: 'iron-chanter', battleScale: 1.05,
       stats: { maxHp: 390, atk: 26, def: 44, mag: 22, mnd: 24, spd: 9 }, exp: 120, gold: { min: 48, max: 82 },
       dropTable: [{ itemId: 'darkIron', chance: .48 }, { itemId: 'voidShard', chance: .20 }],
-      ai: [{ id: 'ironChant', name: '鉄壁詠唱', kind: 'defBuff', rate: .25, turns: 3, weight: .48 }, { id: 'attack', name: '鉄杖打ち', kind: 'physical', weight: .52 }]
+      ai: [{ id: 'ironChant', name: '鉄壁詠唱', kind: 'defBuff', rate: .30, turns: 3, weight: .48 }, { id: 'attack', name: '鉄杖打ち', kind: 'physical', weight: .52 }]
     },
     arcaneChanter: {
       id: 'arcaneChanter', name: '秘儀の詠唱兵', enName: 'ARCANE CHANTER', dungeonId: 'dungeon3', role: 'MAGIC BUFFER', roleDescription: '敵全体のMDEFを上昇させる。',
       element: '虚無', weaknesses: ['斬', '打'], resistances: ['魔'], spriteClass: 'arcane-chanter', battleScale: 1.0,
       stats: { maxHp: 350, atk: 18, def: 20, mag: 34, mnd: 48, spd: 11 }, exp: 122, gold: { min: 50, max: 84 },
       dropTable: [{ itemId: 'chaosDust', chance: .46 }, { itemId: 'phantomCore', chance: .12 }],
-      ai: [{ id: 'arcaneChant', name: '秘儀障壁', kind: 'mdefBuff', rate: .25, turns: 3, weight: .48 }, { id: 'soulBolt', name: '秘儀弾', kind: 'magic', weight: .52 }]
+      ai: [{ id: 'arcaneChant', name: '秘儀障壁', kind: 'mdefBuff', rate: .30, turns: 3, weight: .48 }, { id: 'soulBolt', name: '秘儀弾', kind: 'magic', weight: .52 }]
     },
     riftAssailant: {
       id: 'riftAssailant', name: '裂界の強襲者', enName: 'RIFT ASSAILANT', dungeonId: 'dungeon3', role: 'ATTACKER', roleDescription: '低防御・高攻撃。優先撃破推奨。',
@@ -1491,6 +1497,30 @@ window.ARSENE_DATA = {
         { itemId: 'moonstone',   chance: .16 }
       ],
       ai: [{ id: 'clubSmash', name: '静寂の制圧', kind: 'physical', weight: .45 }, { id: 'attack', name: '番人の一撃', kind: 'physical', weight: .35 }, { id: 'soulBolt', name: '沈黙の宣告', kind: 'magic', weight: .20 }]
+    },
+
+    versicrell: {
+      id: 'versicrell', name: 'ヴェルシクレル', enName: 'VERSICRELL — SILVER CIRCLE', kind: 'boss', encounter: 1, dungeonId: 'dungeon3',
+      title: '《銀環奏士》', role: 'MID BOSS / DEFENSE RHYTHM', roleDescription: '物理・魔法防御を楽章ごとに切り替える。BREAKを見極めて攻める。',
+      element: '音 / 銀環', weaknesses: ['BREAK'], resistances: ['音'],
+      sprite: 'assets/enemy-characters/versicrell/versicrell-form1-v1.png', spriteClass: 'versicrell-sprite versicrell-form1',
+      stats: { maxHp: 1500, atk: 45, def: 42, mag: 48, mnd: 38, dex: 54, agi: 22, spd: 22 },
+      exp: 360, gold: { min: 210, max: 300 },
+      dropTable: [{ itemId: 'voidEssence', chance: .50 }, { itemId: 'phantomCore', chance: .60 }, { itemId: 'parentGiftGuitar', chance: .006 }],
+      music: '音楽系/ダンジョン/ヴェルシクレルのテーマ1.mp3',
+      musicPhase2: '音楽系/ダンジョン/ヴェルシクレルのテーマ2.mp3',
+      form2: {
+        name: '《銀環異奏体》ヴェルシクレル', title: 'GUITAR AXE // FALSE CADENCE',
+        sprite: 'assets/enemy-characters/versicrell/versicrell-form2-v1.png', spriteClass: 'versicrell-sprite versicrell-form2',
+        stats: { maxHp: 2200, atk: 62, def: 50, mag: 58, mnd: 46, dex: 66, agi: 28, spd: 27 }
+      },
+      specialAttacks: {
+        noiseChord: { id: 'noiseChord', name: 'ノイズコード', kind: 'magic', debuffChance: .25 },
+        preciousSky: { id: 'bossPreciousSky', name: 'プレシャススカイ', kind: 'magic', unavoidable: false },
+        silverClaw: { id: 'silverClaw', name: '《銀爪》', kind: 'physical', accuracyModifier: .05 },
+        axeChord: { id: 'axeChord', name: 'AXE CHORD', kind: 'physical', accuracyModifier: -.03 }
+      },
+      ai: [{ id: 'noiseChord', name: 'ノイズコード', kind: 'magic', weight: .45 }, { id: 'attack', name: '銀環の一撃', kind: 'physical', weight: .55 }]
     },
 
     seripes: {

@@ -397,8 +397,10 @@
     { sys: '《異世界》が解放されました。' }
   ];
 
-  P.playPhantomNoise = function () {
-    if (document.getElementById('ow-noise')) return;
+  // 汎用NOISEシーケンス。異世界解放だけでなく、ボス変身などからも同じ演出を再利用する。
+  P.playNoiseSequence = function (lines, options = {}) {
+    if (document.getElementById('ow-noise')) return Promise.resolve(false);
+    return new Promise(resolve => {
     const el = document.createElement('div');
     el.id = 'ow-noise'; el.className = 'ow-noise';
     el.innerHTML = `<div class="ow-noise-bars"></div><div class="ow-noise-body"><p id="ow-noise-line"></p><button class="ow-noise-next" id="ow-noise-next">▼</button></div>`;
@@ -408,7 +410,7 @@
     let i = 0;
     const line = el.querySelector('#ow-noise-line');
     const render = () => {
-      const l = NOISE_LINES[i];
+      const l = lines[i];
       if (!l) { close(); return; }
       line.className = l.sys ? 'ow-sys' : l.big ? 'ow-big' : 'ow-talk';
       line.innerHTML = l.sys ? esc(l.sys) : l.big ? esc(l.big)
@@ -418,10 +420,16 @@
     const close = () => {
       el.remove(); document.body.classList.remove('ow-glitch');
       this.renderMenuSummary?.();
-      this.startLennyGuide();
+      options.onClose?.();
+      resolve(true);
     };
-    el.addEventListener('click', () => { i++; if (i >= NOISE_LINES.length) close(); else { this.audio?.sfx?.('ui'); render(); } });
+    el.addEventListener('click', () => { i++; if (i >= lines.length) close(); else { this.audio?.sfx?.('ui'); render(); } });
     render();
+    });
+  };
+
+  P.playPhantomNoise = function () {
+    return this.playNoiseSequence(NOISE_LINES, { onClose: () => this.startLennyGuide() });
   };
 
   // ════════════════════════════════════════════════════════════

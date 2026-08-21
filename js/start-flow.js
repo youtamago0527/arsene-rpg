@@ -42,8 +42,20 @@
       this.game.setCharacterList(this.characters);
       this.render();
       this.bind();
+      if (this.startLocalScenario()) return;
       const watched = this.openingWatched() || new URLSearchParams(location.search).has('skipop');
       if (watched) this.showTitle(); else this.showOpening('title');
+    }
+
+    startLocalScenario() {
+      const params = new URLSearchParams(location.search);
+      const localHost = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+      if (!localHost || params.get('local') !== 'versicrell-ready') return false;
+      this.root.hidden = true;
+      this.root.style.display = 'none';
+      this.game.prepareLocalVersicrellScenario();
+      this.game.startVersicrellBoss();
+      return true;
     }
 
     render() {
