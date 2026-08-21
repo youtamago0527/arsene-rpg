@@ -32,6 +32,10 @@
     if (f.owInterferenceMax == null) f.owInterferenceMax = D().otherWorld?.interferenceMax ?? 2;
     if (f.owUsedToday == null) f.owUsedToday = 0;
     if (f.owLastDate == null) f.owLastDate = '';
+    if (f.owEntryInProgress === undefined) f.owEntryInProgress = null;
+    if (f.owBattleCheckpoint === undefined) f.owBattleCheckpoint = null;
+    if (f.owResumePending == null) f.owResumePending = false;
+    if (f.owInterferenceRefundNotice == null) f.owInterferenceRefundNotice = false;
     // 異世界実装前にゼナカドを撃破した旧セーブを自動移行する。
     if (p.bossDefeated?.zenacad || f.magicKnightProofObtained || f.zenakadoScoreClaimed) {
       f.phantomThiefUnlocked = true;
@@ -48,6 +52,26 @@
     p.ptStealDone ||= {};        // JOBごとのSTEAL済みフラグ（重複STEAL禁止）
     p.arcanaGains ||= {};        // アルカナで恒久上昇させた量（内訳表示用）
     if (!Array.isArray(p.ptActionSlots)) p.ptActionSlots = [null, null];
+    // 潜入中フラグが残っている＝正常な踏破・撤退・敗北処理を通らず終了した。
+    // 有効なチェックポイントがあれば消費を戻さず再開待ちにする。壊れている場合だけ返還する。
+    if (f.owEntryInProgress) {
+      const now = new Date(), today = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+      const sameDay = f.owEntryInProgress.date === today && f.owLastDate === today;
+      const cp = f.owBattleCheckpoint;
+      const resumable = sameDay && cp?.version === 1 && cp.date === today && cp.run?.dungeonId;
+      if (resumable) {
+        f.owResumePending = true;
+      } else {
+        if (sameDay && (f.owUsedToday || 0) > 0) {
+          f.owUsedToday--;
+          f.owInterferenceRefundNotice = true;
+        }
+        f.owEntryInProgress = null;
+        f.owBattleCheckpoint = null;
+        f.owResumePending = false;
+      }
+      try { localStorage.setItem(D().settings.saveKey, JSON.stringify(p)); } catch { /* 次回saveProfileで保存 */ }
+    }
     return p;
   };
   const origFresh = P.freshProfile;
@@ -56,7 +80,8 @@
     Object.assign(p.flags, {
       phantomThiefUnlocked: false, otherWorldUnlocked: false, phantomTutorialViewed: false, phantomMascotGuided: false,
       otherWorldNewSeen: false, pendingPhantomNoise: false,
-      owInterferenceMax: D().otherWorld?.interferenceMax ?? 2, owUsedToday: 0, owLastDate: ''
+      owInterferenceMax: D().otherWorld?.interferenceMax ?? 2, owUsedToday: 0, owLastDate: '',
+      owEntryInProgress: null, owBattleCheckpoint: null, owResumePending: false, owInterferenceRefundNotice: false
     });
     p.jobs ||= {};
     for (const id of Object.keys(D().jobs || {})) p.jobs[id] ||= { level: 1, exp: 0 };
@@ -94,7 +119,7 @@
   const origRenderMenuSummary = P.renderMenuSummary;
   P.renderMenuSummary = function () { const r = origRenderMenuSummary.call(this); this.applyPhantomStealProgressHud(); return r; };
   const origUpdateHUD = P.updateHUD;
-  P.updateHUD = function () { const r = origUpdateHUD.call(this); this.applyPhantomStealProgressHud(); return r; };
+  P.updateHUD = function () { const r = origUpdateHUD.call(this); this.applyPhantomStealProgressHud(); if (this.owRun) this.owSaveCheckpoint?.('battle'); return r; };
 
   const origJobDetailHtml = P.jobDetailHtml;
   P.jobDetailHtml = function (jobId, unlocked, currentId) {
@@ -219,6 +244,90 @@
     this.owRefreshDaily();
     const max = this.profile.flags.owInterferenceMax ?? (this.owCfg().interferenceMax ?? 2);
     return { left: Math.max(0, max - (this.profile.flags.owUsedToday || 0)), max };
+  };
+  P.owSettleEntry = function (outcome = 'complete') {
+    const f = this.profile.flags;
+    f.owEntryInProgress = null;
+    f.owBattleCheckpoint = null;
+    f.owResumePending = false;
+    f.owLastEntryOutcome = outcome;
+    this.saveProfile();
+  };
+  P.owSaveCheckpoint = function (stage = 'battle') {
+    const f = this.profile.flags;
+    if (!f.owEntryInProgress || !this.owRun) return;
+    const alive = (this.enemies || []).some(e => e.alive);
+    const terminal = this.player?.hp <= 0 ? 'defeat' : (this.enemies?.length && !alive ? 'victory' : null);
+    // 通常はコマンド選択可能なターン境界だけ保存。撃破・敗北だけは即時保存する。
+    if (stage === 'battle' && this.locked && !terminal) return;
+    const copy = value => value == null ? value : JSON.parse(JSON.stringify(value));
+    f.owBattleCheckpoint = {
+      version: 1, date: this.owDateKey(), savedAt: Date.now(), stage, terminal,
+      run: copy(this.owRun), battleMode: this.battleMode || 'ow', turn: this.turn || 1,
+      player: this.player ? copy({ hp: this.player.hp, mp: this.player.mp, buffs: this.player.buffs || {}, cooldowns: this.player.cooldowns || {}, resonance: this.player.resonance || 0, lastReceivedType: this.player.lastReceivedType || null, defDownUntil: this.player.defDownUntil || 0 }) : null,
+      enemies: copy(this.enemies || []), battleLogHistory: copy(this.battleLogHistory || []), chestPicks: copy(this.owChestPicks || null)
+    };
+    f.owResumePending = true;
+    this.saveProfile();
+  };
+  P.owCheckpointValid = function (cp = this.profile.flags.owBattleCheckpoint) {
+    if (!cp || cp.version !== 1 || cp.date !== this.owDateKey() || !cp.run?.dungeonId) return false;
+    if (cp.stage === 'transition') return true;
+    return !!cp.player && Array.isArray(cp.enemies) && cp.enemies.length > 0;
+  };
+  P.owRefundBrokenCheckpoint = function () {
+    const f = this.profile.flags, marker = f.owEntryInProgress;
+    if (marker?.date === this.owDateKey() && (f.owUsedToday || 0) > 0) f.owUsedToday--;
+    f.owEntryInProgress = null; f.owBattleCheckpoint = null; f.owResumePending = false; f.owInterferenceRefundNotice = true;
+    this.owRun = null; this.saveProfile(); this.showMenu('home');
+  };
+  P.showOwResumePrompt = function () {
+    if (!this.profile.flags.owResumePending || document.getElementById('ow-resume-modal')) return;
+    const cp = this.profile.flags.owBattleCheckpoint;
+    const el = document.createElement('div');
+    el.id = 'ow-resume-modal'; el.className = 'pt-modal';
+    el.innerHTML = `<div class="pt-modal-box ow-resume-box"><header><b>RIFT INTERRUPTED</b></header><div class="ow-resume-body"><strong>異世界の中断戦闘があります</strong><span>${cp?.stage === 'transition' ? '潜入開始前' : `RIFT ${cp?.run?.battle || 1} / ${cp?.run?.total || 10}　TURN ${cp?.turn || 1}`}</span><p>干渉力は消費済みです。保存された状態から再開できます。</p><button data-ow-resume>戦闘を再開</button><button class="danger" data-ow-abandon>撤退扱いで終了</button><small>撤退した場合、干渉力は返還されません。</small></div></div>`;
+    document.body.appendChild(el);
+  };
+  P.owResumeFromCheckpoint = async function () {
+    const cp = this.profile.flags.owBattleCheckpoint;
+    if (!this.owCheckpointValid(cp)) { document.getElementById('ow-resume-modal')?.remove(); this.owRefundBrokenCheckpoint(); return; }
+    document.getElementById('ow-resume-modal')?.remove();
+    this.profile.flags.owResumePending = false;
+    this.owRun = JSON.parse(JSON.stringify(cp.run));
+    await this.audio.playTrack(this.otherWorldMusic || this.bossMusic);
+    if (cp.stage === 'transition') { this.saveProfile(); await this.playOwTransition(); this.startOwBattle(); return; }
+    const stats = this.totalStats(), ps = cp.player;
+    this.player = { stats, hp: Math.max(0, Math.min(stats.maxHp, ps.hp)), mp: Math.max(0, Math.min(stats.maxMp, ps.mp)), inventory: this.profile.inventory, buffs: ps.buffs || {}, cooldowns: ps.cooldowns || {}, resonance: ps.resonance || 0, lastReceivedType: ps.lastReceivedType || null, defDownUntil: ps.defDownUntil || 0 };
+    this.enemies = cp.enemies.map(e => ({ ...e, stats: { ...(e.stats || {}) } }));
+    this.battleMode = cp.battleMode || (this.owIsBossBattle() ? 'owBoss' : 'ow');
+    this.turn = cp.turn || 1; this.locked = false; this.finished = false;
+    this.battleLogHistory = cp.battleLogHistory || []; this.battleLogExpanded = false;
+    this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [], newRecipes: [] };
+    if (cp.stage === 'step') { this.owShowStep([]); return; }
+    if (cp.stage === 'chests') { this.owChestPicks = cp.chestPicks || []; this.owShowChests([], this.owChestPicks); return; }
+    $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none';
+    $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none';
+    $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyOwBackground();
+    this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); this.renderBattleLog();
+    this.flashTitle('RIFT RESUME', `TURN ${this.turn}`);
+    if (cp.terminal === 'victory') { setTimeout(() => this.victory(), 300); return; }
+    if (cp.terminal === 'defeat') { setTimeout(() => this.defeat(), 300); return; }
+    this.showMainCommands();
+  };
+  P.owAbandonCheckpoint = function () {
+    document.getElementById('ow-resume-modal')?.remove();
+    this.owSettleEntry('abandon'); this.owRun = null;
+    window.arseneStartFlow?.toast?.('異世界から撤退しました。干渉力は戻りません。');
+  };
+  P.showOwRefundNotice = function () {
+    document.getElementById('ow-refund-toast')?.remove();
+    const el = document.createElement('div');
+    el.id = 'ow-refund-toast'; el.className = 'arcana-toast';
+    el.innerHTML = '<small>RIFT RECOVERY</small><b>異界干渉力 +1</b><span>中断された潜入分を返還しました</span>';
+    document.body.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 3000);
   };
 
   // ════════════════════════════════════════════════════════════
@@ -534,11 +643,14 @@
     if (!this.isPhantomThief()) { this.owSelectDungeon(dungeonId); return; }
     const inf = this.owInterference();
     if (inf.left <= 0) return;
-    this.profile.flags.owUsedToday = (this.profile.flags.owUsedToday || 0) + 1;
-    this.saveProfile();
     const cfg = this.owCfg();
     const selected = this.owDungeonChoices().find(d => d.id === dungeonId) || this.owDungeonChoices()[0];
+    this.profile.flags.owUsedToday = (this.profile.flags.owUsedToday || 0) + 1;
+    this.profile.flags.owEntryInProgress = { date: this.owDateKey(), dungeonId: selected?.id || cfg.id, startedAt: Date.now() };
+    this.profile.flags.owInterferenceRefundNotice = false;
+    this.saveProfile();
     this.owRun = { dungeonId: selected?.id || cfg.id, background: selected?.background || this.owTodayBackground(), battle: 1, total: cfg.battlesPerRun ?? 10, arcana: 0, rebirth: 0, gold: 0, mats: {} };
+    this.owSaveCheckpoint('transition');
     await this.audio.playTrack(this.otherWorldMusic || this.bossMusic);
     await this.playOwTransition();
     this.startOwBattle();
@@ -618,6 +730,7 @@
   // 雑魚戦のあいだの中継画面
   P.owShowStep = function (got) {
     const run = this.owRun;
+    this.owSaveCheckpoint('step');
     const html = `<div class="ow-step">
       <small>RIFT PROGRESS</small><b>${run.battle} / ${run.total}</b>
       <i class="ow-step-bar"><em style="width:${100 * run.battle / run.total}%"></em></i>
@@ -639,9 +752,10 @@
   };
 
   // ── 宝箱3択 ──
-  P.owShowChests = function (bossGot) {
-    const picks = this.owRollChests();
+  P.owShowChests = function (bossGot, restoredPicks = null) {
+    const picks = restoredPicks || this.owRollChests();
     this.owChestPicks = picks;
+    this.owSaveCheckpoint('chests');
     const html = `<div class="ow-chests">
       ${bossGot.length ? `<div class="ow-got">${bossGot.map(g => `<span>${esc(g)}</span>`).join('')}</div>` : ''}
       <p class="ow-chest-lead">「ひとつだけ盗め。」</p>
@@ -675,7 +789,7 @@
       run.mats[t.itemId] = (run.mats[t.itemId] || 0) + n;
       lines.push(`${D().items[t.itemId]?.name || t.itemId} ×${n}`);
     }
-    this.saveProfile(); this.audio.sfx('rareDrop');
+    this.saveProfile(); this.owSettleEntry('complete'); this.audio.sfx('rareDrop');
     // 選ばれなかった箱は消える
     document.querySelectorAll('[data-ow-chest]').forEach((b, i) => {
       b.classList.add(i === idx ? 'opened' : 'gone'); b.disabled = true;
@@ -695,6 +809,7 @@
         <span>素材</span><b>${matLines.length ? esc(matLines.join(' / ')) : 'なし'}</b>
       </div>
       <p class="ow-none">異世界では経験値・武器学は得られません。</p></div>`;
+    this.owSettleEntry('complete');
     this.owRun = null; this.owChestPicks = null;
     this.showResult('RIFT COMPLETE', '盗みは成功した。現実へ戻ろう。', '異世界 踏破', html);
     $('#result-menu').style.display = '';
@@ -702,6 +817,7 @@
 
   P.owRetreat = function () {
     const run = this.owRun || { arcana: 0, rebirth: 0, gold: 0, mats: {} };
+    this.owSettleEntry('retreat');
     this.owRun = null;
     this.showResult('RETREAT', '異界から離脱した。干渉力は戻らない。', '撤退', `<div class="ow-summary"><div class="ow-sum-grid"><span>本日のアルカナ</span><b>${run.arcana} 個</b></div></div>`);
     $('#result-menu').style.display = '';
@@ -710,7 +826,7 @@
   // 敗北時は周回を打ち切る
   const origDefeat = P.defeat;
   P.defeat = async function () {
-    if (this.owRun) this.owRun = null;
+    if (this.owRun) { this.owSettleEntry('defeat'); this.owRun = null; }
     return origDefeat.call(this);
   };
 
@@ -727,7 +843,14 @@
       if (name === 'otherworld-select') { panel.hidden = false; this.renderOwDungeonSelect(panel); return; }
       if (name === 'otherworld-job-confirm') { panel.hidden = false; this.renderOwJobConfirm(panel); return; }
     }
-    return origRenderPanel.call(this, name);
+    const result = origRenderPanel.call(this, name);
+    if (name === 'home' && this.profile.flags.owResumePending) setTimeout(() => this.showOwResumePrompt(), 350);
+    if (name === 'home' && this.profile.flags.owInterferenceRefundNotice) {
+      this.profile.flags.owInterferenceRefundNotice = false;
+      this.saveProfile();
+      setTimeout(() => this.showOwRefundNotice(), 350);
+    }
+    return result;
   };
 
   // 色違い表示：spriteFilter を持つ敵にフィルタを掛ける
@@ -747,6 +870,10 @@
   // ════════════════════════════════════════════════════════════
   document.addEventListener('click', e => {
     const g = window.arseneGame; if (!g) return;
+    const resume = e.target.closest('[data-ow-resume]');
+    if (resume) { e.preventDefault(); resume.disabled = true; g.owResumeFromCheckpoint(); return; }
+    const abandon = e.target.closest('[data-ow-abandon]');
+    if (abandon) { e.preventDefault(); g.owAbandonCheckpoint(); return; }
     // 拠点の狐＝レニーフォックス
     if (e.target.closest('.hideout-fox')) { e.preventDefault(); g.openLenny(); return; }
     const lenny = e.target.closest('[data-lenny]');
