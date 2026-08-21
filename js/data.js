@@ -1,15 +1,15 @@
 window.ARSENE_DATA = {
   // dungeon2BossWins：ミルティ解放に必要なダンジョン2の勝利数。4時間構想の主調整値。
   // debugPassword：拠点の狐を長押しで開くデバッグルームのパスワード
-  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5, dungeon2BossWins: 100, dungeon3MidBossWins: 150, dungeon3TargetWins: 300, debugPassword: '1229', mealGoldRate: 0.3, counterPowerRate: 0.7 },
+  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5, dungeon2BossWins: 100, dungeon3MidBossWins: 28, dungeon3TargetWins: 60, debugPassword: '1229', mealGoldRate: 0.3, counterPowerRate: 0.7 },
   guardianBalance: {
     shieldDefRate: 0.5, shieldMdefRate: 0.5, resonanceGainPerDamage: 0.05,
     fortressReduction: 0.30, resonanceMax: 100,
     resonanceTiers: [{ min: 100, multiplier: 2.0 }, { min: 75, multiplier: 1.75 }, { min: 50, multiplier: 1.5 }, { min: 25, multiplier: 1.25 }, { min: 1, multiplier: 1.0 }]
   },
   seripesBalance: {
-    regenRate: 0.035, repriseDamageRate: 0.32, grandRepriseDamageRate: 0.48,
-    phase2HpRate: 0.50, finalHpRate: 0.25, fortissimoRate: 0.15
+    regenRate: 0.025, repriseDamageRate: 0.35, grandRepriseDamageRate: 0.55,
+    phase2HpRate: 0.50, finalHpRate: 0.25, fortissimoRate: 0.20
   },
   dualBladeOffHandRate: 0.70,
   // 武器種マスタ。ここに追記すれば得意武器選択・アイテム欄のタブへ自動反映される。
@@ -375,12 +375,106 @@ window.ARSENE_DATA = {
     },
     {
       id: 'dungeon3', name: '崩界の深廊', nameEn: 'DEPTHS OF THE VOID',
-      background: 'assets/bg/dungeon-battle-03.png',
-      thumbnail: 'assets/bg/dungeon-battle-03.png',
+      background: 'assets/bg/dungeon3/d3f1-eroded-outer-wall.webp',
+      thumbnail: 'assets/bg/dungeon3/d3f1-eroded-outer-wall.webp',
       music: encodeURI('音楽系/ダンジョン/ダンジョン3Mastering_Cathedral Heist.mp3'),
-      description: 'かつて怪盗団の先人が封じた「崩界の門」の深部。混沌と虚無が渦巻く、最深層への試練。',
+      description: '侵蝕された白亜の城塞。8階を進み、対策装備・JOB・クラフトを整える長期攻略ダンジョン。',
       recommendedLevel: 20,
       unlockCondition: 'dungeon2Clear',
+      // 各階の必要戦闘数は短く保ち、敵の能力補正と編成で育成・クラフトを促す。
+      // 4F踏破後に中ボス、8F踏破後にダンジョンボス。
+      midBossAfterFloor: 4,
+      floors: [
+        {
+          id: 'd3f1', name: '侵蝕の外壁', nameEn: '1F ERODED OUTER WALL', winsToClear: 6,
+          background: 'assets/bg/dungeon3/d3f1-eroded-outer-wall.webp', thumbnail: 'assets/bg/dungeon3/d3f1-eroded-outer-wall.webp',
+          description: 'D2から持ち込んだ装備で敵の防御傾向を見極める適応層。物理・魔法の得手不得手を学ぶ。',
+          materials: ['voidShard', 'darkIron'],
+          enemyScale: { hp: 1.00, atk: 1.00, mag: 1.00, def: 1.00, mnd: 1.00, spd: 1.00, rewards: 1.00 },
+          encounterProgression: [
+            { minWins: 0, count: [2, 2], pool: [{ id: 'voidWatcher', weight: 4 }, { id: 'riftAssailant', weight: 3 }, { id: 'abyssalKnight', weight: 2 }] },
+            { minWins: 3, count: [2, 2], pool: [{ id: 'abyssalKnight', weight: 4 }, { id: 'voidWatcher', weight: 4 }, { id: 'riftAssailant', weight: 3 }, { id: 'voidCantor', weight: 1 }] }
+          ]
+        },
+        {
+          id: 'd3f2', name: '血塗られた中庭', nameEn: '2F BLOODSTAINED COURTYARD', winsToClear: 7,
+          background: 'assets/bg/dungeon3/d3f1-eroded-outer-wall.webp', thumbnail: 'assets/bg/dungeon3/d3f1-eroded-outer-wall.webp',
+          description: '物理防壁と魔障壁が交差する中庭。攻撃手段を一つに絞ると消耗が増える。',
+          materials: ['voidShard', 'chaosDust', 'phantomCore'],
+          enemyScale: { hp: 1.14, atk: 1.08, mag: 1.08, def: 1.14, mnd: 1.14, spd: 1.04, rewards: 1.12 },
+          encounterProgression: [
+            { minWins: 0, count: [2, 2], pool: [{ id: 'ironChanter', weight: 3 }, { id: 'arcaneChanter', weight: 3 }, { id: 'riftAssailant', weight: 4 }, { id: 'voidCantor', weight: 2 }] },
+            { minWins: 4, count: [2, 3], pool: [{ id: 'abyssalKnight', weight: 3 }, { id: 'voidWatcher', weight: 3 }, { id: 'voidCantor', weight: 3 }, { id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }, { id: 'chaosWitch', weight: 2 }] }
+          ]
+        },
+        {
+          id: 'd3f3', name: '封鎖された門', nameEn: '3F SEALED GATE', winsToClear: 7,
+          background: 'assets/bg/dungeon3/d3f2-sealed-courtyard.webp', thumbnail: 'assets/bg/dungeon3/d3f2-sealed-courtyard.webp',
+          description: '回復役と防壁役が同時に現れる関門。撃破順とMP管理を試される。',
+          materials: ['voidShard', 'chaosDust', 'darkIron'],
+          enemyScale: { hp: 1.28, atk: 1.15, mag: 1.15, def: 1.24, mnd: 1.24, spd: 1.07, rewards: 1.22 },
+          encounterProgression: [
+            { minWins: 0, count: [2, 2], pool: [{ id: 'abyssalKnight', weight: 3 }, { id: 'voidWatcher', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'chaosWitch', weight: 2 }] },
+            { minWins: 4, count: [2, 3], pool: [{ id: 'riftAssailant', weight: 3 }, { id: 'voidCantor', weight: 3 }, { id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }, { id: 'chaosWitch', weight: 3 }] }
+          ]
+        },
+        {
+          id: 'd3f4', name: '鎖の回廊', nameEn: '4F CHAINED GALLERY', winsToClear: 8,
+          background: 'assets/bg/dungeon3/d3f2-sealed-courtyard.webp', thumbnail: 'assets/bg/dungeon3/d3f2-sealed-courtyard.webp',
+          description: 'ヴェルシクレルへ続く前半最終層。支援役を含む三体編成への対策完成が必要。',
+          materials: ['phantomCore', 'chaosDust', 'darkIron'],
+          enemyScale: { hp: 1.42, atk: 1.24, mag: 1.24, def: 1.34, mnd: 1.34, spd: 1.10, rewards: 1.34 },
+          encounterProgression: [
+            { minWins: 0, count: [2, 3], pool: [{ id: 'riftAssailant', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'ironChanter', weight: 3 }, { id: 'arcaneChanter', weight: 3 }, { id: 'chaosWitch', weight: 2 }] },
+            { minWins: 4, count: [3, 3], pool: [{ id: 'abyssalKnight', weight: 2 }, { id: 'voidWatcher', weight: 2 }, { id: 'voidCantor', weight: 2 }, { id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }, { id: 'riftAssailant', weight: 3 }] }
+          ]
+        },
+        {
+          id: 'd3f5', name: '崩壊の礼拝堂', nameEn: '5F RUINED CHAPEL', winsToClear: 7,
+          background: 'assets/bg/dungeon3/d3f3-ruined-chapel.webp', thumbnail: 'assets/bg/dungeon3/d3f3-ruined-chapel.webp',
+          description: '銀環突破後、怪異の密度が急上昇する。D3装備の製作とJOB再構成を前提とする。',
+          materials: ['darkIron', 'chaosDust', 'phantomCore'],
+          enemyScale: { hp: 1.88, atk: 1.52, mag: 1.52, def: 1.62, mnd: 1.62, spd: 1.15, rewards: 1.68 },
+          encounterProgression: [
+            { minWins: 0, count: [2, 2], pool: [{ id: 'voidGargoyle', weight: 4 }, { id: 'chaosWitch', weight: 4 }, { id: 'phantomEmperor', weight: 3 }] },
+            { minWins: 4, count: [2, 3], pool: [{ id: 'voidGargoyle', weight: 3 }, { id: 'phantomEmperor', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'riftAssailant', weight: 3 }] }
+          ]
+        },
+        {
+          id: 'd3f6', name: '深紅の塔', nameEn: '6F CRIMSON TOWER', winsToClear: 8,
+          background: 'assets/bg/dungeon3/d3f3-ruined-chapel.webp', thumbnail: 'assets/bg/dungeon3/d3f3-ruined-chapel.webp',
+          description: '攻撃と回復の両方が鋭くなる後半層。耐久だけでなく短いターンで崩す火力が要る。',
+          materials: ['voidEssence', 'chaosDust', 'phantomCore'],
+          enemyScale: { hp: 2.18, atk: 1.70, mag: 1.70, def: 1.84, mnd: 1.84, spd: 1.20, rewards: 1.94 },
+          encounterProgression: [
+            { minWins: 0, count: [2, 3], pool: [{ id: 'voidGargoyle', weight: 3 }, { id: 'phantomEmperor', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }] },
+            { minWins: 4, count: [3, 3], pool: [{ id: 'phantomEmperor', weight: 3 }, { id: 'riftAssailant', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'voidOrchestra', weight: 1 }] }
+          ]
+        },
+        {
+          id: 'd3f7', name: '奈落の奏廊', nameEn: '7F ABYSSAL GALLERY', winsToClear: 8,
+          background: 'assets/bg/dungeon3/d3f4-innermost-throne.webp', thumbnail: 'assets/bg/dungeon3/d3f4-innermost-throne.webp',
+          description: 'セリペスの反奏が響く最終準備層。装備・パッシブ・回復資源の穴が敗北へ直結する。',
+          materials: ['voidEssence', 'phantomCore', 'darkIron'],
+          enemyScale: { hp: 2.50, atk: 1.90, mag: 1.90, def: 2.08, mnd: 2.08, spd: 1.24, rewards: 2.20 },
+          encounterProgression: [
+            { minWins: 0, count: [2, 3], pool: [{ id: 'phantomEmperor', weight: 3 }, { id: 'voidCantor', weight: 3 }, { id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }, { id: 'voidOrchestra', weight: 2 }] },
+            { minWins: 4, count: [3, 3], pool: [{ id: 'voidOrchestra', weight: 2 }, { id: 'phantomEmperor', weight: 3 }, { id: 'riftAssailant', weight: 2 }, { id: 'voidCantor', weight: 2 }] }
+          ]
+        },
+        {
+          id: 'd3f8', name: '最奥の玉座間', nameEn: '8F INNERMOST THRONE', winsToClear: 9,
+          background: 'assets/bg/dungeon3/d3f4-innermost-throne.webp', thumbnail: 'assets/bg/dungeon3/d3f4-innermost-throne.webp',
+          description: 'D3の集大成。セリペス攻略に必要なクラフトと育成を完成させる最後の試練。',
+          materials: ['voidEssence', 'phantomCore', 'darkIron'],
+          enemyScale: { hp: 2.85, atk: 2.12, mag: 2.12, def: 2.38, mnd: 2.38, spd: 1.30, rewards: 2.58 },
+          encounterProgression: [
+            { minWins: 0, count: [3, 3], pool: [{ id: 'voidOrchestra', weight: 2 }, { id: 'phantomEmperor', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }] },
+            { minWins: 5, count: [3, 3], pool: [{ id: 'voidOrchestra', weight: 3 }, { id: 'phantomEmperor', weight: 3 }, { id: 'riftAssailant', weight: 2 }, { id: 'voidCantor', weight: 2 }, { id: 'voidGargoyle', weight: 2 }] }
+          ]
+        }
+      ],
+      // 階層未選択の旧導線向けフォールバック。
       encounterProgression: [
         { minWins: 0,   count: [2, 2], pool: [{ id: 'abyssalKnight', weight: 4 }, { id: 'voidWatcher', weight: 4 }, { id: 'riftAssailant', weight: 3 }] },
         { minWins: 30,  count: [2, 3], pool: [{ id: 'abyssalKnight', weight: 3 }, { id: 'voidWatcher', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'riftAssailant', weight: 3 }] },
@@ -1503,6 +1597,7 @@ window.ARSENE_DATA = {
 
     versicrell: {
       id: 'versicrell', name: 'ヴェルシクレル', enName: 'VERSICRELL — SILVER CIRCLE', kind: 'boss', encounter: 1, dungeonId: 'dungeon3',
+      bossRank: 'midBoss',
       title: '《銀環奏士》', role: 'MID BOSS / DEFENSE RHYTHM', roleDescription: '物理・魔法防御を楽章ごとに切り替える。BREAKを見極めて攻める。',
       element: '音 / 銀環', weaknesses: ['BREAK'], resistances: ['音'],
       sprite: 'assets/enemy-characters/versicrell/versicrell-form1-v1.png', spriteClass: 'versicrell-sprite versicrell-form1',
@@ -1527,11 +1622,12 @@ window.ARSENE_DATA = {
 
     seripes: {
       id: 'seripes', name: 'セリペス', enName: 'SERIPES — THE REPRISE KNIGHT', kind: 'boss', encounter: 1, dungeonId: 'dungeon3',
+      bossRank: 'dungeonBoss', music: null,
       title: '第三奏卿《不落の反奏騎士》', role: 'BOSS / DEFENSE & REPRISE', roleDescription: '超耐久・防御・反奏型。攻撃タイプを切り替えて攻略する。',
       element: '聖 / 反奏', weaknesses: ['無属性'], resistances: ['物理', '魔'],
       sprite: 'assets/enemy-characters/seripes/seripes-battle-cutout.png', spriteClass: 'seripes-sprite',
-      stats: { maxHp: 2400, atk: 48, def: 82, mag: 44, mnd: 68, dex: 18, agi: 15, spd: 15 },
-      exp: 420, gold: { min: 280, max: 380 }, dropTable: [{ itemId: 'voidEssence', chance: 1.0 }, { itemId: 'phantomCore', chance: .65 }, { itemId: 'darkIron', chance: .80 }],
+      stats: { maxHp: 7600, atk: 72, def: 106, mag: 68, mnd: 94, dex: 52, agi: 30, spd: 30 },
+      exp: 1200, gold: { min: 780, max: 1040 }, dropTable: [{ itemId: 'voidEssence', chance: 1.0 }, { itemId: 'phantomCore', chance: .75 }, { itemId: 'darkIron', chance: .90 }],
       specialAttacks: {
         repriseBlade: { id: 'repriseBlade', name: 'リプライズ・ブレイド', kind: 'physical', accuracyModifier: 0.05 },
         repriseMirror: { id: 'repriseMirror', name: 'リプライズ・ミラー', kind: 'magic', accuracyModifier: 0.05 },

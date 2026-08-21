@@ -50,11 +50,17 @@
     startLocalScenario() {
       const params = new URLSearchParams(location.search);
       const localHost = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
-      if (!localHost || params.get('local') !== 'versicrell-ready') return false;
+      const scenario = params.get('local');
+      if (!localHost || !['versicrell-ready', 'd3-route', 'd3-mid-ready', 'd3-final-ready'].includes(scenario)) return false;
       this.root.hidden = true;
       this.root.style.display = 'none';
-      this.game.prepareLocalVersicrellScenario();
-      this.game.startVersicrellBoss();
+      if (scenario === 'versicrell-ready') {
+        this.game.prepareLocalVersicrellScenario();
+        this.game.startVersicrellBoss();
+      } else {
+        this.game.prepareLocalD3RouteScenario(scenario.replace('d3-', ''));
+        this.game.showMenu('dungeon-select');
+      }
       return true;
     }
 
