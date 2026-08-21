@@ -9,13 +9,22 @@
 
   class BattleGame {
     constructor() {
-      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.archiveMode = 'monster';
+      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false;
       this.currentDungeonId = 'dungeon1';
       this.battleMusic = encodeURI('音楽系/戦闘用/零時侵蝕 (Without Lead Vocal).mp3');
       this.menuMusic = encodeURI('音楽系/拠点/Midnight Ramen Den.mp3');
       this.bossMusic = encodeURI('音楽系/戦闘用/インサイダー取引はダメですよ。ボス戦Version.mp3');
       this.otherWorldMusic = encodeURI('音楽系/戦闘用/星霞の理由 -Reason to Fade-異世界バトルBGM.mp3');
       this.audio = new ArseneAudio(this.battleMusic);
+      $('#log').addEventListener('click', () => this.toggleBattleLog());
+      $('#log').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.toggleBattleLog(); } });
+      $('#battlefield').addEventListener('click', e => {
+        const detailToggle = e.target.closest('[data-status-toggle]'); if (detailToggle) { e.preventDefault(); e.stopPropagation(); this.toggleStatusDetailItem(detailToggle); return; }
+        if (e.target.closest('.status-detail-close') || e.target.id === 'battle-status-detail') { e.preventDefault(); this.hideStatusDetail(); return; }
+        const strip = e.target.closest('.status-strip[data-status-owner]'); if (strip) { e.preventDefault(); e.stopPropagation(); this.showStatusGroup(strip.dataset.statusOwner, strip); }
+      });
+      $('#battlefield').addEventListener('keydown', e => { const strip = e.target.closest('.status-strip[data-status-owner]'); if (strip && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopPropagation(); this.showStatusGroup(strip.dataset.statusOwner, strip); } if (e.key === 'Escape') this.hideStatusDetail(); });
+      document.addEventListener('click', e => { const strip = e.target.closest?.('.enemy-statuses[data-status-owner]'); if (!strip) return; e.preventDefault(); e.stopPropagation(); this.showStatusGroup(strip.dataset.statusOwner, strip); }, true);
       $('#audio-toggle').addEventListener('click', async () => { await this.audio.unlock(); const on = this.audio.toggle(); $('#audio-toggle').classList.toggle('muted', !on); $('#audio-toggle span').textContent = on ? 'SOUND ON' : 'SOUND OFF'; });
       document.addEventListener('click', e => { if (e.target.closest('[data-go-menu], #result-menu')) { e.preventDefault(); this.showMenu('home'); } });
       $('#result-menu').addEventListener('pointerup', e => { e.preventDefault(); this.showMenu('home'); });
@@ -884,7 +893,7 @@
         lineup = this.rollEncounter(difficultyWins, dungeon?.encounterProgression);
       }
       this.enemies = lineup.map((id, i) => this.makeEnemy(id, i)); const count = this.enemies.length;
-      this.turn = 1; this.locked = false; this.finished = false; this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [] }; $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyDungeonBackground();
+      this.turn = 1; this.locked = false; this.finished = false; this.resetBattleLog(); this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [] }; $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyDungeonBackground();
       this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); const names = [...new Set(this.enemies.map(e => e.name))]; this.setLog(`${count}体の${names.join('と')}が現れた！`); this.flashTitle('ENCOUNTER', '怪異反応を検知'); this.showMainCommands();
     }
     // ボスのBGM。敵データに music があればそれを、無ければ共通のボス戦BGMを使う。
@@ -903,8 +912,8 @@
       this.battleMode = phase; const hadRamenBuff = !!this.profile.flags.ramenBuffActive, stats = this.totalStats(), template = D.enemies[bossId]; if (!template) { this.showMenu('home'); return; } this.playBossMusic(bossId); if (hadRamenBuff) { this.profile.flags.ramenBuffActive = false; this.saveProfile(); }
       const vitals = this.storedVitals(stats); this.player = { stats, hp: vitals.hp, mp: vitals.mp, inventory: this.profile.inventory, buffs: {}, cooldowns: {}, resonance: 0, lastReceivedType: null };
       const bossStats = template.dynamicScale ? { maxHp: stats.maxHp * template.dynamicScale, atk: Math.max(stats.str, stats.mag) * template.dynamicScale, def: stats.def * template.dynamicScale, mag: stats.mag * template.dynamicScale, mnd: stats.mnd * template.dynamicScale, spd: stats.agi * template.dynamicScale } : { ...template.stats };
-      this.enemies = [{ ...template, uid: `${template.id}-boss`, label: '', stats: bossStats, hp: bossStats.maxHp, alive: true }];
-      this.turn = 1; this.locked = false; this.finished = false; this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [] }; $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyDungeonBackground();
+      this.enemies = [{ ...template, uid: `${template.id}-boss`, label: '', stats: bossStats, hp: bossStats.maxHp, alive: true, bindResistance: template.bindResistance ?? .35, bindTurns: 0 }];
+      this.turn = 1; this.locked = false; this.finished = false; this.resetBattleLog(); this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [] }; $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyDungeonBackground();
       this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); this.setLog(this.battleMode === 'noel' ? '忘却の最奥――永遠の裁定者ノエルが姿を現した……。' : '静寂のホールに、独奏卿ゼナカドの旋律が響く……！'); this.flashTitle('BOSS ENCOUNTER', (template.nameEn || template.name || progress.bossName).toUpperCase()); this.showMainCommands();
     }
     startMyrthiBoss() {
@@ -913,9 +922,9 @@
       if (hadRamenBuff) { this.profile.flags.ramenBuffActive = false; this.saveProfile(); }
       const vitals = this.storedVitals(stats); this.player = { stats, hp: vitals.hp, mp: vitals.mp, inventory: this.profile.inventory, buffs: {}, cooldowns: {}, resonance: 0, lastReceivedType: null };
       const bossStats = { ...template.stats };
-      const boss = { ...template, uid: 'myrthi-boss', label: '', stats: bossStats, hp: bossStats.maxHp, alive: true, beat: 0, accelerandoActivated: false };
+      const boss = { ...template, uid: 'myrthi-boss', label: '', stats: bossStats, hp: bossStats.maxHp, alive: true, beat: 0, accelerandoActivated: false, bindResistance: template.bindResistance ?? .35, bindTurns: 0 };
       this.enemies = [boss];
-      this.turn = 1; this.locked = false; this.finished = false; this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [] };
+      this.turn = 1; this.locked = false; this.finished = false; this.resetBattleLog(); this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [] };
       $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyDungeonBackground();
       this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); this.setLog('沈黙の楽殿に、黒紅の旋風が舞い込む……！'); this.flashTitle('BOSS ENCOUNTER', 'MYRTHI'); this.showMainCommands();
     }
@@ -924,8 +933,8 @@
       this.playBossMusic('seripes');
       this.player = { stats, hp: vitals.hp, mp: vitals.mp, inventory: this.profile.inventory, buffs: {}, cooldowns: {}, resonance: 0, lastReceivedType: null };
       const bossStats = { ...template.stats };
-      this.enemies = [{ ...template, uid: 'seripes-boss', label: '', stats: bossStats, hp: bossStats.maxHp, alive: true, phase2: false, finalPhase: false, repriseStance: null, pendingReprise: null, recentDamageTypes: [] }];
-      this.turn = 1; this.locked = false; this.finished = false; this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [] };
+      this.enemies = [{ ...template, uid: 'seripes-boss', label: '', stats: bossStats, hp: bossStats.maxHp, alive: true, phase2: false, finalPhase: false, repriseStance: null, pendingReprise: null, recentDamageTypes: [], bindResistance: template.bindResistance ?? .45, bindTurns: 0 }];
+      this.turn = 1; this.locked = false; this.finished = false; this.resetBattleLog(); this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [] };
       $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyDungeonBackground();
       this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); this.setLog('白銀の盾が道を塞ぐ。第三奏卿――不落の反奏騎士セリペス。'); this.flashTitle('BOSS ENCOUNTER', 'SERIPES // REPRISE'); this.showMainCommands();
     }
@@ -970,7 +979,7 @@
     checkAdvancedJobUnlocks() { const ids = D.advancedJobIds || []; ids.forEach(id => { if (this.isAdvancedJobUnlocked(id)) { const job = D.jobs[id]; if (job && !this.profile.jobs[id]) this.profile.jobs[id] = { level: 1, exp: 0 }; } }); }
     makeEnemy(id, index) {
       const t = D.enemies[id];
-      return { ...t, uid: `enemy-${index}`, label: String.fromCharCode(65 + index), stats: { ...t.stats }, hp: t.stats.maxHp, alive: true };
+      return { ...t, uid: `enemy-${index}`, label: String.fromCharCode(65 + index), stats: { ...t.stats }, hp: t.stats.maxHp, alive: true, bindResistance: t.bindResistance || 0, bindTurns: 0 };
     }
     rollEncounter(wins, progression) {
       const tiers = progression || D.encounterProgression || [], tier = [...tiers].reverse().find(entry => wins >= entry.minWins);
@@ -987,18 +996,94 @@
       for (const e of this.enemies || []) if (e.id && !seen.includes(e.id)) { seen.push(e.id); added = true; }
       if (added) this.saveProfile();
     }
-    renderEnemies() { this.noteEnemiesSeen(); $('#enemies').classList.toggle('boss-party', this.battleMode !== 'slime'); $('#enemies').innerHTML = this.enemies.map((e, i) => e.kind === 'boss' ? `<button class="enemy boss-enemy${e.id === 'seripes' ? ' seripes-boss' : ''} fighter idle" id="${e.uid}" data-enemy="${i}" aria-label="${e.name}"><div class="enemy-hud boss-hud"><span>${e.name} // ${e.title}</span><div><i style="width:100%"></i></div><small>???? / ????</small></div><div class="slime-shadow boss-shadow"></div><div class="noel-sprite${e.spriteClass ? ' ' + e.spriteClass : ''}"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div></button>` : `<button class="enemy enemy-${e.id} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" aria-label="${e.name}${e.label}"><div class="enemy-hud"><span>${e.name} ${e.label}</span><div><i style="width:100%"></i></div></div><div class="slime-shadow"></div><div class="slime"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div></button>`).join(''); }
+    renderEnemies() { this.noteEnemiesSeen(); $('#enemies').classList.toggle('boss-party', this.battleMode !== 'slime'); $('#enemies').innerHTML = this.enemies.map((e, i) => { const statuses = `<button type="button" class="status-strip enemy-statuses" aria-label="敵の状態と解析情報" onclick="event.preventDefault();event.stopPropagation();window.arseneGame?.openEnemyStatus(${i})"></button>`; return e.kind === 'boss' ? `<div role="button" tabindex="0" class="enemy boss-enemy${e.id === 'seripes' ? ' seripes-boss' : ''} fighter idle" id="${e.uid}" data-enemy="${i}" aria-label="${e.name}"><div class="enemy-hud boss-hud"><span>${e.name} // ${e.title}</span><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>???? / ????</small>${statuses}</div><div class="slime-shadow boss-shadow"></div><div class="noel-sprite${e.spriteClass ? ' ' + e.spriteClass : ''}"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div></div>` : `<div role="button" tabindex="0" class="enemy enemy-${e.id} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" aria-label="${e.name}${e.label}"><div class="enemy-hud"><span>${e.name} ${e.label}</span><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>???? / ????</small>${statuses}</div><div class="slime-shadow"></div><div class="slime"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div></div>`; }).join(''); }
     applyEquipmentVisual() {
-      const w = this.equippedWeapon(), layer = $('#weapon-layer'); layer.className = `weapon-layer weapon-${w.weaponType} sprite-${w.weaponSprite}`; layer.dataset.weaponId = w.id; layer.dataset.weaponType = w.weaponType; layer.title = w.name; $('#weapon-name').textContent = `RIGHT HAND // ${w.name}`;
+      const w = this.equippedWeapon(), layer = $('#weapon-layer'); layer.className = `weapon-layer weapon-${w.weaponType} sprite-${w.weaponSprite}`; layer.dataset.weaponId = w.id; layer.dataset.weaponType = w.weaponType; layer.title = w.name; const weaponName = $('#weapon-name'); if (weaponName) weaponName.textContent = `RIGHT HAND // ${w.name}`;
       if (w.battleSprite) layer.style.backgroundImage = `url("${w.battleSprite}")`; else layer.style.removeProperty('background-image');
     }
     applySetBattleVisual() { const ren = $('#ren'), active = this.equippedSeriesCount('zenacad') >= 6; ren.classList.toggle('zenacad-six-set', active); if (active) { ren.classList.add('set-intro'); setTimeout(() => ren.classList.remove('set-intro'), 1800); } }
     updateHUD() {
       const p = this.player, expNeed = this.expNeeded(); $('#player-hp').textContent = `${p.hp} / ${p.stats.maxHp}`; $('#player-mp').textContent = `${p.mp} / ${p.stats.maxMp}`; $('#player-hp-bar').style.width = `${100 * p.hp / p.stats.maxHp}%`; $('#player-mp-bar').style.width = `${100 * p.mp / p.stats.maxMp}%`; const expBar = $('#player-exp-bar'), mType = this.equippedWeaponType(), m = this.masteryOf(mType), mNeed = this.masteryExpNeeded(m.level), expPct = Math.min(100, 100 * m.exp / mNeed); if (expBar) { expBar.style.width = `${expPct}%`; $('#player-exp-label').textContent = `${expPct.toFixed(2)}%`; } const mName = $('#player-exp-name'); if (mName) mName.textContent = `${this.weaponTypeName(mType)} Lv.${m.level}`; const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {}, jlv = jst.level || 1, jneed = this.jobExpNeeded(jlv), jexp = jst.exp || 0, jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100, jexpBar = $('#player-jexp-bar'), jexpName = $('#player-jexp-name'); if (jexpName) jexpName.textContent = `${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}`; if (jexpBar) { jexpBar.style.width = `${jpct}%`; $('#player-jexp-label').textContent = jneed ? `${jpct.toFixed(2)}%` : 'MASTER'; } const jobLabel = $('#player-job-label'); if (jobLabel) jobLabel.textContent = `${D.jobs[jid]?.name || ''} Lv.${jlv}`; $('#turn-label').textContent = `TURN ${String(this.turn).padStart(2, '0')}`;
       const rr = $('#resonance-row'), resonance = Math.min(D.guardianBalance?.resonanceMax || 100, this.player?.resonance || 0); if (rr) { rr.hidden = !this.resonanceEnabled(); rr.classList.toggle('max', resonance >= 100); $('#resonance-bar').style.width = `${resonance}%`; $('#resonance-label').textContent = resonance >= 100 ? 'MAX' : `${resonance.toFixed(1)}%`; }
-      this.enemies.forEach(e => { const el = document.getElementById(e.uid); if (el) $('.enemy-hud i', el).style.width = `${100 * e.hp / e.stats.maxHp}%`; });
+      this.renderBattleStatuses();
+      this.enemies.forEach(e => { const el = document.getElementById(e.uid); if (el) $('.enemy-hp-meter i', el).style.width = `${100 * e.hp / e.stats.maxHp}%`; });
     }
-    setLog(text) { $('#log').innerHTML = `<p>${text}</p>`; }
+    statusEffectDescription(label, detail = '') {
+      if (detail && detail !== label) return detail;
+      const key = String(label).replace(/\s+\d+T$|\s+\d+$|\s+×\d+$/g, '');
+      const descriptions = {
+        'ATK↑': '次に行う物理攻撃の威力が上昇します。', '魔力装填': '次の物理攻撃へ魔力依存の追加ダメージを加えます。',
+        'DEF↑': '物理防御力が上昇しています。', 'FORTRESS': 'このターンに受けるダメージを軽減します。', 'DEF↓': '物理防御力が低下しています。',
+        '再生': 'ターン開始時にHPを回復します。', '総奏': '魔奏士パッシブの発動率が上昇しています。', '2回行動': '一度のコマンドで続けてもう一手行動します。',
+        'FORTE': '物理攻撃力が上昇しています。重なるほど効果が強くなります。', 'CRESC.': '魔法攻撃力が上昇しています。重なるほど効果が強くなります。',
+        '足止め': '影を縫われ、表示回数ぶん行動できません。', '混乱': '一定確率で行動に失敗します。', 'MDEF↑': '魔法防御力が上昇しています。',
+        '反奏': '次に受けた攻撃を記録し、同系統の反撃として返します。'
+      };
+      return descriptions[key] || `${label}の効果が発動中です。`;
+    }
+    statusChip(label, tone = 'buff', detail = '', expiring = false) { const esc = value => String(value || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); const copy = this.statusEffectDescription(label, detail); return `<span class="status-chip ${tone}${expiring ? ' expiring' : ''}" data-status-name="${esc(label)}" data-status-detail="${esc(copy)}" data-status-expiring="${expiring ? 'true' : 'false'}">${label}</span>`; }
+    playerBattleStatsHTML() {
+      const s = this.player?.stats || {}, b = this.player?.buffs || {}, wType = this.equippedWeaponType();
+      const atkBase = Math.round(this.attackPowerFor(wType, s)), magical = this.weaponDamageType(wType) === 'magical';
+      const songRate = typeof this.songBuffRate === 'function' ? this.songBuffRate(magical ? 'matkUp' : 'atkUp') : 0;
+      const chargeRate = magical ? 0 : (b.atkCharge?.rate || 0), atkRate = songRate + chargeRate, atkNow = Math.round(atkBase * (1 + atkRate));
+      const pDefBase = Math.round(this.defensePowerFor('physical', s)), mDefBase = Math.round(this.defensePowerFor('magical', s));
+      let defRate = b.defUp && this.turn <= b.defUp.until ? (b.defUp.rate || 0) : 0; if (this.player.defDownUntil >= this.turn) defRate -= .20;
+      const pDefNow = Math.max(0, Math.round(pDefBase * (1 + defRate)));
+      const row = (name, base, now = base, suffix = '') => { const delta = now - base, changed = delta !== 0; return `<div class="battle-stat-row${changed ? delta > 0 ? ' up' : ' down' : ''}"><span>${name}</span><b>${changed ? `${base} → ${now}` : now}</b><em>${changed ? `${delta > 0 ? '+' : ''}${delta}${suffix}` : '－'}</em></div>`; };
+      return `<section class="battle-stat-debug"><header><b>LIVE BATTLE STATUS</b><span>バフ込み実効値</span></header><div class="battle-vitals"><span>HP <b>${this.player.hp} / ${s.maxHp}</b></span><span>MP <b>${this.player.mp} / ${s.maxMp}</b></span></div><div class="battle-stat-grid">${row(`${this.weaponTypeName(wType)}攻撃性能`, atkBase, atkNow, atkRate ? ` / ${Math.round(atkRate * 100)}%` : '')}${row('物理防御', pDefBase, pDefNow, defRate ? ` / ${Math.round(defRate * 100)}%` : '')}${row('魔法防御', mDefBase)}${row('力 STR', s.str)}${row('魔力 MAG', s.mag, Math.round(this.effectivePlayerStat('mag')))}${row('体力 VIT', s.vit)}${row('精神 MND', s.mnd)}${row('素早さ AGI', s.agi)}${row('器用さ DEX', s.dex)}${row('運 LUK', s.luk)}</div></section>`;
+    }
+    canInspectEnemyStats(enemy) { return !!enemy?.statsVisible || (this.profile.enemyStatInsights || []).includes(enemy?.id); }
+    enemyBattleStatsHTML(enemy) { const visible = this.canInspectEnemyStats(enemy), value = key => visible ? (enemy?.stats?.[key] ?? '－') : '???', hp = visible ? `${enemy.hp} / ${enemy.stats.maxHp}` : '??? / ???'; return `<section class="battle-stat-debug enemy-analysis${visible ? ' revealed' : ' locked'}"><header><b>ENEMY ANALYSIS</b><span>${visible ? '解析完了' : 'ANALYSIS LOCKED'}</span></header><div class="battle-vitals"><span>HP <b>${hp}</b></span><span>属性 <b>${visible ? (enemy.element || '－') : '???'}</b></span></div><div class="battle-stat-grid"><div class="battle-stat-row"><span>攻撃 ATK</span><b>${value('atk')}</b><em>－</em></div><div class="battle-stat-row"><span>防御 DEF</span><b>${value('def')}</b><em>－</em></div><div class="battle-stat-row"><span>魔力 MAG</span><b>${value('mag')}</b><em>－</em></div><div class="battle-stat-row"><span>精神 MND</span><b>${value('mnd')}</b><em>－</em></div><div class="battle-stat-row"><span>速度 SPD</span><b>${value('spd')}</b><em>－</em></div><div class="battle-stat-row"><span>弱点</span><b>${visible ? ((enemy.weaknesses || []).join(' / ') || '－') : '???'}</b><em>－</em></div></div>${visible ? '' : '<p class="analysis-note">称号・解析スキルなどの獲得で開示される予定です。</p>'}</section>`; }
+    openEnemyStatus(index) { const enemy = this.enemies[index], strip = enemy ? document.getElementById(enemy.uid)?.querySelector('.enemy-statuses') : null; if (enemy && strip) this.showStatusGroup(`${enemy.name}${enemy.label || ''}`, strip); }
+    showStatusGroup(owner, strip) {
+      const panel = $('#battle-status-detail'), list = $('#battle-status-copy'); if (!panel || !list) return;
+      const chips = [...strip.querySelectorAll('.status-chip')], isPlayer = strip.id === 'player-statuses', enemy = !isPlayer ? this.enemies.find(e => e.uid === strip.dataset.enemyUid) : null;
+      $('#battle-status-name').textContent = `${owner}の状態`;
+      const effects = chips.length ? chips.map(chip => `<details class="status-detail-item${chip.dataset.statusExpiring === 'true' ? ' expiring' : ''}"><summary><span class="status-chip ${[...chip.classList].includes('debuff') ? 'debuff' : [...chip.classList].includes('passive') ? 'passive' : 'buff'}">${chip.dataset.statusName}</span><em></em></summary><p>${chip.dataset.statusDetail}</p></details>`).join('') : '<p class="status-detail-empty">現在、有効なバフ・デバフはありません。</p>';
+      list.innerHTML = `${isPlayer ? this.playerBattleStatsHTML() : this.enemyBattleStatsHTML(enemy)}<section class="status-effect-section"><h4>ACTIVE EFFECTS</h4>${effects}</section>`;
+      const close = panel.querySelector('.status-detail-close'); if (close) close.onclick = e => { e.preventDefault(); e.stopPropagation(); this.hideStatusDetail(); };
+      panel.hidden = false; requestAnimationFrame(() => panel.classList.add('show'));
+    }
+    toggleStatusDetailItem(button) { const row = button.closest('.status-detail-item'), copy = row?.querySelector('p'), icon = button.querySelector('em'); if (!row || !copy) return; const open = row.classList.toggle('open'); copy.hidden = !open; if (icon) icon.textContent = open ? '−' : '＋'; }
+    hideStatusDetail() { const panel = $('#battle-status-detail'); if (!panel || panel.hidden) return; panel.classList.remove('show'); setTimeout(() => { panel.hidden = true; }, 160); }
+    renderBattleStatuses() {
+      const playerStrip = $('#player-statuses');
+      if (playerStrip) {
+        const chips = this.activePassives().slice(0, 4).map(p => this.statusChip(p.name, 'passive', p.effectText));
+        const b = this.player?.buffs || {};
+        if (b.atkCharge) chips.push(this.statusChip('ATK↑'));
+        if (b.magicCharge) chips.push(this.statusChip('魔力装填'));
+        if (b.defUp && this.turn <= b.defUp.until) chips.push(this.statusChip('DEF↑', 'buff', '', b.defUp.until - this.turn + 1 <= 1));
+        if (b.fortressUntil >= this.turn) chips.push(this.statusChip('FORTRESS', 'buff', '', b.fortressUntil - this.turn + 1 <= 1));
+        if (this.player?.defDownUntil >= this.turn) chips.push(this.statusChip('DEF↓', 'debuff', '', this.player.defDownUntil - this.turn + 1 <= 1));
+        if (b.regenerate || b.nocturneUntil >= this.turn) { const remain = b.regenerate || (b.nocturneUntil - this.turn + 1); chips.push(this.statusChip(`再生 ${remain}T`, 'buff', '', remain <= 1)); }
+        if (b.ensembleUntil >= this.turn) chips.push(this.statusChip('総奏', 'buff', '', b.ensembleUntil - this.turn + 1 <= 1));
+        if (b.doubleActUntil >= this.turn) chips.push(this.statusChip('2回行動', 'buff', '', b.doubleActUntil - this.turn + 1 <= 1));
+        const song = b.songBuffs || {}, liveStacks = key => (song[key] || []).filter(until => this.turn <= until).length;
+        const songExpiring = key => { const live = (song[key] || []).filter(until => this.turn <= until); return live.length > 0 && Math.max(...live) - this.turn + 1 <= 1; };
+        const forte = liveStacks('atkUp'), crescendo = liveStacks('matkUp');
+        if (forte) chips.push(this.statusChip(`FORTE ×${forte}`, 'buff', '', songExpiring('atkUp')));
+        if (crescendo) chips.push(this.statusChip(`CRESC. ×${crescendo}`, 'buff', '', songExpiring('matkUp')));
+        playerStrip.innerHTML = chips.join(''); playerStrip.dataset.statusOwner = this.playerName(); playerStrip.tabIndex = 0; playerStrip.setAttribute('role', 'button'); playerStrip.title = 'タップでステータスと状態を確認'; playerStrip.onclick = e => { e.preventDefault(); e.stopPropagation(); this.showStatusGroup(this.playerName(), playerStrip); };
+      }
+      this.enemies.forEach(e => {
+        const el = document.getElementById(e.uid), strip = el?.querySelector('.enemy-statuses'); if (!strip) return;
+        const chips = [];
+        if ((e.bindTurns || 0) > 0) chips.push(this.statusChip(`足止め ${e.bindTurns}`, 'debuff', '', e.bindTurns <= 1));
+        if (this.turn <= (e.confuseUntil || 0)) chips.push(this.statusChip('混乱', 'debuff', '', e.confuseUntil - this.turn + 1 <= 1));
+        if (this.turn <= (e.defDownUntil || 0)) chips.push(this.statusChip('DEF↓', 'debuff', '', e.defDownUntil - this.turn + 1 <= 1));
+        if (this.turn <= (e.defBuffUntil || 0)) chips.push(this.statusChip('DEF↑', 'buff', '', e.defBuffUntil - this.turn + 1 <= 1));
+        if (this.turn <= (e.mdefBuffUntil || 0)) chips.push(this.statusChip('MDEF↑', 'buff', '', e.mdefBuffUntil - this.turn + 1 <= 1));
+        if (this.turn <= (e.regenUntil || 0)) chips.push(this.statusChip('再生', 'buff', '', e.regenUntil - this.turn + 1 <= 1));
+        if (e.repriseStance) chips.push(this.statusChip('反奏'));
+        strip.innerHTML = chips.join(''); strip.dataset.statusOwner = `${e.name}${e.label || ''}`; strip.dataset.enemyUid = e.uid; strip.tabIndex = 0; strip.setAttribute('role', 'button'); strip.title = 'タップで敵の状態と解析情報を確認'; strip.onclick = event => { event.preventDefault(); event.stopPropagation(); this.showStatusGroup(strip.dataset.statusOwner, strip); };
+      });
+    }
+    resetBattleLog() { this.battleLogHistory = []; this.battleLogExpanded = false; $('#log')?.classList.remove('expanded'); }
+    setLog(text) { if (!text) return; this.battleLogHistory ||= []; this.battleLogHistory.push(text); if (this.battleLogHistory.length > 100) this.battleLogHistory.shift(); this.renderBattleLog(); }
+    renderBattleLog() { const log = $('#log'); if (!log) return; const rows = this.battleLogExpanded ? this.battleLogHistory : this.battleLogHistory.slice(-3); log.innerHTML = `<small>COMBAT LOG // ${this.battleLogExpanded ? 'TAP TO CLOSE' : 'TAP FOR HISTORY'}</small><div class="battle-log-lines">${rows.map(t => `<p>${t}</p>`).join('')}</div>`; log.scrollTop = this.battleLogExpanded ? log.scrollHeight : 0; }
+    toggleBattleLog() { this.battleLogExpanded = !this.battleLogExpanded; $('#log')?.classList.toggle('expanded', this.battleLogExpanded); this.renderBattleLog(); }
     flashTitle(main, sub = '') { const a = $('#announcer'); a.innerHTML = `<strong>${main}</strong><span>${sub}</span>`; a.classList.remove('show'); void a.offsetWidth; a.classList.add('show'); }
     battleSleep(ms) { return sleep(this.autoBattle ? Math.floor(ms / 1.5) : ms); }
     panel(html) { $('#command-panel').innerHTML = html; }
@@ -1296,6 +1381,22 @@
         target.confuseUntil = this.turn + (e.turns || 2);
         this.setLog(`${target.name}${target.label}は混乱した！`);
       }
+      if (e.type === 'enemyBind') {
+        const el = document.getElementById(target.uid);
+        if ((target.bindTurns || 0) > 0) {
+          this.floating(el, 'NO STACK', 'miss'); this.setLog(`${target.name}${target.label}はすでに影を縫われている。重ね掛けはできない！`); return;
+        }
+        const resistance = clamp(target.bindResistance || 0, 0, .9), chance = clamp((e.chance ?? .65) * (1 - resistance), .05, .95);
+        if (Math.random() < chance) {
+          target.bindTurns = e.turns || 2;
+          target.bindResistance = clamp(resistance + (e.resistanceGain ?? .25), 0, .9);
+          this.floating(el, `足止め ${target.bindTurns}`, 'debuff'); this.setLog(`${target.name}${target.label}の影を縫い止めた！ 次の${target.bindTurns}行動を封じる。`);
+        } else {
+          target.bindResistance = clamp(resistance + .08, 0, .9);
+          this.floating(el, 'RESIST', 'miss'); this.setLog(`${target.name}${target.label}は影縫いに抵抗した！`);
+        }
+        this.updateHUD();
+      }
     }
     async playerAttackAll(skill) {
       const targets = this.enemies.filter(e => e.alive); if (!targets.length) return;
@@ -1359,6 +1460,10 @@
       await this.seripesStrike(enemy, '反奏剣', 'physical', .9);
     }
     async enemyAttack(enemy) {
+      if ((enemy.bindTurns || 0) > 0) {
+        const el = document.getElementById(enemy.uid); enemy.bindTurns--;
+        this.setLog(`${enemy.name}${enemy.label}は影を縫われて動けない！`); this.floating(el, `足止め ${enemy.bindTurns}`, 'debuff'); this.updateHUD(); await this.battleSleep(420); return;
+      }
       // 混乱中は半々で行動を空振りする
       if (this.turn <= (enemy.confuseUntil || 0) && Math.random() < 0.5) {
         const el = document.getElementById(enemy.uid);
@@ -1400,7 +1505,9 @@
       this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, isMagic ? 'magical' : 'physical'); this.floating(ren, actual, 'enemy-damage'); this.setLog(`RENは${actual}ダメージを受けた！`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
       await this.tryCounter(enemy);
     }
-    floating(el, value, type) { const r = el.getBoundingClientRect(), field = $('#battlefield').getBoundingClientRect(), f = document.createElement('b'); f.className = `float-number ${type}`; f.textContent = type === 'critical' ? `CRITICAL! ${value}` : value; f.style.left = `${r.left - field.left + r.width / 2}px`; f.style.top = `${r.top - field.top + r.height * .25}px`; $('#float-layer').appendChild(f); setTimeout(() => f.remove(), 1100); }
+    floating(el, value, type) { if (!el) return; const r = el.getBoundingClientRect(), field = $('#battlefield').getBoundingClientRect(), f = document.createElement('b'); f.className = `float-number ${type}`; f.textContent = type === 'critical' ? `CRITICAL! ${value}` : value; f.style.left = `${r.left - field.left + r.width / 2}px`; f.style.top = `${r.top - field.top + r.height * .25}px`; $('#float-layer').appendChild(f); setTimeout(() => f.remove(), 1100); }
+    queueGrowthBubble(title, detail = '') { this.growthBubbleQueue = (this.growthBubbleQueue || Promise.resolve()).then(() => this.showGrowthBubble(title, detail)); return this.growthBubbleQueue; }
+    async showGrowthBubble(title, detail = '') { const ren = $('#ren'), field = $('#battlefield'); if (!ren || !field) return; const rr = ren.getBoundingClientRect(), fr = field.getBoundingClientRect(), bubble = document.createElement('div'); bubble.className = 'growth-bubble'; bubble.innerHTML = `<b>${title}</b>${detail ? `<span>${detail}</span>` : ''}`; bubble.style.left = `${rr.left - fr.left + rr.width * .52}px`; bubble.style.top = `${Math.max(92, rr.top - fr.top + 12)}px`; $('#float-layer').appendChild(bubble); this.audio.sfx('heal'); await this.battleSleep(1250); bubble.remove(); }
     announceRareDrop(item) { const layer = $('#rare-drop-layer'); if (!layer) return; this.audio.sfx('rareDrop'); const b = document.createElement('div'); b.className = `rare-drop-banner rarity-${item.rarity}`; b.innerHTML = `<small>${item.rarity === 'legendary' ? 'LEGENDARY DROP' : 'EPIC DROP'}</small><b>${item.name}</b>`; layer.appendChild(b); requestAnimationFrame(() => b.classList.add('show')); setTimeout(() => { b.classList.remove('show'); setTimeout(() => b.remove(), 420); }, 2400); }
     async useConsumable(id) { const item = D.items[id], amount = item?.effect?.hp || item?.effect?.mp || 0, key = item?.effect?.hp ? 'hp' : 'mp', maxKey = key === 'hp' ? 'maxHp' : 'maxMp'; if (!item || !(this.profile.inventory[id] > 0)) { this.setLog(`${item?.name || 'アイテム'}を持っていない。`); return; } if (this.player[key] >= this.player.stats[maxKey]) { this.setLog(`${key.toUpperCase()}は満タンだ。`); return; } this.locked = true; this.panel(''); await this.beginPlayerTurn(); const heal = Math.min(amount, this.player.stats[maxKey] - this.player[key]); this.profile.inventory[id]--; this.player[key] += heal; this.persistVitals(); this.audio.sfx('heal'); this.setLog(`${item.name}を使った。${key.toUpperCase()}が${heal}回復！`); this.floating($('#ren'), `+${heal}`, 'heal'); this.updateHUD(); await this.battleSleep(650); await this.enemyOnlyTurn(); }
     async tryEscape() { this.locked = true; this.panel(''); await this.beginPlayerTurn(); const live = this.enemies.filter(e => e.alive), avg = live.reduce((s, e) => s + e.stats.spd, 0) / live.length, chance = clamp(.45 + (this.player.stats.agi - avg) * .025, .35, .9); this.setLog('逃走経路を探している……'); await this.battleSleep(600); if (Math.random() < chance) { this.finished = true; this.persistVitals(); this.audio.sfx('escape'); this.flashTitle('ESCAPED', '戦線を離脱'); await this.battleSleep(700); this.showResult('ESCAPED', '怪異との戦闘から離脱し、拠点へ帰還した。', 'RETURN TO HIDEOUT', this.battleSummaryHTML()); } else { this.setLog('逃げられない！'); await this.battleSleep(450); await this.enemyOnlyTurn(); } }
@@ -1412,9 +1519,13 @@
       const gold = Math.round(baseGold * (1 + this.passiveEffectRate('goldUp'))), drops = {};
       (enemy.rolledDrops || []).forEach(([id, n]) => { drops[id] = (drops[id] || 0) + n; });
       const levels = this.applyRewards({ exp, gold, drops });
+      const mastery = this.grantWeaponExp(exp), job = this.grantJobExp(exp);
       this.battleRewards.exp += exp; this.battleRewards.gold += gold;
       Object.entries(drops).forEach(([id, n]) => { this.battleRewards.drops[id] = (this.battleRewards.drops[id] || 0) + n; });
-      this.battleRewards.levels.push(...levels); this.updateHUD();
+      this.battleRewards.levels.push(...levels); if (mastery) this.battleRewards.masteryResults.push(mastery); if (job) this.battleRewards.jobResults.push(job);
+      if (mastery?.leveled) this.queueGrowthBubble(`${this.weaponTypeName(mastery.type)}武器学 Lv.UP!`, `Lv.${mastery.before} → ${mastery.after}`);
+      if (job?.to > job?.from) this.queueGrowthBubble('JOB Lv.UP!', `${job.jobName} Lv.${job.from} → ${job.to}`);
+      this.updateHUD();
       return { exp, gold };
     }
     battleSummaryHTML() {
@@ -1451,7 +1562,7 @@
       this.saveProfile(); return levels;
     }
     isRecipeUnlocked(recipe) { if (!recipe.materialUnlockId) return true; return (this.profile.unlockedRecipes || []).includes(recipe.id); }
-    grantJobExp(amount) { const jobId = this.profile.currentJob, job = D.jobs[jobId], progress = this.profile.jobs[jobId], from = progress.level, learnedBefore = new Set(this.profile.learnedJobSkills || []); const gained = Math.floor(Math.max(0, amount) / 4); progress.exp += gained; while (progress.level < D.jobLevelCap) { const need = this.jobExpNeeded(progress.level); if (!need || progress.exp < need) break; progress.exp -= need; progress.level++; } if (progress.level >= D.jobLevelCap) { progress.exp = 0; this.markJobMastered(jobId); } const gainedLevels = progress.level - from; const statGain = gainedLevels > 0 ? this.applyJobLevelGrowth(jobId, gainedLevels) : null; const newPassives = gainedLevels > 0 ? this.grantJobPassives(jobId, progress.level) : []; this.syncSkillUnlocks(); this.checkAdvancedJobUnlocks(); const learned = (this.profile.learnedJobSkills || []).filter(id => !learnedBefore.has(id)); this.saveProfile(); return { jobId, jobName: job.name, jobNameEn: job.nameEn, exp: gained, from, to: progress.level, learned, statGain, newPassives }; }
+    grantJobExp(amount) { const jobId = this.profile.currentJob, job = D.jobs[jobId], progress = this.profile.jobs[jobId], from = progress.level, learnedBefore = new Set(this.profile.learnedJobSkills || []); const raw = Math.max(0, amount) / 4 + (progress.expCarry || 0), gained = Math.floor(raw); progress.expCarry = raw - gained; progress.exp += gained; while (progress.level < D.jobLevelCap) { const need = this.jobExpNeeded(progress.level); if (!need || progress.exp < need) break; progress.exp -= need; progress.level++; } if (progress.level >= D.jobLevelCap) { progress.exp = 0; progress.expCarry = 0; this.markJobMastered(jobId); } const gainedLevels = progress.level - from; const statGain = gainedLevels > 0 ? this.applyJobLevelGrowth(jobId, gainedLevels) : null; const newPassives = gainedLevels > 0 ? this.grantJobPassives(jobId, progress.level) : []; this.syncSkillUnlocks(); this.checkAdvancedJobUnlocks(); const learned = (this.profile.learnedJobSkills || []).filter(id => !learnedBefore.has(id)); this.saveProfile(); return { jobId, jobName: job.name, jobNameEn: job.nameEn, exp: gained, from, to: progress.level, learned, statGain, newPassives }; }
     jobResultHTML(result) { if (!result) return ''; return `<div class="job-result"><small>JOB EXPERIENCE</small><strong>${result.jobName}</strong><span>JEXP <b>+${result.exp}</b></span>${result.to > result.from ? `<h3>JOB LEVEL UP!　Lv.${result.from} → Lv.${result.to}</h3>` : ''}${result.learned.length ? `<div>${result.learned.map(id => `<b>NEW SKILL　${D.skills[id].name}</b>`).join('')}</div>` : ''}</div>`; }
     rewardHTML(reward, levels) {
       const drops = Object.entries(reward.drops); let html = `<div class="reward-summary"><span>EXP <b>+${reward.exp}</b></span><span>GOLD <b>+${reward.gold}</b></span></div>`;
@@ -1462,11 +1573,17 @@
     async victory() {
       this.profile.flags.consecutiveDefeats = 0; this.profile.flags.lastBattleResult = 'victory';
       this.finished = true; this.audio.sfx('victory'); this.flashTitle('VICTORY', 'ALL SHADOWS ELIMINATED'); $('#ren').classList.add('victory'); await this.battleSleep(1100);
-      const reward = { exp: this.battleRewards.exp, gold: this.battleRewards.gold, drops: this.battleRewards.drops }, levels = this.battleRewards.levels, jobResult = this.grantJobExp(this.battleRewards.exp);
+      const reward = { exp: this.battleRewards.exp, gold: this.battleRewards.gold, drops: this.battleRewards.drops }, levels = this.battleRewards.levels;
+      const masteryParts = this.battleRewards.masteryResults || [], jobParts = this.battleRewards.jobResults || [];
+      const masteryResult = masteryParts.length ? { ...masteryParts[0], gain: masteryParts.reduce((s, r) => s + r.gain, 0), before: masteryParts[0].before, after: masteryParts[masteryParts.length - 1].after, leveled: masteryParts.some(r => r.leveled) } : null;
+      const jobResult = jobParts.length ? { ...jobParts[0], exp: jobParts.reduce((s, r) => s + r.exp, 0), from: jobParts[0].from, to: jobParts[jobParts.length - 1].to, learned: [...new Set(jobParts.flatMap(r => r.learned || []))] } : null;
       const newRecipeHTML = (this.battleRewards.newRecipes || []).map(rid => { const r = D.recipes[rid], item = D.items[r?.resultItemId]; return r && item ? `<div class="new-recipe-unlock"><small>NEW RECIPE</small><b>${item.name}</b><span>${item.nameEn || ''}</span><em>工房で製作可能になった</em></div>` : ''; }).join('');
-      // 武器学EXP・HP/MP成長は戦闘終了時に判定する（装備中カテゴリのみ加算）
-      const masteryResult = this.grantWeaponExp(this.battleRewards.exp);
+      // HP/MPだけはロマサガ式に戦闘終了時判定。武器学/JOB EXPは撃破ごとに加算済み。
       const vitalResult = this.rollVitalGrowth();
+      this.updateHUD();
+      if (vitalResult?.hp) this.queueGrowthBubble('HP UP!', `最大HP +${vitalResult.hp}`);
+      if (vitalResult?.mp) this.queueGrowthBubble('MP UP!', `最大MP +${vitalResult.mp}`);
+      if (this.growthBubbleQueue) await this.growthBubbleQueue;
       const pt = this.profile.playtest; if (pt) { pt.battles = (pt.battles || 0) + 1; if (masteryResult) pt.weaponUse[masteryResult.type] = (pt.weaponUse[masteryResult.type] || 0) + 1; }
       const sparks = this.battleSparks || []; this.battleSparks = [];
       this.saveProfile(); this.persistVitals(); this.updateHUD();

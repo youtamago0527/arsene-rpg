@@ -692,8 +692,8 @@ window.ARSENE_DATA = {
       weaponType: 'martial', prerequisiteSkill: 'galeFist', requiredWeaponLevel: 18, sparkRate: null,
       mp: 11, kind: 'physical', damageType: 'physical', target: 'single',
       power: 1.3, hitCount: 1, agiScale: 0, criticalModifier: 0,
-      inflict: { type: 'slow', chance: 0.5, turns: 2, speedPenalty: 40 },
-      powerText: 'AGI×1.3', effectText: '50%で対象の行動順を大きく低下（2ターン）', description: '影を縫い止め、動きを鈍らせる。'
+      effect: { type: 'enemyBind', chance: 0.65, turns: 2, resistanceGain: 0.25 },
+      powerText: 'AGI×1.3', effectText: '65%で足止め（2行動）／重ね掛け不可・成功後は耐性上昇', description: '影を縫い止め、二度の行動を封じる。一度縫われた敵は次第に術を見切る。'
     },
 
     // ── 杖：ファイアーボール →（ファイアストーム／ファイアランス）→ インフェルノ → メテオ ──
@@ -1482,7 +1482,7 @@ window.ARSENE_DATA = {
       id: 'seripes', name: 'セリペス', enName: 'SERIPES — THE REPRISE KNIGHT', kind: 'boss', encounter: 1, dungeonId: 'dungeon3',
       title: '第三奏卿《不落の反奏騎士》', role: 'BOSS / DEFENSE & REPRISE', roleDescription: '超耐久・防御・反奏型。攻撃タイプを切り替えて攻略する。',
       element: '聖 / 反奏', weaknesses: ['無属性'], resistances: ['物理', '魔'],
-      sprite: 'assets/enemy-characters/seripes/seripes-design.png', spriteClass: 'seripes-sprite',
+      sprite: 'assets/enemy-characters/seripes/seripes-battle-cutout.png', spriteClass: 'seripes-sprite',
       stats: { maxHp: 2400, atk: 48, def: 82, mag: 44, mnd: 68, spd: 15 },
       exp: 420, gold: { min: 280, max: 380 }, dropTable: [{ itemId: 'voidEssence', chance: 1.0 }, { itemId: 'phantomCore', chance: .65 }, { itemId: 'darkIron', chance: .80 }],
       ai: [
