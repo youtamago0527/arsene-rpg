@@ -161,6 +161,8 @@
     const to = targetEl.getBoundingClientRect();
     const sx = src.right - f.left, sy = src.top - f.top + src.height * .22;
     const ex = to.left - f.left + to.width * .48, ey = to.top - f.top + to.height * .58;
+    // 飛翔音は火球が飛び出す瞬間に鳴らす（着弾音ではないため）
+    this.audio?.sfx?.('fireFlight');
     spawn(field, 'fx-fireball', 520, el => {
       el.style.left = `${sx}px`; el.style.top = `${sy}px`;
       el.style.setProperty('--shot-x', `${ex - sx}px`);

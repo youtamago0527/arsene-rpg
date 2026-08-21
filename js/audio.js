@@ -8,9 +8,10 @@
   const SFX_FILES = {
     swordHit:    { url: '音楽系/効果音/斬撃.mp3',        gain: .90, offset: .050, maxDur: .9 },
     clawHit:     { url: '音楽系/効果音/斬撃.mp3',        gain: .78, offset: .050, maxDur: .8, rate: 1.28 },
-    fireHit:     { url: '音楽系/効果音/炎.mp3',          gain: .85, offset: .115, maxDur: 1.1 },
+    // ファイアボールは「飛んでいる最中」の音なので、着弾ではなく発射のタイミングで鳴らす
+    fireFlight:  { url: '音楽系/効果音/ファイアーボール.mp3', gain: .36, offset: .010, maxDur: .60 },
     noteHit:     { url: '音楽系/効果音/楽器.mp3',        gain: 1.15, offset: .002, maxDur: 1.4 },
-    criticalHit: { url: '音楽系/効果音/クリティカル.mp3', gain: .55, offset: .010, maxDur: 1.2 }
+    criticalHit: { url: '音楽系/効果音/クリティカル.mp3', gain: 1.30, offset: .100, maxDur: 1.0 }
   };
 
   class ArseneAudio {
@@ -171,7 +172,8 @@
         case 'clawSwing': [0,.05,.1].forEach(d => this.noise(.08,.12,d,3000)); break;
         case 'clawHit': [0,.045,.09].forEach((d,i) => { this.noise(.07,.15,d,2600); this.tone(1500+i*260,.07,'sawtooth',.045,.4,d); }); break;
         // 杖：火球。溜めの唸り→着弾の炸裂→燃え残りのパチパチ。
-        case 'fireCast': this.tone(180,.34,'sawtooth',.09,3.2); this.noise(.30,.10,0,220); this.tone(520,.24,'triangle',.06,2.2,.06); break;
+        case 'fireFlight': this.noiseX({ duration: .38, volume: .17, type: 'bandpass', freq: 900, freqTo: 380, q: .9, shape: 'flat' }); this.tone(240, .34, 'sawtooth', .07, 1.6); break;
+        case 'fireCast': this.tone(180,.22,'sawtooth',.05,3.2); this.noise(.20,.06,0,220); this.tone(520,.16,'triangle',.035,2.2,.05); break;
         case 'fireHit': this.tone(90,.32,'square',.20,.35); this.noise(.34,.17,0,300);
           [.06,.13,.19,.26,.33].forEach(d => this.noise(.07,.05,d,1600)); break;
         // 楽器：弦を弾いて和音が広がる感じ。倍音を薄く重ねる。
