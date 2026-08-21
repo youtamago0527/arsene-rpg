@@ -53,6 +53,28 @@
       for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
       const s = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter(), g = this.ctx.createGain(), t = this.ctx.currentTime + delay; s.buffer = b; f.type = 'highpass'; f.frequency.value = highpass; g.gain.setValueAtTime(volume, t); g.gain.exponentialRampToValueAtTime(.0001, t + duration); s.connect(f); f.connect(g); g.connect(this.master); s.start(t);
     }
+    // 重い打撃音用のノイズ。既存の noise() は highpass 固定・減衰も一定なので、
+    // フィルタ種別・Q・掃引・減衰カーブを指定できるものを別に用意する。
+    // shape: 'decay'（頭が濃い＝打撃）/ 'flat'（一定＝風切り）
+    noiseX({ duration = .12, volume = .14, delay = 0, type = 'highpass', freq = 900, freqTo = null, q = 0.7, shape = 'decay', attack = .004 } = {}) {
+      if (!this.ctx || this.muted) return;
+      const len = Math.ceil(this.ctx.sampleRate * duration);
+      const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) {
+        const p = i / len;
+        // decay は指数的に落として「バチッ」と立ち上がる打撃に、flat は風切り向けに素直な減衰
+        d[i] = (Math.random() * 2 - 1) * (shape === 'flat' ? (1 - p) : Math.pow(1 - p, 2.6));
+      }
+      const src = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter(), g = this.ctx.createGain();
+      const t = this.ctx.currentTime + delay;
+      src.buffer = buf; f.type = type; f.Q.value = q;
+      f.frequency.setValueAtTime(freq, t);
+      if (freqTo) f.frequency.exponentialRampToValueAtTime(Math.max(40, freqTo), t + duration);
+      g.gain.setValueAtTime(.0001, t);
+      g.gain.exponentialRampToValueAtTime(volume, t + attack);
+      g.gain.exponentialRampToValueAtTime(.0001, t + duration);
+      src.connect(f); f.connect(g); g.connect(this.master); src.start(t);
+    }
     sfx(name) {
       if (!this.ctx || this.muted) return;
       const chord = (notes, gap=.08) => notes.forEach((n,i)=>this.tone(n,.2,'sine',.1,1,i*gap));
@@ -72,8 +94,25 @@
         case 'rareDrop': chord([659,880,1109,1319],.075); this.tone(1760,.5,'sine',.09,1,.3); break;
         // ── 武器種ごとの通常攻撃 ──────────────────────────────
         // 剣：風切り＋刃鳴り。抜けの良い高域を短く。
-        case 'swordSwing': this.noise(.13,.17,0,2400); this.tone(1180,.10,'sawtooth',.05,.32); break;
-        case 'swordHit': this.noise(.09,.20,0,1800); this.tone(2350,.26,'sine',.055,.45,.01); this.tone(430,.14,'triangle',.10,.5); break;
+        // 剣：ロマサガ系の「重い一撃」を狙って層を重ねる。
+        // 振り＝低い方へ落ちていく風切り。当たり＝立ち上がりの衝撃＋胴鳴り＋刃の残響。
+        case 'swordSwing': {
+          const r = .92 + Math.random() * .16;   // 毎回わずかに音程を散らして機械的に聞こえないようにする
+          this.noiseX({ duration: .17, volume: .34, type: 'bandpass', freq: 2600 * r, freqTo: 620, q: 1.1, shape: 'flat' });
+          this.tone(900 * r, .13, 'sawtooth', .09, .28);
+          break;
+        }
+        case 'swordHit': {
+          const r = .93 + Math.random() * .14;
+          this.noiseX({ duration: .045, volume: .38, type: 'highpass', freq: 260, attack: .0015 });                  // 衝撃の頭
+          this.noiseX({ duration: .20, volume: .60, type: 'lowpass', freq: 520, freqTo: 180, q: 1.4 });              // 胴鳴り
+          this.tone(96 * r, .24, 'square', .18, .40);                                                                // 芯の重み
+          this.tone(150 * r, .17, 'triangle', .11, .45, .004);
+          this.noiseX({ duration: .26, volume: .22, type: 'bandpass', freq: 3400, freqTo: 1500, q: 1.6, delay: .02 });// 金属の擦れ
+          this.tone(1980 * r, .30, 'triangle', .17, .84, .015);                                                     // 刃鳴り
+          this.tone(2960 * r, .38, 'sine', .10, .88, .03);
+          break;
+        }
         // 爪：短い裂き音を3連。剣より高く、粒を細かく。
         case 'clawSwing': [0,.05,.1].forEach(d => this.noise(.08,.12,d,3000)); break;
         case 'clawHit': [0,.045,.09].forEach((d,i) => { this.noise(.07,.15,d,2600); this.tone(1500+i*260,.07,'sawtooth',.045,.4,d); }); break;
