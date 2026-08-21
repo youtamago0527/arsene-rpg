@@ -2197,11 +2197,11 @@
       const rows = all.map(s => {
         const has = learned.includes(s.id);
         const open = this.artsOpenId === s.id;
-        const from = s.prerequisiteSkill ? (D.skills[s.prerequisiteSkill]?.name || s.prerequisiteSkill) : null;
+        // 派生元の技名は出さない。未習得の技（？？？）の名前がここから漏れてしまうため。
         const req = s.requiredWeaponLevel ?? 1;
         const meta = has
           ? `${s.mp ? `MP ${s.mp}` : 'MP 0'}${s.hits > 1 ? ` / ${s.hits}回攻撃` : ''}${s.aoe ? ' / 全体' : ''}`
-          : `武器学 Lv.${req} 必要${from ? `／${from}から派生` : ''}`;
+          : `武器学 Lv.${req} 必要`;
         const detail = open && has
           ? `<div class="wa-detail"><p>${s.description || ''}</p><div class="wa-facts">
               <span>威力</span><b>${s.power != null ? `攻撃性能×${s.power}${s.hits > 1 ? ` を${s.hits}回` : ''}` : '—'}</b>
@@ -2209,7 +2209,6 @@
               ${s.hits > 1 ? `<span>ヒット数</span><b>${s.hits}回</b>` : ''}
               ${s.aoe ? '<span>対象</span><b>敵全体</b>' : '<span>対象</span><b>敵単体</b>'}
               ${s.element ? `<span>属性</span><b>${s.element}</b>` : ''}
-              ${from ? `<span>派生元</span><b>${from}</b>` : ''}
             </div></div>`
           : '';
         return `<div class="wa-item ${has ? 'has' : 'lock'}${open ? ' open' : ''}">
@@ -2220,9 +2219,8 @@
       const nextHint = (() => {
         const next = all.find(s => !learned.includes(s.id));
         if (!next) return 'この武器の技はすべて習得しています。';
-        const from = D.skills[next.prerequisiteSkill]?.name || '通常攻撃';
         return mst.level >= (next.requiredWeaponLevel ?? 1)
-          ? `《${from}》を使い続けると、次の技を閃くことがあります。`
+          ? 'この武器で戦い続けると、次の技を閃くことがあります。'
           : `次の技は武器学 Lv.${next.requiredWeaponLevel} から閃けます（現在 Lv.${mst.level}）。`;
       })();
       panel.innerHTML = `<small>WEAPON ARTS</small><h2>装備・ステータス</h2>${this.equipTabsHtml()}
