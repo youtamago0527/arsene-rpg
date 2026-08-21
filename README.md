@@ -1,6 +1,6 @@
 # 或世盗 -ARSÈNE- — Ver.0.1 戦闘プロトタイプ
 
-雨宮蓮で2〜3体のシャドウスライムと戦う、ブラウザ向けターン制コマンドバトルです。PC・スマートフォンの両方に対応し、勝利・敗北・逃走・リザルト・再戦まで実装しています。
+蓮で2〜3体のシャドウスライムと戦う、ブラウザ向けターン制コマンドバトルです。PC・スマートフォンの両方に対応し、勝利・敗北・逃走・リザルト・再戦まで実装しています。
 
 ## 起動方法
 
@@ -39,7 +39,7 @@ assets/
 
 ## 右手武器と戦闘ビジュアル
 
-雨宮蓮の本体画像は武器なしの `assets/playable-characters/amamiya-ren/body-no-weapon.png` です。右手武器は `js/data.js` の `weapons` から独立して重ねて表示します。
+蓮の本体画像は武器なしの `assets/playable-characters/ren/body-no-weapon.png` です。右手武器は `js/data.js` の `weapons` から独立して重ねて表示します。
 
 初期装備は次の指定です。
 
@@ -51,7 +51,7 @@ equipment: { rightHand: 'mageStaff' }
 
 ## 画像素材の差し替え方法
 
-雨宮蓮は `assets/playable-characters/amamiya-ren/body-no-weapon.png`、シャドウスライムは `assets/enemy-characters/shadow-slime/battle-idle.png`、現在の背景は `assets/bg/dungeon-battle-01.png` から読み込みます。キャラクターIDごとのフォルダを複製して追加してください。
+蓮は `assets/playable-characters/ren/body-no-weapon.png`、シャドウスライムは `assets/enemy-characters/shadow-slime/battle-idle.png`、現在の背景は `assets/bg/dungeon-battle-01.png` から読み込みます。キャラクターIDごとのフォルダを複製して追加してください。
 
 ## BGM・効果音
 

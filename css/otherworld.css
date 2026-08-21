@@ -94,6 +94,12 @@ body.ow-glitch #menu-screen{animation:ow-shake .5s steps(2) 3}
 .pt-modal-list b{font-size:13px}
 .pt-modal-list small{font-size:10px;color:#7d95ad}
 .pt-modal-empty{padding:24px 16px;text-align:center;font-size:12px;line-height:1.9;color:#7d95ad}
+.ow-resume-box{border-color:#5c45ba;box-shadow:0 0 35px #5028a855}
+.ow-resume-body{display:grid;gap:10px;padding:18px;text-align:center}
+.ow-resume-body>strong{font-size:16px;color:#f1e9ff}.ow-resume-body>span{font:800 11px Cinzel;color:#ad8cff;letter-spacing:.08em}
+.ow-resume-body>p,.ow-resume-body>small{margin:0;font-size:10px;line-height:1.6;color:#8fa7c4}
+.ow-resume-body>button{min-height:46px;border:1px solid #7d58dc;background:linear-gradient(90deg,#34206d,#5940a8);color:#fff;font-weight:900;cursor:pointer}
+.ow-resume-body>button.danger{border-color:#703c55;background:#24131f;color:#e6aabd}
 
 /* ── 異世界メニュー ── */
 .ow-power{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:center;margin-bottom:10px;padding:12px 14px;background:linear-gradient(120deg,#0d0718,#080f1c);border:1px solid #43128f;border-radius:5px}

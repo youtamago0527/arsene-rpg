@@ -18,10 +18,10 @@
 
 /* Reference sprite integration — the source sheets remain untouched. */
 .battlefield{background:radial-gradient(ellipse at 50% 95%,#123e7a88,transparent 48%),linear-gradient(#02051070,#020614 76%),repeating-linear-gradient(90deg,transparent 0 92px,#0a54a414 93px 94px),#030817}
-.portrait{background:url("../assets/playable-characters/amamiya-ren/body-no-weapon.png") center 15%/115% auto no-repeat,#020713;image-rendering:pixelated}
+.portrait{background:url("../assets/playable-characters/ren/body-no-weapon.png") center 15%/115% auto no-repeat,#020713;image-rendering:pixelated}
 .portrait:before,.portrait:after{display:none}
 .ren{width:230px;height:310px}
-.ren-sprite{z-index:2;width:185px;height:250px;left:12px;bottom:25px;background:url("../assets/playable-characters/amamiya-ren/body-no-weapon.png") center/contain no-repeat;image-rendering:pixelated;filter:drop-shadow(0 0 3px #8be4ff) drop-shadow(0 0 11px #087cff);transform-origin:center bottom;animation:sheetIdle 1.8s steps(2) infinite}
+.ren-sprite{z-index:2;width:185px;height:250px;left:12px;bottom:25px;background:url("../assets/playable-characters/ren/body-no-weapon.png") center/contain no-repeat;image-rendering:pixelated;filter:drop-shadow(0 0 3px #8be4ff) drop-shadow(0 0 11px #087cff);transform-origin:center bottom;animation:sheetIdle 1.8s steps(2) infinite}
 .ren-sprite>i{display:none}
 .slime{left:10px;bottom:18px;width:115px;height:115px;border:0;border-radius:0;background:url("../assets/enemy-characters/shadow-slime/battle-idle.png") center/contain no-repeat;background-color:transparent;box-shadow:none;image-rendering:pixelated;filter:drop-shadow(0 0 5px #179cff) drop-shadow(0 0 14px #5533ff);animation:sheetSlimeIdle 1.55s steps(2) infinite}
 .slime>i{display:none}.delay-1 .slime{animation-delay:-.45s}.delay-2 .slime{animation-delay:-.9s}

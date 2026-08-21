@@ -27,12 +27,12 @@
       try {
         [this.prologue, this.characters] = await Promise.all([
           fetch('data/prologue.json').then(response => response.json()),
-          fetch('data/characters.json?v=0.3.0').then(response => response.json())
+          fetch('data/characters.json?v=0.3.3').then(response => response.json())
         ]);
       } catch (error) {
         console.error('Start flow data could not be loaded.', error);
         this.prologue = [{ id: 'fallback', time: '00:00', text: 'その名は――\n\n或世盗。\n\nARSÈNE.', effect: 'arsene' }];
-        this.characters = [{ id: 'ren', name: '雨宮 蓮', nameEn: 'AMAMIYA REN', available: true, type: 'MAGE', description: '魔力とMPに優れた魔法型。', trait: { name: '魔導の才', description: '杖の武器学成長に小ボーナス。' }, tendency: { str: 2, vit: 3, mag: 5, mnd: 4, agi: 3, luk: 3 }, image: 'assets/playable-characters/amamiya-ren/body-no-weapon.png', portraitMode: 'cutout' }];
+        this.characters = [{ id: 'ren', name: '蓮', nameEn: 'REN', available: true, type: 'MAGE', description: '魔力とMPに優れた魔法型。', trait: { name: '魔導の才', description: '杖の武器学成長に小ボーナス。' }, tendency: { str: 2, vit: 3, mag: 5, mnd: 4, agi: 3, luk: 3 }, image: 'assets/playable-characters/ren/body-no-weapon.png', portraitMode: 'cutout' }];
       }
       const protagonistOrder = ['roga', 'ren', 'sho', 'shizuma'];
       this.characters.sort((a, b) => {
@@ -55,7 +55,7 @@
               <figure data-op-frame="0" style="--op-bg:url('assets/op/op-private-01-roga-ramen.webp')"><img src="assets/op/op-private-01-roga-ramen.webp" alt=""><figcaption><small>ROGA // AFTER HOURS</small><b>湯気の向こうで、夜を支える。</b></figcaption></figure>
               <figure data-op-frame="1" style="--op-bg:url('assets/op/op-private-02-ren-music-shop.webp')"><img src="assets/op/op-private-02-ren-music-shop.webp" alt=""><figcaption><small>REN // MUSIC SHOP</small><b>音の中で、まだ知らない声を待つ。</b></figcaption></figure>
               <figure data-op-frame="2" style="--op-bg:url('assets/op/op-private-03-sho-bookstore.webp')"><img src="assets/op/op-private-03-sho-bookstore.webp" alt=""><figcaption><small>SHO // BOOKSTORE</small><b>物語の隙間に、真実を探す。</b></figcaption></figure>
-              <figure data-op-frame="3" style="--op-bg:url('assets/op/op-private-04-kurosaki-childcare.webp')"><img src="assets/op/op-private-04-kurosaki-childcare.webp" alt=""><figcaption><small>KUROSAKI // DAYCARE</small><b>小さな未来を、静かに守る。</b></figcaption></figure>
+              <figure data-op-frame="3" style="--op-bg:url('assets/op/op-private-04-shizuma-childcare.webp')"><img src="assets/op/op-private-04-shizuma-childcare.webp" alt=""><figcaption><small>SHIZUMA // DAYCARE</small><b>小さな未来を、静かに守る。</b></figcaption></figure>
               <figure data-op-frame="4" style="--op-bg:url('assets/op/op-private-05-luna-student.webp')"><img src="assets/op/op-private-05-luna-student.webp" alt=""><figcaption><small>LUNA // AFTER SCHOOL</small><b>誰にも言えない夜を抱えて。</b></figcaption></figure>
               <figure data-op-frame="5" style="--op-bg:url('assets/op/op-01-luna-prison.webp')"><img src="assets/op/op-01-luna-prison.webp" alt=""><figcaption><small>THE STOLEN VOICE</small><b>その声は、境界の向こうから。</b></figcaption></figure>
               <figure data-op-frame="6" style="--op-bg:url('assets/op/op-02-ren-signal.webp')"><img src="assets/op/op-02-ren-signal.webp" alt=""><figcaption><small>SIGNAL AT 00:00</small><b>午前零時。蓮は彼女の声を聴く。</b></figcaption></figure>
@@ -79,7 +79,7 @@
         <section class="flow-screen weapon-screen" data-flow-screen="weapon"><div class="select-wrap"><header class="select-heading"><small>PREFERRED WEAPON</small><h1>得意武器を選べ</h1></header><div class="weapon-grid"></div><div class="choice-note"><b>得意武器について</b><ul><li>得意武器は「武器レベルの成長」と「技の習得」に少しだけボーナスがあります。</li><li>選択しなかった武器も、ゲームを進めることで使用・育成できます。</li><li>得意武器は装備制限ではありません。</li></ul></div><div class="choice-actions"><button class="choice-back" data-weapon-back>戻る<span>BACK</span></button><button class="choice-next" data-weapon-next disabled>この武器で始める<span>START</span></button></div></div></section>
         <section class="flow-screen job-screen" data-flow-screen="job"><div class="select-wrap"><header class="select-heading"><small>STARTING JOB</small><h1>初期ジョブを選べ</h1></header><div class="job-grid"></div><div class="choice-actions"><button class="choice-back" data-job-back>戻る<span>BACK</span></button></div></div><div class="job-detail-modal"><div class="job-detail-card"></div></div></section>
         <section class="flow-screen settings-screen" data-flow-screen="settings"><div class="flow-settings"></div></section>
-        <section class="flow-screen game-start-screen" data-flow-screen="game-start"><div class="flow-frame"><div class="start-card"><small>PHANTOM // 01</small><strong>AMAMIYA REN</strong><div class="flow-emblem" aria-hidden="true"></div><span>麺処 おくのほそ道</span></div></div></section>
+        <section class="flow-screen game-start-screen" data-flow-screen="game-start"><div class="flow-frame"><div class="start-card"><small>PHANTOM // 01</small><strong>REN</strong><div class="flow-emblem" aria-hidden="true"></div><span>麺処 おくのほそ道</span></div></div></section>
         <div class="flow-confirm"><div class="confirm-card"><small>CONFIRM</small><h2></h2><div class="confirm-actions"><button data-confirm-no>NO</button><button data-confirm-yes>YES</button></div></div></div>
         <div class="flow-toast" role="status"></div>`;
     }
@@ -323,6 +323,7 @@
       this.game.applyCharacterPresentation();
       this.game.saveProfile();
       this.writeMeta({ openingWatched: true });
+      const startName = $('.start-card strong', this.root); if (startName) startName.textContent = character.nameEn;
       this.setScreen('game-start');
       this.game.audio.stopMusic(900);
       await sleep(2800);
