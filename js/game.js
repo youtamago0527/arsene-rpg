@@ -403,6 +403,24 @@
         return gain > 0 ? `${label}（転生 +${gain}%）` : label;
       });
     }
+    // パッシブ発動中だけ使える専用技（requiresBuff を持つ技）を、そのJOB分だけ拾う。
+    // バフを供給するパッシブの習得Lvを一緒に返し、ジョブ画面の並びに使う。
+    conditionalSkillsForJob(jobId = this.profile.currentJob) {
+      const job = D.jobs[jobId]; if (!job) return [];
+      return Object.values(D.skills)
+        .filter(s => s.requiresBuff && s.jobId === jobId)
+        .map(skill => {
+          const entry = Object.entries(job.passiveUnlocks || {})
+            .find(([, pid]) => D.skills[pid]?.passiveEffect?.buff === skill.requiresBuff);
+          return { skill, level: entry ? Number(entry[0]) : (skill.unlockJobLevel || 1) };
+        });
+    }
+    // そのバフを鳴らすパッシブ名（《フォルテ》など）。表示用。
+    buffSourceName(jobId, buff) {
+      const job = D.jobs[jobId]; if (!job) return '';
+      const entry = Object.entries(job.passiveUnlocks || {}).find(([, pid]) => D.skills[pid]?.passiveEffect?.buff === buff);
+      return entry ? (D.skills[entry[1]]?.name || '') : '';
+    }
     passiveEffectRate(type) { return this.activePassives().reduce((sum, p) => p.passiveEffect?.type === type ? sum + this.passiveRate(p) : sum, 0) + this.jobTraitRate(type); }
     setEquippedPassive(idx, skillId) {
       const key = this.isPhantomThief() ? 'ptPassiveSlots' : 'equippedPassives';
@@ -925,7 +943,8 @@
       const arts = this.learnedWeaponSkills().filter(s => s.weaponType === wType);
       let html = this.button(basic.name, basic.nameEn || 'ATTACK', 'attack');
       if (arts.length) html += this.button(artsCmd.name, `${artsCmd.nameEn} ▶`, 'weaponArts');
-      if (personal.length) html += this.button('固有技', 'PERSONAL ▶', 'personal');
+      // 条件待ちの専用技しか無い場合もボタンは出す（中で条件を見せるため）
+      if (personal.length || this.conditionalSkillsForJob().length) html += this.button('固有技', 'PERSONAL ▶', 'personal');
       // ジョブ習得スキルが残っている場合のみジョブコマンドを出す（武器技とは別枠）
       const jobSkills = this.jobLearnedActiveSkills(curJobId).filter(s => s.id !== D.jobs[curJobId]?.signatureSkillId);
       if (jobSkills.length) html += this.button(mainCmd.cmd, `${mainCmd.cmdEn} ▶`, 'mainCmd');
@@ -941,7 +960,21 @@
     cooldownRemaining(skill) { return Math.max(0, (this.player.cooldowns?.[skill.id] || 0) - this.turn); }
     showSkills() { this.showMainCommands(); }
     showWeaponArts() { const wt = this.equippedWeaponType(); const skills = this.learnedWeaponSkills().filter(s => s.weaponType === wt); this.panel(skills.map(s => { const c = this.skillMpCost(s); return this.button(s.name, c ? `MP ${c}` : (s.nameEn || 'ARTS'), s.id, this.player.mp < c); }).join('') + this.button('もどる', 'BACK', 'back')); const actions = { back: () => this.showMainCommands() }; skills.forEach(s => { actions[s.id] = () => { const sk = D.skills[s.id]; if (sk?.randomTarget || sk?.target === 'all' || sk?.target === 'self') this.executeRound(s.id, -1); else this.chooseTarget(s.id); }; }); this.bindActions(actions); }
-    showPersonalSkills() { const skills = this.personalSkills(); this.panel(skills.map(s => { const cd = this.cooldownRemaining(s); return this.button(s.name, cd ? `CT ${cd}` : `MP ${s.mp}`, s.id, this.player.mp < s.mp || cd > 0); }).join('') + this.button('もどる', 'BACK', 'back')); const actions = { back: () => this.showMainCommands() }; skills.forEach(s => { actions[s.id] = () => { const sk = D.skills[s.id]; if (sk?.randomTarget || sk?.target === 'all' || sk?.target === 'self') this.executeRound(s.id, -1); else this.chooseTarget(s.id); }; }); this.bindActions(actions); }
+    showPersonalSkills() {
+      const skills = this.personalSkills();
+      // 発動条件を満たしていない専用技も、条件を添えてグレーで並べる。
+      // 出しっぱなしにしないと「そんな技があること自体」が player に伝わらない。
+      const shownIds = new Set(skills.map(s => s.id));
+      const locked = this.conditionalSkillsForJob().filter(({ skill }) => !shownIds.has(skill.id)).map(({ skill }) => skill);
+      const rows = [
+        ...skills.map(s => { const cd = this.cooldownRemaining(s); return this.button(s.name, cd ? `CT ${cd}` : `MP ${s.mp}`, s.id, this.player.mp < s.mp || cd > 0); }),
+        ...locked.map(s => { const src = this.buffSourceName(this.profile.currentJob, s.requiresBuff); return this.button(s.name, src ? `要《${src}》発動` : '条件未達', s.id, true); })
+      ];
+      this.panel(rows.join('') + this.button('もどる', 'BACK', 'back'));
+      const actions = { back: () => this.showMainCommands() };
+      skills.forEach(s => { actions[s.id] = () => { const sk = D.skills[s.id]; if (sk?.randomTarget || sk?.target === 'all' || sk?.target === 'self') this.executeRound(s.id, -1); else this.chooseTarget(s.id); }; });
+      this.bindActions(actions);
+    }
     showCommandSkills(jobId) { const skills = this.jobLearnedActiveSkills(jobId).filter(s => s.id !== D.jobs[jobId]?.signatureSkillId); if (!skills.length) { this.setLog('このコマンドの習得済みスキルがありません。'); return; } this.panel(skills.map(s => { const cd = this.cooldownRemaining(s); return this.button(s.name, cd ? `CT ${cd}` : `MP ${s.mp}`, s.id, this.player.mp < s.mp || cd > 0); }).join('') + this.button('もどる', 'BACK', 'back')); const actions = { back: () => this.showMainCommands() }; skills.forEach(s => { actions[s.id] = () => { const sk = D.skills[s.id]; if (sk?.randomTarget || sk?.target === 'all' || sk?.target === 'self') this.executeRound(s.id, -1); else this.chooseTarget(s.id); }; }); this.bindActions(actions); }
     chooseTarget(skillId) { const skill = D.skills[skillId]; if (skill?.target === 'all' || skill?.target === 'self') { this.executeRound(skillId, -1); return; } $('#phase-label').textContent = 'SELECT TARGET'; this.setLog('攻撃する敵を選択'); this.enemies.forEach((e, i) => { const el = document.getElementById(e.uid); if (e.alive) { el.classList.add('targetable'); el.onclick = () => this.executeRound(skillId, i); } }); this.panel(this.button('もどる', 'BACK', 'back')); this.bindActions({ back: () => { this.clearTargets(); this.showMainCommands(); } }); }
     clearTargets() { this.enemies.forEach(e => { const el = document.getElementById(e.uid); if (el) { el.classList.remove('targetable'); el.onclick = null; } }); }
@@ -1338,12 +1371,16 @@
     jobDetailHtml(jobId, unlocked, currentId) {
       const j = D.jobs[jobId], p = this.profile.jobs[jobId], isAdv = (D.advancedJobIds || []).includes(jobId), avail = isAdv ? this.isAdvancedJobUnlocked(jobId) : this.isJobUnlocked(jobId), isCur = jobId === currentId, need = this.jobExpNeeded(p.level), bar = need ? Math.round(100 * p.exp / need) : 100;
       const bonuses = this.activeJobBonuses(jobId), bHtml = Object.entries(bonuses).length ? Object.entries(bonuses).map(([k, v]) => `<div class="jbn-item"><span>${statLabels[k] || k}</span><b>${k === 'critBonus' ? `+${Math.round(v * 100)}%` : `+${v}`}</b></div>`).join('') : '<span class="jbn-none">なし</span>';
-      // アビリティ一覧＝固有技（Lv1）＋Lv5/10/15のパッシブ＋旧skillUnlocks
+      // アビリティ一覧＝固有技＋パッシブ＋旧skillUnlocks＋条件つき専用技
       const abilityEntries = [];
-      if (j.signatureSkillId && D.skills[j.signatureSkillId]) abilityEntries.push([1, j.signatureSkillId]);
+      // 固有技は実際の習得JOB Lvで出す（Lv1固定にすると、画面は習得済でも戦闘で出ない食い違いが起きる）
+      if (j.signatureSkillId && D.skills[j.signatureSkillId]) abilityEntries.push([D.skills[j.signatureSkillId].unlockJobLevel || 1, j.signatureSkillId]);
       Object.entries(j.passiveUnlocks || {}).forEach(([lv, id]) => abilityEntries.push([+lv, id]));
       Object.entries(j.skillUnlocks || {}).forEach(([lv, id]) => abilityEntries.push([+lv, id]));
-      const skillRows = abilityEntries.sort((a, b) => a[0] - b[0]).map(([lv, id]) => { const s = D.skills[id], learned = p.level >= lv; return `<button class="jar${learned ? ' learned' : ' locked'}"${learned ? ` data-job-skill-detail="${id}"` : ''}><span class="jar-lv">Lv.${lv}</span><span class="jar-nm">${s?.name || id}</span><em class="jar-type">${s?.type === 'PASSIVE' ? 'P' : 'A'}</em><small class="jar-st">${learned ? '習得済' : 'LOCK'}</small></button>`; }).join('');
+      // パッシブ発動中だけ開く専用技（魔奏士のスフォルツァンド等）。
+      // 技自体はどのテーブルにも載っていないので、バフ元パッシブの習得Lvに紐づけて並べる。
+      this.conditionalSkillsForJob(jobId).forEach(({ skill, level }) => abilityEntries.push([level, skill.id]));
+      const skillRows = abilityEntries.sort((a, b) => a[0] - b[0]).map(([lv, id]) => { const s = D.skills[id], learned = p.level >= lv, cond = s?.requiresBuff ? this.buffSourceName(jobId, s.requiresBuff) : ''; return `<button class="jar${learned ? ' learned' : ' locked'}${cond ? ' jar-cond' : ''}"${learned ? ` data-job-skill-detail="${id}"` : ''}><span class="jar-lv">Lv.${lv}</span><span class="jar-nm">${s?.name || id}</span><em class="jar-type">${s?.type === 'PASSIVE' ? 'P' : 'A'}</em><small class="jar-st">${learned ? (cond ? `《${cond}》中` : '習得済') : 'LOCK'}</small></button>`; }).join('');
       let condHtml = '';
       if (isAdv && !avail && j.unlockCondition) { const c = j.unlockCondition, bOk = c.bossDefeated ? this.isBossDefeated(c.bossDefeated) : true, bName = c.bossDefeated ? (D.enemies[c.bossDefeated]?.name || c.bossDefeated) : ''; const jcs = Object.entries(c.jobLevels || {}).map(([rid, rlv]) => { const cur = this.profile.jobs[rid]?.level || 0, ok = cur >= rlv; return `<div class="cond-row${ok ? ' ok' : ' ng'}"><b>${ok ? '✓' : '✕'} ${D.jobs[rid]?.name || rid} Lv${rlv}</b><small>現在 Lv.${cur}</small></div>`; }).join(''); condHtml = `<div class="jconds"><h4>解放条件</h4>${bName ? `<div class="cond-row${bOk ? ' ok' : ' ng'}"><b>${bOk ? '✓' : '✕'} ${bName}を撃破</b></div>` : ''}${jcs}</div>`; }
       // JOB補正は「このJOBで育てた成長」を出す。旧テーブル方式のJOBは従来どおり。

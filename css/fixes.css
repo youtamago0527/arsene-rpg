@@ -1,1 +1,5 @@
 .result-card #result-menu{position:sticky;bottom:0;z-index:8;width:min(280px,90%);min-height:52px;box-shadow:0 -8px 22px #020713,0 0 14px #188fff;touch-action:manipulation;pointer-events:auto}
+
+/* 発動条件つきの専用技（魔奏士のスフォルツァンド等）をアビリティ一覧で見分ける */
+.jar.jar-cond { border-left: 2px solid #b090ff }
+.jar.jar-cond .jar-st { color: #c8aaff }

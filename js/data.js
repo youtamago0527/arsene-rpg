@@ -193,6 +193,8 @@ window.ARSENE_DATA = {
     magicKnight: {
       id: 'magicKnight', name: '魔奏士', nameEn: 'MAGIC KNIGHT', description: '刃に魔力を纏わせ、物理と魔法を組み合わせて戦う。',
       signatureSkillId: 'ensemble', passiveUnlocks: { 1: 'p_solo', 5: 'p_forte', 10: 'p_crescendo', 15: 'p_nocturne' },
+      // JOB特性：楽器を持ち、演奏（パッシブ）が鳴っているあいだだけ専用技が開く。
+      traits: { songArts: { text: '楽器装備中、パッシブ発動で専用技が解放' } },
       growthStats: ['mag', 'str'], featureText: '魔力を軸に物理も扱うハイブリッド型。武器を選ばず戦えるジョブ。',
       unlockCondition: { bossDefeated: 'zenacad' },
       skillUnlocks: {}
