@@ -837,11 +837,9 @@
       const id = this.profile.equipment?.leftHand;
       return this.jobHasTrait('offHandPower') && D.weapons[id] ? D.weapons[id] : null;
     }
-    // 左手攻撃の倍率。双刃士は traits の rate（転生で成長）、武道家の拳は固定倍率。
-    offHandRate() {
-      if (this.usesBareFists()) return D.combatBalance?.bareFistOffHandRate ?? 0.25;
-      return this.jobTraitRate('offHandPower');
-    }
+    // 左手攻撃の倍率。武道家《無手の型》も双刃士《二刀の型》も同じ仕組みで、
+    // JOB特性の rate を転生回数で伸ばした値を使う。
+    offHandRate() { return this.jobTraitRate(this.usesBareFists() ? 'bareFists' : 'offHandPower'); }
     progressState() { const f = this.profile.flags, noelGoal = D.battleProgression?.noelEncounterWins || 3, zenakadoGoal = D.battleProgression?.zenakadoEncounterWins || 7; if (!f.noelFirstEncounterCleared) { const wins = Math.max(0, f.preNoelBattleWins || 0); return { phase: 'noel', wins, goal: noelGoal, ready: wins >= noelGoal, bossId: 'noelFirstEncounter', bossName: 'NOËL' }; } if (!f.zenakadoDefeated) { const wins = Math.max(0, f.postNoelBattleWins || 0); return { phase: 'zenakado', wins, goal: zenakadoGoal, ready: wins >= zenakadoGoal, bossId: 'zenakado', bossName: 'ZENAKADO' }; } return { phase: 'complete', wins: zenakadoGoal, goal: zenakadoGoal, ready: false, bossId: null, bossName: 'DUNGEON CLEAR' }; }
 
     startBattle() {
@@ -1160,19 +1158,20 @@
       }
     }
     // ══ 魔力還流 ═════════════════════════════════════════════
-    // 魔導士のJOB特性。魔法で与えたダメージの一定割合をMPとして取り戻す。
+    // 魔導士のJOB特性。通常攻撃で与えたダメージの一定割合をMPとして取り戻す。
+    // 通常攻撃だけが kind==='weapon'。武器技（閃き）は physical/magical なので乗らない。
     refundMpFromSpell(damage, skill) {
       const rate = this.jobTraitRate('spellDrainMp'); if (!rate || !damage) return;
-      const isMagic = skill?.kind === 'magical' || skill?.damageType === 'magical';
-      if (!isMagic) return;
+      if (skill?.kind !== 'weapon') return;
       // 端数は繰り越す。切り捨てると 1% は 100ダメージ未満で常に 0 になり、
       // 序盤〜中盤はまったく還ってこない特性になってしまう。
       this.player.mpRefundCarry = (this.player.mpRefundCarry || 0) + damage * rate;
       const whole = Math.floor(this.player.mpRefundCarry);
       if (whole <= 0) return;
-      this.player.mpRefundCarry -= whole;
-      const gain = Math.min(whole, this.player.stats.maxMp - this.player.mp);
-      if (gain <= 0) return;
+      const room = this.player.stats.maxMp - this.player.mp;
+      if (room <= 0) return;                 // 満タンのときは繰越を消費しない
+      const gain = Math.min(whole, room);
+      this.player.mpRefundCarry -= gain;     // 実際に得た分だけ減らす（余りは次に繰り越す）
       this.player.mp += gain; this.persistVitals(); this.updateHUD();
       this.floating($('#ren'), `MP +${gain}`, 'heal');
     }

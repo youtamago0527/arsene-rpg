@@ -127,11 +127,6 @@ window.ARSENE_DATA = {
   //   旧 statBonus（基礎能力+5/Lv）は廃止。基礎能力はJOBとキャラだけが伸ばす。
   enchantTable: { successRates: [1.00, 1.00, 1.00, 0.97, 0.93, 0.88, 0.82, 0.75, 0.66, 0.55], goldCosts: [100, 200, 300, 500, 700, 1000, 1400, 1800, 2500, 3500], maxLevel: 10, powerRate: 0.15 },
   combatBalance: {
-    // 武道家《無手の型》の左拳の倍率。
-    // 拳は「攻撃性能そのもの」に倍率が乗るのでレベルと一緒に伸びるが、
-    // 武器の攻撃力は固定値なので、倍率が高いと高レベルで素手が武器を追い越してしまう。
-    // 25%だとJOB Lv28で最強の爪を超えたため、半分の12.5%に落としてある。
-    bareFistOffHandRate: 0.125,
     playerVariance: { min: -2, max: 2 },
     critical: { base: .06, luckRate: .008, max: .28, multiplier: 1.65 },
     // 敵→プレイヤーのダメージは比率型：atk × attackScale × defenseK/(defenseK+防御)
@@ -182,14 +177,14 @@ window.ARSENE_DATA = {
     mage: {
       id: 'mage', name: '魔導士', nameEn: 'MAGE', description: '魔力を操り、単体・全体魔法を使い分ける。', signatureSkillId: 'meditation', passiveUnlocks: { 5: 'p_amplify', 10: 'p_manaStore', 15: 'p_spellBoost' },
       // JOB特性：魔法で与えたダメージの一部が魔力として還る。
-      traits: { spellDrainMp: { name: '魔力還流', nameEn: 'MANA REFLUX', rate: .01, rebirthStep: .002, max: .03, text: '魔法で与えたダメージの1%をMP回復', description: '放った魔力の残滓を回収する術。魔法attackで敵に与えたダメージの一部がMPとして戻る。長期戦ほど効いてくる。転生を重ねるほど回収率が上がる。' } }, growthStats: ['mag'], featureText: '魔力を伸ばしやすいジョブ。MP上昇・魔法威力などの魔法系パッシブを習得できる。',
+      traits: { spellDrainMp: { name: '魔力還流', nameEn: 'MANA REFLUX', rate: .05, rebirthStep: .01, max: .15, text: '通常攻撃で与えたダメージの5%をMP回復', description: '放った魔力の残滓を回収する術。通常攻撃で敵に与えたダメージの5%がMPとして戻る。武器技や魔法には乗らない、殴って魔力を繋ぐための特性。転生を重ねるほど回収率が上がる。' } }, growthStats: ['mag'], featureText: '魔力を伸ばしやすいジョブ。MP上昇・魔法威力などの魔法系パッシブを習得できる。',
       growth: { 1: { mag: 2 }, 2: { maxMp: 5 }, 3: { mag: 2 }, 4: { maxMp: 6 }, 5: { mag: 2 }, 6: { maxMp: 8 }, 7: { mag: 3 }, 8: { maxMp: 8 }, 9: { mag: 3 }, 10: { mag: 4, maxMp: 12 }, 11: { mag: 3 }, 12: { maxMp: 14 }, 13: { mag: 4 }, 14: { maxMp: 12 }, 15: { mag: 4 }, 16: { maxMp: 16 }, 17: { mag: 5 }, 18: { maxMp: 14 }, 19: { mag: 5 }, 20: { mag: 6, maxMp: 20 } },
       skillUnlocks: {}
     },
     martialArtist: {
       id: 'martialArtist', name: '武道家', nameEn: 'MARTIAL ARTIST', description: '速度と多段攻撃でクリティカルを狙う。', signatureSkillId: 'burstFist', passiveUnlocks: { 5: 'p_gale', 10: 'p_vitalAim', 15: 'p_fortune' },
       // JOB特性：武器を外すと両手が拳になる。体術スケール（力50%＋素早さ50%）で殴る。
-      traits: { bareFists: { name: '無手の型', nameEn: 'BARE FISTS', text: '素手なら両手が拳になり、力＋素早さの50%で戦う', description: '武器を持たないほうが強い、武道家の本領。右手・左手が空のとき両手が拳になり、攻撃力は力と素早さの合計の50%になる。左手の拳でも威力12.5%で追撃する。' } }, growthStats: ['agi', 'luk'], featureText: '素早さ・運を伸ばしやすいジョブ。会心率・素早い行動などに関係するパッシブを習得できる。',
+      traits: { bareFists: { name: '無手の型', nameEn: 'BARE FISTS', rate: .125, rebirthStep: .015, max: .25, text: '素手なら両手が拳で2回攻撃（左手12.5%）', description: '武器を持たないほうが強い、武道家の本領。右手・左手が空のとき両手が拳になり、攻撃力は力と素早さの合計の50%になる。通常攻撃は右拳・左拳の2回攻撃になり、左拳の威力は12.5%。転生を重ねるほど左拳が強くなる。' } }, growthStats: ['agi', 'luk'], featureText: '素早さ・運を伸ばしやすいジョブ。会心率・素早い行動などに関係するパッシブを習得できる。',
       growth: { 1: { agi: 2 }, 2: { str: 2, maxHp: 4 }, 3: { agi: 2 }, 4: { str: 2 }, 5: { agi: 3 }, 6: { str: 2 }, 7: { critBonus: .02 }, 8: { agi: 3, str: 2 }, 9: { critBonus: .03 }, 10: { critBonus: .05, agi: 3 }, 11: { agi: 3 }, 12: { str: 3, critBonus: .02 }, 13: { agi: 4 }, 14: { str: 3 }, 15: { agi: 4, critBonus: .03 }, 16: { str: 4 }, 17: { agi: 4 }, 18: { str: 4, critBonus: .03 }, 19: { agi: 5 }, 20: { critBonus: .07, agi: 5, str: 4 } },
       skillUnlocks: {}
     },
@@ -226,7 +221,7 @@ window.ARSENE_DATA = {
     dualBlade: {
       id: 'dualBlade', name: '双刃士', nameEn: 'DUAL BLADE', description: '速度と多段クリティカルを極めた上位職。D2のボス・ミルティ撃破後に解放。',
       // JOB特性：左手の武器でも追撃する。威力は控えめに始まり、転生で伸ばせる。
-      traits: { offHandPower: { name: '二刀の型', nameEn: 'TWIN FANGS', rate: .25, rebirthStep: .03, max: .50, text: '左手の武器でも追撃（威力25%）', description: '左手にも武器を握り、右手の攻撃に続けて追撃を入れる。追撃の威力は力と武器攻撃を合わせた値の25%。転生を重ねるほどこの倍率が上がっていく。' } },
+      traits: { offHandPower: { name: '二刀の型', nameEn: 'TWIN FANGS', rate: .25, rebirthStep: .03, max: .50, text: '左手にも武器を持ち2回攻撃（左手25%）', description: '左手にも武器を握り、通常攻撃が右手・左手の2回攻撃になる。左手の威力は力と武器攻撃を合わせた値の25%。転生を重ねるほどこの倍率が上がっていく。' } },
       unlockCondition: { bossDefeated: 'myrthi' },
       growth: { 1: { str: 3, agi: 2 }, 2: { critBonus: .02 }, 3: { str: 3, agi: 2 }, 4: { critBonus: .02 }, 5: { str: 4, agi: 3 }, 6: { critBonus: .03 }, 7: { str: 3, agi: 3 }, 8: { critBonus: .03 }, 9: { str: 4, agi: 3 }, 10: { critBonus: .05, str: 5, agi: 3 }, 11: { str: 4, agi: 3 }, 12: { critBonus: .03, str: 4 }, 13: { agi: 4, str: 3 }, 14: { critBonus: .03, agi: 4 }, 15: { str: 5, agi: 5 }, 16: { critBonus: .04 }, 17: { str: 5, agi: 4 }, 18: { critBonus: .04, str: 4 }, 19: { str: 6, agi: 5 }, 20: { critBonus: .08, str: 7, agi: 6, maxHp: 15 } },
       skillUnlocks: {}
