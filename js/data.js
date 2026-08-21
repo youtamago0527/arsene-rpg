@@ -236,6 +236,8 @@ window.ARSENE_DATA = {
       id: 'phantomThief', name: 'ファントムシーフ', nameEn: 'PHANTOM THIEF', description: '他JOBのレベルアップ成長を常に半分引き継ぎ、MASTER時に固有技を盗む怪盗の本質。',
       signatureSkillId: null, passiveUnlocks: {}, growthStats: [],
       featureText: '自身では成長しない特殊ジョブ。通常JOBの成長能力を常に50%引き継ぎ、MASTER時に固有スキルを獲得する。',
+      // 固有特性。倍率を持たない説明専用の特性なので rate は置かない。
+      traits: { remix: { name: 'RE:MIX（リミックス）', nameEn: 'RE:MIX', text: '他JOBから盗んだ力を組み合わせ、自分だけの能力構成を作る', description: '他のJOBから盗んだ力を組み合わせ、自分だけの能力構成を作るPHANTOM THIEF固有の力。各JOBで育てた成長はすべて合算され、その50%がファントムシーフの能力として常に乗る。どのJOBをどれだけ育てたかが、そのまま自分の形になる。' } },
       special: true, noGrowth: true,
       unlockCondition: { story: 'phantomThiefAwakening' },
       skillUnlocks: {}

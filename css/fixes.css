@@ -166,3 +166,18 @@
 
 /* 成長しないJOB（ファントムシーフ）の説明文 */
 .jfeature{margin:0 0 12px;padding:10px 12px;background:#0a0616;border-left:3px solid #7a4ad0;font-size:10px;line-height:1.7;color:#c9b4ea}
+
+/* ファントムシーフ：盗奪元の内訳 */
+.jsteal{margin-top:10px;padding:9px 11px;background:#0a0616;border:1px solid #3a2a5c}
+.jsteal>small{display:block;font:700 8px Cinzel;letter-spacing:.12em;color:#a88ac8;margin-bottom:6px}
+.jsteal-list{display:grid;gap:3px}
+.jsteal-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #241638;font-size:10px}
+.jsteal-row:last-child{border-bottom:0}
+.jsteal-row span{color:#c9b4ea}
+.jsteal-row b{font:900 11px Cinzel;color:#d477ff}
+
+/* 異世界からJOB／アビリティ画面へ来たときの戻り導線 */
+.ow-jobnav{display:flex;gap:8px;margin:0 0 10px;flex:none}
+.ow-jobnav button{flex:1;padding:11px 8px;border:1px solid #57328d;background:#0a0616;color:#d8c5ef;font-size:11px;font-weight:700;cursor:pointer}
+.ow-jobnav .ow-jobnav-go{border-color:#a05fff;background:linear-gradient(90deg,#3d1a75,#7a35c8);color:#fff}
+.ow-jobnav button:hover,.ow-jobnav button:focus-visible{border-color:#d477ff}

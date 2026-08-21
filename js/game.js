@@ -1997,6 +1997,23 @@
       const skillRows = abilityEntries.sort((a, b) => a[0] - b[0]).map(([lv, id]) => { const s = D.skills[id], learned = p.level >= lv, cond = s?.requiresBuff ? this.buffSourceName(jobId, s.requiresBuff) : ''; return `<button class="jar${learned ? ' learned' : ' locked'}${cond ? ' jar-cond' : ''}"${learned ? ` data-job-skill-detail="${id}"` : ''}><span class="jar-lv">Lv.${lv}</span><span class="jar-nm">${s?.name || id}</span><em class="jar-type">${s?.type === 'PASSIVE' ? 'P' : 'A'}</em><small class="jar-st">${learned ? (cond ? `《${cond}》中` : '習得済') : 'LOCK'}</small></button>`; }).join('');
       let condHtml = '';
       if (isAdv && !avail && j.unlockCondition) { const c = j.unlockCondition, bOk = c.bossDefeated ? this.isBossDefeated(c.bossDefeated) : true, bName = c.bossDefeated ? (D.enemies[c.bossDefeated]?.name || c.bossDefeated) : ''; const jcs = Object.entries(c.jobLevels || {}).map(([rid, rlv]) => { const cur = this.profile.jobs[rid]?.level || 0, ok = cur >= rlv; return `<div class="cond-row${ok ? ' ok' : ' ng'}"><b>${ok ? '✓' : '✕'} ${D.jobs[rid]?.name || rid} Lv${rlv}</b><small>現在 Lv.${cur}</small></div>`; }).join(''); condHtml = `<div class="jconds"><h4>解放条件</h4>${bName ? `<div class="cond-row${bOk ? ' ok' : ' ng'}"><b>${bOk ? '✓' : '✕'} ${bName}を撃破</b></div>` : ''}${jcs}</div>`; }
+      // ファントムシーフは自分では育たないので、代わりに「他JOBから盗んだ能力」を出す。
+      const isPT = this.isPhantomThief(jobId);
+      let stealHtml = '';
+      if (isPT) {
+        const stolen = this.jobStatBonuses(jobId);
+        const rate = Math.round((this.gb().phantomThiefInheritRate ?? 0.5) * 100);
+        const grid = Object.entries(stolen).filter(([, v]) => v)
+          .map(([k, v]) => `<div class="jbn-item"><span>${statLabels[k] || k}</span><b>${k === 'critBonus' ? `+${Math.round(v * 100)}%` : `+${v}`}</b></div>`).join('')
+          || '<span class="jbn-none">まだ盗めていません</span>';
+        // どのJOBから来ているかの内訳。JOBごとに育てた合計を出す（引継ぎは全JOB合算後に一括で計算される）
+        const gainedAll = this.profile.jobGrowthGained || {};
+        const srcRows = Object.entries(gainedAll).map(([id, table]) => {
+          const sum = Object.values(table || {}).reduce((a, b) => a + (b || 0), 0);
+          return sum ? `<div class="jsteal-row"><span>${D.jobs[id]?.name || id}</span><b>+${sum}</b></div>` : '';
+        }).filter(Boolean).join('');
+        stealHtml = `<div class="jbonus"><h4>他のJOBから盗んだ能力</h4><div class="jbn-grid">${grid}</div>${srcRows ? `<div class="jsteal"><small>盗奪元（各JOBで育てた合計）</small><div class="jsteal-list">${srcRows}</div></div>` : ''}<p class="jbn-note">全JOBで育てた成長を合算し、その${rate}%を常に引き継いでいます。JOBを育てるほどこの数値が伸びます。</p></div>`;
+      }
       // JOB補正は「このJOBで育てた成長」を出す。旧テーブル方式のJOBは従来どおり。
       const grown = (this.profile.jobGrowthGained || {})[jobId] || {};
       const gHtml = Object.entries(grown).filter(([, v]) => v).map(([k, v]) => `<div class="jbn-item"><span>${statLabels[k] || k}</span><b>+${v}</b></div>`).join('');
@@ -2004,7 +2021,7 @@
       // JOB特性：そのJOBに就いている間だけの効果（他JOBへ持ち出せない）
       const traits = this.jobTraitEntries(jobId);
       const traitHtml = traits.length ? `<div class="jbonus jtraits"><h4>JOB特性</h4><div class="jtrait-list">${traits.map(t => `<button type="button" class="jtrait-row" data-job-trait-detail="${jobId}:${t.key}"><b>${t.name}</b><span>${t.label}${t.gain > 0 ? `（転生 +${t.gain}%）` : ''}</span><em>▶</em></button>`).join('')}</div><p class="jbn-note">このJOBに就いている間だけ有効。他JOBへは持ち出せません。</p></div>` : '';
-      return `<div class="jdetail"><button class="jback-btn" data-job-back>← JOB一覧</button><div class="jdetail-hdr"><div><b>${j.name}</b></div><em class="jdetail-badge">${isCur ? '現在' : !avail ? 'LOCKED' : noGrow ? 'SPECIAL' : `Lv.${p.level}`}</em></div>${avail ? `<div class="jexp-wrap"><div class="jlv-row"><b>JOB Lv.${p.level}</b><span>JEXP ${need ? `${p.exp} / ${need}` : 'MASTER'}</span></div><div class="jexp-bar"><i style="width:${bar}%"></i></div></div>${noGrow ? `<p class="jfeature">${j.featureText || j.description || ''}</p><div class="jbonus">` : `<div class="jbonus"><h4>このJOBで育てた能力</h4><div class="jbn-grid">${bonusGrid}</div>`}<p class="jbn-note">${noGrow ? '全JOBのレベルアップ成長を常に50%引き継ぎます。この一覧には引き継ぎ分は出ません。' : 'この成長は、このJOBに就いている間だけ乗ります。'}</p></div>${traitHtml}${isCur ? '<div class="jcur-badge">現在のJOB</div>' : `<button class="jchange-btn" data-job-change="${jobId}">このJOBに変更</button>`}${this.rebirthSectionHTML(jobId)}${skillRows ? `<div class="jskills"><h4>アビリティ</h4><div class="jar-list">${skillRows}</div></div>` : ''}` : `<p class="jlocked-note">${j.description}</p>${condHtml}`}</div>`;
+      return `<div class="jdetail"><button class="jback-btn" data-job-back>← JOB一覧</button><div class="jdetail-hdr"><div><b>${j.name}</b></div><em class="jdetail-badge">${isCur ? '現在' : !avail ? 'LOCKED' : noGrow ? 'SPECIAL' : `Lv.${p.level}`}</em></div>${avail ? `<div class="jexp-wrap"><div class="jlv-row"><b>JOB Lv.${p.level}</b><span>JEXP ${need ? `${p.exp} / ${need}` : 'MASTER'}</span></div><div class="jexp-bar"><i style="width:${bar}%"></i></div></div>${noGrow ? `<p class="jfeature">${j.featureText || j.description || ''}</p>${stealHtml}` : `<div class="jbonus"><h4>このJOBで育てた能力</h4><div class="jbn-grid">${bonusGrid}</div><p class="jbn-note">この成長は、このJOBに就いている間だけ乗ります。</p></div>`}${traitHtml}${isCur ? '<div class="jcur-badge">現在のJOB</div>' : `<button class="jchange-btn" data-job-change="${jobId}">このJOBに変更</button>`}${this.rebirthSectionHTML(jobId)}${skillRows ? `<div class="jskills"><h4>アビリティ</h4><div class="jar-list">${skillRows}</div></div>` : ''}` : `<p class="jlocked-note">${j.description}</p>${condHtml}`}</div>`;
     }
     abilitySetHtml(currentId) {
       const ps = this.profile.passiveSlots || [null, null], p0 = ps[0] ? D.skills[ps[0]] : null, p1 = ps[1] ? D.skills[ps[1]] : null;

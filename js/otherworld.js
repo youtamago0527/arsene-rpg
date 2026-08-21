@@ -601,7 +601,16 @@
     this.jobUI.tab = 'abilitySet';
     this.jobUI.detailId = null;
     this.jobUI.modal = null;
+    // 異世界の突入確認から来た印。JOB画面の戻り先を拠点ではなく異世界へ向ける。
+    this.owAbilityReturn = true;
     this.renderMenuPanel('job');
+  };
+  // 異世界からJOB画面へ来たときの上部ナビ。戻るだけでなく、そのまま先へ進めるようにする。
+  P.owJobNavHTML = function () {
+    // 突入先が決まっていればそのまま突入、まだなら侵入先の選択へ進む
+    const label = !this.pendingOwDungeonId ? '侵入先を選ぶ'
+      : this.isPhantomThief() ? 'このまま異世界へ突入' : 'PHANTOM THIEFになって突入';
+    return `<div class="ow-jobnav"><button class="ow-jobnav-back" data-lenny="ability-back">← 異世界へ戻る</button><button class="ow-jobnav-go" data-lenny="ability-dive">${label}</button></div>`;
   };
 
   P.owSelectDungeon = function (dungeonId = null) {
@@ -847,11 +856,17 @@
     if (panel) {
       if (name === 'lenny') { panel.hidden = false; this.renderLennyPanel(panel); return; }
       if (name === 'phantom-tutorial') { panel.hidden = false; this.ptTutorialPage = 0; this.renderPhantomTutorial(panel); return; }
-      if (name === 'otherworld') { panel.hidden = false; this.renderOtherWorldPanel(panel); return; }
-      if (name === 'otherworld-select') { panel.hidden = false; this.renderOwDungeonSelect(panel); return; }
-      if (name === 'otherworld-job-confirm') { panel.hidden = false; this.renderOwJobConfirm(panel); return; }
+      if (name === 'otherworld') { panel.hidden = false; this.owAbilityFrom = name; this.renderOtherWorldPanel(panel); return; }
+      if (name === 'otherworld-select') { panel.hidden = false; this.owAbilityFrom = name; this.renderOwDungeonSelect(panel); return; }
+      if (name === 'otherworld-job-confirm') { panel.hidden = false; this.owAbilityFrom = name; this.renderOwJobConfirm(panel); return; }
     }
+    // JOB以外の画面へ移ったら異世界フローの印は落とす（拠点メニューを普通に触りに行った場合）
+    if (name !== 'job') this.owAbilityReturn = false;
     const result = origRenderPanel.call(this, name);
+    if (name === 'job' && this.owAbilityReturn && panel) {
+      panel.querySelector('.panel-home')?.remove();
+      panel.insertAdjacentHTML('afterbegin', this.owJobNavHTML());
+    }
     if (name === 'home' && this.profile.flags.owResumePending) setTimeout(() => this.showOwResumePrompt(), 350);
     if (name === 'home' && this.profile.flags.owInterferenceRefundNotice) {
       this.profile.flags.owInterferenceRefundNotice = false;
@@ -894,6 +909,13 @@
       else if (a === 'select') g.renderMenuPanel('otherworld-select');
       else if (a === 'tutorial') { g.ptTutorialPage = 0; g.renderMenuPanel('phantom-tutorial'); }
       else if (a === 'abilities') g.openOwAbilitySettings();
+      else if (a === 'ability-back') { g.owAbilityReturn = false; g.renderMenuPanel(g.owAbilityFrom || 'otherworld'); }
+      else if (a === 'ability-dive') {
+        g.owAbilityReturn = false;
+        if (!g.pendingOwDungeonId) g.renderMenuPanel('otherworld-select');
+        else if (g.isPhantomThief()) g.owEnter(g.pendingOwDungeonId);
+        else g.confirmOwJobChange();
+      }
       else if (a === 'enter') g.owSelectDungeon(lenny.dataset.owDungeon || null);
       else if (a === 'confirm-job-change') g.confirmOwJobChange();
       else if (a === 'cancel-job-change') { g.pendingOwDungeonId = null; g.renderMenuPanel('otherworld-select'); }
