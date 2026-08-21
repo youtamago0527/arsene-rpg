@@ -170,7 +170,7 @@ window.ARSENE_DATA = {
     { minWins: 5, count: [3, 3], pool: [{ id: 'shadowSlime', weight: 1 }, { id: 'soulMage', weight: 2 }, { id: 'ratThief', weight: 2 }, { id: 'goblin', weight: 2 }, { id: 'nightBat', weight: 2 }, { id: 'ghostBone', weight: 2 }] }
   ],
   player: {
-    id: 'ren', name: '雨宮 蓮', shortName: 'REN', level: 1, exp: 0, gold: 0,
+    id: 'ren', name: '蓮', shortName: 'REN', level: 1, exp: 0, gold: 0,
     baseStats: { maxHp: 80, maxMp: 40, str: 12, vit: 10, mag: 10, mnd: 14, agi: 18, dex: 12, luk: 14 },
     growth: { maxHp: 8, maxMp: 5, str: 0, vit: 0, mag: 0, mnd: 0, agi: 0, dex: 0, luk: 0 },
     skills: ['quickSlash'], inventory: { potion: 3, mageStaff: 1, phantomSword: 1 },

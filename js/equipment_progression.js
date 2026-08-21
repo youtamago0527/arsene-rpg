@@ -284,12 +284,62 @@
     4: { id: 'accelerando', name: 'ACCELERANDO', description: 'クリティカル率 +7% / 素早さ +5%', effect: { critBonusFlat: .07, agiPercent: 5 } },
     7: { id: 'twinRiot', name: 'TWIN RIOT', description: '物理攻撃後12%で追加発動', effect: { physicalRepeatChance: .12 } }
   };
+  Object.assign(D.bossEquipmentSeries.myrthi, {
+    primaryJob: 'dualBlade', recommendedJobs: ['dualBlade', 'martialArtist'],
+    concept: '双刃士を主軸に、武道家でも4SETまで活かせる高速物理シリーズ。'
+  });
   const myrthiEnemy = D.enemies.myrthi;
   if (myrthiEnemy && !myrthiEnemy.dropTable.some(d => d.itemId === 'myrthi_blade_noctis')) myrthiEnemy.dropTable.push({ itemId: 'myrthi_blade_noctis', chance: .03 });
 
+  // D3ボス：守護士を主軸に、戦士の盾運用にも適応する反奏防衛シリーズ。
+  D.items.seripes_core = { id: 'seripes_core', name: '反奏騎士の聖核', nameEn: 'SERIPES CORE', category: 'material', rarity: 'legendary', bossId: 'seripes', description: 'セリペスの不落の意志が凝縮した白銀の魔核。' };
+  D.items.reprise_fragment = { id: 'reprise_fragment', name: '反奏の白片', nameEn: 'REPRISE FRAGMENT', category: 'material', rarity: 'epic', bossId: 'seripes', description: '受けた力を返す性質を残した白い装甲片。' };
+  for (const id of ['seripes_core', 'reprise_fragment']) if (!D.workshop.materialIds.includes(id)) D.workshop.materialIds.push(id);
+
+  addWeapon('seripes_aegis', {
+    name: '聖盾グランド・リプライズ', nameEn: 'GRAND REPRISE AEGIS', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3',
+    weaponType: 'shield', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', power: 3.35,
+    bonuses: { vit: 8, mnd: 6, maxHp: 18 }, description: '第三奏卿の大反奏を宿す白盾。守護士は右手、戦士は左手で真価を引き出す。'
+  });
+  Object.assign(D.weapons.seripes_aegis, { defensePower: 54, magicDefensePower: 46, damageType: 'physical', damageStat: 'vit' });
+  addArmor('seripes_crown', { name: '不落騎士の白冠', nameEn: 'IMPREGNABLE CROWN', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', slot: 'head', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', defensePower: 24, magicDefensePower: 27, bonuses: { vit: 6, mnd: 5 }, description: '砕けぬ集中を保つ、静かな白銀の冠。' });
+  addArmor('seripes_plate', { name: '反奏騎士の聖鎧', nameEn: 'REPRISE PLATE', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', slot: 'body', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', defensePower: 48, magicDefensePower: 40, bonuses: { maxHp: 38, vit: 9, mnd: 6 }, description: '衝撃を受け止め、次の反撃へ共鳴させる城塞の聖鎧。' });
+  addArmor('seripes_gauntlets', { name: '受響の篭手', nameEn: 'RESONANT GAUNTLETS', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', slot: 'arms', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', defensePower: 27, magicDefensePower: 21, bonuses: { vit: 7, str: 5 }, description: '受けた衝撃を盾と拳へ伝える白銀の篭手。' });
+  addArmor('seripes_greaves', { name: '城塞の白脚', nameEn: 'BASTION GREAVES', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', slot: 'feet', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', defensePower: 29, magicDefensePower: 24, bonuses: { vit: 6, mnd: 4, agi: 3 }, description: 'いかなる衝撃にも陣形を崩さない白き脚甲。' });
+  addArmor('seripes_sigil', { name: '第三奏の白印', nameEn: 'THIRD MAESTRI SIGIL', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', slot: 'accessory', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', magicDefensePower: 18, bonuses: { maxHp: 22, vit: 6, mnd: 6 }, description: '第三奏卿の反奏を刻む白い紋章。守りの音を反撃へ変える。' });
+
+  const seripesRecipes = {
+    seripes_aegis_recipe: ['seripes_aegis', 1500, [['seripes_core', 2], ['reprise_fragment', 8], ['phantomCore', 4]]],
+    seripes_crown_recipe: ['seripes_crown', 1050, [['seripes_core', 1], ['reprise_fragment', 6], ['darkIron', 5]]],
+    seripes_plate_recipe: ['seripes_plate', 1400, [['seripes_core', 2], ['reprise_fragment', 8], ['voidEssence', 5]]],
+    seripes_gauntlets_recipe: ['seripes_gauntlets', 1000, [['seripes_core', 1], ['reprise_fragment', 6], ['phantomCore', 4]]],
+    seripes_greaves_recipe: ['seripes_greaves', 1000, [['seripes_core', 1], ['reprise_fragment', 5], ['voidShard', 6]]],
+    seripes_sigil_recipe: ['seripes_sigil', 1250, [['seripes_core', 2], ['reprise_fragment', 7], ['darkSoulStone', 6]]]
+  };
+  Object.entries(seripesRecipes).forEach(([id, [resultItemId, gold, mats]]) => addRecipe(id, { seriesId: 'seripes', craftCategory: 'boss', dungeonId: 'dungeon3', resultItemId, gold, materials: mats.map(([itemId, count]) => ({ itemId, count })) }));
+  D.bossEquipmentSeries.seripes = {
+    id: 'seripes', name: 'SERIPES SERIES', nameJa: 'セリペスシリーズ', stars: 5,
+    unlockCondition: { bossDefeated: 'seripes' }, primaryJob: 'guardian', recommendedJobs: ['guardian', 'warrior'],
+    concept: '守護士のRESONANCEと反撃を最大化し、戦士にも堅牢な盾運用を与える防衛シリーズ。',
+    equipment: ['seripes_aegis', 'seripes_crown', 'seripes_plate', 'seripes_gauntlets', 'seripes_greaves', 'seripes_sigil'],
+    recipes: Object.keys(seripesRecipes), dismantle: { materialId: 'reprise_fragment', count: 3 },
+    setBonuses: {
+      2: { id: 'antiphon', name: 'ANTIPHON', description: '体力 +8% / 精神 +8%', effect: { vitPercent: 8, mndPercent: 8 } },
+      4: { id: 'bastion', name: 'BASTION', description: '被ダメージ10%軽減 / RESONANCE獲得量 +50%', effect: { damageReductionPercent: 10, resonanceGainMultiplier: 1.5 } },
+      6: { id: 'grandReprise', name: 'GRAND REPRISE', description: '反撃率 +15% / 反撃威力 +50%', effect: { counterRateFlat: .15, counterPowerPercent: 50 } }
+    }
+  };
+  const seripesEnemy = D.enemies.seripes;
+  if (seripesEnemy) {
+    if (!seripesEnemy.dropTable.some(d => d.itemId === 'reprise_fragment')) seripesEnemy.dropTable.push({ itemId: 'reprise_fragment', chance: 1 });
+    if (!seripesEnemy.dropTable.some(d => d.itemId === 'seripes_core')) seripesEnemy.dropTable.push({ itemId: 'seripes_core', chance: .45 });
+  }
+
+  Object.assign(D.bossEquipmentSeries.zenacad, { primaryJob: 'magicKnight', recommendedJobs: ['magicKnight', 'mage'], concept: '魔奏士を主軸に、魔導士も扱える器用さ・魔力型シリーズ。' });
+
   // すべてのボス装備を★5として統一する。
   Object.values(D.bossEquipmentSeries || {}).forEach(series => (series.equipment || []).forEach(id => {
-    if (D.items[id]) Object.assign(D.items[id], { stars: 5, rarity: 'legendary', source: 'boss', catalogDungeon: D.items[id].catalogDungeon || (series.id === 'zenacad' ? 'dungeon1' : 'dungeon2') });
+    if (D.items[id]) Object.assign(D.items[id], { stars: 5, rarity: 'legendary', source: 'boss', catalogDungeon: D.items[id].catalogDungeon || (series.id === 'zenacad' ? 'dungeon1' : series.id === 'myrthi' ? 'dungeon2' : 'dungeon3') });
   }));
 
   D.equipmentBalanceTargets = {

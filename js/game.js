@@ -9,7 +9,7 @@
 
   class BattleGame {
     constructor() {
-      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false;
+      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
       this.currentDungeonId = 'dungeon1';
       this.battleMusic = encodeURI('音楽系/戦闘用/零時侵蝕 (Without Lead Vocal).mp3');
       this.menuMusic = encodeURI('音楽系/拠点/Midnight Ramen Den.mp3');
@@ -34,6 +34,8 @@
         if (avatarReset) { this.profile.customStatusPortrait = null; this.saveProfile(); this.audio.sfx('ui'); this.renderMenuPanel('equipment'); window.arseneStartFlow?.toast('初期画像に戻しました'); return; }
         const enterDungeon = e.target.closest('[data-enter-dungeon]');
         if (enterDungeon) { this.currentDungeonId = enterDungeon.dataset.enterDungeon; this.currentFloorId = null; const dungeonCfg = this.getDungeon(this.currentDungeonId); await this.audio.playTrack(dungeonCfg?.music || this.battleMusic); this.startBattle(); return; }
+        const dungeonTab = e.target.closest('[data-dungeon-tab]');
+        if (dungeonTab) { this.dungeonSelectId = dungeonTab.dataset.dungeonTab; this.audio.sfx('ui'); this.renderMenuPanel('dungeon-select'); return; }
         // 階層のあるダンジョンは階層選択ページを挟む
         const openFloors = e.target.closest('[data-open-floors]');
         if (openFloors) { this.floorSelectDungeonId = openFloors.dataset.openFloors; this.audio.sfx('ui'); this.renderMenuPanel('floor-select'); return; }
@@ -95,6 +97,8 @@
         if (craftArmor) { this.craftArmorFilter = craftArmor.dataset.craftArmor; this.renderMenuPanel('workshop'); return; }
         const craftKind = e.target.closest('[data-craft-kind]');
         if (craftKind) { this.craftKind = craftKind.dataset.craftKind; this.craftDungeonFilter = 'all'; this.renderMenuPanel('workshop'); return; }
+        const bossSeries = e.target.closest('[data-boss-series-tab]');
+        if (bossSeries) { this.bossSeriesFilter = bossSeries.dataset.bossSeriesTab; this.audio.sfx('ui'); this.renderMenuPanel('workshop'); return; }
         const enhanceKind = e.target.closest('[data-enhance-kind]');
         if (enhanceKind) { this.enhanceKind = enhanceKind.dataset.enhanceKind; this.renderMenuPanel('workshop'); return; }
         const craftWeaponType = e.target.closest('[data-craft-weapon-type]');
@@ -254,9 +258,9 @@
     }
     applyCharacterPresentation() {
       const c = this.selectedCharacterData(); if (!c) return;
-      const safeImage = String(c.image || '').replace(/["\\]/g, '\\$&');
+      const safeImage = String(c.hideoutPortrait || c.image || '').replace(/["\\]/g, '\\$&');
       const portrait = $('.hideout-player-portrait'), sceneActor = $('.hideout-selected-character'), shell = $('.hideout-art-shell');
-      if (portrait) { portrait.style.backgroundImage = `url("${safeImage}"), radial-gradient(circle,var(--character-secondary),#020713 72%)`; portrait.setAttribute('aria-label', `${c.name}のステータスと装備を確認`); }
+      if (portrait) { portrait.style.backgroundImage = `url("${safeImage}")`; portrait.setAttribute('aria-label', `${c.name}のステータスと装備を確認`); }
       if (shell) shell.dataset.characterId = c.id;
       if (sceneActor) {
         const hideoutImage = String(c.hideoutImage || '').replace(/["\\]/g, '\\$&');
@@ -1327,10 +1331,11 @@
     // 反撃は装備武器の通常攻撃で、威力は counterPowerRate 倍。
     async tryCounter(enemy) {
       if (!enemy?.alive || this.finished || this.player.hp <= 0) return;
-      const rate = this.passiveEffectRate('counterRate'); // JOB特性＋パッシブの合計
+      const setEffects = this.activeSetEffects();
+      const rate = this.passiveEffectRate('counterRate') + (setEffects.counterRateFlat || 0); // JOB特性＋パッシブ＋セット効果
       if (!rate || Math.random() >= rate) return;
       const basic = this.basicAttackSkill();
-      const skill = { ...basic, power: (basic.power ?? 1) * (D.settings?.counterPowerRate ?? 0.7) };
+      const skill = { ...basic, power: (basic.power ?? 1) * (D.settings?.counterPowerRate ?? 0.7) * (1 + (setEffects.counterPowerPercent || 0) / 100) };
       const el = document.getElementById(enemy.uid); if (!el) return;
       this.flashTitle('COUNTER', '受けて返す'); this.setLog('RENの反撃！');
       this.audio.sfx('slash');
@@ -1423,8 +1428,10 @@
     receivePlayerDamage(amount, type = 'physical') {
       let damage = Math.max(0, Math.round(amount));
       if (this.player.buffs?.fortressUntil === this.turn) damage = Math.max(0, Math.round(damage * (1 - (this.player.buffs.fortressReduction ?? .30))));
+      const setEffects = this.activeSetEffects(), setReduction = clamp((setEffects.damageReductionPercent || 0) / 100, 0, .8);
+      if (setReduction) damage = Math.max(0, Math.round(damage * (1 - setReduction)));
       const before = this.player.hp; this.player.hp = Math.max(0, before - damage); const actual = before - this.player.hp;
-      if (actual > 0) { this.player.lastReceivedType = type; if (this.resonanceEnabled()) { const max = D.guardianBalance?.resonanceMax || 100; this.player.resonance = Math.min(max, (this.player.resonance || 0) + actual * (D.guardianBalance?.resonanceGainPerDamage ?? .05)); } }
+      if (actual > 0) { this.player.lastReceivedType = type; if (this.resonanceEnabled()) { const max = D.guardianBalance?.resonanceMax || 100, gainMult = setEffects.resonanceGainMultiplier || 1; this.player.resonance = Math.min(max, (this.player.resonance || 0) + actual * (D.guardianBalance?.resonanceGainPerDamage ?? .05) * gainMult); } }
       this.persistVitals(); return actual;
     }
     async enemySupportAction(enemy, chosen) {
@@ -1591,7 +1598,7 @@
       if (this.battleMode === 'slime') { if (this.floorsOf(this.currentDungeonId)) this.recordFloorWin(this.currentFloorId); if (this.currentDungeonId === 'dungeon3') { this.profile.flags.dungeon3BattleWins = (this.profile.flags.dungeon3BattleWins || 0) + 1; } else if (this.currentDungeonId === 'dungeon2') { this.profile.flags.dungeon2BattleWins = (this.profile.flags.dungeon2BattleWins || 0) + 1; } else { if (this.profile.flags.noelFirstEncounterCleared) this.profile.flags.postNoelBattleWins = (this.profile.flags.postNoelBattleWins || 0) + 1; else this.profile.flags.preNoelBattleWins = (this.profile.flags.preNoelBattleWins || 0) + 1; this.profile.flags.normalBattleWins = (this.profile.flags.normalBattleWins || 0) + 1; } this.saveProfile(); }
       if (this.battleMode === 'zenakado') { const firstClear = !this.isBossDefeated('zenacad'), firstScore = !this.profile.flags.zenakadoScoreClaimed; this.markBossDefeated('zenacad'); this.profile.flags.zenakadoDefeated = false; this.profile.flags.postNoelBattleWins = 0; this.profile.flags.temporaryBossCompleted = true; this.noteBossRematchSnapshot('zenakado'); const stageOne = this.grantStageOneReward(); if (firstScore) { this.profile.musicScores.cadenzaLoot = true; this.profile.flags.zenakadoScoreClaimed = true; } this.saveProfile(); const stolen = firstClear ? '<div class="boss-recipe-unlock"><small>PHANTOM STEAL</small><b>NEW RECIPES STOLEN</b><strong>《ZENACAD SERIES》</strong><span>工房に BOSS EQUIPMENT と JOB SYSTEM が追加された！</span></div>' : ''; this.showResult('VICTORY', '独奏卿ゼナカドを打ち倒し、禁断の楽譜と装備製法を盗み出した！', 'BOSS CLEARED', `${rewardBlock}${firstScore ? this.scoreGetHTML('cadenzaLoot') : ''}${this.stageOneRewardHTML(stageOne)}${stolen}`); return; }
       if (this.battleMode === 'myrthi') { const myrthiReward = this.grantMyrthiFirstReward(); this.markBossDefeated('myrthi'); this.profile.flags.dungeon2BattleWins = (this.profile.flags.dungeon2BattleWins || 0) + 1; this.profile.flags.dungeon2Clear = true; this.noteBossRematchSnapshot('myrthi'); this.saveProfile(); this.showResult('VICTORY', '黒紅の双刃戦姫ミルティを打ち倒した！ ミルティシリーズの製法を奪い取った！', 'BOSS CLEARED', `${rewardBlock}${this.specialItemHTML(myrthiReward)}<div class="boss-recipe-unlock"><small>PHANTOM STEAL</small><b>NEW RECIPES STOLEN</b><strong>《MYRTHI SERIES》</strong><span>工房にMYRTHI SERIESが追加された！</span></div>`); return; }
-      if (this.battleMode === 'seripes') { const firstClear = !this.isBossDefeated('seripes'), unlocked = this.grantSeripesFirstReward(); this.markBossDefeated('seripes'); this.noteBossRematchSnapshot('seripes'); this.saveProfile(); const steal = firstClear ? `<div class="seripes-unlock"><small>SYSTEM // PHANTOM STEAL</small><b>NEW JOB STOLEN</b><strong>《守護士》 UNLOCKED</strong><b>NEW WEAPON MASTERY</b><strong>《盾学》 UNLOCKED</strong><span>《反奏の白盾》を獲得。右手武器として装備できます。</span></div>` : ''; this.flashTitle('REPRISE...', 'THE AEGIS SHATTERS'); this.showResult('VICTORY', '不落の反奏騎士セリペスの盾が白い光となって砕けた。受けて返す力を盗み出した！', 'THIRD MAESTRI DEFEATED', `${rewardBlock}${steal}`); return; }
+      if (this.battleMode === 'seripes') { const firstClear = !this.isBossDefeated('seripes'), unlocked = this.grantSeripesFirstReward(); this.markBossDefeated('seripes'); this.noteBossRematchSnapshot('seripes'); this.saveProfile(); const steal = firstClear ? `<div class="seripes-unlock"><small>SYSTEM // PHANTOM STEAL</small><b>NEW JOB STOLEN</b><strong>《守護士》 UNLOCKED</strong><b>NEW WEAPON MASTERY</b><strong>《盾学》 UNLOCKED</strong><b>NEW RECIPES STOLEN</b><strong>《SERIPES SERIES》</strong><span>《反奏の白盾》を獲得。工房に守護士・戦士向けボス装備が追加されました。</span></div>` : ''; this.flashTitle('REPRISE...', 'THE AEGIS SHATTERS'); this.showResult('VICTORY', '不落の反奏騎士セリペスの盾が白い光となって砕けた。受けて返す力を盗み出した！', 'THIRD MAESTRI DEFEATED', `${rewardBlock}${steal}`); return; }
       const progress = this.progressState(); if (this.battleMode === 'slime' && progress.ready) { const label = progress.phase === 'noel' ? '永遠の裁定者ノエル' : '独奏卿ゼナカド'; this.showResult('VICTORY', '闇を切り裂き、戦利品を獲得した。', 'BATTLE COMPLETE', `${rewardBlock}<div class="workshop-unlock boss-signal"><b>BOSS SIGNAL</b><strong>${label}の反応を確認！</strong><span>拠点からボス遭遇へ進めます。</span></div>`); } else { await this.showBattleClear(reward, levels, jobResult, { mastery: masteryResult, vitals: vitalResult, sparks }); }
     }
     async showBattleClear(reward, levels, jobResult, growth = null) {
@@ -1747,24 +1754,26 @@
       const showNewD3 = this.isDungeonUnlocked('dungeon3') && !this.profile.flags.dungeon3NewSeen;
       if (showNewD2) { this.profile.flags.dungeon2NewSeen = true; this.saveProfile(); }
       if (showNewD3) { this.profile.flags.dungeon3NewSeen = true; this.saveProfile(); }
-      panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>DUNGEON SELECT</small><h2>ダンジョン選択</h2><div class="dungeon-select-list">${available.map(d => {
-        const isNew = (d.id === 'dungeon2' && showNewD2) || (d.id === 'dungeon3' && showNewD3);
-        const progress = d.id === 'dungeon1' ? (() => { const p = this.progressState(); return p.phase === 'complete' ? 'AREA BOSS CLEARED' : `BATTLE ${Math.min(p.wins, p.goal)} / ${p.goal}`; })() : d.id === 'dungeon2' ? (this.isBossDefeated('myrthi') ? 'AREA BOSS CLEARED' : (() => { const p = this.dungeon2FloorProgress(); return p.total ? `FLOOR ${p.floors} / ${p.total}　BATTLE ${p.done} / ${p.goal}` : `BATTLE ${p.done} / ${p.goal}`; })()) : (() => { const goal = D.settings.dungeon3TargetWins || 300, wins = this.profile.flags.dungeon3BattleWins || 0; return wins >= goal ? 'DEPTHS SURVEY COMPLETE' : `BATTLE ${Math.min(wins, goal)} / ${goal}`; })();
-        const boss = this.dungeonBossEntry(d.id);
-        let bossCard = '';
-        if (boss) {
-          const rm = boss.rematch, locked = boss.cleared && rm && !rm.ready;
-          const cls = !boss.cleared ? 'boss-ready' : locked ? 'boss-locked' : 'boss-rematch';
-          const status = !boss.cleared ? '挑戦可能' : locked ? `再戦まで ${d.name}を あと ${rm.need - rm.done} 回` : '撃破済み — 再戦できます';
-          const tag = !boss.cleared ? 'CHALLENGE' : locked ? `${rm.done} / ${rm.need}` : 'REMATCH';
-          const tagCls = !boss.cleared ? 'boss-tag-new' : locked ? 'boss-tag-locked' : 'boss-tag-rematch';
-          const bar = locked ? `<i class="boss-rematch-bar"><em style="width:${100 * rm.done / rm.need}%"></em></i>` : '';
-          bossCard = `<button class="dungeon-card boss-card ${cls}" data-boss-challenge="${boss.key}" ${locked ? 'disabled' : ''}><div class="dungeon-thumb boss-thumb" style="background-image:url('${boss.sprite || d.thumbnail}')"></div><div class="dungeon-info"><small>BOSS // ${boss.enName}</small><strong>${boss.name}</strong><span>${boss.title || ''}</span><b class="dungeon-progress">${status}</b>${bar}<mark class="${tagCls}">${tag}</mark></div></button>`;
-        }
-        // 階層があるダンジョンは直接潜入せず、まず階層選択ページへ進む。
-        const action = (d.floors || []).length ? `data-open-floors="${d.id}"` : `data-enter-dungeon="${d.id}"`;
-        return `<button class="dungeon-card" ${action}><div class="dungeon-thumb" style="background-image:url('${d.thumbnail}')"></div><div class="dungeon-info"><small>${d.nameEn || d.enName || d.name}</small><strong>${d.name}</strong><span>${d.description || ''}</span><em>推奨 Lv.${d.recommendedLevel}+</em><b class="dungeon-progress">${progress}</b>${isNew ? '<mark class="dungeon-new">NEW</mark>' : ''}</div></button>${bossCard}`;
-      }).join('')}</div>`;
+      if (!available.some(d => d.id === this.dungeonSelectId)) this.dungeonSelectId = available.at(-1)?.id || 'dungeon1';
+      const d = available.find(entry => entry.id === this.dungeonSelectId) || available[0];
+      if (!d) { panel.innerHTML = '<button class="panel-home" data-menu="home">拠点へ戻る</button><p>潜入可能なダンジョンがありません。</p>'; return; }
+      const isNew = (d.id === 'dungeon2' && showNewD2) || (d.id === 'dungeon3' && showNewD3);
+      const progress = d.id === 'dungeon1' ? (() => { const p = this.progressState(); return p.phase === 'complete' ? 'AREA BOSS CLEARED' : `BATTLE ${Math.min(p.wins, p.goal)} / ${p.goal}`; })() : d.id === 'dungeon2' ? (this.isBossDefeated('myrthi') ? 'AREA BOSS CLEARED' : (() => { const p = this.dungeon2FloorProgress(); return p.total ? `FLOOR ${p.floors} / ${p.total}　BATTLE ${p.done} / ${p.goal}` : `BATTLE ${p.done} / ${p.goal}`; })()) : (() => { const goal = D.settings.dungeon3TargetWins || 300, wins = this.profile.flags.dungeon3BattleWins || 0; return wins >= goal ? 'DEPTHS SURVEY COMPLETE' : `BATTLE ${Math.min(wins, goal)} / ${goal}`; })();
+      const tabs = available.map((entry, index) => `<button data-dungeon-tab="${entry.id}" class="${entry.id === d.id ? 'active' : ''}"><small>D${index + 1}</small><b>${entry.name}</b>${((entry.id === 'dungeon2' && showNewD2) || (entry.id === 'dungeon3' && showNewD3)) ? '<i>NEW</i>' : ''}</button>`).join('');
+      const floors = d.floors || [];
+      const floorTree = floors.length ? floors.map((floor, index) => {
+        const wins = this.floorWins(floor.id), goal = floor.winsToClear ?? 33, unlocked = this.isFloorUnlocked(floor.id), cleared = this.isFloorCleared(floor.id), pct = Math.min(100, 100 * wins / goal);
+        const cls = cleared ? 'cleared' : unlocked ? 'open' : 'locked';
+        return `<div class="dungeon-tree-node ${cls}">${index ? '<i class="tree-line"></i>' : ''}<button data-enter-floor="${floor.id}" ${unlocked ? '' : 'disabled'}><span>${index + 1}F</span><div><small>${floor.nameEn || 'FLOOR'}</small><b>${unlocked ? floor.name : '???'}</b><em>${unlocked ? (floor.description || '') : '前の階を踏破すると解放'}</em><u><i style="width:${pct}%"></i></u><strong>${cleared ? 'CLEARED' : unlocked ? `BATTLE ${Math.min(wins, goal)} / ${goal}` : 'LOCKED'}</strong></div></button></div>`;
+      }).join('') : `<div class="dungeon-tree-node open"><button data-enter-dungeon="${d.id}"><span>IN</span><div><small>ENTRY POINT</small><b>潜入開始</b><em>${d.description || '怪異の気配を追って潜入する。'}</em><strong>${progress}</strong></div></button></div>`;
+      const boss = this.dungeonBossEntry(d.id);
+      let bossNode = '';
+      if (boss) {
+        const rm = boss.rematch, locked = boss.cleared && rm && !rm.ready;
+        const status = !boss.cleared ? '挑戦可能' : locked ? `再戦まであと ${rm.need - rm.done} 戦` : '再戦可能';
+        bossNode = `<div class="dungeon-tree-node boss ${locked ? 'locked' : 'open'}"><i class="tree-line"></i><button data-boss-challenge="${boss.key}" ${locked ? 'disabled' : ''}><span>⚠</span><div><small>BOSS // ${boss.enName}</small><b>${boss.name}</b><em>${boss.title || ''}</em><strong>${status}</strong></div><figure style="background-image:url('${boss.sprite || d.thumbnail}')"></figure></button></div>`;
+      }
+      panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>DUNGEON SELECT</small><h2>潜入先を選択</h2><nav class="dungeon-tabs">${tabs}</nav><section class="dungeon-route"><header style="background-image:url('${d.thumbnail}')"><div><small>${d.nameEn || d.enName || d.name}</small><h3>${d.name}</h3><span>推奨 Lv.${d.recommendedLevel}+　//　${progress}</span>${isNew ? '<mark>NEW AREA</mark>' : ''}</div></header><div class="dungeon-tree">${floorTree}${bossNode}</div></section>`;
     }
     // ══ 階層選択ページ ══
     // 「1枚を下へ長くスクロール」ではなく、ダンジョン選択とは別ページとして開く。
@@ -1949,7 +1958,14 @@
       const empty = `<div class="workshop-empty-category"><b>${groupName}レシピ準備中</b><span>対応する装備データとレシピを追加すると、ここへ自動表示されます。</span></div>`;
       return `${subHtml}<div class="workshop-section-title"><b>${title}</b><span>${titleEn}</span></div>${groupHtml}${dungeonHtml}<div class="recipe-grid">${cards || empty}</div>`;
     }
-    bossEquipmentContent() { const seriesList = this.unlockedBossSeries(); if (!seriesList.length) { this.craftKind = 'weapon'; return ''; } return seriesList.map(series => { const recipes = (series.recipes || []).map(id => D.recipes[id]).filter(Boolean), count = this.equippedSeriesCount(series.id); return `<section class="boss-series-craft"><header><small>BOSS EQUIPMENT</small><h3>${series.name}</h3><span>${'★'.repeat(series.stars || 5)} // EQUIPPED ${count} / ${series.equipment.length}</span></header><div class="boss-series-effects">${Object.entries(series.setBonuses || {}).map(([needed, bonus]) => `<div class="${count >= Number(needed) ? 'active' : ''}"><b>${needed} SET — ${bonus.name}</b><span>${bonus.description}</span></div>`).join('')}</div><div class="recipe-grid">${recipes.map(recipe => this.recipeCardHTML(recipe)).join('')}</div></section>`; }).join(''); }
+    bossEquipmentContent() {
+      const seriesList = this.unlockedBossSeries(); if (!seriesList.length) { this.craftKind = 'weapon'; return ''; }
+      if (!seriesList.some(series => series.id === this.bossSeriesFilter)) this.bossSeriesFilter = seriesList.at(-1).id;
+      const series = seriesList.find(entry => entry.id === this.bossSeriesFilter) || seriesList[0], recipes = (series.recipes || []).map(id => D.recipes[id]).filter(Boolean), count = this.equippedSeriesCount(series.id);
+      const jobs = (series.recommendedJobs || []).map(id => D.jobs[id]?.name || id), primary = D.jobs[series.primaryJob]?.name || jobs[0] || '—';
+      const tabs = seriesList.map(entry => `<button data-boss-series-tab="${entry.id}" class="${entry.id === series.id ? 'active' : ''}"><small>${entry.id.toUpperCase()}</small><b>${entry.nameJa || entry.name}</b><span>${this.equippedSeriesCount(entry.id)} / ${entry.equipment.length}</span></button>`).join('');
+      return `<nav class="boss-series-tabs">${tabs}</nav><section class="boss-series-craft"><header><small>BOSS EQUIPMENT // ★★★★★</small><h3>${series.nameJa || series.name}</h3><b>${series.name}</b><span>MAIN：${primary}　／　適性：${jobs.join('・')}</span><p>${series.concept || ''}</p><em>EQUIPPED ${count} / ${series.equipment.length}</em></header><div class="boss-series-effects">${Object.entries(series.setBonuses || {}).map(([needed, bonus]) => `<div class="${count >= Number(needed) ? 'active' : ''}"><b>${needed} SET — ${bonus.name}</b><span>${bonus.description}</span></div>`).join('')}</div><div class="recipe-grid boss-recipe-grid">${recipes.map(recipe => this.recipeCardHTML(recipe)).join('')}</div></section>`;
+    }
     recipeCardHTML(recipe) {
       const item = D.items[recipe.resultItemId]; if (!item) return '';
       const owned = this.profile.inventory[recipe.resultItemId] || 0, goldOk = this.profile.gold >= (recipe.gold || 0);
@@ -2075,8 +2091,8 @@
         const known = found.has(item.id), stars = '★'.repeat(item.stars || 1), def = this.equipmentDefinition(item.id);
         return `<article class="equipment-archive-card rarity-${item.rarity} ${known ? 'collected' : 'unknown'}"><header><small>${known ? sourceLabel(item) : 'UNKNOWN'}</small><b>${known ? item.name : '？？？？？？'}</b><em>${known ? stars : '？'}</em></header>${known ? `<strong>${this.bonusText(item.id)}</strong><p>${item.description}</p><span>${def?.weaponType ? this.weaponTypeName(def.weaponType) : (D.equipmentSlots || []).find(s => s.id === item.slot)?.name || '装備'}</span>` : '<p>未収集の装備です。怪異討伐または工房製作で記録されます。</p>'}</article>`;
       }).join('');
-      const current = collection.collected.length, total = collection.def?.itemIds?.length || 0, pct = total ? current / total * 100 : 0;
-      const collectionHtml = collection.def ? `<section class="equipment-collection ${collection.complete ? 'complete' : ''}"><header><div><small>MONSTER EQUIPMENT COLLECTION</small><b>${collection.def.name}</b></div><strong>${current} / ${total}</strong></header><i><em style="width:${pct}%"></em></i><p>このダンジョンの★4怪異装備をすべて入手すると報酬を獲得できます。</p><div><span>COMPLETE REWARD</span><b>${reward?.name || '？？？'}　★★★★</b><button data-claim-equipment-collection="${dunId}" ${collection.complete && !collection.claimed ? '' : 'disabled'}>${collection.claimed ? '受取済み' : collection.complete ? '報酬を受け取る' : '未達成'}</button></div></section>` : '';
+      const current = collection.collected.length, total = collection.def?.itemIds?.length || 0, pct = total ? Math.round(current / total * 100) : 0;
+      const collectionHtml = collection.def ? `<section class="equipment-collection ${collection.complete ? 'complete' : ''}"><header><div><small>MONSTER EQUIPMENT COLLECTION</small><b>${collection.def.name}</b></div><strong>${pct}%</strong></header><p>このダンジョンの★4怪異装備をすべて入手すると報酬を獲得できます。</p><div><span>COMPLETE REWARD</span><b>${reward?.name || '？？？'}　★★★★</b><button data-claim-equipment-collection="${dunId}" ${collection.complete && !collection.claimed ? '' : 'disabled'}>${collection.claimed ? '受取済み' : collection.complete ? '報酬を受け取る' : '未達成'}</button></div></section>` : '';
       panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>PHANTOM ARCHIVE</small><h2>図鑑</h2>${this.archiveModeTabsHTML()}<div class="item-tabs ar-tabs">${tabs}</div>${collectionHtml}<p class="ar-hint">装備記録 ${all.filter(item => found.has(item.id)).length} / ${all.length}　—　未収集装備は「？」で表示されます。</p><div class="equipment-archive-list">${cards || '<p class="item-empty">このダンジョンの装備記録はありません。</p>'}</div>`;
     }
     renderArchivePanel(panel) {
@@ -2084,7 +2100,10 @@
       if (!dungeons.some(d => d.id === this.archiveDungeon)) this.archiveDungeon = 'dungeon1';
       const dunId = this.archiveDungeon;
       const bossIds = new Set(['zenakado', 'myrthi', 'seripes', 'noelFirstEncounter']);
-      const all = Object.values(D.enemies).filter(e => this.enemyDungeonId(e) === dunId || (dunId === 'dungeon1' && bossIds.has(e.id) && e.id !== 'myrthi'));
+      // ボスは出現表からの逆引きに頼らず、所属ダンジョンを一意に固定する。
+      // 後続ボスがD1にも重複表示されるのを防ぐ。
+      const bossDungeon = { zenakado: 'dungeon1', noelFirstEncounter: 'dungeon1', myrthi: 'dungeon2', seripes: 'dungeon3' };
+      const all = Object.values(D.enemies).filter(e => e.id !== 'noelFirstEncounter' && (bossDungeon[e.id] || this.enemyDungeonId(e)) === dunId);
       // 雑魚 → ボスの順。ボスは末尾へ。
       const list = [...all].sort((a, b) => (bossIds.has(a.id) ? 1 : 0) - (bossIds.has(b.id) ? 1 : 0) || (a.stats?.maxHp || 0) - (b.stats?.maxHp || 0));
       const tabs = dungeons.map(d => `<button data-archive-dungeon="${d.id}" class="${d.id === dunId ? 'active' : ''}"><b>${d.label}</b></button>`).join('');
@@ -2098,32 +2117,33 @@
         return `<div class="ar-drops">${t.map(d => {
           const it = D.items[d.itemId] || D.weapons[d.itemId] || D.armors[d.itemId] || D.accessories[d.itemId];
           const pct = Math.round((d.chance || 0) * 1000) / 10;
-          return `<div class="ar-drop"><span>${it?.name || d.itemId}</span><b>${pct}%</b><i><em style="width:${Math.min(100, pct)}%"></em></i></div>`;
+          return `<div class="ar-drop"><span>${it?.name || d.itemId}</span><b>${pct}%</b></div>`;
         }).join('')}</div>`;
       };
       const cards = list.map(e => {
         if (this.isArchiveHidden(e)) {
-          return `<article class="ar-card ar-hidden"><header><b>？？？</b><small>未確認</small></header><p class="ar-nodrop">正体が判明していません。</p></article>`;
+          return `<details class="ar-card ar-tree ar-hidden"><summary><i aria-hidden="true"></i><b>？？？</b><small>未確認</small><em aria-hidden="true">＋</em></summary><div class="ar-detail"><p class="ar-nodrop">正体が判明していません。</p></div></details>`;
         }
         const isBoss = bossIds.has(e.id);
         const gold = e.gold ? `${e.gold.min}〜${e.gold.max}` : '—';
-        return `<article class="ar-card${isBoss ? ' ar-boss' : ''}">
-          <header><b>${e.name}</b><small>${isBoss ? 'BOSS' : (e.role || (e.element ? `属性 ${e.element}` : ''))}</small></header>
-          ${statRow(e.stats)}
-          ${e.roleDescription ? `<p class="ar-role"><b>${e.role}</b>${e.roleDescription}</p>` : ''}
-          <div class="ar-meta"><span>EXP</span><b>${e.exp ?? 0}</b><span>GOLD</span><b>${gold}</b>${e.weaknesses?.length ? `<span>弱点</span><b>${e.weaknesses.join('・')}</b>` : ''}${e.resistances?.length ? `<span>耐性</span><b>${e.resistances.join('・')}</b>` : ''}</div>
-          ${(e.ai || []).length ? `<div class="ar-skills"><span>使用スキル</span><b>${e.ai.map(a => a.name).join(' / ')}</b></div>` : ''}
-          ${dropRow(e)}
-        </article>`;
+        return `<details class="ar-card ar-tree${isBoss ? ' ar-boss' : ''}">
+          <summary><i aria-hidden="true"></i><b>${e.name}</b><small>${isBoss ? 'BOSS' : (e.role || (e.element ? `属性 ${e.element}` : ''))}</small><em aria-hidden="true">＋</em></summary>
+          <div class="ar-detail">${statRow(e.stats)}
+            ${e.roleDescription ? `<p class="ar-role"><b>${e.role}</b>${e.roleDescription}</p>` : ''}
+            <div class="ar-meta"><span>EXP</span><b>${e.exp ?? 0}</b><span>GOLD</span><b>${gold}</b>${e.weaknesses?.length ? `<span>弱点</span><b>${e.weaknesses.join('・')}</b>` : ''}${e.resistances?.length ? `<span>耐性</span><b>${e.resistances.join('・')}</b>` : ''}</div>
+            ${(e.ai || []).length ? `<div class="ar-skills"><span>使用スキル</span><b>${e.ai.map(a => a.name).join(' / ')}</b></div>` : ''}
+            ${dropRow(e)}
+          </div>
+        </details>`;
       }).join('');
-      const met = list.filter(e => !this.isArchiveHidden(e)).length;
+      const met = list.filter(e => !this.isArchiveHidden(e)).length, archivePct = list.length ? Math.round(met / list.length * 100) : 0;
       panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>PHANTOM ARCHIVE</small><h2>図鑑</h2>${this.archiveModeTabsHTML()}
         <div class="item-tabs ar-tabs">${tabs}</div>
-        <p class="ar-hint">記録 ${met} / ${list.length}　—　一度戦った怪異が記録されます。数値はドロップ率です。</p>
+        <p class="ar-hint"><b>記録率 ${archivePct}%</b>　—　怪異名をタップすると詳細が開きます。</p>
         <div class="ar-list">${cards || '<p class="item-empty">このダンジョンの記録はまだありません。</p>'}</div>`;
     }
     // 選択キャラの名前。未選択時は蓮。
-    playerName() { return (this.characterList || []).find(c => c.id === this.profile.selectedCharacter)?.name || '雨宮 蓮'; }
+    playerName() { return (this.characterList || []).find(c => c.id === this.profile.selectedCharacter)?.name || '蓮'; }
     statusPortraitSource() { return this.profile.customStatusPortrait || this.selectedCharacterData()?.image || ''; }
     applyStatusPortrait() {
       const portrait = $('.st-portrait'); if (!portrait) return;
@@ -2182,6 +2202,7 @@
       panel.innerHTML = `<small>CHARACTER DATA</small><h2>${withTabs ? '装備・ステータス' : 'ステータス'}</h2>${withTabs ? this.equipTabsHtml() : ''}
         <div class="st-head2"><label class="st-portrait st-portrait-pick" title="タップで写真を変更"><span class="st-portrait-hint">変更</span><input type="file" accept="image/*" data-status-avatar-upload></label><div class="st-id2"><strong>${this.playerName()}</strong><em>${D.jobs[jid]?.name || ''} Lv.${jlv}</em><button type="button" class="st-avatar-reset" data-status-avatar-reset>初期画像に戻す</button></div><div class="st-vit"><span class="hp">HP ${vitals.hp} / ${total.maxHp}</span><span class="mp">MP ${vitals.mp} / ${total.maxMp}</span></div></div>
         ${this.combatStatsSectionHTML(total)}
+        ${this.bossSetBonusSectionHTML()}
         <div class="st-section"><h3>基礎能力</h3><div class="stat-grid">${statRows}</div></div>
         ${jobHtml}
         <div class="st-section"><h3>JOB経験値</h3><div class="st-meter jexp"><span>${D.jobs[jid]?.name || ''} Lv.${jlv}</span><i style="width:${jpct}%"></i><output>${jneed ? `${jexp} / ${jneed}` : 'MASTER'}</output></div></div>`;
@@ -2278,7 +2299,7 @@
       const effectRows = Object.entries(def.effects || {}).map(([k, v]) => { const label = effectLabels[k] || k; const sign = k === 'magicDamageReductionPercent' ? '-' : '+'; return `${label} ${sign}${Math.round(Math.abs(v) * 100)}%`; });
       const bonuses = def.bonuses || {}, rows = Object.entries(bonuses).filter(([k]) => k !== 'def');
       const enchStr = enchLv > 0 ? ` [+${enchLv}]` : '';
-      const all = [...combatRows, ...rows.map(([key, value]) => `${statLabels[key] || key.toUpperCase()} ${value >= 0 ? '+' : ''}${value}`), ...effectRows];
+      const all = [...combatRows, ...rows.map(([key, value]) => key === 'critBonus' ? `会心率 ${value >= 0 ? '+' : ''}${Math.round(value * 100)}%` : `${statLabels[key] || key.toUpperCase()} ${value >= 0 ? '+' : ''}${value}`), ...effectRows];
       return all.length ? all.join(' / ') + enchStr : '補正なし' + enchStr;
     }
     equipmentPreviewHTML(id) {
@@ -2288,7 +2309,11 @@
       return `<div class="equipment-swap"><div><small>現在装備</small><b>${currentItem?.name || 'なし'}</b><span>${currentId ? this.bonusText(currentId) : '補正なし'}</span></div><i>→</i><div><small>変更後</small><b>${item.name}</b><span>${this.bonusText(id)}</span></div></div><div class="equipment-description">${item.description}</div><div class="compare-table"><div class="compare-head"><span>能力</span><b>現在</b><i></i><strong>装備後</strong><em>変化</em></div>${rows}</div><button class="equip-confirm" data-equip-confirm="${id}" ${active ? 'disabled' : ''}>${active ? '装備中' : 'この装備に変更'}<span>${active ? 'EQUIPPED' : 'EQUIP'}</span></button>`;
     }
     musicScoreSectionHTML() { const scores = Object.values(D.musicScores || {}); return `<section class="music-score-section"><h3>楽曲 <span>MUSIC SCORE // PRIVATE MODE</span></h3><div>${scores.map(score => { const owned = !!this.profile.musicScores?.[score.id]; return `<article class="music-score-card ${owned ? 'owned' : 'locked'}"><i>♪</i><div><small>${owned ? 'PLAYABLE SCORE' : 'LOCKED SCORE'}</small><b>${owned ? score.title : '????????'}</b><strong>${owned ? `（${score.subtitle}）` : 'ゼナカド初回撃破で解放'}</strong><span>${owned ? score.description : 'まだ演奏できません。'}</span></div><em>${owned ? 'PRIVATE MODE ITEM' : 'LOCKED'}</em></article>`; }).join('')}</div></section>`; }
-    bossSetBonusSectionHTML() { const seriesList = this.unlockedBossSeries(); if (!seriesList.length) return ''; return seriesList.map(series => { const count = this.equippedSeriesCount(series.id); return `<section class="boss-set-section"><header><div><small>BOSS EQUIPMENT SET</small><h3>${series.name}</h3></div><strong>${count} / ${series.equipment.length} EQUIPPED</strong></header><div>${Object.entries(series.setBonuses || {}).map(([needed, bonus]) => `<article class="${count >= Number(needed) ? 'active' : ''}"><b>${needed} SET — ${bonus.name}</b><span>${bonus.description}</span></article>`).join('')}</div></section>`; }).join(''); }
+    bossSetBonusSectionHTML() {
+      const equipped = this.unlockedBossSeries().map(series => ({ series, count: this.equippedSeriesCount(series.id) })).filter(entry => entry.count > 0);
+      if (!equipped.length) return '';
+      return `<div class="equipped-set-series"><header><small>SET SERIES</small><b>発動中・装備中のシリーズ</b></header>${equipped.map(({ series, count }) => `<section class="boss-set-section"><header><div><small>${series.name}</small><h3>${series.nameJa || series.name}</h3></div><strong>${count} / ${series.equipment.length}</strong></header><div>${Object.entries(series.setBonuses || {}).map(([needed, bonus]) => `<article class="${count >= Number(needed) ? 'active' : ''}"><b>${needed} SET — ${bonus.name}</b><span>${bonus.description}</span></article>`).join('')}</div></section>`).join('')}</div>`;
+    }
     equipTabsHtml() {
       const t = this.equipTab || 'equip';
       // 1行に収まる短いラベルにして、内容を階層で分ける（長い1枚ページをやめる）
