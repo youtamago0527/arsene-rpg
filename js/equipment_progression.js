@@ -37,6 +37,7 @@
     target[id] = {
       id, name: item.name, nameEn: item.nameEn, dungeonId: item.dungeonId, slot: data.slot,
       defensePower: data.defensePower || 0, magicDefensePower: data.magicDefensePower || 0,
+      attackPower: data.attackPower || 0, magicAttackPower: data.magicAttackPower || 0,
       bonuses: data.bonuses || {}, effects: data.effects || {}, seriesId: data.seriesId || null, source: data.source
     };
   };
@@ -135,12 +136,33 @@
     names.forEach((name, index) => {
       const slot = armorSlots[index], id = `forge_${stage}_${slot}`, p = armorPower[stage], dungeonId = dungeonForStage(stage);
       const isShield = slot === 'leftHand', isAccessory = slot === 'accessory';
+      // 部位ごとに役割を分ける。以前は全部位が同じ def/mdef で、
+      // 一式そろえると防御も魔防も同時に上がるだけの「個性なし装備」だった。
+      // ティアごとの予算（def+mdef）は据え置き、その配分を部位で変える。
+      const budget = p.def + p.mdef;
+      const r = n => Math.round(budget * n);
+      const profile = isAccessory
+        ? { defensePower: Math.floor(p.def * .35), magicDefensePower: p.mdef, bonuses: {}, role: '補助' }
+        : isShield
+          // 盾：防御2種を両方持つ唯一の部位。物理寄りだが魔法もそこそこ受ける。
+          ? { defensePower: r(.60), magicDefensePower: r(.45), bonuses: {}, role: '物理・魔法の両受け' }
+          : slot === 'head'
+            // 頭：魔防とMP。物理防御は持たない。
+            ? { defensePower: 0, magicDefensePower: r(.70), bonuses: { maxMp: r(.45) }, role: '魔法防御とMP' }
+            : slot === 'body'
+              // 体：物理防御とHP。魔法防御は持たない。
+              ? { defensePower: r(.70), magicDefensePower: 0, bonuses: { maxHp: r(1.1) }, role: '物理防御とHP' }
+              : slot === 'arms'
+                // 手：攻撃と器用さが主で、防御は控えめ。
+                ? { defensePower: r(.20), magicDefensePower: 0, attackPower: r(.45), bonuses: { dex: Math.max(1, r(.16)) }, role: '攻撃と器用さ' }
+                // 足：防御は薄く、素早さで避ける。
+                : { defensePower: r(.22), magicDefensePower: r(.22), bonuses: { agi: Math.max(1, r(.20)) }, role: '素早さ' };
       addArmor(id, {
         name, nameEn: `${stage.toUpperCase()} ${slot.toUpperCase()}`, dungeonId, catalogDungeon: dungeonId,
-        slot, stars: p.stars, rarity: rarityFor(p.stars), source: 'workshop', bonuses: {},
-        defensePower: isAccessory ? Math.floor(p.def * .35) : p.def + (isShield ? 2 : 0),
-        magicDefensePower: isAccessory ? p.mdef : p.mdef + (slot === 'head' ? 2 : 0),
-        description: `${dungeonId.toUpperCase().replace('UNGEON', '')}工房規格。基本能力補正を持たず、防御性能だけを高める。`
+        slot, stars: p.stars, rarity: rarityFor(p.stars), source: 'workshop',
+        bonuses: profile.bonuses, defensePower: profile.defensePower, magicDefensePower: profile.magicDefensePower,
+        ...(profile.attackPower ? { attackPower: profile.attackPower } : {}),
+        description: `${dungeonId.toUpperCase().replace('UNGEON', '')}工房規格。${profile.role}に寄せた装備。`
       });
       const priorStage = previousStage[stage], prior = priorStage ? `forge_${priorStage}_${slot}` : null;
       const mats = stage === 'd1' ? weaponMaterials.d1 : stage.startsWith('d2') ? weaponMaterials.d2 : weaponMaterials.d3;
@@ -196,7 +218,18 @@
       if (weaponKind || existing?.slot === 'rightHand') {
         addWeapon(id, { ...common, weaponType: weaponKind ? kind : 'staff', attackPower: ['sword', 'martial'].includes(kind) ? 22 + rank * 12 : 0, magicAttackPower: ['staff', 'instrument'].includes(kind) ? 23 + rank * 12 : 0, power: 2.7 + rank * .2 });
       } else {
-        addArmor(id, { ...common, slot: kind, defensePower: 9 + rank * 5, magicDefensePower: 8 + rank * 5 });
+        // ★4も部位ごとに役割を分ける。以前は頭も体も足もアクセまで
+        // def/mdef を両方同じだけ持っていて、一式そろえると無条件に固くなった。
+        // ランクごとの総量は据え置き、配分だけ変える。
+        const ab = 17 + rank * 10, ar = n => Math.round(ab * n);
+        const armorProfile =
+          kind === 'head' ? { defensePower: 0, magicDefensePower: ar(.70) }
+          : kind === 'body' ? { defensePower: ar(.70), magicDefensePower: 0 }
+          : kind === 'arms' ? { defensePower: ar(.20), magicDefensePower: 0, attackPower: ar(.45) }
+          : kind === 'feet' ? { defensePower: ar(.22), magicDefensePower: ar(.22) }
+          // アクセは防御を持たない。素の能力で個性を出す枠にする。
+          : { defensePower: 0, magicDefensePower: 0 };
+        addArmor(id, { ...common, slot: kind, ...armorProfile });
       }
       const uniqueDrop = enemy.dropTable.find(drop => drop.itemId === id);
       if (uniqueDrop) uniqueDrop.chance = dungeonChance[dungeonId];
