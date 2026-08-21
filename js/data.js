@@ -1508,7 +1508,7 @@ window.ARSENE_DATA = {
       exp: 360, gold: { min: 210, max: 300 },
       dropTable: [{ itemId: 'voidEssence', chance: .50 }, { itemId: 'phantomCore', chance: .60 }, { itemId: 'parentGiftGuitar', chance: .006 }],
       music: '音楽系/ダンジョン/ヴェルシクレルのテーマ1.mp3',
-      musicPhase2: '音楽系/ダンジョン/ダンジョン1ノエルのテーマ.mp3',
+      musicPhase2: '音楽系/ダンジョン/ヴェルシクレルのテーマ2.mp3',
       form2: {
         name: '《銀環異奏体》ヴェルシクレル', title: 'GUITAR AXE // FALSE CADENCE',
         sprite: 'assets/enemy-characters/versicrell/versicrell-form2-v1.png', spriteClass: 'versicrell-sprite versicrell-form2',
