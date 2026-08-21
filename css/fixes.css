@@ -11,3 +11,60 @@
 .jtrait-row b { flex: none; font-size: 12px; font-weight: 900; color: #ffcf58 }
 .jtrait-row span { flex: 1; min-width: 0; font-size: 10px; color: #b8d4ec }
 .jtrait-row em { flex: none; font-style: normal; font-size: 10px; color: #56a8ff }
+
+/* ══ 工房UI刷新 ═══════════════════════════════════════════
+   旧レイアウトは「巨大ヘッダー＋キツネ枠＋2列タブ」で、
+   スマホだと最初の1画面がすべて占領されレシピが1枚も見えなかった。
+   ヘッダーを1行に畳み、タブを横スクロールの1列にして、
+   レシピ本体を最初から見えるようにする。 */
+
+/* 見出しバー：タイトル・所持金・素材数を1行に収める */
+.ws-bar { display: flex; align-items: center; gap: 10px; margin: -3px -3px 8px; padding: 8px 12px; background: linear-gradient(105deg, #06152c, #0b3974 60%, #10143b); border-bottom: 1px solid #35bfff }
+.ws-fox { flex: none; width: 34px; height: 34px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 6px #37bfff) }
+.ws-bar-title { flex: 1; min-width: 0; display: grid; line-height: 1.15 }
+.ws-bar-title b { font-size: 16px; font-weight: 900; color: #fff }
+.ws-bar-title small { font: 700 7px Cinzel; letter-spacing: .18em; color: #69e4ff }
+.ws-bar-res { flex: none; display: flex; gap: 6px }
+.ws-bar-res span { display: flex; align-items: center; gap: 4px; padding: 5px 8px; font: 800 11px Cinzel; color: #b9ecff; background: #020916cc; border: 1px solid #23699b }
+.ws-bar-res i { font: 900 8px Cinzel; font-style: normal; color: #56cfff }
+
+/* タブ：横1列のスクロール帯。増えても縦を食わない */
+.ws-tabs { display: flex; gap: 5px; margin: 0 -3px 10px; padding: 0 3px 4px; overflow-x: auto; scrollbar-width: thin; -webkit-overflow-scrolling: touch }
+.ws-tabs::-webkit-scrollbar { height: 4px }
+.ws-tabs::-webkit-scrollbar-thumb { background: #1c4a74 }
+.ws-tabs button { flex: none; display: grid; gap: 1px; padding: 7px 13px; text-align: center; color: #9fbdd8; background: #050e20; border: 1px solid #1c456c; cursor: pointer; white-space: nowrap }
+.ws-tabs button b { font-size: 12px; font-weight: 800 }
+.ws-tabs button span { font: 700 6px Cinzel; letter-spacing: .1em; color: #557f9f }
+.ws-tabs button.active { color: #fff; border-color: #55d9ff; background: linear-gradient(180deg, #0b518c, #101a43); box-shadow: inset 0 -2px #55e7ff, 0 0 9px #168cff44 }
+.ws-tabs button.active span { color: #9fe4ff }
+
+/* レシピカード：説明文を折りたたみ、1枚の高さを詰めて枚数を稼ぐ */
+.recipe-card { gap: 6px !important; padding: 10px !important }
+.recipe-card.can-craft { border-color: #3fd08a !important; box-shadow: 0 0 0 1px #3fd08a33 }
+.recipe-title em { color: #9fe4ff !important }
+.recipe-detail { border-top: 1px solid #123b63; padding-top: 6px }
+.recipe-detail > summary { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 9px; color: #8daac5; cursor: pointer; list-style: none }
+.recipe-detail > summary::-webkit-details-marker { display: none }
+.recipe-detail > summary:before { content: "▸"; margin-right: 4px; font-size: 8px; color: #56cfff; transition: transform .15s }
+.recipe-detail[open] > summary:before { content: "▾" }
+.recipe-detail > summary b { font: 800 9px Cinzel }
+.recipe-detail > summary b.ok { color: #5fe0a0 }
+.recipe-detail > summary b.lack { color: #ff8fa0 }
+.recipe-detail .recipe-materials { border-top: 0; padding-top: 6px }
+.recipe-desc { margin: 6px 0 0; font-size: 8px; line-height: 1.6; color: #8daac5 }
+
+/* スマホでも2列に。カードが縦に短くなったので一度に見える枚数が増える */
+@media (max-width: 480px) {
+  .recipe-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 7px !important }
+  .recipe-card { padding: 9px !important }
+  .recipe-title b { font-size: 12px }
+  .ws-bar-title b { font-size: 14px }
+  .ws-bar-res span { padding: 4px 6px; font-size: 10px }
+}
+@media (max-width: 340px) { .recipe-grid { grid-template-columns: 1fr !important } }
+
+/* タブ帯が右に続いていることを示すフェード。見切れに気づかず強化タブを見落とすのを防ぐ */
+.ws-tabs-wrap { position: relative; margin: 0 -3px 10px }
+.ws-tabs-wrap .ws-tabs { margin: 0 }
+.ws-tabs-wrap:after { content: ""; position: absolute; right: 0; top: 0; bottom: 4px; width: 26px; pointer-events: none; background: linear-gradient(90deg, transparent, #030b19) }
+.ws-tabs-wrap.at-end:after { opacity: 0 }

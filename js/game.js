@@ -1642,7 +1642,6 @@
     workshopContent() {
       const materialRows = (D.workshop.materialIds || []).map(id => { const item = D.items[id], count = this.profile.inventory[id] || 0; if (item?.bossId && !this.isBossDefeated(item.bossId)) return ''; return `<div class="workshop-material rarity-${item.rarity}"><span><i></i><b>${item.name}</b></span><strong>×${count}</strong><small>${item.description}</small></div>`; }).join('');
       if (this.workshopTab === 'materials') return `<div class="workshop-section-title"><b>素材一覧</b><span>MATERIALS</span></div><div class="workshop-materials">${materialRows || '<p>素材を所持していません。</p>'}</div>`;
-      if (this.workshopTab === 'catalog') return `<div class="workshop-section-title"><b>怪異図鑑</b><span>CATALOG</span></div><div class="workshop-catalog"><article><em>01</em><b>ダンジョン1の怪異</b><span>6種の通常怪異を確認</span></article><article class="boss-record"><em>EVENT BOSS</em><b>ノエル</b><span>初回遭遇記録 // 戦力解析不能</span></article><article class="boss-record"><em>DUNGEON BOSS</em><b>ゼナカド</b><span>静寂のホール // 独奏卿</span></article></div>`;
       if (this.workshopTab === 'enchant') return this.enchantContent();
       if (this.workshopTab === 'armorEnchant') return this.armorEnchantContent();
       if (this.workshopTab === 'bossEquipment') return this.bossEquipmentContent();
@@ -1662,7 +1661,8 @@
       const goldRow = recipe.gold ? `<div class="recipe-gold ${goldOk ? '' : 'insufficient'}"><span>GOLD</span><b>${this.profile.gold} / ${recipe.gold}</b></div>` : '';
       const craftable = this.canCraft(recipe);
       const isNewRecipe = (this.profile.newlyUnlockedRecipes || []).includes(recipe.id);
-      return `<article class="recipe-card rarity-${item.rarity}${isNewRecipe ? ' recipe-newly-unlocked' : ''}"><div class="recipe-info"><div class="recipe-title"><b>${item.name}${item.stars ? `<small>${'★'.repeat(item.stars)}</small>` : ''}</b>${isNewRecipe ? '<mark class="recipe-new">NEW</mark>' : ''}${owned ? `<em>所持 ×${owned}</em>` : ''}</div>${item.nameEn ? `<strong class="recipe-name-en">${item.nameEn}</strong>` : ''}<small>${item.description}</small><span class="recipe-bonus">${this.bonusText(recipe.resultItemId)}</span></div><div class="recipe-materials">${materialsHtml}${goldRow}</div><button class="recipe-craft" data-craft="${recipe.id}" ${craftable ? '' : 'disabled'}>${craftable ? '製作する' : '素材不足'}</button></article>`;
+      const lacking = (recipe.materials || []).filter(m => this.craftMaterialAvailable(m.itemId) < m.count).length + (goldOk ? 0 : 1);
+      return `<article class="recipe-card rarity-${item.rarity}${isNewRecipe ? ' recipe-newly-unlocked' : ''}${craftable ? ' can-craft' : ''}"><div class="recipe-info"><div class="recipe-title"><b>${item.name}${item.stars ? `<small>${'★'.repeat(item.stars)}</small>` : ''}</b>${isNewRecipe ? '<mark class="recipe-new">NEW</mark>' : ''}${owned ? `<em>×${owned}</em>` : ''}</div><span class="recipe-bonus">${this.bonusText(recipe.resultItemId)}</span></div><details class="recipe-detail"><summary>必要素材${lacking ? `<b class="lack">あと${lacking}種</b>` : '<b class="ok">そろっています</b>'}</summary><div class="recipe-materials">${materialsHtml}${goldRow}</div><p class="recipe-desc">${item.description}</p></details><button class="recipe-craft" data-craft="${recipe.id}" ${craftable ? '' : 'disabled'}>${craftable ? '製作する' : '素材不足'}</button></article>`;
     }
     craftMaterialAvailable(id) { const equipped = Object.values(this.profile.equipment || {}).filter(eid => eid === id).length; return Math.max(0, (this.profile.inventory[id] || 0) - equipped); }
     canCraft(recipe) { if (!recipe) return false; if (this.profile.gold < (recipe.gold || 0)) return false; return (recipe.materials || []).every(m => this.craftMaterialAvailable(m.itemId) >= m.count); }
@@ -1677,8 +1677,20 @@
     renderWorkshop(panel) {
       if ((this.profile.newlyUnlockedRecipes || []).length) { this.profile.newlyUnlockedRecipes = []; this.saveProfile(); }
       if (!this.profile.flags.noelFirstEncounterCleared) { panel.innerHTML = '<button class="panel-home" data-menu="home">拠点へ戻る</button><small>PHANTOM WORKSHOP</small><h2>工房</h2><div class="workshop-unlock"><b>LOCKED</b><strong>まだ工房は利用できません</strong><span>通常戦を3回制し、永遠の裁定者ノエルと遭遇すると解放されます。</span></div>'; return; }
-      const enchantUnlocked = (this.profile.flags.dungeon2BattleWins || 0) >= 15; const availableTabs = [...D.workshop.tabs, ...(this.unlockedBossSeries().length ? [{ id: 'bossEquipment', name: 'ボス装備', enName: 'BOSS EQUIPMENT' }] : []), ...(enchantUnlocked ? [{ id: 'enchant', name: '武器強化', enName: 'WEAPON ENCHANT' }, { id: 'armorEnchant', name: '防具強化', enName: 'ARMOR ENCHANT' }] : [])]; if (!availableTabs.some(tab => tab.id === this.workshopTab)) this.workshopTab = 'weapon'; const tabs = availableTabs.map(tab => `<button data-workshop-tab="${tab.id}" class="${this.workshopTab === tab.id ? 'active' : ''}"><b>${tab.name}</b><span>${tab.enName}</span></button>`).join('');
-      panel.innerHTML = `<div class="workshop-header"><small>UNLOCKED FACILITY</small><h2>PHANTOM WORKSHOP</h2><span>ファントムワークショップ</span><div><b>GOLD ${this.profile.gold}</b><b>MATERIALS ${(D.workshop.materialIds || []).reduce((sum,id)=>sum+(this.profile.inventory[id]||0),0)}</b></div></div><div class="workshop-layout"><aside><div class="workshop-keeper"><img src="assets/ui/workshop/helper-fox-pixel.png" alt="工房のお助けキャラ"><b>さてさて……</b><span>何を作ろうかな？</span></div><nav>${tabs}</nav></aside><section class="workshop-main">${this.workshopContent()}</section></div>`;
+      const enchantUnlocked = (this.profile.flags.dungeon2BattleWins || 0) >= 15;
+      const availableTabs = [...D.workshop.tabs, ...(this.unlockedBossSeries().length ? [{ id: 'bossEquipment', name: 'ボス装備', enName: 'BOSS EQUIPMENT' }] : []), ...(enchantUnlocked ? [{ id: 'enchant', name: '武器強化', enName: 'WEAPON ENCHANT' }, { id: 'armorEnchant', name: '防具強化', enName: 'ARMOR ENCHANT' }] : [])];
+      if (!availableTabs.some(tab => tab.id === this.workshopTab)) this.workshopTab = 'weapon';
+      // タブは横1列のスクロール帯。行数が増えないので、タブが増えてもレシピの表示領域が減らない。
+      const tabs = availableTabs.map(tab => `<button data-workshop-tab="${tab.id}" class="${this.workshopTab === tab.id ? 'active' : ''}"><b>${tab.name}</b><span>${tab.enName}</span></button>`).join('');
+      const materialTotal = (D.workshop.materialIds || []).reduce((sum, id) => sum + (this.profile.inventory[id] || 0), 0);
+      panel.innerHTML = `<div class="ws-bar"><img class="ws-fox" src="assets/ui/workshop/helper-fox-pixel.png" alt=""><div class="ws-bar-title"><b>工房</b><small>PHANTOM WORKSHOP</small></div><div class="ws-bar-res"><span><i>G</i>${this.profile.gold.toLocaleString('ja-JP')}</span><span><i>M</i>${materialTotal}</span></div></div><div class="ws-tabs-wrap"><nav class="ws-tabs">${tabs}</nav></div><section class="workshop-main">${this.workshopContent()}</section>`;
+      // 選択中のタブが見切れていたら見える位置へ寄せる／右端まで来たらフェードを消す
+      const wrap = panel.querySelector('.ws-tabs-wrap'), strip = panel.querySelector('.ws-tabs');
+      if (wrap && strip) {
+        panel.querySelector('.ws-tabs button.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        const sync = () => wrap.classList.toggle('at-end', strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 2);
+        strip.addEventListener('scroll', sync, { passive: true }); sync();
+      }
     }
     enchantContent() {
       const et = D.enchantTable, enchants = this.profile.weaponEnchants || {}, weapons = Object.values(D.weapons).filter(w => w.id && D.items[w.id]);
