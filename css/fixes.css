@@ -68,3 +68,26 @@
 .ws-tabs-wrap .ws-tabs { margin: 0 }
 .ws-tabs-wrap:after { content: ""; position: absolute; right: 0; top: 0; bottom: 4px; width: 26px; pointer-events: none; background: linear-gradient(90deg, transparent, #030b19) }
 .ws-tabs-wrap.at-end:after { opacity: 0 }
+
+/* ── 工房ツリー：第2階層（製作の武器/防具/ボス、強化の武器/防具） ── */
+.ws-sub { display: flex; gap: 6px; margin-bottom: 10px }
+.ws-sub button { flex: 1; display: grid; gap: 1px; padding: 9px 6px; text-align: center; color: #9fbdd8; background: #050e20; border: 1px solid #1c456c; cursor: pointer }
+.ws-sub button b { font-size: 13px; font-weight: 800 }
+.ws-sub button span { font: 700 6px Cinzel; letter-spacing: .12em; color: #557f9f }
+.ws-sub button.active { color: #fff; border-color: #55d9ff; background: linear-gradient(180deg, #0b518c, #101a43); box-shadow: inset 0 -2px #55e7ff, 0 0 9px #168cff44 }
+.ws-sub button.active span { color: #9fe4ff }
+
+/* ── 第3階層：武器学ごと / 部位ごと。件数バッジ付き ── */
+.ws-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 5px; margin-bottom: 10px }
+.ws-group button { position: relative; display: grid; gap: 1px; padding: 8px 4px; text-align: center; color: #8fa9c2; background: #040c1a; border: 1px solid #17395a; cursor: pointer }
+.ws-group button b { font-size: 12px; font-weight: 800 }
+.ws-group button span { font: 700 6px Cinzel; letter-spacing: .06em; color: #4d738f }
+.ws-group button i { position: absolute; top: -5px; right: -4px; min-width: 15px; padding: 1px 3px; font: 800 8px/1.4 Cinzel; font-style: normal; color: #04121f; background: #56cfff; border-radius: 7px }
+.ws-group button.active { color: #fff; border-color: #ffcf58; background: linear-gradient(180deg, #2a2410, #101a43); box-shadow: inset 0 -2px #ffcf58 }
+.ws-group button.active span { color: #ffd98a }
+.ws-group button.active i { background: #ffcf58 }
+
+@media (max-width: 480px) {
+  .ws-group { grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)) }
+  .ws-sub button b { font-size: 12px }
+}

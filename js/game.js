@@ -9,7 +9,7 @@
 
   class BattleGame {
     constructor() {
-      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'weapon'; this.craftDungeonFilter = 'dungeon1'; this.craftArmorFilter = 'leftHand'; this.archiveMode = 'monster';
+      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.archiveMode = 'monster';
       this.currentDungeonId = 'dungeon1';
       this.battleMusic = encodeURI('音楽系/戦闘用/零時侵蝕 (Without Lead Vocal).mp3');
       this.menuMusic = encodeURI('音楽系/拠点/Midnight Ramen Den.mp3');
@@ -84,6 +84,12 @@
         if (craftDungeon) { this.craftDungeonFilter = craftDungeon.dataset.craftDungeon; this.renderMenuPanel('workshop'); return; }
         const craftArmor = e.target.closest('[data-craft-armor]');
         if (craftArmor) { this.craftArmorFilter = craftArmor.dataset.craftArmor; this.renderMenuPanel('workshop'); return; }
+        const craftKind = e.target.closest('[data-craft-kind]');
+        if (craftKind) { this.craftKind = craftKind.dataset.craftKind; this.craftDungeonFilter = 'all'; this.renderMenuPanel('workshop'); return; }
+        const enhanceKind = e.target.closest('[data-enhance-kind]');
+        if (enhanceKind) { this.enhanceKind = enhanceKind.dataset.enhanceKind; this.renderMenuPanel('workshop'); return; }
+        const craftWeaponType = e.target.closest('[data-craft-weapon-type]');
+        if (craftWeaponType) { this.craftWeaponType = craftWeaponType.dataset.craftWeaponType; this.craftDungeonFilter = 'all'; this.renderMenuPanel('workshop'); return; }
         const workshopTab = e.target.closest('[data-workshop-tab]');
         if (workshopTab) { this.workshopTab = workshopTab.dataset.workshopTab; this.renderMenuPanel('workshop'); return; }
         const jobTab = e.target.closest('[data-job-tab]');
@@ -1639,21 +1645,88 @@
     }
     eatFood() { const before = this.totalStats(), vitals = this.storedVitals(before), active = !!this.profile.flags.ramenBuffActive, full = vitals.hp >= before.maxHp && vitals.mp >= before.maxMp; if (active && full) return; const price = this.mealPrice(); this.profile.gold = Math.max(0, this.profile.gold - price); this.profile.flags.ramenBuffActive = true; const after = this.totalStats(); this.profile.currentVitals = { hp: after.maxHp, mp: after.maxMp }; if (this.player) { this.player.stats = after; this.player.hp = after.maxHp; this.player.mp = after.maxMp; } this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('food'); }
     useMenuItem(id) { const item = D.items[id], stats = this.totalStats(), vitals = this.storedVitals(stats), key = item?.effect?.hp ? 'hp' : item?.effect?.mp ? 'mp' : null, maxKey = key === 'hp' ? 'maxHp' : 'maxMp'; if (!key || !(this.profile.inventory[id] > 0) || vitals[key] >= stats[maxKey]) return; vitals[key] = Math.min(stats[maxKey], vitals[key] + item.effect[key]); this.profile.inventory[id]--; this.profile.currentVitals = vitals; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('items'); }
-    workshopContent() {
-      const materialRows = (D.workshop.materialIds || []).map(id => { const item = D.items[id], count = this.profile.inventory[id] || 0; if (item?.bossId && !this.isBossDefeated(item.bossId)) return ''; return `<div class="workshop-material rarity-${item.rarity}"><span><i></i><b>${item.name}</b></span><strong>×${count}</strong><small>${item.description}</small></div>`; }).join('');
-      if (this.workshopTab === 'materials') return `<div class="workshop-section-title"><b>素材一覧</b><span>MATERIALS</span></div><div class="workshop-materials">${materialRows || '<p>素材を所持していません。</p>'}</div>`;
-      if (this.workshopTab === 'enchant') return this.enchantContent();
-      if (this.workshopTab === 'armorEnchant') return this.armorEnchantContent();
-      if (this.workshopTab === 'bossEquipment') return this.bossEquipmentContent();
-      if (this.workshopTab === 'disassemble') { const gear = Object.entries(this.profile.inventory).filter(([id,n]) => n > 0 && D.items[id]?.category === 'equipment').map(([id,n]) => { const item = D.items[id], series = D.bossEquipmentSeries?.[item.seriesId], equipped = Object.values(this.profile.equipment).includes(id), spare = n - (equipped ? 1 : 0), can = !!series && spare > 0, output = series?.dismantle, material = D.items[output?.materialId]; return `<article class="${series ? 'boss-dismantle' : ''}"><div><b>${item.name}</b><span>${this.bonusText(id)} // 所持 ×${n}${equipped ? '（1個装備中）' : ''}</span>${series ? `<small>→ ${material?.name || output.materialId} ×${output.count}</small>` : ''}</div><button data-disassemble="${id}" ${can ? '' : 'disabled'}>${series ? (can ? '分解する' : '予備なし') : '対象外'}</button></article>`; }).join(''); return `<div class="workshop-section-title"><b>装備分解</b><span>DISASSEMBLE</span></div><p class="workshop-warning">ボス装備の予備を分解し、シリーズ素材へ変換できます。装備中の最後の1個は保護されます。</p><div class="workshop-disassemble">${gear || '<p>分解可能な装備がありません。</p>'}</div>`; }
-      const craftCategory = this.workshopTab === 'armor' ? 'armor' : 'weapon', categoryName = craftCategory === 'weapon' ? '武器' : '防具', categoryEn = craftCategory === 'weapon' ? 'WEAPON CRAFT' : 'ARMOR CRAFT', dungeons = D.dungeons || [], filter = this.craftDungeonFilter || 'all', armorFilter = this.craftArmorFilter || 'leftHand';
-      const armorTabs = craftCategory === 'armor' ? `<div class="recipe-armor-tabs">${(D.workshop.armorTabs || []).map(tab => `<button data-craft-armor="${tab.id}" class="${armorFilter === tab.id ? 'active' : ''}"><b>${tab.name}</b><span>${tab.enName}</span></button>`).join('')}</div>` : '';
-      const dungeonTabs = dungeons.length ? `<div class="recipe-dungeon-tabs"><button data-craft-dungeon="all" class="${filter === 'all' ? 'active' : ''}">すべて</button>${dungeons.map(d => `<button data-craft-dungeon="${d.id}" class="${filter === d.id ? 'active' : ''}">${d.name}</button>`).join('')}</div>` : '';
-      const recipes = Object.values(D.recipes || {}).filter(r => { const item = D.items[r.resultItemId]; return !r.legacy && this.isRecipeUnlocked(r) && (r.craftCategory || 'weapon') === craftCategory && (craftCategory !== 'armor' || item?.slot === armorFilter) && (filter === 'all' || r.dungeonId === filter); });
-      const recipeCards = recipes.map(r => this.recipeCardHTML(r)).join(''), selectedArmor = (D.workshop.armorTabs || []).find(tab => tab.id === armorFilter);
-      return `<div class="workshop-section-title"><b>${categoryName}製作</b><span>${categoryEn}</span></div>${armorTabs}${dungeonTabs}<div class="recipe-grid">${recipeCards || `<div class="workshop-empty-category"><b>${craftCategory === 'armor' ? `${selectedArmor?.name || '防具'}レシピ` : '武器レシピ'}準備中</b><span>対応する装備データとレシピを追加すると、ここへ自動表示されます。</span></div>`}</div>`;
+    // ══ 工房ナビゲーション ════════════════════════════════════
+    // 第1階層＝製作／強化／分解／素材（4つなので横スクロールが起きない）
+    // 第2階層＝製作なら武器・防具・ボス装備、強化なら武器・防具
+    // 第3階層＝武器は武器学ごと、防具は部位ごと
+    workshopSections() {
+      const enhanceUnlocked = (this.profile.flags.dungeon2BattleWins || 0) >= 15;
+      return [
+        { id: 'craft', name: '製作', enName: 'CRAFT' },
+        ...(enhanceUnlocked ? [{ id: 'enhance', name: '強化', enName: 'ENHANCE' }] : []),
+        { id: 'disassemble', name: '分解', enName: 'DISASSEMBLE' },
+        { id: 'materials', name: '素材', enName: 'MATERIALS' }
+      ];
     }
-    bossEquipmentContent() { const seriesList = this.unlockedBossSeries(); if (!seriesList.length) { this.workshopTab = 'weapon'; return this.workshopContent(); } return seriesList.map(series => { const recipes = (series.recipes || []).map(id => D.recipes[id]).filter(Boolean), count = this.equippedSeriesCount(series.id); return `<section class="boss-series-craft"><header><small>BOSS EQUIPMENT</small><h3>${series.name}</h3><span>${'★'.repeat(series.stars || 5)} // EQUIPPED ${count} / ${series.equipment.length}</span></header><div class="boss-series-effects">${Object.entries(series.setBonuses || {}).map(([needed, bonus]) => `<div class="${count >= Number(needed) ? 'active' : ''}"><b>${needed} SET — ${bonus.name}</b><span>${bonus.description}</span></div>`).join('')}</div><div class="recipe-grid">${recipes.map(recipe => this.recipeCardHTML(recipe)).join('')}</div></section>`; }).join(''); }
+    craftKinds() {
+      return [
+        { id: 'weapon', name: '武器', enName: 'WEAPON' },
+        { id: 'armor', name: '防具', enName: 'ARMOR' },
+        ...(this.unlockedBossSeries().length ? [{ id: 'boss', name: 'ボス装備', enName: 'BOSS' }] : [])
+      ];
+    }
+    // 武器学のうち、レシピが存在してロックされていないものだけ出す
+    craftWeaponTypes() {
+      const recipes = Object.values(D.recipes || {}).filter(r => !r.legacy && (r.craftCategory || 'weapon') === 'weapon' && this.isRecipeUnlocked(r));
+      const has = new Set(recipes.map(r => D.weapons[r.resultItemId]?.weaponType).filter(Boolean));
+      return (D.weaponTypes || []).filter(t => has.has(t.id) && this.isWeaponTypeUnlocked(t.id));
+    }
+    workshopContent() {
+      const tab = this.workshopTab;
+      if (tab === 'materials') {
+        const materialRows = (D.workshop.materialIds || []).map(id => { const item = D.items[id], count = this.profile.inventory[id] || 0; if (item?.bossId && !this.isBossDefeated(item.bossId)) return ''; return `<div class="workshop-material rarity-${item.rarity}"><span><i></i><b>${item.name}</b></span><strong>×${count}</strong><small>${item.description}</small></div>`; }).join('');
+        return `<div class="workshop-section-title"><b>素材一覧</b><span>MATERIALS</span></div><div class="workshop-materials">${materialRows || '<p>素材を所持していません。</p>'}</div>`;
+      }
+      if (tab === 'disassemble') {
+        const gear = Object.entries(this.profile.inventory).filter(([id,n]) => n > 0 && D.items[id]?.category === 'equipment').map(([id,n]) => { const item = D.items[id], series = D.bossEquipmentSeries?.[item.seriesId], equipped = Object.values(this.profile.equipment).includes(id), spare = n - (equipped ? 1 : 0), can = !!series && spare > 0, output = series?.dismantle, material = D.items[output?.materialId]; return `<article class="${series ? 'boss-dismantle' : ''}"><div><b>${item.name}</b><span>${this.bonusText(id)} // 所持 ×${n}${equipped ? '（1個装備中）' : ''}</span>${series ? `<small>→ ${material?.name || output.materialId} ×${output.count}</small>` : ''}</div><button data-disassemble="${id}" ${can ? '' : 'disabled'}>${series ? (can ? '分解する' : '予備なし') : '対象外'}</button></article>`; }).join('');
+        return `<div class="workshop-section-title"><b>装備分解</b><span>DISASSEMBLE</span></div><p class="workshop-warning">ボス装備の予備を分解し、シリーズ素材へ変換できます。装備中の最後の1個は保護されます。</p><div class="workshop-disassemble">${gear || '<p>分解可能な装備がありません。</p>'}</div>`;
+      }
+      if (tab === 'enhance') {
+        const kind = this.enhanceKind === 'armor' ? 'armor' : 'weapon';
+        const sub = [{ id: 'weapon', name: '武器強化', enName: 'WEAPON' }, { id: 'armor', name: '防具強化', enName: 'ARMOR' }]
+          .map(k => `<button data-enhance-kind="${k.id}" class="${kind === k.id ? 'active' : ''}"><b>${k.name}</b><span>${k.enName}</span></button>`).join('');
+        return `<div class="ws-sub">${sub}</div>${kind === 'armor' ? this.armorEnchantContent() : this.enchantContent()}`;
+      }
+      // ── 製作 ──
+      const kinds = this.craftKinds();
+      if (!kinds.some(k => k.id === this.craftKind)) this.craftKind = 'weapon';
+      const kind = this.craftKind;
+      const subHtml = `<div class="ws-sub">${kinds.map(k => `<button data-craft-kind="${k.id}" class="${kind === k.id ? 'active' : ''}"><b>${k.name}</b><span>${k.enName}</span></button>`).join('')}</div>`;
+      if (kind === 'boss') return subHtml + this.bossEquipmentContent();
+
+      // 第3階層：武器は武器学、防具は部位
+      let groups, current, groupAttr, matches, title, titleEn;
+      if (kind === 'armor') {
+        groups = (D.workshop.armorTabs || []).map(t => ({ id: t.id, name: t.name, enName: t.enName }));
+        if (!groups.some(g => g.id === this.craftArmorFilter)) this.craftArmorFilter = groups[0]?.id;
+        current = this.craftArmorFilter; groupAttr = 'data-craft-armor';
+        matches = r => r.craftCategory === 'armor' && D.items[r.resultItemId]?.slot === current;
+        title = '防具製作'; titleEn = 'ARMOR CRAFT';
+      } else {
+        groups = this.craftWeaponTypes().map(t => ({ id: t.id, name: t.name, enName: t.nameEn || t.enName || '' }));
+        if (!groups.some(g => g.id === this.craftWeaponType)) this.craftWeaponType = groups[0]?.id;
+        current = this.craftWeaponType; groupAttr = 'data-craft-weapon-type';
+        matches = r => (r.craftCategory || 'weapon') === 'weapon' && D.weapons[r.resultItemId]?.weaponType === current;
+        title = '武器製作'; titleEn = 'WEAPON CRAFT';
+      }
+      const groupHtml = groups.length ? `<div class="ws-group">${groups.map(gp => {
+        const n = Object.values(D.recipes || {}).filter(r => !r.legacy && this.isRecipeUnlocked(r) && (kind === 'armor' ? (r.craftCategory === 'armor' && D.items[r.resultItemId]?.slot === gp.id) : ((r.craftCategory || 'weapon') === 'weapon' && D.weapons[r.resultItemId]?.weaponType === gp.id))).length;
+        return `<button ${groupAttr}="${gp.id}" class="${current === gp.id ? 'active' : ''}"><b>${gp.name}</b><span>${gp.enName}</span>${n ? `<i>${n}</i>` : ''}</button>`;
+      }).join('')}</div>` : '';
+
+      let recipes = Object.values(D.recipes || {}).filter(r => !r.legacy && this.isRecipeUnlocked(r) && matches(r));
+      // 件数が多いときだけダンジョン絞り込みを出す。少ないときは余計な行を増やさない。
+      const dungeons = D.dungeons || [], filter = this.craftDungeonFilter || 'all';
+      const showDungeon = recipes.length > 6 && dungeons.length > 1;
+      const dungeonHtml = showDungeon ? `<div class="recipe-dungeon-tabs"><button data-craft-dungeon="all" class="${filter === 'all' ? 'active' : ''}">すべて</button>${dungeons.map(d => `<button data-craft-dungeon="${d.id}" class="${filter === d.id ? 'active' : ''}">${d.name}</button>`).join('')}</div>` : '';
+      if (showDungeon && filter !== 'all') recipes = recipes.filter(r => r.dungeonId === filter);
+
+      const cards = recipes.map(r => this.recipeCardHTML(r)).join('');
+      const groupName = groups.find(gp => gp.id === current)?.name || '';
+      const empty = `<div class="workshop-empty-category"><b>${groupName}レシピ準備中</b><span>対応する装備データとレシピを追加すると、ここへ自動表示されます。</span></div>`;
+      return `${subHtml}<div class="workshop-section-title"><b>${title}</b><span>${titleEn}</span></div>${groupHtml}${dungeonHtml}<div class="recipe-grid">${cards || empty}</div>`;
+    }
+    bossEquipmentContent() { const seriesList = this.unlockedBossSeries(); if (!seriesList.length) { this.craftKind = 'weapon'; return ''; } return seriesList.map(series => { const recipes = (series.recipes || []).map(id => D.recipes[id]).filter(Boolean), count = this.equippedSeriesCount(series.id); return `<section class="boss-series-craft"><header><small>BOSS EQUIPMENT</small><h3>${series.name}</h3><span>${'★'.repeat(series.stars || 5)} // EQUIPPED ${count} / ${series.equipment.length}</span></header><div class="boss-series-effects">${Object.entries(series.setBonuses || {}).map(([needed, bonus]) => `<div class="${count >= Number(needed) ? 'active' : ''}"><b>${needed} SET — ${bonus.name}</b><span>${bonus.description}</span></div>`).join('')}</div><div class="recipe-grid">${recipes.map(recipe => this.recipeCardHTML(recipe)).join('')}</div></section>`; }).join(''); }
     recipeCardHTML(recipe) {
       const item = D.items[recipe.resultItemId]; if (!item) return '';
       const owned = this.profile.inventory[recipe.resultItemId] || 0, goldOk = this.profile.gold >= (recipe.gold || 0);
@@ -1677,11 +1750,10 @@
     renderWorkshop(panel) {
       if ((this.profile.newlyUnlockedRecipes || []).length) { this.profile.newlyUnlockedRecipes = []; this.saveProfile(); }
       if (!this.profile.flags.noelFirstEncounterCleared) { panel.innerHTML = '<button class="panel-home" data-menu="home">拠点へ戻る</button><small>PHANTOM WORKSHOP</small><h2>工房</h2><div class="workshop-unlock"><b>LOCKED</b><strong>まだ工房は利用できません</strong><span>通常戦を3回制し、永遠の裁定者ノエルと遭遇すると解放されます。</span></div>'; return; }
-      const enchantUnlocked = (this.profile.flags.dungeon2BattleWins || 0) >= 15;
-      const availableTabs = [...D.workshop.tabs, ...(this.unlockedBossSeries().length ? [{ id: 'bossEquipment', name: 'ボス装備', enName: 'BOSS EQUIPMENT' }] : []), ...(enchantUnlocked ? [{ id: 'enchant', name: '武器強化', enName: 'WEAPON ENCHANT' }, { id: 'armorEnchant', name: '防具強化', enName: 'ARMOR ENCHANT' }] : [])];
-      if (!availableTabs.some(tab => tab.id === this.workshopTab)) this.workshopTab = 'weapon';
-      // タブは横1列のスクロール帯。行数が増えないので、タブが増えてもレシピの表示領域が減らない。
-      const tabs = availableTabs.map(tab => `<button data-workshop-tab="${tab.id}" class="${this.workshopTab === tab.id ? 'active' : ''}"><b>${tab.name}</b><span>${tab.enName}</span></button>`).join('');
+      const sections = this.workshopSections();
+      if (!sections.some(sec => sec.id === this.workshopTab)) this.workshopTab = 'craft';
+      // 第1階層は4項目まで。横スクロールが起きないので、見切れて気づかれない項目が出ない。
+      const tabs = sections.map(sec => `<button data-workshop-tab="${sec.id}" class="${this.workshopTab === sec.id ? 'active' : ''}"><b>${sec.name}</b><span>${sec.enName}</span></button>`).join('');
       const materialTotal = (D.workshop.materialIds || []).reduce((sum, id) => sum + (this.profile.inventory[id] || 0), 0);
       panel.innerHTML = `<div class="ws-bar"><img class="ws-fox" src="assets/ui/workshop/helper-fox-pixel.png" alt=""><div class="ws-bar-title"><b>工房</b><small>PHANTOM WORKSHOP</small></div><div class="ws-bar-res"><span><i>G</i>${this.profile.gold.toLocaleString('ja-JP')}</span><span><i>M</i>${materialTotal}</span></div></div><div class="ws-tabs-wrap"><nav class="ws-tabs">${tabs}</nav></div><section class="workshop-main">${this.workshopContent()}</section>`;
       // 選択中のタブが見切れていたら見える位置へ寄せる／右端まで来たらフェードを消す
