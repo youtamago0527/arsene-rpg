@@ -2,6 +2,15 @@ window.ARSENE_DATA = {
   // dungeon2BossWins：ミルティ解放に必要なダンジョン2の勝利数。4時間構想の主調整値。
   // debugPassword：拠点の狐を長押しで開くデバッグルームのパスワード
   settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5, dungeon2BossWins: 100, dungeon3TargetWins: 300, debugPassword: '1229', mealGoldRate: 0.3, counterPowerRate: 0.7 },
+  guardianBalance: {
+    shieldDefRate: 0.5, shieldMdefRate: 0.5, resonanceGainPerDamage: 0.05,
+    fortressReduction: 0.30, resonanceMax: 100,
+    resonanceTiers: [{ min: 100, multiplier: 2.0 }, { min: 75, multiplier: 1.75 }, { min: 50, multiplier: 1.5 }, { min: 25, multiplier: 1.25 }, { min: 1, multiplier: 1.0 }]
+  },
+  seripesBalance: {
+    regenRate: 0.035, repriseDamageRate: 0.32, grandRepriseDamageRate: 0.48,
+    phase2HpRate: 0.50, finalHpRate: 0.25, fortissimoRate: 0.15
+  },
   dualBladeOffHandRate: 0.70,
   // 武器種マスタ。ここに追記すれば得意武器選択・アイテム欄のタブへ自動反映される。
   // damageStats は将来の体術ダメージ計算（力＋素早さ）用の予約情報。
@@ -10,10 +19,11 @@ window.ARSENE_DATA = {
     { id: 'staff', name: '杖', nameEn: 'STAFF', description: '魔力を導く杖。魔法主体で戦う。', damageStats: ['mag'], starterWeaponId: 'mageStaff' },
     { id: 'martial', name: '体術', nameEn: 'MARTIAL', description: '爪や籠手を使う徒手格闘。速さで手数を稼ぐ。', damageStats: ['str', 'agi'], starterWeaponId: 'ironClaw' },
     // 楽器：魔奏士の証を入手するまでロック。器用さを火力へ変換する。
-    { id: 'instrument', name: '楽器', nameEn: 'INSTRUMENT', description: '音に魔を乗せて放つ。器用さがそのまま威力になる。', damageStats: ['dex'], starterWeaponId: null, unlockFlag: 'instrumentUnlocked' }
+    { id: 'instrument', name: '楽器', nameEn: 'INSTRUMENT', description: '音に魔を乗せて放つ。器用さがそのまま威力になる。', damageStats: ['dex'], starterWeaponId: null, unlockFlag: 'instrumentUnlocked' },
+    { id: 'shield', name: '盾', nameEn: 'SHIELD', description: '防御性能を攻撃へ転換する守護士の武器。', damageStats: ['vit', 'mnd'], starterWeaponId: 'guardianAegis', unlockFlag: 'shieldUnlocked' }
   ],
   // 武器種ごとの通常攻撃。未定義の武器種は 'attack'（剣と同じ物理攻撃）にフォールバック。
-  basicAttackByWeaponType: { sword: 'attack', staff: 'staffFireball', martial: 'martialStrike', instrument: 'resonantNote' },
+  basicAttackByWeaponType: { sword: 'attack', staff: 'staffFireball', martial: 'martialStrike', instrument: 'resonantNote', shield: 'shieldBash' },
   // ══════════════════════════════════════════════════════════════
   // 武器種ごとの攻撃性能スケーリング。新武器種はここへ1行足すだけ。
   //   scaling      : 基礎能力をどの割合で攻撃性能へ変換するか
@@ -27,7 +37,8 @@ window.ARSENE_DATA = {
     martial: { scaling: { str: 0.5, agi: 0.5 },  powerKey: 'attackPower',      damageType: 'physical' },
     staff:   { scaling: { mag: 1.0 },            powerKey: 'magicAttackPower', damageType: 'magical'  },
     // 楽器：器用さを魔法攻撃へ変換する。魔奏士の証で解放。
-    instrument: { scaling: { dex: 1.0 },        powerKey: 'magicAttackPower', damageType: 'magical'  }
+    instrument: { scaling: { dex: 1.0 },        powerKey: 'magicAttackPower', damageType: 'magical'  },
+    shield: { scaling: {}, powerKey: 'defensePower', damageType: 'physical' }
   },
   // 防御性能：物理は 体力＋装備防御力 / 魔法は 精神＋装備魔法防御力
   defenseScaling: {
@@ -39,7 +50,8 @@ window.ARSENE_DATA = {
     sword: { name: '剣技', nameEn: 'SWORD ARTS' },
     staff: { name: '魔法', nameEn: 'MAGIC' },
     martial: { name: '拳技', nameEn: 'FIST ARTS' },
-    instrument: { name: '楽奏', nameEn: 'SONG ARTS' }
+    instrument: { name: '楽奏', nameEn: 'SONG ARTS' },
+    shield: { name: '盾技', nameEn: 'SHIELD ARTS' }
   },
   startingJobIds: ['warrior', 'martialArtist', 'mage', 'priest'],
 
@@ -59,8 +71,8 @@ window.ARSENE_DATA = {
     baseMpGrowthRate: 0.08,
     hpGrowthAmount: { min: 3, max: 6 },
     mpGrowthAmount: { min: 1, max: 3 },
-    jobHpGrowthBonus: { warrior: 0.10, martialArtist: 0.07, mage: 0.00, priest: 0.05 },
-    jobMpGrowthBonus: { warrior: 0.00, martialArtist: 0.02, mage: 0.10, priest: 0.08 },
+    jobHpGrowthBonus: { warrior: 0.10, martialArtist: 0.07, mage: 0.00, priest: 0.05, guardian: 0.12 },
+    jobMpGrowthBonus: { warrior: 0.00, martialArtist: 0.02, mage: 0.10, priest: 0.08, guardian: 0.03 },
 
     // ── 閃き ────────────────────────────────────────────────
     sparkBaseRate: 0.05,
@@ -83,7 +95,8 @@ window.ARSENE_DATA = {
       mage:          { str: 0, vit: 0, mag: 2, mnd: 2, agi: 1, dex: 0, luk: 1 },
       priest:        { str: 0, vit: 2, mag: 1, mnd: 2, agi: 0, dex: 0, luk: 1 },
       // 魔奏士：器用さ最優先。マジックナイトなので力と魔力も伸びる。
-      magicKnight:   { str: 1, vit: 1, mag: 2, mnd: 0, agi: 0, dex: 2, luk: 0 }
+      magicKnight:   { str: 1, vit: 1, mag: 2, mnd: 0, agi: 0, dex: 2, luk: 0 },
+      guardian:      { str: 0, vit: 3, mag: 0, mnd: 2, agi: 0, dex: 1, luk: 0 }
     },
     // パッシブ習得Lv
     jobPassiveLevels: [5, 10, 15],
@@ -193,6 +206,13 @@ window.ARSENE_DATA = {
       growth: { 1: { mnd: 2 }, 2: { maxMp: 5 }, 3: { mnd: 2 }, 4: { maxMp: 6 }, 5: { mnd: 2, maxHp: 5 }, 6: { maxMp: 8 }, 7: { mnd: 3 }, 8: { maxMp: 8 }, 9: { mnd: 3 }, 10: { mnd: 4, maxMp: 12 }, 11: { mnd: 3 }, 12: { maxMp: 14, maxHp: 5 }, 13: { mnd: 4 }, 14: { maxMp: 12 }, 15: { mnd: 4 }, 16: { maxMp: 16 }, 17: { mnd: 5 }, 18: { maxMp: 14 }, 19: { mnd: 5 }, 20: { mnd: 6, maxMp: 20, maxHp: 8 } },
       skillUnlocks: {}
     },
+    guardian: {
+      id: 'guardian', name: '守護士', nameEn: 'GUARDIAN', description: '受けた痛みを共鳴へ変え、盾と反奏で格上を打ち破る基本JOB。',
+      signatureSkillId: 'resonanceBreak', passiveUnlocks: {}, growthStats: ['vit', 'mnd'],
+      featureText: '右手に盾を武器として装備可能。実ダメージの5%をRESONANCEへ蓄積し、無属性の反撃へ転換する。',
+      unlockCondition: { bossDefeated: 'seripes' },
+      skillUnlocks: {}
+    },
     // 1面クリアで解放される新ジョブ。上位職ではなく「新しい選択肢」。
     magicKnight: {
       id: 'magicKnight', name: '魔奏士', nameEn: 'MAGIC KNIGHT', description: '刃に魔力を纏わせ、物理と魔法を組み合わせて戦う。',
@@ -233,7 +253,8 @@ window.ARSENE_DATA = {
     martialArtist: { cmd: '拳技', cmdEn: 'FIST ARTS' },
     priest: { cmd: '神聖', cmdEn: 'SACRED ARTS' },
     arcaneMaestro: { cmd: '魔奏', cmdEn: 'ARCANE SONG' },
-    dualBlade: { cmd: '双刃技', cmdEn: 'DUAL ARTS' }
+    dualBlade: { cmd: '双刃技', cmdEn: 'DUAL ARTS' },
+    guardian: { cmd: '守護術', cmdEn: 'GUARD ARTS' }
   },
   equipmentSlots: [
     { id: 'rightHand', name: '右手', enName: 'RIGHT HAND' },
@@ -351,11 +372,11 @@ window.ARSENE_DATA = {
       recommendedLevel: 20,
       unlockCondition: 'dungeon2Clear',
       encounterProgression: [
-        { minWins: 0,  count: [1, 2], pool: [{ id: 'voidWatcher', weight: 7 }, { id: 'abyssalKnight', weight: 3 }, { id: 'voidOrchestra', weight: 1 }] },
-        { minWins: 3,  count: [1, 2], pool: [{ id: 'voidWatcher', weight: 5 }, { id: 'abyssalKnight', weight: 4 }, { id: 'chaosWitch', weight: 3 }, { id: 'voidOrchestra', weight: 1 }] },
-        { minWins: 6,  count: [2, 2], pool: [{ id: 'chaosWitch', weight: 4 }, { id: 'voidGargoyle', weight: 3 }, { id: 'abyssalKnight', weight: 3 }, { id: 'voidWatcher', weight: 2 }, { id: 'voidOrchestra', weight: 1 }] },
-        { minWins: 10, count: [2, 3], pool: [{ id: 'phantomEmperor', weight: 3 }, { id: 'voidGargoyle', weight: 3 }, { id: 'chaosWitch', weight: 3 }, { id: 'abyssalKnight', weight: 2 }, { id: 'voidOrchestra', weight: 1 }] },
-        { minWins: 15, count: [2, 3], pool: [{ id: 'phantomEmperor', weight: 4 }, { id: 'chaosWitch', weight: 3 }, { id: 'voidGargoyle', weight: 3 }, { id: 'voidOrchestra', weight: 2 }] }
+        { minWins: 0,   count: [2, 2], pool: [{ id: 'abyssalKnight', weight: 4 }, { id: 'voidWatcher', weight: 4 }, { id: 'riftAssailant', weight: 3 }] },
+        { minWins: 30,  count: [2, 3], pool: [{ id: 'abyssalKnight', weight: 3 }, { id: 'voidWatcher', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'riftAssailant', weight: 3 }] },
+        { minWins: 90,  count: [3, 3], pool: [{ id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }, { id: 'voidCantor', weight: 2 }, { id: 'chaosWitch', weight: 3 }, { id: 'riftAssailant', weight: 3 }] },
+        { minWins: 170, count: [3, 3], pool: [{ id: 'voidGargoyle', weight: 3 }, { id: 'phantomEmperor', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }] },
+        { minWins: 250, count: [3, 3], pool: [{ id: 'phantomEmperor', weight: 3 }, { id: 'riftAssailant', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }, { id: 'voidOrchestra', weight: 1 }] }
       ]
     }
   ],
@@ -736,7 +757,15 @@ window.ARSENE_DATA = {
     sunderDance: { id: 'sunderDance', name: '乱舞斬', nameEn: 'SUNDER DANCE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 3, ignoreDef: .20, agiScale: 0, powerText: 'ATK×2.0×3回', effectText: '3回攻撃 / DEF20%無視', description: '舞うように放つ三連斬。防御を部分的に無視する。' },
     crimsonRush: { id: 'crimsonRush', name: '黒紅突進', nameEn: 'CRIMSON RUSH', source: 'job', jobId: 'dualBlade', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 15, power: 7.0, ignoreDef: .30, agiScale: 0, powerText: 'ATK×7.0', effectText: 'DEF30%無視の高威力突進', description: '黒紅の軌跡を描きながら敵へ一直線に突進する。' },
     dualEdgeBarrage: { id: 'dualEdgeBarrage', name: '双刃乱打', nameEn: 'DUAL EDGE BARRAGE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 12, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 16, power: 1.8, hits: 5, agiScale: 0, powerText: 'ATK×1.8×5回', effectText: '5回物理攻撃', description: '双刃を猛烈に振り回す五連打。各攻撃が個別にクリティカルを狙う。' },
-    battleDance: { id: 'battleDance', name: '戦姫乱舞', nameEn: 'BATTLE DANCE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 24, power: 2.0, hits: 7, agiScale: 0, powerText: 'ATK×2.0×7回', effectText: '7回物理攻撃 // 双刃士の頂点', description: '戦場を舞台に踊るような七連撃。双刃士の奥義。' }
+    battleDance: { id: 'battleDance', name: '戦姫乱舞', nameEn: 'BATTLE DANCE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 24, power: 2.0, hits: 7, agiScale: 0, powerText: 'ATK×2.0×7回', effectText: '7回物理攻撃 // 双刃士の頂点', description: '戦場を舞台に踊るような七連撃。双刃士の奥義。' },
+
+    // ── 盾学：防御性能を攻撃へ転換する守護士の武器技 ──
+    shieldBash: { id: 'shieldBash', name: 'シールドバッシュ', nameEn: 'SHIELD BASH', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', mp: 0, kind: 'weapon', damageType: 'physical', target: 'single', power: 1.0, powerText: '盾攻撃性能×1.0', effectText: 'DEF×0.5＋MDEF×0.5を攻撃へ転換', description: '盾の防御性能を乗せて敵を打ち据える基本攻撃。' },
+    guardImpact: { id: 'guardImpact', name: 'ガードインパクト', nameEn: 'GUARD IMPACT', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'shieldBash', requiredWeaponLevel: 3, sparkRate: null, mp: 4, kind: 'physical', damageType: 'physical', target: 'single', power: 1.3, effect: { type: 'selfDefUpAfterHit', rate: .10, turns: 1 }, powerText: '盾攻撃性能×1.3', effectText: '攻撃後DEF +10%／1ターン', description: '衝撃を返し、次の攻撃を受け止める構えへ繋ぐ。' },
+    magicRepulse: { id: 'magicRepulse', name: 'マジックリパルス', nameEn: 'MAGIC REPULSE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'guardImpact', requiredWeaponLevel: 7, sparkRate: null, mp: 7, kind: 'magical', damageType: 'magical', shieldFormula: 'magicRepulse', target: 'single', power: 1.0, powerText: 'MDEF×1.2＋DEF×0.3', effectText: '魔法防御寄りの盾技', description: '魔力を盾面で反転させ、魔法防御性能から衝撃を生む。' },
+    fortress: { id: 'fortress', name: 'フォートレス', nameEn: 'FORTRESS', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'magicRepulse', requiredWeaponLevel: 12, sparkRate: null, mp: 8, kind: 'support', target: 'self', effect: { type: 'fortress', reduction: .30, turns: 1 }, powerText: '被ダメージ -30%', effectText: '1ターン防御。軽減後ダメージはRESONANCEへ蓄積', description: '盾を大地へ固定し、攻撃を真正面から受け止める。' },
+    revengeForce: { id: 'revengeForce', name: 'リベンジ・フォース', nameEn: 'REVENGE FORCE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'fortress', requiredWeaponLevel: 18, sparkRate: null, mp: 12, kind: 'physical', damageType: 'physical', shieldFormula: 'revenge', target: 'single', power: 1.65, powerText: '直前の被弾タイプに応じDEF/MDEF参照', effectText: '物理被弾ならDEF、魔法被弾ならMDEFを強く参照', description: '直前に受けた攻撃の性質を読み、最適な防御性能で打ち返す盾学奥義。' },
+    resonanceBreak: { id: 'resonanceBreak', name: 'RESONANCE BREAK', nameEn: 'RESONANCE BREAK', source: 'job', jobId: 'guardian', unlockJobLevel: 1, type: 'ACTIVE', kind: 'neutral', damageType: 'neutral', target: 'single', mp: 0, power: 1.0, ignoreDef: 1, powerText: '現在武器の攻撃性能×共鳴倍率', effectText: '全RESONANCE消費／DEF・MDEF・物理魔法耐性を無視', description: '受けた痛みを共鳴へ変え、現在の武器性能から無属性の一撃を放つ。' }
   },
   items: {
     potion: { id: 'potion', name: '回復薬', category: 'consumable', rarity: 'common', description: 'HPを30回復する。', effect: { hp: 30 } },
@@ -745,6 +774,8 @@ window.ARSENE_DATA = {
     mageStaff: { id: 'mageStaff', name: '魔導士の杖', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '青い魔力を導く魔導士の基本杖。' },
     phantomSword: { id: 'phantomSword', name: '青影の剣', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '青い残光を引く怪盗の細身剣。' },
     ironClaw: { id: 'ironClaw', name: '鉄の爪', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '拳に装着する鋼の爪。素早い連撃に適する。' },
+    guardianAegis: { id: 'guardianAegis', name: '反奏の白盾', nameEn: 'REPRISE AEGIS', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, description: 'セリペスの砕けた光から再構成された白銀の盾。守護士が右手武器として扱う。' },
+    guardianProof: { id: 'guardianProof', name: '守護士の証', nameEn: 'PROOF OF THE GUARDIAN', category: 'key', rarity: 'epic', description: '攻撃を受け、力へ変えて返す者の資格を示す白銀の証。' },
     magicKnightProof: { id: 'magicKnightProof', name: '魔奏士の証', nameEn: 'PROOF OF THE ARCANE PLAYER', category: 'key', rarity: 'epic', description: '旋律と魔を繋ぐ古い紋章。新たな生き方を選ぶ資格を示す。' },
     arcaneMaestroProof: { id: 'arcaneMaestroProof', name: '楽奏の証', nameEn: 'PROOF OF THE ARCANE MAESTRO', category: 'key', rarity: 'epic', description: '音と魔を繋ぐ古い譜面。楽器を武器として扱う資格を示す。' },
     rebirthArcana: { id: 'rebirthArcana', name: '輪廻のアルカナ', nameEn: 'ARCANA OF REBIRTH', category: 'special', rarity: 'legendary', noSell: true, description: '極めた力を捨て、さらなる高みへ至るためのアルカナ。JOB Lv20からの転生に1個消費する。' },
@@ -879,6 +910,8 @@ window.ARSENE_DATA = {
     abyssalArmor: { id: 'abyssalArmor', name: '深淵の鎧', nameEn: 'ABYSSAL ARMOR', category: 'equipment', slot: 'body', rarity: 'epic', dungeonId: 'dungeon3', description: '深淵鉄鉱を用いた最高位の鎧。強靭な防御力を誇る。' },
     phantomGauntlet: { id: 'phantomGauntlet', name: '幻影拳甲', nameEn: 'PHANTOM GAUNTLET', category: 'equipment', slot: 'arms', rarity: 'epic', dungeonId: 'dungeon3', description: '幻影核の力が宿る拳甲。攻撃力と俊敏を高める。' },
     voidRing: { id: 'voidRing', name: '虚無の指輪', nameEn: 'VOID RING', category: 'equipment', slot: 'accessory', rarity: 'epic', dungeonId: 'dungeon3', description: '虚無の精髄を封じた指輪。あらゆる能力値を高める。' },
+    voidBlade: { id: 'voidBlade', name: '虚空刃ヴォイドブレード', nameEn: 'VOID BLADE', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '裂界の虚無を刃へ定着させたD3工房剣。' },
+    chaosRod: { id: 'chaosRod', name: '混沌の魔杖カオスロッド', nameEn: 'CHAOS ROD', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '混沌の粒子を魔力へ変換するD3工房杖。' },
     cadenza_staff: { id: 'cadenza_staff', name: '魔杖カデンツァ', nameEn: 'CADENZA', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: '独奏卿ゼナカドが振るった魔導指揮杖。杖が描く軌跡に魔力が追従し、ひとりの術者を楽団へと変える。' },
     soloist_mask: { id: 'soloist_mask', name: '独奏卿の仮面', nameEn: 'SOLOIST MASK', category: 'equipment', slot: 'head', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: 'ゼナカドが身につけていた、片眼を覆う妖艶な仮面。' },
     soloist_coat: { id: 'soloist_coat', name: '独奏卿の燕尾服', nameEn: 'SOLOIST COAT', category: 'equipment', slot: 'body', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: '黒・紫・金で仕立てられた独奏卿の燕尾服。魔力と精神を守る。' },
@@ -901,6 +934,7 @@ window.ARSENE_DATA = {
     shadowWand: { id: 'shadowWand', name: 'シャドウワンド', weaponType: 'staff', weaponSprite: 'staff_shadow', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.45, bonuses: { mag: 4, mnd: 1 } },
     phantomSword: { id: 'phantomSword', name: '青影の剣', weaponType: 'sword', weaponSprite: 'sword_01', battleSprite: null, attackMotion: 'slash', attackPower: 5, bonuses: {} },
     ironClaw: { id: 'ironClaw', name: '鉄の爪', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 4, bonuses: { agi: 2 } },
+    guardianAegis: { id: 'guardianAegis', name: '反奏の白盾', weaponType: 'shield', weaponSprite: 'shield_reprise', battleSprite: null, attackMotion: 'shieldBash', damageType: 'physical', defensePower: 18, magicDefensePower: 15, bonuses: {} },
     // ── D1 通常工房武器 ──
     kurogane_sword: { id: 'kurogane_sword', name: '黒鉄剣クロウ', weaponType: 'sword', weaponSprite: 'sword_01', battleSprite: null, attackMotion: 'slash', attackPower: 10, bonuses: {} },
     fangClaw: { id: 'fangClaw', name: '鋼爪ファング', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 8, bonuses: { agi: 2 }, effects: { criticalRateBonus: 0.02 } },
@@ -1110,17 +1144,17 @@ window.ARSENE_DATA = {
     },
     voidWatcher: {
       id: 'voidWatcher', name: '虚空の監視者', enName: 'VOID WATCHER', dungeonId: 'dungeon3',
-      element: '虚無', weaknesses: ['光', '聖'], resistances: ['闇', '魔'],
+      role: 'MAGIC TANK', roleDescription: '魔法防御型。物理攻撃が有効。', element: '虚無', weaknesses: ['斬', '打'], resistances: ['闇', '魔'],
       spriteClass: 'void-watcher', battleScale: 1.1,
-      stats: { maxHp: 350, atk: 28, def: 25, mag: 38, mnd: 18, spd: 14 }, exp: 95, gold: { min: 40, max: 70 },
+      stats: { maxHp: 420, atk: 24, def: 13, mag: 38, mnd: 72, spd: 13 }, exp: 95, gold: { min: 40, max: 70 },
       dropTable: [{ itemId: 'voidShard', chance: .45 }, { itemId: 'chaosDust', chance: .22 }, { itemId: 'phantomCore', chance: .10 }],
       ai: [{ id: 'soulBolt', name: '虚空弾', kind: 'magic', weight: .65 }, { id: 'attack', name: '虚空の一瞥', kind: 'magic', weight: .35 }]
     },
     abyssalKnight: {
       id: 'abyssalKnight', name: '深淵の騎士', enName: 'ABYSSAL KNIGHT', dungeonId: 'dungeon3',
-      element: '闇', weaknesses: ['光', '雷'], resistances: ['闇', '物理'],
+      role: 'PHYSICAL TANK', roleDescription: '物理防御型。魔法攻撃が有効。', element: '闇', weaknesses: ['光', '魔'], resistances: ['闇', '物理'],
       spriteClass: 'abyssal-knight', battleScale: 1.3,
-      stats: { maxHp: 480, atk: 45, def: 38, mag: 12, mnd: 15, spd: 12 }, exp: 110, gold: { min: 45, max: 80 },
+      stats: { maxHp: 520, atk: 40, def: 78, mag: 12, mnd: 14, spd: 10 }, exp: 110, gold: { min: 45, max: 80 },
       dropTable: [{ itemId: 'darkIron', chance: .40 }, { itemId: 'voidShard', chance: .20 }, { itemId: 'voidEssence', chance: .08 }],
       ai: [{ id: 'attack', name: '深淵の剣撃', kind: 'physical', weight: .70 }, { id: 'soulBolt', name: '虚空震撃', kind: 'physical', weight: .30 }]
     },
@@ -1156,6 +1190,34 @@ window.ARSENE_DATA = {
       stats: { maxHp: 600, atk: 42, def: 30, mag: 46, mnd: 26, spd: 18 }, exp: 180, gold: { min: 70, max: 120 },
       dropTable: [{ itemId: 'voidEssence', chance: .50 }, { itemId: 'phantomCore', chance: .35 }, { itemId: 'chaosDust', chance: .30 }, { itemId: 'darkIron', chance: .20 }],
       ai: [{ id: 'soulBolt', name: '虚無の交響', kind: 'magic', weight: .60 }, { id: 'attack', name: '楽団の奔流', kind: 'physical', weight: .40 }]
+    },
+    voidCantor: {
+      id: 'voidCantor', name: '虚空の聖唱者', enName: 'VOID CANTOR', dungeonId: 'dungeon3', role: 'HEALER', roleDescription: '傷ついた味方を優先して回復する。',
+      element: '虚無', weaknesses: ['斬', '火'], resistances: ['闇'], spriteClass: 'void-cantor', battleScale: 1.0,
+      stats: { maxHp: 330, atk: 15, def: 20, mag: 42, mnd: 46, spd: 12 }, exp: 125, gold: { min: 52, max: 86 },
+      dropTable: [{ itemId: 'chaosDust', chance: .42 }, { itemId: 'voidEssence', chance: .12 }],
+      ai: [{ id: 'voidHeal', name: '虚空治癒', kind: 'heal', power: .22, weight: .58 }, { id: 'soulBolt', name: '聖唱弾', kind: 'magic', weight: .42 }]
+    },
+    ironChanter: {
+      id: 'ironChanter', name: '鉄壁の詠唱兵', enName: 'IRON CHANTER', dungeonId: 'dungeon3', role: 'PHYSICAL BUFFER', roleDescription: '敵全体のDEFを上昇させる。',
+      element: '闇', weaknesses: ['魔', '雷'], resistances: ['物理'], spriteClass: 'iron-chanter', battleScale: 1.05,
+      stats: { maxHp: 390, atk: 26, def: 44, mag: 22, mnd: 24, spd: 9 }, exp: 120, gold: { min: 48, max: 82 },
+      dropTable: [{ itemId: 'darkIron', chance: .48 }, { itemId: 'voidShard', chance: .20 }],
+      ai: [{ id: 'ironChant', name: '鉄壁詠唱', kind: 'defBuff', rate: .25, turns: 3, weight: .48 }, { id: 'attack', name: '鉄杖打ち', kind: 'physical', weight: .52 }]
+    },
+    arcaneChanter: {
+      id: 'arcaneChanter', name: '秘儀の詠唱兵', enName: 'ARCANE CHANTER', dungeonId: 'dungeon3', role: 'MAGIC BUFFER', roleDescription: '敵全体のMDEFを上昇させる。',
+      element: '虚無', weaknesses: ['斬', '打'], resistances: ['魔'], spriteClass: 'arcane-chanter', battleScale: 1.0,
+      stats: { maxHp: 350, atk: 18, def: 20, mag: 34, mnd: 48, spd: 11 }, exp: 122, gold: { min: 50, max: 84 },
+      dropTable: [{ itemId: 'chaosDust', chance: .46 }, { itemId: 'phantomCore', chance: .12 }],
+      ai: [{ id: 'arcaneChant', name: '秘儀障壁', kind: 'mdefBuff', rate: .25, turns: 3, weight: .48 }, { id: 'soulBolt', name: '秘儀弾', kind: 'magic', weight: .52 }]
+    },
+    riftAssailant: {
+      id: 'riftAssailant', name: '裂界の強襲者', enName: 'RIFT ASSAILANT', dungeonId: 'dungeon3', role: 'ATTACKER', roleDescription: '低防御・高攻撃。優先撃破推奨。',
+      element: '虚無', weaknesses: ['光', '打'], resistances: ['闇'], spriteClass: 'rift-assailant', battleScale: 1.05,
+      stats: { maxHp: 280, atk: 58, def: 14, mag: 44, mnd: 13, spd: 24 }, exp: 135, gold: { min: 55, max: 92 },
+      dropTable: [{ itemId: 'voidShard', chance: .44 }, { itemId: 'phantomCore', chance: .15 }],
+      ai: [{ id: 'riftSlash', name: '裂界斬', kind: 'physical', weight: .58 }, { id: 'riftRay', name: '裂界光', kind: 'magic', weight: .42 }]
     },
     silentHarmonist: {
       id: 'silentHarmonist', name: 'サイレント・ハーモニスト', enName: 'SILENT HARMONIST', dungeonId: 'dungeon2',
@@ -1413,6 +1475,22 @@ window.ARSENE_DATA = {
         { itemId: 'moonstone',   chance: .16 }
       ],
       ai: [{ id: 'clubSmash', name: '静寂の制圧', kind: 'physical', weight: .45 }, { id: 'attack', name: '番人の一撃', kind: 'physical', weight: .35 }, { id: 'soulBolt', name: '沈黙の宣告', kind: 'magic', weight: .20 }]
+    },
+
+    seripes: {
+      id: 'seripes', name: 'セリペス', enName: 'SERIPES — THE REPRISE KNIGHT', kind: 'boss', encounter: 1, dungeonId: 'dungeon3',
+      title: '第三奏卿《不落の反奏騎士》', role: 'BOSS / DEFENSE & REPRISE', roleDescription: '超耐久・防御・反奏型。攻撃タイプを切り替えて攻略する。',
+      element: '聖 / 反奏', weaknesses: ['無属性'], resistances: ['物理', '魔'],
+      sprite: 'assets/enemy-characters/seripes/seripes-design.png', spriteClass: 'seripes-sprite',
+      stats: { maxHp: 2400, atk: 48, def: 82, mag: 44, mnd: 68, spd: 15 },
+      exp: 420, gold: { min: 280, max: 380 }, dropTable: [{ itemId: 'voidEssence', chance: 1.0 }, { itemId: 'phantomCore', chance: .65 }, { itemId: 'darkIron', chance: .80 }],
+      ai: [
+        { id: 'repriseSword', name: '反奏剣', kind: 'physical', weight: .38 },
+        { id: 'fortisGuard', name: 'フォルティス・ガード', kind: 'selfDefBuff', rate: .30, turns: 3, weight: .16 },
+        { id: 'arcanaVeil', name: 'アルカナ・ヴェール', kind: 'selfMdefBuff', rate: .30, turns: 3, weight: .16 },
+        { id: 'sanctuary', name: '聖域', kind: 'selfRegen', turns: 3, weight: .12 },
+        { id: 'reprise', name: 'リプライズ', kind: 'reprise', weight: .18 }
+      ]
     },
 
     myrthi: {
