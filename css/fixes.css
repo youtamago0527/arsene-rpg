@@ -144,3 +144,22 @@
   .st-id2 strong { font-size: 14px }
   .st-vit span { font-size: 9px; padding: 2px 5px }
 }
+
+/* カズの持ち帰り（カップ麺の販売） */
+.food-shop { margin-top: 14px }
+.food-shop > header { display: flex; align-items: baseline; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid #2479ad }
+.food-shop > header b { font-size: 15px; color: #fff }
+.food-shop > header span { font: 700 8px Cinzel; letter-spacing: .18em; color: #56cfff }
+.shop-note { margin: 7px 0 9px; font-size: 9px; color: #8fb2ce }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px }
+.shop-card { display: flex; flex-direction: column; gap: 8px; padding: 11px; background: linear-gradient(135deg, #1a1206, #0b0d18); border: 1px solid #8a6326 }
+.shop-info { display: grid; gap: 3px }
+.shop-info b { font-size: 13px; color: #ffd9a0 }
+.shop-info em { font-style: normal; font: 800 11px Cinzel; color: #7dffb0 }
+.shop-info small { font-size: 8px; line-height: 1.6; color: #b09a78 }
+.shop-buy { display: flex; align-items: center; gap: 7px; padding-top: 7px; border-top: 1px solid #493214 }
+.shop-price { font: 800 12px Cinzel; color: #ffcf58 }
+.shop-have { flex: 1; font-size: 9px; color: #b09a78 }
+.shop-buy button { padding: 7px 14px; color: #fff; background: linear-gradient(90deg, #8a5a12, #c68a1e); border: 1px solid #ffcf58; font-weight: 900; cursor: pointer }
+.shop-buy button:disabled { cursor: default; opacity: .45; filter: saturate(.3); background: #1c1810; border-color: #4a4030; color: #8a7f6a }
+@media (max-width: 480px) { .shop-grid { grid-template-columns: 1fr } }

@@ -79,6 +79,8 @@
         if (importSaveConfirm) { const input = $('[data-transfer-input]'), payload = this.decodeSaveTransferCode(input?.value); if (!payload) { window.arseneStartFlow?.toast('コードを読み取れませんでした'); return; } window.arseneStartFlow?.openConfirm('現在のセーブデータを上書きして読み込みますか？', () => this.applySaveTransfer(payload), true); return; }
         const food = e.target.closest('[data-eat-food]');
         if (food) { this.eatFood(); return; }
+        const buyItem = e.target.closest('[data-buy-item]');
+        if (buyItem) { if (!buyItem.disabled) this.buyItem(buyItem.dataset.buyItem); return; }
         const useItem = e.target.closest('[data-use-item]');
         if (useItem) { this.useMenuItem(useItem.dataset.useItem); return; }
         const craft = e.target.closest('[data-craft]');
@@ -1139,7 +1141,27 @@
       if (this.autoBattle && !this.locked) setTimeout(() => this.autoPickAction(), 700);
     }
     autoPickAction() { if (!this.autoBattle || this.locked || this.finished) return; const maxHp = this.player.stats.maxHp, maxMp = this.player.stats.maxMp, hpPct = this.player.hp / maxHp; if (hpPct < 0.4 && (this.profile.inventory.potion || 0) > 0) { this.useConsumable('potion'); return; } if (this.player.mp < maxMp * 0.2 && (this.profile.inventory.manaPotion || 0) > 0) { this.useConsumable('manaPotion'); return; } const aliveEnemies = this.enemies.filter(e => e.alive); const skills = this.availableSkills().filter(s => this.player.mp >= s.mp && this.cooldownRemaining(s) === 0); const weapon = this.equippedWeapon(); const atkScore = weapon?.power || 1; let best = { type: 'attack', score: atkScore }; for (const s of skills) { let score = 0; if (s.kind === 'support') { if (s.effect?.type === 'hpRecover') score = hpPct < 0.75 ? (1 - hpPct) * 200 : 0; else if (s.effect?.type === 'mpRecover') score = this.player.mp < maxMp * 0.5 ? 45 : 0; else if (s.effect?.type === 'regenerate') score = hpPct < 0.8 ? 35 : 0; } else if (s.kind === 'hybrid') { score = (s.strScale + s.magScale) * 12; } else { const multi = s.target === 'all' ? Math.min(aliveEnemies.length, 3) * 0.7 : 1; score = (s.power || 1) * (s.hits || 1) * multi; } if (score > best.score) best = { type: 'skill', skill: s, score }; } if (best.type === 'skill') { const s = best.skill; if (s.target === 'all' || s.target === 'self') { this.executeRound(s.id, -1); } else { this.executeRound(s.id, this.enemies.findIndex(e => e.alive)); } } else { this.executeRound('attack', this.enemies.findIndex(e => e.alive)); } }
-    showBattleItems() { const hp = D.items.potion, mp = D.items.manaPotion; this.panel(this.button(hp.name, `HP +${hp.effect.hp} // ×${this.profile.inventory.potion || 0}`, 'potion', !(this.profile.inventory.potion > 0) || this.player.hp >= this.player.stats.maxHp) + this.button(mp.name, `MP +${mp.effect.mp} // ×${this.profile.inventory.manaPotion || 0}`, 'manaPotion', !(this.profile.inventory.manaPotion > 0) || this.player.mp >= this.player.stats.maxMp) + this.button('もどる', 'BACK', 'back')); this.bindActions({ potion: () => this.useConsumable('potion'), manaPotion: () => this.useConsumable('manaPotion'), back: () => this.showMainCommands() }); }
+    // 所持している回復系の消費アイテムをすべて並べる。
+    // 以前は回復薬と魔力回復薬の2つを直接書いていたため、
+    // アイテムを足しても戦闘中に出てこなかった。
+    battleUsableItems() {
+      return Object.values(D.items)
+        .filter(i => i.category === 'consumable' && (i.effect?.hp || i.effect?.mp) && (this.profile.inventory[i.id] || 0) > 0);
+    }
+    showBattleItems() {
+      const items = this.battleUsableItems();
+      if (!items.length) { this.panel(this.button('もどる', 'BACK', 'back')); this.bindActions({ back: () => this.showMainCommands() }); this.setLog('使えるアイテムを持っていない。'); return; }
+      const rows = items.map(i => {
+        const n = this.profile.inventory[i.id] || 0;
+        const full = i.effect?.hp ? this.player.hp >= this.player.stats.maxHp : this.player.mp >= this.player.stats.maxMp;
+        const label = i.effect?.hp ? `HP +${i.effect.hp}` : `MP +${i.effect.mp}`;
+        return this.button(i.name, `${label} // ×${n}`, i.id, full);
+      }).join('');
+      this.panel(rows + this.button('もどる', 'BACK', 'back'));
+      const actions = { back: () => this.showMainCommands() };
+      items.forEach(i => { actions[i.id] = () => this.useConsumable(i.id); });
+      this.bindActions(actions);
+    }
     availableSkills() { const skills = [...this.personalSkills(), ...this.jobLearnedActiveSkills(this.profile.currentJob)]; const grant = this.equippedWeapon()?.grantsSkillId; if (grant && D.skills[grant]) skills.push(D.skills[grant]); return [...new Map(skills.map(s => [s.id, s])).values()]; }
     cooldownRemaining(skill) { return Math.max(0, (this.player.cooldowns?.[skill.id] || 0) - this.turn); }
     showSkills() { this.showMainCommands(); }
@@ -1380,6 +1402,28 @@
         this.setLog(`${enemy.name}${enemy.label}を反撃で撃破！`);
         await this.battleSleep(300);
       }
+    }
+    // ══ カズの売り物 ══════════════════════════════════════════
+    // 価格は固定。所持金比だと「金を使い切ってから買う」が最適解になり、
+    // 所持0で0円になる抜け道もできるため。周回で殴り勝つのは所持上限で防ぐ。
+    // 僧侶の《喜捨の徳》はまかない専用にして、ここへは効かせない。
+    // 拠点回復も携行品も僧侶が最安、という二冠を作らないため。
+    shopStock() {
+      return (D.shopItems || []).map(id => D.items[id]).filter(Boolean);
+    }
+    shopMaxStack(item) { return item?.maxStack ?? 9; }
+    canBuyItem(id) {
+      const item = D.items[id]; if (!item?.price) return false;
+      if (this.profile.gold < item.price) return false;
+      return (this.profile.inventory[id] || 0) < this.shopMaxStack(item);
+    }
+    buyItem(id) {
+      const item = D.items[id];
+      if (!this.canBuyItem(id)) { this.audio.sfx('ui'); return; }
+      this.profile.gold -= item.price;
+      this.profile.inventory[id] = (this.profile.inventory[id] || 0) + 1;
+      this.saveProfile(); this.audio.sfx('heal');
+      this.renderMenuSummary(); this.renderMenuPanel('food');
     }
     // カズのまかない代。所持GOLDの30%が基本で、僧侶《托鉢》などで割り引かれる。
     mealPrice() {
@@ -1657,7 +1701,10 @@
       if (name === 'floor-select') { this.renderFloorSelect(panel, this.floorSelectDungeonId || 'dungeon2'); return; }
       if (name === 'equipment') this.renderEquipmentPanel(panel);
       if (name === 'workshop') this.renderWorkshop(panel);
-      if (name === 'food') { const active = !!this.profile.flags.ramenBuffActive, stats = this.totalStats(), vitals = this.storedVitals(stats), full = vitals.hp >= stats.maxHp && vitals.mp >= stats.maxMp, price = this.mealPrice(), canEat = !active || !full, coming = (D.foodMenu?.comingSoon || []).map(item => `<article class="food-coming-card" aria-disabled="true"><i aria-hidden="true"></i><b>${item.name}</b><span>COMING SOON</span></article>`).join(''); panel.innerHTML = `<small>KAZU'S SPECIAL</small><h2>カズのまかない</h2><div class="food-panel"><div class="food-bowl" aria-hidden="true"></div><div class="food-copy"><strong>店主特製・怪盗まかない</strong><span>HP・MPを全回復。次のダンジョン1回だけ最大HPが3%上昇します。</span><em>料金：所持GOLDの30％　<b>${price.toLocaleString('ja-JP')} GOLD</b></em><button class="eat-food" data-eat-food ${canEat ? '' : 'disabled'}>${canEat ? 'まかないを食べる' : '全回復・効果発動中'}</button></div></div><section class="food-coming"><header><b>NEXT MENU</b><span>COMING SOON</span></header><div>${coming}</div></section>`; }
+      if (name === 'food') { const active = !!this.profile.flags.ramenBuffActive, stats = this.totalStats(), vitals = this.storedVitals(stats), full = vitals.hp >= stats.maxHp && vitals.mp >= stats.maxMp, price = this.mealPrice(), canEat = !active || !full, coming = (D.foodMenu?.comingSoon || []).map(item => `<article class="food-coming-card" aria-disabled="true"><i aria-hidden="true"></i><b>${item.name}</b><span>COMING SOON</span></article>`).join('');
+        // 売り物。固定価格・所持上限つき。僧侶の割引はまかない専用でここには効かない。
+        const shop = this.shopStock().map(it => { const have = this.profile.inventory[it.id] || 0, max = this.shopMaxStack(it), isFull = have >= max, poor = this.profile.gold < it.price; const eff = it.effect?.hp ? `HP +${it.effect.hp}` : it.effect?.mp ? `MP +${it.effect.mp}` : ''; return `<article class="shop-card"><div class="shop-info"><b>${it.name}</b><em>${eff}</em><small>${it.description}</small></div><div class="shop-buy"><span class="shop-price">${it.price} G</span><span class="shop-have">所持 ${have} / ${max}</span><button data-buy-item="${it.id}" ${isFull || poor ? 'disabled' : ''}>${isFull ? '上限' : poor ? 'GOLD不足' : '買う'}</button></div></article>`; }).join('');
+        panel.innerHTML = `<small>KAZU'S SPECIAL</small><h2>カズのまかない</h2><div class="food-panel"><div class="food-bowl" aria-hidden="true"></div><div class="food-copy"><strong>店主特製・怪盗まかない</strong><span>HP・MPを全回復。次のダンジョン1回だけ最大HPが3%上昇します。</span><em>料金：所持GOLDの30％　<b>${price.toLocaleString('ja-JP')} GOLD</b></em><button class="eat-food" data-eat-food ${canEat ? '' : 'disabled'}>${canEat ? 'まかないを食べる' : '全回復・効果発動中'}</button></div></div><section class="food-shop"><header><b>持ち帰り</b><span>TAKEOUT</span></header><p class="shop-note">ダンジョンへ持ち込める携行食。所持できる数には限りがある。</p><div class="shop-grid">${shop}</div></section><section class="food-coming"><header><b>NEXT MENU</b><span>COMING SOON</span></header><div>${coming}</div></section>`; }
       if (name === 'archive') { this.renderArchivePanel(panel); return; }
       if (name === 'job') this.renderJobPanel(panel);
       if (name === 'system') { this.renderSystemPanel(panel); return; }

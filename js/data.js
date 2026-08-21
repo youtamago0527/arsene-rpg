@@ -387,6 +387,8 @@ window.ARSENE_DATA = {
       ]
     }
   ],
+  // カズの売り物。所持上限は maxStack（アイテム側）で縛る。
+  shopItems: ['cupRamenMiso', 'cupRamenShio'],
   foodMenu: {
     comingSoon: [
       { id: 'sapporoMiso', name: '札幌味噌ラーメン' },
@@ -777,6 +779,11 @@ window.ARSENE_DATA = {
   items: {
     potion: { id: 'potion', name: '回復薬', category: 'consumable', rarity: 'common', description: 'HPを30回復する。', effect: { hp: 30 } },
     slimeJelly: { id: 'slimeJelly', name: 'スライムゼリー', category: 'material', rarity: 'common', description: 'シャドウスライムから採れる不思議なゼリー。' },
+    // カズが仕入れているカップ麺。GOLDで買えて、所持品からも戦闘中からも使える。
+    // 価格は固定。所持金比にすると「金を使い切ってから買う」が最適解になり、
+    // 所持0なら0円で買えてしまうため。周回対策は価格ではなく所持上限で行う。
+    cupRamenMiso: { id: 'cupRamenMiso', name: 'カップラーメン味噌', nameEn: 'CUP RAMEN MISO', category: 'consumable', rarity: 'common', price: 70, maxStack: 5, effect: { hp: 45 }, description: 'カズが箱で仕入れている味噌味。湯を注いで3分、HPが45回復する。' },
+    cupRamenShio: { id: 'cupRamenShio', name: 'カップラーメン塩', nameEn: 'CUP RAMEN SHIO', category: 'consumable', rarity: 'common', price: 90, maxStack: 5, effect: { mp: 30 }, description: 'あっさり塩味。飲み干すと頭が冴え、MPが30回復する。' },
     manaPotion: { id: 'manaPotion', name: '魔力回復薬', category: 'consumable', rarity: 'common', description: 'MPを20回復する。', effect: { mp: 20 } },
     mageStaff: { id: 'mageStaff', name: '魔導士の杖', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '青い魔力を導く魔導士の基本杖。' },
     phantomSword: { id: 'phantomSword', name: '青影の剣', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '青い残光を引く怪盗の細身剣。' },
