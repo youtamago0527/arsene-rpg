@@ -739,21 +739,21 @@
     basicAttackSkill() { const map = D.basicAttackByWeaponType || {}; return D.skills[map[this.equippedWeaponType()]] || D.skills.attack; }
     weaponTypeName(id) { return (D.weaponTypes || []).find(t => t.id === id)?.name || id; }
     // ステータス画面：装備由来の戦闘能力と、現在武器での攻撃性能
+    // ステータスの主役。装備の素の合計ではなく、いま実際に効いている値を出す。
+    //   攻撃力     = 武器種のスケーリング（力や魔力など）＋装備の攻撃力
+    //   防御力     = 体力＋装備の防御力
+    //   魔法防御力 = 精神＋装備の魔法防御力
     combatStatsSectionHTML(total = this.totalStats()) {
-      const cs = this.equipmentCombatStats();
-      const wType = this.equippedWeaponType(), wName = this.weaponTypeName(wType);
-      const atk = Math.round(this.attackPowerFor(wType, total));
+      const wType = this.equippedWeaponType();
       const rule = (D.weaponScaling || {})[wType] || {};
-      const scaleText = Object.entries(rule.scaling || {}).map(([k, v]) => `${statLabels[k] || k}×${Math.round(v * 100)}%`).join(' ＋ ');
+      const scaleText = Object.entries(rule.scaling || {}).map(([k, v]) => `${statLabels[k] || k}×${Math.round(v * 100)}%`).join('＋');
+      const magicWeapon = rule.powerKey === 'magicAttackPower';
       const rows = [
-        ['攻撃力', cs.attackPower], ['防御力', cs.defensePower],
-        ['魔法攻撃力', cs.magicAttackPower], ['魔法防御力', cs.magicDefensePower]
-      ].map(([label, v]) => `<div class="cbt-row"><span>${label}</span><b>${v}</b></div>`).join('');
-      return `<div class="st-section"><h3>戦闘能力</h3>
-        <div class="cbt-grid">${rows}</div>
-        <div class="cbt-total"><div><small>${wName}の攻撃性能</small><b>${atk}</b></div><em>${scaleText} ＋ 装備${rule.powerKey === 'magicAttackPower' ? '魔法攻撃力' : '攻撃力'}</em></div>
-        <div class="cbt-def"><div><span>物理防御</span><b>${Math.round(this.defensePowerFor('physical', total))}</b><small>体力＋防御力</small></div><div><span>魔法防御</span><b>${Math.round(this.defensePowerFor('magical', total))}</b><small>精神＋魔法防御力</small></div></div>
-      </div>`;
+        ['攻撃力', Math.round(this.attackPowerFor(wType, total)), `${scaleText}＋装備の${magicWeapon ? '魔法攻撃力' : '攻撃力'}`],
+        ['防御力', Math.round(this.defensePowerFor('physical', total)), '体力＋装備の防御力'],
+        ['魔法防御力', Math.round(this.defensePowerFor('magical', total)), '精神＋装備の魔法防御力']
+      ].map(([label, v, note]) => `<div class="cbt3-cell"><span>${label}</span><b>${v}</b><small>${note}</small></div>`).join('');
+      return `<div class="st-section st-primary"><h3>戦闘能力</h3><div class="cbt3">${rows}</div></div>`;
     }
     // ステータス画面：3武器学の一覧と習得済み武器技
     masterySectionHTML() {
@@ -2031,11 +2031,7 @@
     renderStatusPanel(panel, withTabs = false) {
       const base = this.profile.baseStats, bonus = this.equipmentBonuses(), total = this.totalStats(), vitals = this.storedVitals(total);
       const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {}, jlv = jst.level || 1, jneed = this.jobExpNeeded(jlv), jexp = jst.exp || 0;
-      // キャラLvは廃止済み。EXPバーは装備中の武器の武器学に置き換える。
-      const mType = this.equippedWeaponType(), mst = this.masteryOf(mType), mNeed = this.masteryExpNeeded(mst.level);
-      const mPct = Math.min(100, 100 * (mst.exp || 0) / mNeed), jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100;
-      const slots = D.equipmentSlots || [{ id: 'rightHand', name: '右手', enName: 'MAIN' }, { id: 'leftHand', name: '左手', enName: 'OFF' }, { id: 'head', name: '頭', enName: 'HEAD' }, { id: 'body', name: '体', enName: 'BODY' }, { id: 'arms', name: '腕', enName: 'ARMS' }, { id: 'feet', name: '足', enName: 'FEET' }, { id: 'accessory', name: 'アクセ', enName: 'ACC' }];
-      const eqRows = slots.map(s => { const id = this.profile.equipment[s.id], it = D.items[id]; return `<div class="st-eq-row ${id ? 'filled' : 'empty'}"><span>${s.name}</span><b>${it?.name || '—'}${id ? this.enchantSuffix(id) : ''}</b><small>${id ? this.bonusText(id) : ''}</small></div>`; }).join('');
+      const jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100;
       // JOB補正 = 旧テーブル方式の補正 ＋ 今のJOBで育てた成長分
       const legacyJob = this.activeJobBonuses(), growthJob = this.jobStatBonuses(), jobBonus = {};
       for (const src of [legacyJob, growthJob]) for (const [k, v] of Object.entries(src)) if (v) jobBonus[k] = (jobBonus[k] || 0) + v;
@@ -2045,25 +2041,38 @@
         const parts = [`<i class="src-base">基礎 ${b}</i>`];
         if (j) parts.push(`<i class="src-job">JOB +${j}</i>`);
         if (e) parts.push(`<i class="src-eq">装備 +${e}</i>`);
-        // パッシブ・セット効果・まかないバフなど、上記以外の加算分
         const rest = total[k] - b - j - e;
-        const mismatch = rest ? `<i class="src-etc">パッシブ他 ${rest > 0 ? '+' : ''}${rest}</i>` : '';
-        return `<div class="st-stat"><span>${statLabels[k]}</span><b>${total[k]}</b><em>${parts.join('<u>+</u>')}${mismatch}</em></div>`;
+        if (rest) parts.push(`<i class="src-etc">その他 ${rest > 0 ? '+' : ''}${rest}</i>`);
+        return `<div class="st-stat"><span>${statLabels[k]}</span><b>${total[k]}</b><em>${parts.join('<u>+</u>')}</em></div>`;
       }).join('');
       const jobBonusRows = Object.entries(jobBonus).filter(([, v]) => v).map(([k, v]) => `<div class="st-jb-row"><span>${statLabels[k] || k.toUpperCase()}</span><b>+${v}</b></div>`).join('');
-      const ptNote = this.isPhantomThief()
-        ? `<p class="st-jb-note">全JOBで育てた成長を ${Math.round((this.gb().phantomThiefInheritRate ?? 0.5) * 100)}% 引き継いでいます。</p>`
-        : `<p class="st-jb-note">JOBで育てた成長は、そのJOBに就いている間だけ乗ります。</p>`;
-      const jobHtml = `<div class="st-section"><h3>ジョブ補正</h3><div class="st-jb-head"><b>${D.jobs[jid]?.name || ''}</b><em>Lv.${jlv}</em></div>${jobBonusRows ? `<div class="st-jb">${jobBonusRows}</div>` : '<p class="item-empty">まだ補正はありません。</p>'}${ptNote}</div>`;
-      // 実際に効いているパッシブを、転生で伸びた現在値つきで出す
-      const passives = this.activePassives();
-      const passiveHtml = passives.length ? `<div class="st-section"><h3>パッシブ</h3><div class="st-passives">${passives.map(s => `<div><b>${s.name}</b><em>${this.passiveCurrentText(s)}</em><small>${s.description || ''}</small></div>`).join('')}</div></div>` : '';
+      // ファントムシーフは全JOBの育てた成長を合算して一定割合を引き継ぐ。
+      // 何がどこから来ているか分かるよう、内訳と引継率を明示する。
+      const inheritRate = Math.round((this.gb().phantomThiefInheritRate ?? 0.5) * 100);
+      let jobNote;
+      if (this.isPhantomThief()) {
+        const gained = this.profile.jobGrowthGained || {};
+        const srcRows = Object.entries(gained).map(([id, table]) => {
+          const sum = Object.values(table || {}).reduce((a, b) => a + (b || 0), 0);
+          return sum ? `<div class="st-pt-row"><span>${D.jobs[id]?.name || id}</span><b>合計 +${sum}</b></div>` : '';
+        }).filter(Boolean).join('');
+        jobNote = `<div class="st-pt"><p>全JOBで育てた成長をすべて合算し、その <b>${inheritRate}%</b> をファントムシーフが引き継いでいます。</p>${srcRows ? `<div class="st-pt-list">${srcRows}</div>` : '<p class="item-empty">まだ引き継げる成長がありません。</p>'}</div>`;
+      } else {
+        jobNote = `<p class="st-jb-note">JOBで育てた成長は、そのJOBに就いている間だけ乗ります。ファントムシーフは全JOB分を合算して ${inheritRate}% 引き継ぎます。</p>`;
+      }
+      const jobHtml = `<div class="st-section"><h3>ジョブ補正</h3><div class="st-jb-head"><b>${D.jobs[jid]?.name || ''}</b><em>Lv.${jlv}</em></div>${jobBonusRows ? `<div class="st-jb">${jobBonusRows}</div>` : '<p class="item-empty">まだ補正はありません。</p>'}${jobNote}</div>`;
+      // 主役は戦闘能力。基礎能力・ジョブ補正はその下に置く。
       panel.innerHTML = `<small>CHARACTER DATA</small><h2>${withTabs ? '装備・ステータス' : 'ステータス'}</h2>${withTabs ? this.equipTabsHtml() : ''}
-        <div class="st-head"><div class="st-avatar-editor"><div class="st-portrait" role="img" aria-label="ステータス用プロフィール画像"></div><label class="st-avatar-upload">写真を変更<input type="file" accept="image/*" data-status-avatar-upload></label><button type="button" class="st-avatar-reset" data-status-avatar-reset>初期画像</button></div><div class="st-id"><strong>${this.playerName()}</strong><em>${D.jobs[jid]?.name || ''} Lv.${jlv}</em><small>写真はこの端末のセーブデータに保存されます</small></div></div>
-        <div class="st-meters"><div class="st-meter hp"><span>HP</span><i style="width:${100*vitals.hp/total.maxHp}%"></i><output>${vitals.hp} / ${total.maxHp}</output></div><div class="st-meter mp"><span>MP</span><i style="width:${100*vitals.mp/total.maxMp}%"></i><output>${vitals.mp} / ${total.maxMp}</output></div><div class="st-meter exp"><span>${this.weaponTypeName(mType)} Lv.${mst.level}</span><i style="width:${mPct}%"></i><output>${mPct.toFixed(2)}%</output></div><div class="st-meter jexp"><span>${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}</span><i style="width:${jpct}%"></i><output>${jneed ? jpct.toFixed(2)+'%' : 'MASTER'}</output></div></div>
-        <div class="st-section"><h3>装備</h3><div class="st-eq">${eqRows}</div></div>
-        <div class="st-section"><h3>能力値</h3><div class="stat-grid">${statRows}</div></div>${this.combatStatsSectionHTML(total)}${this.masterySectionHTML()}${jobHtml}${passiveHtml}`;
+        <div class="st-head2"><label class="st-portrait st-portrait-pick" title="タップで写真を変更"><span class="st-portrait-hint">変更</span><input type="file" accept="image/*" data-status-avatar-upload></label><div class="st-id2"><strong>${this.playerName()}</strong><em>${D.jobs[jid]?.name || ''} Lv.${jlv}</em><button type="button" class="st-avatar-reset" data-status-avatar-reset>初期画像に戻す</button></div><div class="st-vit"><span class="hp">HP ${vitals.hp} / ${total.maxHp}</span><span class="mp">MP ${vitals.mp} / ${total.maxMp}</span></div></div>
+        ${this.combatStatsSectionHTML(total)}
+        <div class="st-section"><h3>基礎能力</h3><div class="stat-grid">${statRows}</div></div>
+        ${jobHtml}
+        <div class="st-section"><h3>JOB経験値</h3><div class="st-meter jexp"><span>${D.jobs[jid]?.name || ''} Lv.${jlv}</span><i style="width:${jpct}%"></i><output>${jneed ? `${jexp} / ${jneed}` : 'MASTER'}</output></div></div>`;
       this.applyStatusPortrait();
+    }
+    // ══ 武器学タブ ══════════════════════════════════════════════
+    renderMasteryPanel(panel) {
+      panel.innerHTML = `<small>WEAPON MASTERY</small><h2>装備・ステータス</h2>${this.equipTabsHtml()}${this.masterySectionHTML()}`;
     }
     enchantLevel(id) { return (D.weapons[id] ? (this.profile.weaponEnchants || {})[id] : (this.profile.armorEnchants || {})[id]) || 0; }
     enchantSuffix(id) { const lv = this.enchantLevel(id); return lv > 0 ? `<em class="ench-lv">+${lv}</em>` : ''; }
@@ -2165,8 +2174,9 @@
     bossSetBonusSectionHTML() { const seriesList = this.unlockedBossSeries(); if (!seriesList.length) return ''; return seriesList.map(series => { const count = this.equippedSeriesCount(series.id); return `<section class="boss-set-section"><header><div><small>BOSS EQUIPMENT SET</small><h3>${series.name}</h3></div><strong>${count} / ${series.equipment.length} EQUIPPED</strong></header><div>${Object.entries(series.setBonuses || {}).map(([needed, bonus]) => `<article class="${count >= Number(needed) ? 'active' : ''}"><b>${needed} SET — ${bonus.name}</b><span>${bonus.description}</span></article>`).join('')}</div></section>`; }).join(''); }
     equipTabsHtml() {
       const t = this.equipTab || 'equip';
-      const tabs = [['equip', '装備'], ['status', 'ステータス'], ['arts', '武器技'], ['score', '楽曲']];
-      return `<div class="item-tabs eq-tabs">${tabs.map(([id, name]) => `<button data-equip-tab="${id}" class="${t === id ? 'active' : ''}"><b>${name}</b></button>`).join('')}</div>`;
+      // 1行に収まる短いラベルにして、内容を階層で分ける（長い1枚ページをやめる）
+      const tabs = [['equip', '装備'], ['status', '能力値'], ['mastery', '武器学'], ['arts', '武器技'], ['score', '楽曲']];
+      return `<div class="eq-tabs2">${tabs.map(([id, name]) => `<button data-equip-tab="${id}" class="${t === id ? 'active' : ''}">${name}</button>`).join('')}</div>`;
     }
     // ══ 武器技タブ ══════════════════════════════════════════════
     // 武器学ごとに分け、閃いて習得済みの技を並べる。タップで効果を開く。
@@ -2222,6 +2232,7 @@
     }
     renderEquipmentPanel(panel) {
       if (this.equipTab === 'status') { this.renderStatusPanel(panel, true); return; }
+      if (this.equipTab === 'mastery') { this.renderMasteryPanel(panel); return; }
       if (this.equipTab === 'arts') { this.renderWeaponArtsPanel(panel); return; }
       if (this.equipTab === 'score') { panel.innerHTML = `<small>MUSIC SCORE</small><h2>楽曲</h2>${this.equipTabsHtml()}<div class="score-note"><b>今後プライベートモードで使用します</b><span>入手した楽曲は、実装予定のプライベートモードで演奏できるようになります。</span></div>${this.musicScoreSectionHTML()}`; return; }
       const slots = D.equipmentSlots || [], owned = Object.entries(this.profile.inventory).filter(([id, n]) => n > 0 && D.items[id]?.category === 'equipment');

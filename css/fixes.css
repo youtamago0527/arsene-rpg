@@ -91,3 +91,56 @@
   .ws-group { grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)) }
   .ws-sub button b { font-size: 12px }
 }
+
+/* ══ ステータス画面：戦闘能力を主役に ═════════════════════════
+   旧構成は装備一覧→能力値→戦闘能力→武器学→ジョブ補正→パッシブを
+   1枚に積んでいて、肝心の攻撃力・防御力が一番下まで隠れていた。
+   タブで分け、能力値タブの先頭に戦闘能力を置く。 */
+
+/* タブ：短いラベルを1行に並べる */
+.eq-tabs2 { flex: none; display: flex; gap: 5px; margin: 0 0 12px; overflow-x: auto; scrollbar-width: none }
+.eq-tabs2 button { flex: 1 0 auto }
+.eq-tabs2::-webkit-scrollbar { display: none }
+.eq-tabs2 button { flex: 1 0 auto; min-width: 62px; padding: 9px 10px; font-size: 12px; font-weight: 800; color: #9fbdd8; background: #050e20; border: 1px solid #1c456c; cursor: pointer; white-space: nowrap }
+.eq-tabs2 button.active { color: #fff; border-color: #55d9ff; background: linear-gradient(180deg, #0b518c, #101a43); box-shadow: inset 0 -2px #55e7ff }
+
+/* 見出し：顔・名前・HP/MP を1ブロックに詰める */
+.st-head2 { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 10px; background: #071426; border: 1px solid #1a5b96; border-left: 3px solid #168fff }
+.st-head2 .st-portrait { flex: none; width: 56px; height: 56px }
+.st-portrait-pick { position: relative; display: block; overflow: hidden; border: 1px solid #2da5ff; cursor: pointer }
+.st-portrait-pick input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none }
+.st-portrait-hint { position: absolute; left: 0; right: 0; bottom: 0; padding: 1px 0; text-align: center; font: 900 8px/1.5 Cinzel; color: #cceeff; background: #041426cc }
+.st-id2 { flex: 1; min-width: 0; display: grid; gap: 3px }
+.st-id2 strong { font-size: 16px; font-weight: 900; color: #fff }
+.st-id2 em { font-style: normal; font-size: 10px; color: #7fc4ee }
+.st-id2 .st-avatar-reset { justify-self: start; min-height: 0; padding: 3px 7px; font-size: 8px }
+.st-vit { flex: none; display: grid; gap: 4px; text-align: right }
+.st-vit span { font: 800 11px Cinzel; padding: 3px 7px; border: 1px solid #23699b; background: #020916 }
+.st-vit .hp { color: #ff8fa5 } .st-vit .mp { color: #7cddff }
+
+/* 戦闘能力：この3つが主役なので大きく出す */
+.st-primary { border-color: #ffcf58 !important }
+.st-primary h3 { color: #ffcf58 !important }
+.cbt3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px }
+.cbt3-cell { display: grid; gap: 2px; padding: 11px 8px; text-align: center; background: linear-gradient(180deg, #0a1c33, #070f1e); border: 1px solid #2a6a9c }
+.cbt3-cell span { font-size: 10px; font-weight: 700; color: #9fc8e4 }
+.cbt3-cell b { font: 900 26px/1.1 Cinzel; color: #fff; text-shadow: 0 0 12px #168fff88 }
+.cbt3-cell small { font-size: 7px; line-height: 1.5; color: #6d90ad }
+
+/* ファントムシーフの引継ぎ内訳 */
+.st-pt { margin-top: 9px; padding: 9px; background: #140b2d; border-left: 3px solid #b090ff }
+.st-pt p { margin: 0 0 6px; font-size: 10px; line-height: 1.7; color: #c8aaff }
+.st-pt p b { color: #fff }
+.st-pt-list { display: grid; gap: 4px }
+.st-pt-row { display: flex; justify-content: space-between; font-size: 10px; color: #b8a8dc }
+.st-pt-row b { font: 800 10px Cinzel; color: #d9c4ff }
+
+@media (max-width: 480px) {
+  .cbt3-cell { padding: 9px 5px }
+  .cbt3-cell b { font-size: 21px }
+  .cbt3-cell small { font-size: 6px }
+  .st-head2 { gap: 8px; padding: 8px }
+  .st-head2 .st-portrait { width: 48px; height: 48px }
+  .st-id2 strong { font-size: 14px }
+  .st-vit span { font-size: 9px; padding: 2px 5px }
+}
