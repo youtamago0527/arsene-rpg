@@ -59,16 +59,16 @@
     const field = $('#battlefield');
     if (!field || !targetEl) return;
     if (!this.fxIsWeaponAction(skill)) {
-      this.audio?.sfx?.(critical ? 'criticalHit' : 'enemyHit');
-      if (critical) this.fxCritical(field, centerIn(field, targetEl));
+      this.audio?.sfx?.('enemyHit');
+      if (critical) { this.audio?.sfx?.('criticalHit'); this.fxCritical(field, centerIn(field, targetEl)); }
       return;
     }
     const type = this.fxWeaponType(skill), at = centerIn(field, targetEl);
     ({ sword: 'fxSlash', martial: 'fxClaw', staff: 'fxBurn', instrument: 'fxNotes', shield: 'fxImpact' }[type] || 'fxSlash')
       .split(' ').forEach(fn => this[fn]?.(field, at));
-    this.audio?.sfx?.(critical ? 'criticalHit'
-      : { sword: 'swordHit', martial: 'clawHit', staff: 'fireHit', instrument: 'noteHit', shield: 'shieldHit' }[type] || 'swordHit');
-    if (critical) this.fxCritical(field, at);
+    // 武器ごとの音は常に鳴らし、クリティカルのときは衝撃音を重ねる
+    this.audio?.sfx?.({ sword: 'swordHit', martial: 'clawHit', staff: 'fireHit', instrument: 'noteHit', shield: 'shieldHit' }[type] || 'swordHit');
+    if (critical) { this.audio?.sfx?.('criticalHit'); this.fxCritical(field, at); }
   };
 
   // 剣：斜めに走る一閃と、遅れて消える残光

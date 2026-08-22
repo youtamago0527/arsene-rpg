@@ -6,13 +6,15 @@
   //   maxDur … 長いファイルを途中でフェードアウトさせる秒数
   //   rate   … 再生速度。同じ素材を流用して質感を変えるのに使う
   const SFX_FILES = {
-    swordHit:    { url: '音楽系/効果音/斬撃.mp3',        gain: .90, offset: .050, maxDur: .9 },
-    clawHit:     { url: '音楽系/効果音/斬撃.mp3',        gain: .78, offset: .050, maxDur: .8, rate: 1.28 },
+    swordHit:    { url: '音楽系/効果音/剣で斬る2.mp3', gain: .90, offset: .050, maxDur: .9 },
+    clawHit:     { url: '音楽系/効果音/爪通常.mp3',    gain: 1.10, offset: .100, maxDur: .9 },
     // ファイアボールは「飛んでいる最中」の音なので、着弾ではなく発射のタイミングで鳴らす
-    fireFlight:  { url: '音楽系/効果音/ファイアーボール.mp3', gain: .36, offset: .010, maxDur: .60 },
-    noteHit:     { url: '音楽系/効果音/楽器.mp3',        gain: 1.15, offset: .002, maxDur: 1.4 },
-    criticalHit: { url: '音楽系/効果音/クリティカル.mp3', gain: 1.30, offset: .100, maxDur: 1.0 }
+    fireFlight:  { url: '音楽系/効果音/杖通常.mp3',    gain: .36, offset: .010, maxDur: .60 },
+    noteHit:     { url: '音楽系/効果音/楽器通常.mp3',  gain: 1.15, offset: .002, maxDur: 1.4 }
+    // クリティカルは専用の録音が無いので、下の合成音をそのまま使う
   };
+  // 武器種 → 効果音名。左手の追撃など、武器種から直接鳴らしたい場所で使う
+  const WEAPON_SFX = { sword: 'swordHit', martial: 'clawHit', staff: 'fireFlight', instrument: 'noteHit', shield: 'shieldHit' };
 
   class ArseneAudio {
     constructor(bgmPath) {
@@ -20,9 +22,6 @@
       this.music = new Audio(bgmPath); this.music.loop = true; this.music.preload = 'auto'; this.music.volume = this.musicVolume;
       this.audioId = `${Date.now()}-${Math.random()}`; this.audioFocus = typeof BroadcastChannel === 'function' ? new BroadcastChannel('arsene-rpg-audio-focus') : null;
       if (this.audioFocus) this.audioFocus.onmessage = e => { if (e.data?.type === 'claim' && e.data.id !== this.audioId) { this.music.pause(); this.started = false; } };
-      // 武器種別ごとの通常攻撃SE（実録音）。ctx生成後にAudioBufferとしてデコードして保持する。
-      this.weaponAttackFiles = { sword: '音楽系/効果音/剣で斬る2.mp3', martial: '音楽系/効果音/爪通常.mp3', staff: '音楽系/効果音/杖通常.mp3', instrument: '音楽系/効果音/楽器通常.mp3' };
-      this.weaponAttackBuffers = {}; this.weaponAttackLoadStarted = false;
     }
     async unlock() {
       if (!this.ctx) {
@@ -39,24 +38,12 @@
           this.music.volume = 1;
           this.applyMusicVolume();
         } catch { this.musicSource = null; this.musicGain = null; this.applyMusicVolume(); }
-        this.loadWeaponAttackClips();
       }
       if (this.ctx.state === 'suspended') await this.ctx.resume();
       if (!this.started && !this.muted) { this.audioFocus?.postMessage({ type: 'claim', id: this.audioId }); this.started = true; this.music.play().catch(() => { this.started = false; }); }
     }
-    async loadWeaponAttackClips() {
-      if (this.weaponAttackLoadStarted || !this.ctx) return; this.weaponAttackLoadStarted = true;
-      await Promise.all(Object.entries(this.weaponAttackFiles).map(async ([type, path]) => {
-        try { const res = await fetch(path); const arr = await res.arrayBuffer(); this.weaponAttackBuffers[type] = await this.ctx.decodeAudioData(arr); } catch {}
-      }));
-    }
-    // 武器の通常攻撃SE。録音済みバッファがあれば再生してtrueを返す（無ければ合成音へフォールバックできるようfalseを返す）。
-    playWeaponAttack(weaponType, volume = .8) {
-      if (!this.ctx || this.muted) return false;
-      const buffer = this.weaponAttackBuffers[weaponType]; if (!buffer) return false;
-      const s = this.ctx.createBufferSource(), g = this.ctx.createGain(); s.buffer = buffer; g.gain.value = volume;
-      s.connect(g); g.connect(this.master); s.start(); return true;
-    }
+    // 武器種から直接鳴らす。読み込み前や未定義の武器種は false を返すので、呼び出し側で合成音へ落とせる。
+    playWeaponAttack(weaponType) { return this.playSfxFile(WEAPON_SFX[weaponType]); }
     setMusicOutput(value) { const level = Math.max(0, value); if (this.musicGain) this.musicGain.gain.value = level; else { try { this.music.volume = Math.min(1, level); } catch {} } }
     getMusicOutput() { return this.musicGain ? this.musicGain.gain.value : this.music.volume; }
     applyMusicVolume() { this.setMusicOutput(this.muted ? 0 : this.musicVolume); }
@@ -200,8 +187,8 @@
         case 'shieldSwing': this.noise(.16,.14,0,500); this.tone(210,.16,'square',.10,.6); break;
         case 'shieldHit': this.tone(120,.26,'square',.20,.4); this.noise(.20,.16,0,400); this.tone(680,.18,'triangle',.06,.5,.02); break;
         // クリティカル：既存の衝撃に、抜けの良い鐘と余韻を重ねる。
-        case 'criticalHit': this.tone(130,.30,'square',.22,.45); this.noise(.26,.20,0,500);
-          this.tone(1760,.34,'sine',.13,.85,.02); this.tone(2637,.44,'sine',.07,.9,.05); break;
+        case 'criticalHit': this.tone(130,.34,'square',.30,.45); this.noise(.30,.27,0,500);
+          this.tone(1760,.38,'sine',.18,.85,.02); this.tone(2637,.48,'sine',.10,.9,.05); break;
       }
     }
   }
