@@ -31,6 +31,11 @@
 .victory .ren-sprite{animation:sheetVictory .85s ease-in-out infinite}
 .down .ren-sprite{animation:none;filter:grayscale(1) drop-shadow(0 0 7px #17243c)}
 .enemy.hit .slime{filter:brightness(2) drop-shadow(0 0 20px #fff)}.enemy.defeated .slime{filter:brightness(3) blur(2px)}
+.enemy.enemy-escaped{pointer-events:none}.enemy.enemy-escaped .slime{animation:enemyRareEscape .62s ease-in forwards!important}.enemy-merox .slime{width:132px;height:118px;left:0;filter:drop-shadow(0 0 7px #fff) drop-shadow(0 0 19px #32cfff);animation:rareTreasureIdle .72s steps(2) infinite}.enemy-gildedHoarder .slime{width:125px;height:120px;left:3px;filter:drop-shadow(0 0 8px #ffdc62) drop-shadow(0 0 18px #5b2cff);animation:rareTreasureIdle 1.05s steps(2) infinite}
+.enemy-fortressGolem .slime{width:158px;height:150px;left:-14px;bottom:12px;filter:drop-shadow(0 0 7px #7dc7ff) drop-shadow(0 0 18px #35206f)}.enemy-prismSentinel .slime{width:142px;height:138px;left:-5px;bottom:13px;filter:drop-shadow(0 0 7px #fff) drop-shadow(0 0 16px #744dff)}
+.enemy-chainReaper .slime{width:148px;height:140px;left:-9px;bottom:12px;filter:drop-shadow(0 0 7px #56cfff) drop-shadow(0 0 16px #8d1d6e)}.enemy-voidAlchemist .slime{width:140px;height:142px;left:-5px;bottom:11px;filter:drop-shadow(0 0 7px #50d5ff) drop-shadow(0 0 17px #5220a0)}
+.enemy-rare-tag{display:inline-block;margin-right:4px;padding:1px 4px;border:1px solid #ffd45d;color:#ffe99b;background:#281600;font:900 7px Cinzel;letter-spacing:.08em;box-shadow:0 0 8px #ffca42}
+@keyframes rareTreasureIdle{50%{transform:translateY(-8px) scale(1.03);filter:brightness(1.2) drop-shadow(0 0 12px #fff)}}@keyframes enemyRareEscape{35%{transform:translateX(-18px) scale(.95)}100%{transform:translateX(180px) scale(.25);opacity:0;filter:blur(4px) brightness(2)}}
 @keyframes sheetIdle{50%{translate:0 -4px}}@keyframes sheetSlimeIdle{50%{translate:0 -7px;filter:drop-shadow(0 0 7px #54dfff) drop-shadow(0 0 18px #6842ff)}}@keyframes sheetVictory{50%{translate:0 -14px;rotate:3deg}}
 @media(max-width:760px){.ren-sprite{transform:scale(.9)}.slime{transform:scale(.88)}}
 .unit-name em{font:700 7px Cinzel;font-style:normal;letter-spacing:.08em;color:#b994ff;margin-top:2px}.weapon-layer{position:absolute;z-index:3;left:0;bottom:24px;width:185px;height:250px;pointer-events:none;transform-origin:48px 190px}.weapon-layer[style*="background-image"]{background-position:center;background-size:contain;background-repeat:no-repeat}.weapon-staff:not([style*="background-image"]):before{content:"";position:absolute;left:38px;top:73px;width:8px;height:163px;border-radius:5px;background:linear-gradient(90deg,#151f48,#6adfff 42%,#152457 75%,#050918);box-shadow:0 0 5px #29bfff;transform:rotate(19deg);transform-origin:center bottom}.weapon-staff:not([style*="background-image"]):after{content:"";position:absolute;left:16px;top:43px;width:44px;height:44px;border:5px double #5feaff;border-radius:50%;background:radial-gradient(circle,#efffff 0 12%,#269fff 14% 28%,#5527da 32% 48%,transparent 52%);box-shadow:0 0 10px #53e9ff,0 0 25px #204dff;animation:staffOrb 1.3s ease-in-out infinite}.weapon-sword:not([style*="background-image"]):before{content:"";position:absolute;left:22px;top:122px;width:104px;height:7px;background:linear-gradient(90deg,#f4ffff,#26aaff,#17255c);box-shadow:0 0 8px #39bdff;transform:rotate(-34deg);transform-origin:left}.casting .ren-sprite{animation:castBody .8s ease-in-out}.casting .weapon-layer{animation:castStaff .8s ease-in-out}.magic-projectile{position:absolute;z-index:7;width:25px;height:25px;border-radius:50%;background:radial-gradient(circle,#fff 0 12%,#4deaff 20% 38%,#2556ff 44% 60%,#7e28e8 66%,transparent 72%);box-shadow:0 0 12px #76efff,0 0 28px #3c42ff;translate:-50% -50%;animation:magicShot .46s cubic-bezier(.18,.72,.22,1) forwards}.magic-projectile:after{content:"";position:absolute;right:13px;top:9px;width:55px;height:7px;background:linear-gradient(90deg,transparent,#188fff,#a7f9ff);filter:blur(2px)}@keyframes staffOrb{50%{scale:1.15;filter:brightness(1.45)}}@keyframes castBody{35%,65%{transform:translateY(-4px) rotate(-2deg);filter:brightness(1.3) drop-shadow(0 0 15px #338cff)}}@keyframes castStaff{35%{transform:rotate(-17deg)}65%{transform:rotate(8deg)}}@keyframes magicShot{to{transform:translate(var(--shot-x),var(--shot-y)) scale(.65);filter:brightness(1.8)}}
@@ -83,6 +88,8 @@
 
 /* D3 role silhouettes: temporary CSS sprites, replaceable by enemy.sprite PNGs. */
 .enemy-abyssalKnight .slime,.enemy-ironChanter .slime{border-radius:18% 18% 10% 10%;clip-path:polygon(25% 0,75% 0,92% 28%,82% 100%,18% 100%,8% 28%);background:linear-gradient(90deg,#07101d,#53647b 46%,#111b2a 53%,#050912);border:2px solid #abc6df;box-shadow:0 0 18px #7daee4}.enemy-voidWatcher .slime,.enemy-arcaneChanter .slime{border-radius:50%;background:radial-gradient(circle at 50% 42%,#fff 0 6%,#74bfff 8% 16%,#160d3d 19% 49%,#050713 53%);border:3px double #a4c9ff;box-shadow:0 0 20px #815dff}.enemy-voidCantor .slime{clip-path:polygon(50% 0,82% 20%,72% 48%,100% 100%,0 100%,28% 48%,18% 20%);border-radius:0;background:linear-gradient(90deg,#eaf7ff,#435b78 25%,#0b1730 58%,#d9e9ff);border:0;box-shadow:0 0 22px #dceeff}.enemy-riftAssailant .slime{clip-path:polygon(48% 0,64% 24%,100% 33%,72% 57%,88% 100%,48% 77%,10% 100%,24% 57%,0 33%,36% 24%);border-radius:0;background:linear-gradient(135deg,#eef8ff,#426e9f 20%,#07111f 55%,#895cff);border:0;box-shadow:0 0 20px #6cc9ff}.enemy-voidGargoyle .slime,.enemy-phantomEmperor .slime,.enemy-voidOrchestra .slime,.enemy-chaosWitch .slime{filter:drop-shadow(0 0 10px #845cff);border-color:#9f75ff}
+.enemy-voidWatcher .slime[style*="background-image"],.enemy-abyssalKnight .slime[style*="background-image"],.enemy-riftAssailant .slime[style*="background-image"],.enemy-voidCantor .slime[style*="background-image"],.enemy-ironChanter .slime[style*="background-image"],.enemy-arcaneChanter .slime[style*="background-image"],.enemy-chaosWitch .slime[style*="background-image"],.enemy-voidGargoyle .slime[style*="background-image"],.enemy-phantomEmperor .slime[style*="background-image"],.enemy-voidOrchestra .slime[style*="background-image"],.enemy-crimsonBehemoth .slime[style*="background-image"]{border:0;border-radius:0;clip-path:none;background-position:center;background-size:contain;background-repeat:no-repeat;background-color:transparent;box-shadow:none;filter:drop-shadow(0 0 7px #65cfff) drop-shadow(0 0 17px #5522a0);animation:rareTreasureIdle 1.65s steps(2) infinite}
+.enemy-voidWatcher .slime[style*="background-image"]{width:142px;height:140px;left:-5px;bottom:11px}.enemy-abyssalKnight .slime[style*="background-image"]{width:158px;height:151px;left:-14px;bottom:8px}.enemy-riftAssailant .slime[style*="background-image"]{width:143px;height:143px;left:-6px;bottom:9px}.enemy-voidCantor .slime[style*="background-image"],.enemy-arcaneChanter .slime[style*="background-image"]{width:126px;height:148px;left:3px;bottom:8px}.enemy-ironChanter .slime[style*="background-image"]{width:148px;height:148px;left:-8px;bottom:7px}.enemy-chaosWitch .slime[style*="background-image"]{width:136px;height:147px;left:-1px;bottom:8px}.enemy-voidGargoyle .slime[style*="background-image"]{width:158px;height:128px;left:-14px;bottom:11px}.enemy-phantomEmperor .slime[style*="background-image"]{width:132px;height:150px;left:0;bottom:6px}.enemy-voidOrchestra .slime[style*="background-image"]{width:158px;height:142px;left:-14px;bottom:9px}.enemy-crimsonBehemoth .slime[style*="background-image"]{width:164px;height:134px;left:-17px;bottom:8px;filter:drop-shadow(0 0 8px #ff683d) drop-shadow(0 0 18px #6e1b78)}
 
 /* Normal encounter silhouettes: each enemy keeps a distinct readable shape. */
 .enemy-soulMage .slime{left:18px;bottom:18px;width:96px;height:112px;border:0;border-radius:48% 48% 18% 18%;clip-path:polygon(50% 0,76% 13%,87% 39%,78% 53%,100% 100%,0 100%,22% 53%,13% 39%,24% 13%);background:linear-gradient(90deg,#090218,#25105d 42%,#0b041f 70%),radial-gradient(circle,#7f50ff,transparent 62%);box-shadow:inset 0 -15px 20px #03000b,0 0 12px #864cff,0 0 30px #371c8d;filter:drop-shadow(0 0 9px #752dff);animation:soulMageIdle 1.7s ease-in-out infinite}
@@ -268,4 +275,43 @@
   .growth-bubble{min-width:116px;padding:8px 12px}.growth-bubble b{font-size:13px}.growth-bubble span{font-size:9px}
   .battle-status-detail{position:fixed;inset:12px;padding:15px;max-height:calc(100svh - 24px)}
   .battle-status-detail>strong{font-size:17px}.battle-stat-grid{grid-template-columns:1fr 1fr}.battle-stat-row{min-height:22px}
+}
+
+/* Enemy HUD: keep long names and HP readable above the larger monster art. */
+.enemy-hud{z-index:9;box-sizing:border-box;padding:4px 6px 5px;background:linear-gradient(90deg,#020713ee 0%,#06162ee6 82%,#06162e18 100%);border-left:2px solid #3dbdff;filter:drop-shadow(0 3px 5px #000b)}
+.enemy-hud span{display:block;line-height:1.2;overflow-wrap:anywhere}
+.enemy .slime{z-index:2}.enemy .slime-shadow{z-index:1}
+
+@media(max-width:760px){
+  .combatants{inset-inline:1.5%}
+  .enemies{width:62vw;max-width:none;gap:4px;flex-wrap:nowrap;align-items:flex-end;overflow:visible;translate:-8px 0}
+  .enemy{width:112px;height:174px;margin:0;transform:none}
+  .enemy:not(.boss-enemy) .slime[style*="background-image"]{left:50%;translate:-50% 0;transform:scale(.82)}
+  .enemy-hud{left:50%;top:-35px;translate:-50% 0;width:110px;padding:4px 5px 5px}
+  .enemy-hud span{min-height:20px;font-size:8px;line-height:1.22;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;word-break:break-word}
+  .enemy-hud .enemy-hp-meter{height:7px;margin-top:3px}
+  .enemy-hud>small{margin-top:1px;font-size:6px}
+  .enemy-hud .enemy-statuses{width:100%;min-height:14px;margin:3px 0 0;justify-content:flex-start}
+  .enemies[data-count="1"] .enemy:not(.boss-enemy){width:150px}
+  .enemies[data-count="1"] .enemy-hud{width:148px;top:-29px}
+  .enemies[data-count="1"] .enemy:not(.boss-enemy) .slime[style*="background-image"]{transform:scale(.94)}
+  .enemies[data-count="2"] .enemy:not(.boss-enemy){width:112px}
+  .enemies[data-count="3"]{gap:2px}
+  .enemies[data-count="3"] .enemy:not(.boss-enemy){width:76px}
+  .enemies[data-count="3"] .enemy-hud{width:76px;padding-inline:3px}
+  .enemies[data-count="3"] .enemy-hud span{min-height:18px;font-size:6.8px;line-height:1.25}
+  .enemies[data-count="3"] .enemy:not(.boss-enemy) .slime[style*="background-image"]{transform:scale(.64)}
+  .enemies[data-count="3"] .enemy-statuses .status-chip{max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .boss-enemy .enemy-hud{left:50%;top:-25px;translate:-50% 0;width:min(210px,62vw)}
+  .boss-enemy .enemy-hud span{min-height:0;font-size:9px;white-space:normal}
+  .boss-enemy .enemy-hud .enemy-statuses{width:100%;margin-left:0;justify-content:flex-start}
+}
+
+@media(max-width:420px){
+  .enemies{width:62vw}
+  .enemy{margin:0;transform:none}
+  .enemies[data-count="2"] .enemy:not(.boss-enemy){width:108px}
+  .enemies[data-count="2"] .enemy-hud{width:106px}
+  .enemies[data-count="3"] .enemy:not(.boss-enemy){width:76px}
+  .enemies[data-count="3"] .enemy-hud{width:76px}
 }
