@@ -186,3 +186,15 @@
   .cc-desc p,.cc-trait-desc p{font-size:9px}
   .cc-select{min-height:40px}
 }
+
+/* タイトルロゴ。文字組みはロゴ画像側に入っているので、見出しテキストは置かない */
+.title-content .title-logo{
+  display:block;width:min(88vw,620px);height:auto;margin:0 auto;
+  filter:drop-shadow(0 10px 34px #000b) drop-shadow(0 0 40px #2a6bd455);
+  animation:title-logo-in .9s cubic-bezier(.2,.75,.3,1) both}
+.title-content .title-logo + p{margin-top:14px}
+@keyframes title-logo-in{
+  from{opacity:0;transform:translateY(14px) scale(.96)}
+  to{opacity:1;transform:none}}
+@media(max-width:760px){.title-content .title-logo{width:92vw}}
+@media(prefers-reduced-motion:reduce){.title-content .title-logo{animation:none}}
