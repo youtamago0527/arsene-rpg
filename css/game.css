@@ -280,7 +280,17 @@
 /* Enemy HUD: keep long names and HP readable above the larger monster art. */
 .enemy-hud{z-index:9;box-sizing:border-box;padding:4px 6px 5px;background:linear-gradient(90deg,#020713ee 0%,#06162ee6 82%,#06162e18 100%);border-left:2px solid #3dbdff;filter:drop-shadow(0 3px 5px #000b)}
 .enemy-hud span{display:block;line-height:1.2;overflow-wrap:anywhere}
+.enemy-visual{position:absolute;z-index:2;inset:0;pointer-events:none;transform-origin:center bottom}
 .enemy .slime{z-index:2}.enemy .slime-shadow{z-index:1}
+.enemy.enemy-attacking,.enemy.hit,.enemy.defeated{animation:none}
+.enemy.enemy-attacking .enemy-visual{animation:enemyVisualAttack .65s ease-in-out}
+.enemy.hit .enemy-visual{animation:enemyVisualHit .42s steps(2)}
+.enemy.defeated .enemy-visual{animation:defeat .75s forwards}
+.enemy.defeated .enemy-hud{opacity:0;transition:opacity .2s}
+.enemy.targetable:hover,.enemy.targetable:focus-visible{transform:none}
+.enemy.targetable:hover .enemy-visual,.enemy.targetable:focus-visible .enemy-visual{transform:translateY(-8px)}
+@keyframes enemyVisualAttack{0%,100%{transform:translateX(0) scale(1)}42%{transform:translateX(-24px) scale(1.025)}58%{transform:translateX(-32px) scale(1.04)}}
+@keyframes enemyVisualHit{0%,100%{filter:none;transform:translateX(0)}25%{filter:brightness(1.8);transform:translateX(-4px)}50%{filter:brightness(.72);transform:translateX(4px)}75%{filter:brightness(1.5);transform:translateX(-2px)}}
 
 @media(max-width:760px){
   .combatants{inset-inline:1.5%}
