@@ -279,7 +279,7 @@ window.ARSENE_DATA = {
     unlockFlag: 'noelFirstEncounterCleared',
     tabs: [{ id: 'weapon', name: '武器', enName: 'WEAPON' }, { id: 'armor', name: '防具', enName: 'ARMOR' }, { id: 'disassemble', name: '分解', enName: 'DISASSEMBLE' }, { id: 'materials', name: '素材一覧', enName: 'MATERIALS' }],
     armorTabs: [{ id: 'leftHand', name: '盾', enName: 'SHIELD' }, { id: 'head', name: '頭', enName: 'HEAD' }, { id: 'body', name: '体', enName: 'BODY' }, { id: 'arms', name: '腕', enName: 'ARMS' }, { id: 'feet', name: '足', enName: 'FEET' }, { id: 'accessory', name: 'アクセ', enName: 'ACCESSORY' }],
-    materialIds: ['slimeJelly', 'darkCore', 'manaDrop', 'stardustShard', 'magicPowder', 'moonstone', 'tatteredRobe', 'gnawedBag', 'ratWhisker', 'stolenCoin', 'ratTail', 'rustedKnife', 'tornCloth', 'goblinMedicine', 'batFang', 'tornWingMembrane', 'beastBlood', 'obsidianFang', 'spiritFragment', 'oldBone', 'darkSoulStone', 'resentmentCrystal', 'zenacad_core', 'cadenza_fragment', 'reverbJelly', 'echoShard', 'stoneShard', 'violinString', 'spectralDust', 'silentNote', 'silentArmor', 'voidShard', 'darkIron', 'chaosDust', 'phantomCore', 'voidEssence', 'myrthi_core', 'myrthi_fragment'],
+    materialIds: ['slimeJelly', 'darkCore', 'manaDrop', 'stardustShard', 'magicPowder', 'moonstone', 'tatteredRobe', 'gnawedBag', 'ratWhisker', 'stolenCoin', 'ratTail', 'rustedKnife', 'tornCloth', 'goblinMedicine', 'batFang', 'tornWingMembrane', 'beastBlood', 'obsidianFang', 'spiritFragment', 'oldBone', 'darkSoulStone', 'resentmentCrystal', 'zenacad_core', 'cadenza_fragment', 'reverbJelly', 'echoShard', 'stoneShard', 'violinString', 'spectralDust', 'silentNote', 'silentArmor', 'voidShard', 'darkIron', 'chaosDust', 'phantomCore', 'voidEssence', 'fortressStone', 'riftClaw', 'voidSilk', 'sanctumGear', 'astralMercury', 'gildedCore', 'myrthi_core', 'myrthi_fragment'],
     bossBlueprints: [{ id: 'noelJudgementStaff', bossId: 'noelFirstEncounter', name: 'ノエルの審判杖', slot: 'rightHand', status: 'awaitingSecondEncounter' }]
   },
   materialUnlockMap: {
@@ -292,8 +292,18 @@ window.ARSENE_DATA = {
     voidShard:    ['voidBladeRecipe'],
     chaosDust:    ['chaosRodRecipe'],
     darkIron:     ['voidHelmRecipe', 'abyssalArmorRecipe'],
-    phantomCore:  ['phantomGauntletRecipe', 'voidRingRecipe']
+    phantomCore:  ['phantomGauntletRecipe', 'voidRingRecipe'],
+    fortressStone: ['d3GuardianAegisRecipe', 'd3WarriorBladeRecipe'],
+    riftClaw: ['d3MartialClawRecipe', 'd3TwinRightRecipe', 'd3TwinLeftRecipe'],
+    voidSilk: ['d3MageStaffRecipe', 'd3PriestStaffRecipe'],
+    sanctumGear: ['d3MaestroInstrumentRecipe'],
+    astralMercury: ['d3MaestroInstrumentRecipe'],
+    gildedCore: ['d3GuardianAegisRecipe']
   },
+  dungeon3RareEncounters: [
+    { id: 'merox', chance: .025 },
+    { id: 'gildedHoarder', chance: .035 }
+  ],
   dungeons: [
     {
       id: 'dungeon1', name: '迷宮の入口', enName: 'THE LABYRINTH GATE',
@@ -389,88 +399,88 @@ window.ARSENE_DATA = {
           id: 'd3f1', name: '侵蝕の外壁', nameEn: '1F ERODED OUTER WALL', winsToClear: 6,
           background: 'assets/bg/dungeon3/d3f1-eroded-outer-wall.webp', thumbnail: 'assets/bg/dungeon3/d3f1-eroded-outer-wall.webp',
           description: 'D2から持ち込んだ装備で敵の防御傾向を見極める適応層。物理・魔法の得手不得手を学ぶ。',
-          materials: ['voidShard', 'darkIron'],
+          materials: ['voidShard', 'darkIron', 'fortressStone', 'riftClaw'],
           enemyScale: { hp: 1.00, atk: 1.00, mag: 1.00, def: 1.00, mnd: 1.00, spd: 1.00, rewards: 1.00 },
           encounterProgression: [
-            { minWins: 0, count: [2, 2], pool: [{ id: 'voidWatcher', weight: 4 }, { id: 'riftAssailant', weight: 3 }, { id: 'abyssalKnight', weight: 2 }] },
-            { minWins: 3, count: [2, 2], pool: [{ id: 'abyssalKnight', weight: 4 }, { id: 'voidWatcher', weight: 4 }, { id: 'riftAssailant', weight: 3 }, { id: 'voidCantor', weight: 1 }] }
+            { minWins: 0, count: [2, 2], pool: [{ id: 'voidWatcher', weight: 4 }, { id: 'abyssalKnight', weight: 3 }, { id: 'riftAssailant', weight: 3 }, { id: 'fortressGolem', weight: 2 }, { id: 'voidCantor', weight: 1 }] },
+            { minWins: 3, count: [2, 2], pool: [{ id: 'fortressGolem', weight: 4 }, { id: 'abyssalKnight', weight: 3 }, { id: 'voidWatcher', weight: 3 }, { id: 'riftAssailant', weight: 3 }, { id: 'voidCantor', weight: 2 }] }
           ]
         },
         {
           id: 'd3f2', name: '血塗られた中庭', nameEn: '2F BLOODSTAINED COURTYARD', winsToClear: 7,
           background: 'assets/bg/dungeon3/d3f1-eroded-outer-wall.webp', thumbnail: 'assets/bg/dungeon3/d3f1-eroded-outer-wall.webp',
           description: '物理防壁と魔障壁が交差する中庭。攻撃手段を一つに絞ると消耗が増える。',
-          materials: ['voidShard', 'chaosDust', 'phantomCore'],
+          materials: ['voidShard', 'chaosDust', 'phantomCore', 'fortressStone', 'riftClaw'],
           enemyScale: { hp: 1.14, atk: 1.08, mag: 1.08, def: 1.14, mnd: 1.14, spd: 1.04, rewards: 1.12 },
           encounterProgression: [
-            { minWins: 0, count: [2, 2], pool: [{ id: 'ironChanter', weight: 3 }, { id: 'arcaneChanter', weight: 3 }, { id: 'riftAssailant', weight: 4 }, { id: 'voidCantor', weight: 2 }] },
-            { minWins: 4, count: [2, 3], pool: [{ id: 'abyssalKnight', weight: 3 }, { id: 'voidWatcher', weight: 3 }, { id: 'voidCantor', weight: 3 }, { id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }, { id: 'chaosWitch', weight: 2 }] }
+            { minWins: 0, count: [2, 2], pool: [{ id: 'abyssalKnight', weight: 4 }, { id: 'riftAssailant', weight: 4 }, { id: 'fortressGolem', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'ironChanter', weight: 2 }] },
+            { minWins: 4, count: [2, 3], pool: [{ id: 'ironChanter', weight: 4 }, { id: 'fortressGolem', weight: 3 }, { id: 'abyssalKnight', weight: 3 }, { id: 'riftAssailant', weight: 3 }, { id: 'voidCantor', weight: 3 }] }
           ]
         },
         {
           id: 'd3f3', name: '封鎖された門', nameEn: '3F SEALED GATE', winsToClear: 7,
           background: 'assets/bg/dungeon3/d3f2-sealed-courtyard.webp', thumbnail: 'assets/bg/dungeon3/d3f2-sealed-courtyard.webp',
           description: '回復役と防壁役が同時に現れる関門。撃破順とMP管理を試される。',
-          materials: ['voidShard', 'chaosDust', 'darkIron'],
+          materials: ['voidShard', 'chaosDust', 'darkIron', 'voidSilk', 'sanctumGear'],
           enemyScale: { hp: 1.28, atk: 1.15, mag: 1.15, def: 1.24, mnd: 1.24, spd: 1.07, rewards: 1.22 },
           encounterProgression: [
-            { minWins: 0, count: [2, 2], pool: [{ id: 'abyssalKnight', weight: 3 }, { id: 'voidWatcher', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'chaosWitch', weight: 2 }] },
-            { minWins: 4, count: [2, 3], pool: [{ id: 'riftAssailant', weight: 3 }, { id: 'voidCantor', weight: 3 }, { id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }, { id: 'chaosWitch', weight: 3 }] }
+            { minWins: 0, count: [2, 2], pool: [{ id: 'fortressGolem', weight: 3 }, { id: 'voidCantor', weight: 3 }, { id: 'ironChanter', weight: 3 }, { id: 'arcaneChanter', weight: 2 }, { id: 'chaosWitch', weight: 2 }] },
+            { minWins: 4, count: [2, 3], pool: [{ id: 'chaosWitch', weight: 4 }, { id: 'arcaneChanter', weight: 3 }, { id: 'ironChanter', weight: 3 }, { id: 'voidCantor', weight: 3 }, { id: 'fortressGolem', weight: 2 }] }
           ]
         },
         {
           id: 'd3f4', name: '鎖の回廊', nameEn: '4F CHAINED GALLERY', winsToClear: 8,
           background: 'assets/bg/dungeon3/d3f2-sealed-courtyard.webp', thumbnail: 'assets/bg/dungeon3/d3f2-sealed-courtyard.webp',
           description: 'ヴェルシクレルへ続く前半最終層。支援役を含む三体編成への対策完成が必要。',
-          materials: ['phantomCore', 'chaosDust', 'darkIron'],
+          materials: ['phantomCore', 'chaosDust', 'darkIron', 'voidSilk', 'sanctumGear'],
           enemyScale: { hp: 1.42, atk: 1.24, mag: 1.24, def: 1.34, mnd: 1.34, spd: 1.10, rewards: 1.34 },
           encounterProgression: [
-            { minWins: 0, count: [2, 3], pool: [{ id: 'riftAssailant', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'ironChanter', weight: 3 }, { id: 'arcaneChanter', weight: 3 }, { id: 'chaosWitch', weight: 2 }] },
-            { minWins: 4, count: [3, 3], pool: [{ id: 'abyssalKnight', weight: 2 }, { id: 'voidWatcher', weight: 2 }, { id: 'voidCantor', weight: 2 }, { id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }, { id: 'riftAssailant', weight: 3 }] }
+            { minWins: 0, count: [2, 3], pool: [{ id: 'ironChanter', weight: 3 }, { id: 'arcaneChanter', weight: 3 }, { id: 'chaosWitch', weight: 3 }, { id: 'prismSentinel', weight: 2 }, { id: 'chainReaper', weight: 2 }] },
+            { minWins: 4, count: [3, 3], pool: [{ id: 'chainReaper', weight: 4 }, { id: 'prismSentinel', weight: 3 }, { id: 'chaosWitch', weight: 3 }, { id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }] }
           ]
         },
         {
           id: 'd3f5', name: '崩壊の礼拝堂', nameEn: '5F RUINED CHAPEL', winsToClear: 7,
           background: 'assets/bg/dungeon3/d3f3-ruined-chapel.webp', thumbnail: 'assets/bg/dungeon3/d3f3-ruined-chapel.webp',
           description: '銀環突破後、怪異の密度が急上昇する。D3装備の製作とJOB再構成を前提とする。',
-          materials: ['darkIron', 'chaosDust', 'phantomCore'],
+          materials: ['darkIron', 'chaosDust', 'phantomCore', 'voidSilk', 'riftClaw'],
           enemyScale: { hp: 1.88, atk: 1.52, mag: 1.52, def: 1.62, mnd: 1.62, spd: 1.15, rewards: 1.68 },
           encounterProgression: [
-            { minWins: 0, count: [2, 2], pool: [{ id: 'voidGargoyle', weight: 4 }, { id: 'chaosWitch', weight: 4 }, { id: 'phantomEmperor', weight: 3 }] },
-            { minWins: 4, count: [2, 3], pool: [{ id: 'voidGargoyle', weight: 3 }, { id: 'phantomEmperor', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'riftAssailant', weight: 3 }] }
+            { minWins: 0, count: [2, 2], pool: [{ id: 'chaosWitch', weight: 4 }, { id: 'prismSentinel', weight: 3 }, { id: 'chainReaper', weight: 3 }, { id: 'voidGargoyle', weight: 3 }, { id: 'voidAlchemist', weight: 2 }] },
+            { minWins: 4, count: [2, 3], pool: [{ id: 'voidAlchemist', weight: 4 }, { id: 'voidGargoyle', weight: 3 }, { id: 'chainReaper', weight: 3 }, { id: 'prismSentinel', weight: 2 }, { id: 'chaosWitch', weight: 2 }] }
           ]
         },
         {
           id: 'd3f6', name: '深紅の塔', nameEn: '6F CRIMSON TOWER', winsToClear: 8,
           background: 'assets/bg/dungeon3/d3f3-ruined-chapel.webp', thumbnail: 'assets/bg/dungeon3/d3f3-ruined-chapel.webp',
           description: '攻撃と回復の両方が鋭くなる後半層。耐久だけでなく短いターンで崩す火力が要る。',
-          materials: ['voidEssence', 'chaosDust', 'phantomCore'],
+          materials: ['voidEssence', 'chaosDust', 'phantomCore', 'riftClaw', 'sanctumGear'],
           enemyScale: { hp: 2.18, atk: 1.70, mag: 1.70, def: 1.84, mnd: 1.84, spd: 1.20, rewards: 1.94 },
           encounterProgression: [
-            { minWins: 0, count: [2, 3], pool: [{ id: 'voidGargoyle', weight: 3 }, { id: 'phantomEmperor', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }] },
-            { minWins: 4, count: [3, 3], pool: [{ id: 'phantomEmperor', weight: 3 }, { id: 'riftAssailant', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'voidOrchestra', weight: 1 }] }
+            { minWins: 0, count: [2, 3], pool: [{ id: 'chainReaper', weight: 4 }, { id: 'voidGargoyle', weight: 3 }, { id: 'voidAlchemist', weight: 3 }, { id: 'phantomEmperor', weight: 2 }, { id: 'crimsonBehemoth', weight: 2 }] },
+            { minWins: 4, count: [3, 3], pool: [{ id: 'crimsonBehemoth', weight: 4 }, { id: 'phantomEmperor', weight: 3 }, { id: 'voidAlchemist', weight: 3 }, { id: 'chainReaper', weight: 2 }, { id: 'voidGargoyle', weight: 2 }] }
           ]
         },
         {
           id: 'd3f7', name: '奈落の奏廊', nameEn: '7F ABYSSAL GALLERY', winsToClear: 8,
           background: 'assets/bg/dungeon3/d3f4-innermost-throne.webp', thumbnail: 'assets/bg/dungeon3/d3f4-innermost-throne.webp',
           description: 'セリペスの反奏が響く最終準備層。装備・パッシブ・回復資源の穴が敗北へ直結する。',
-          materials: ['voidEssence', 'phantomCore', 'darkIron'],
+          materials: ['voidEssence', 'phantomCore', 'darkIron', 'fortressStone', 'sanctumGear'],
           enemyScale: { hp: 2.50, atk: 1.90, mag: 1.90, def: 2.08, mnd: 2.08, spd: 1.24, rewards: 2.20 },
           encounterProgression: [
-            { minWins: 0, count: [2, 3], pool: [{ id: 'phantomEmperor', weight: 3 }, { id: 'voidCantor', weight: 3 }, { id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }, { id: 'voidOrchestra', weight: 2 }] },
-            { minWins: 4, count: [3, 3], pool: [{ id: 'voidOrchestra', weight: 2 }, { id: 'phantomEmperor', weight: 3 }, { id: 'riftAssailant', weight: 2 }, { id: 'voidCantor', weight: 2 }] }
+            { minWins: 0, count: [2, 3], pool: [{ id: 'voidAlchemist', weight: 3 }, { id: 'phantomEmperor', weight: 3 }, { id: 'crimsonBehemoth', weight: 3 }, { id: 'voidOrchestra', weight: 2 }, { id: 'voidCantor', weight: 2 }] },
+            { minWins: 4, count: [3, 3], pool: [{ id: 'voidOrchestra', weight: 4 }, { id: 'crimsonBehemoth', weight: 3 }, { id: 'phantomEmperor', weight: 3 }, { id: 'voidAlchemist', weight: 2 }, { id: 'voidCantor', weight: 2 }] }
           ]
         },
         {
           id: 'd3f8', name: '最奥の玉座間', nameEn: '8F INNERMOST THRONE', winsToClear: 9,
           background: 'assets/bg/dungeon3/d3f4-innermost-throne.webp', thumbnail: 'assets/bg/dungeon3/d3f4-innermost-throne.webp',
           description: 'D3の集大成。セリペス攻略に必要なクラフトと育成を完成させる最後の試練。',
-          materials: ['voidEssence', 'phantomCore', 'darkIron'],
+          materials: ['voidEssence', 'phantomCore', 'darkIron', 'riftClaw', 'sanctumGear'],
           enemyScale: { hp: 2.85, atk: 2.12, mag: 2.12, def: 2.38, mnd: 2.38, spd: 1.30, rewards: 2.58 },
           encounterProgression: [
-            { minWins: 0, count: [3, 3], pool: [{ id: 'voidOrchestra', weight: 2 }, { id: 'phantomEmperor', weight: 3 }, { id: 'voidCantor', weight: 2 }, { id: 'ironChanter', weight: 2 }, { id: 'arcaneChanter', weight: 2 }] },
-            { minWins: 5, count: [3, 3], pool: [{ id: 'voidOrchestra', weight: 3 }, { id: 'phantomEmperor', weight: 3 }, { id: 'riftAssailant', weight: 2 }, { id: 'voidCantor', weight: 2 }, { id: 'voidGargoyle', weight: 2 }] }
+            { minWins: 0, count: [3, 3], pool: [{ id: 'phantomEmperor', weight: 3 }, { id: 'crimsonBehemoth', weight: 3 }, { id: 'voidOrchestra', weight: 3 }, { id: 'fortressGolem', weight: 2 }, { id: 'chaosWitch', weight: 2 }] },
+            { minWins: 5, count: [3, 3], pool: [{ id: 'voidOrchestra', weight: 4 }, { id: 'crimsonBehemoth', weight: 4 }, { id: 'phantomEmperor', weight: 3 }, { id: 'fortressGolem', weight: 2 }, { id: 'chaosWitch', weight: 2 }] }
           ]
         }
       ],
@@ -630,6 +640,14 @@ window.ARSENE_DATA = {
     abyssalArmorRecipe: { id: 'abyssalArmorRecipe', name: '深淵の鎧', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'darkIron', resultItemId: 'abyssalArmor', resultCount: 1, gold: 750, materials: [{ itemId: 'darkIron', count: 8 }, { itemId: 'voidShard', count: 5 }, { itemId: 'voidEssence', count: 1 }] },
     phantomGauntletRecipe: { id: 'phantomGauntletRecipe', name: '幻影拳甲', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'phantomCore', resultItemId: 'phantomGauntlet', resultCount: 1, gold: 600, materials: [{ itemId: 'phantomCore', count: 4 }, { itemId: 'darkIron', count: 4 }, { itemId: 'chaosDust', count: 3 }] },
     voidRingRecipe: { id: 'voidRingRecipe', name: '虚無の指輪', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'phantomCore', resultItemId: 'voidRing', resultCount: 1, gold: 1000, materials: [{ itemId: 'voidEssence', count: 4 }, { itemId: 'phantomCore', count: 4 }, { itemId: 'chaosDust', count: 3 }] },
+    d3WarriorBladeRecipe: { id: 'd3WarriorBladeRecipe', name: '城断剣グラン・ブレイク', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'fortressStone', resultItemId: 'd3WarriorBlade', resultCount: 1, gold: 1250, materials: [{ itemId: 'fortressStone', count: 8 }, { itemId: 'darkIron', count: 8 }, { itemId: 'voidEssence', count: 2 }] },
+    d3MageStaffRecipe: { id: 'd3MageStaffRecipe', name: '虚星杖アストラ・ノクス', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'voidSilk', resultItemId: 'd3MageStaff', resultCount: 1, gold: 1250, materials: [{ itemId: 'voidSilk', count: 8 }, { itemId: 'chaosDust', count: 8 }, { itemId: 'phantomCore', count: 3 }] },
+    d3PriestStaffRecipe: { id: 'd3PriestStaffRecipe', name: '聖環杖ルクス・オラトリオ', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'voidSilk', resultItemId: 'd3PriestStaff', resultCount: 1, gold: 1200, materials: [{ itemId: 'voidSilk', count: 7 }, { itemId: 'sanctumGear', count: 5 }, { itemId: 'voidEssence', count: 2 }] },
+    d3MartialClawRecipe: { id: 'd3MartialClawRecipe', name: '裂空爪ヴァジュラ', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'riftClaw', resultItemId: 'd3MartialClaw', resultCount: 1, gold: 1200, materials: [{ itemId: 'riftClaw', count: 9 }, { itemId: 'darkIron', count: 5 }, { itemId: 'phantomCore', count: 3 }] },
+    d3MaestroInstrumentRecipe: { id: 'd3MaestroInstrumentRecipe', name: '星蝕琴ノクターン', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'sanctumGear', resultItemId: 'd3MaestroInstrument', resultCount: 1, gold: 1800, materials: [{ itemId: 'sanctumGear', count: 10 }, { itemId: 'voidSilk', count: 6 }, { itemId: 'astralMercury', count: 2 }] },
+    d3TwinRightRecipe: { id: 'd3TwinRightRecipe', name: '双界刃・暁裂', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'riftClaw', resultItemId: 'd3TwinRight', resultCount: 1, gold: 1100, materials: [{ itemId: 'riftClaw', count: 7 }, { itemId: 'voidShard', count: 8 }, { itemId: 'phantomCore', count: 2 }] },
+    d3TwinLeftRecipe: { id: 'd3TwinLeftRecipe', name: '双界刃・宵断', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'riftClaw', resultItemId: 'd3TwinLeft', resultCount: 1, gold: 1100, materials: [{ itemId: 'riftClaw', count: 7 }, { itemId: 'chaosDust', count: 7 }, { itemId: 'phantomCore', count: 2 }] },
+    d3GuardianAegisRecipe: { id: 'd3GuardianAegisRecipe', name: '城界盾アイギス・レグナ', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'fortressStone', resultItemId: 'd3GuardianAegis', resultCount: 1, gold: 1800, materials: [{ itemId: 'fortressStone', count: 12 }, { itemId: 'darkIron', count: 10 }, { itemId: 'gildedCore', count: 2 }] },
     cadenza_staff_recipe: { id: 'cadenza_staff_recipe', seriesId: 'zenacad', craftCategory: 'boss', resultItemId: 'cadenza_staff', resultCount: 1, gold: 850, materials: [{ itemId: 'zenacad_core', count: 2 }, { itemId: 'cadenza_fragment', count: 8 }, { itemId: 'manaDrop', count: 6 }] },
     soloist_mask_recipe: { id: 'soloist_mask_recipe', seriesId: 'zenacad', craftCategory: 'boss', resultItemId: 'soloist_mask', resultCount: 1, gold: 620, materials: [{ itemId: 'zenacad_core', count: 1 }, { itemId: 'cadenza_fragment', count: 6 }, { itemId: 'moonstone', count: 3 }] },
     soloist_coat_recipe: { id: 'soloist_coat_recipe', seriesId: 'zenacad', craftCategory: 'boss', resultItemId: 'soloist_coat', resultCount: 1, gold: 780, materials: [{ itemId: 'zenacad_core', count: 2 }, { itemId: 'cadenza_fragment', count: 7 }, { itemId: 'tatteredRobe', count: 5 }] },
@@ -1021,6 +1039,12 @@ window.ARSENE_DATA = {
     chaosDust: { id: 'chaosDust', name: '混沌の粉塵', nameEn: 'CHAOS DUST', category: 'material', rarity: 'rare', dungeonId: 'dungeon3', description: 'カオス・ウィッチが操る混沌エネルギーが粉末状に凝固したもの。魔力増幅素材。' },
     phantomCore: { id: 'phantomCore', name: '幻影核', nameEn: 'PHANTOM CORE', category: 'material', rarity: 'rare', dungeonId: 'dungeon3', description: '幻影皇の核心部から生まれる幻影の結晶。高度な装備製作に用いられる。' },
     voidEssence: { id: 'voidEssence', name: '虚無の精髄', nameEn: 'VOID ESSENCE', category: 'material', rarity: 'epic', dungeonId: 'dungeon3', description: '虚無の楽団が奏でる虚空の旋律が液化したもの。最高位のダンジョン素材。' },
+    fortressStone: { id: 'fortressStone', name: '城塞核石', nameEn: 'FORTRESS CORE STONE', category: 'material', rarity: 'rare', dungeonId: 'dungeon3', description: '侵蝕城塞のゴーレムから剥がれた圧縮核。重装・盾・剣の製作に使う。' },
+    riftClaw: { id: 'riftClaw', name: '裂界爪', nameEn: 'RIFT CLAW', category: 'material', rarity: 'rare', dungeonId: 'dungeon3', description: '空間を裂く怪異の爪。拳・双刃系の高速武器に適する。' },
+    voidSilk: { id: 'voidSilk', name: '虚紡糸', nameEn: 'VOID SILK', category: 'material', rarity: 'rare', dungeonId: 'dungeon3', description: '虚空の魔力を織り込んだ糸。魔導・神聖装備の魔力導線になる。' },
+    sanctumGear: { id: 'sanctumGear', name: '聖堂歯車', nameEn: 'SANCTUM GEAR', category: 'material', rarity: 'rare', dungeonId: 'dungeon3', description: '崩壊した礼拝堂の自動奏機から採れる歯車。楽器と精密装備の中核素材。' },
+    astralMercury: { id: 'astralMercury', name: '星銀水', nameEn: 'ASTRAL MERCURY', category: 'material', rarity: 'epic', dungeonId: 'dungeon3', description: 'メロクスが残す液体金属。極端に軽く、硬い。' },
+    gildedCore: { id: 'gildedCore', name: '強欲の金核', nameEn: 'GILDED CORE', category: 'material', rarity: 'epic', dungeonId: 'dungeon3', description: '財貨を食らう怪異の黄金核。高級装備の触媒になる。' },
     parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', category: 'equipment', slot: 'rightHand', rarity: 'epic', stars: 4, dungeonId: 'dungeon3', guitarSkillTree: 'versicrellGuitar', description: '昔、親に買ってもらったギター。少し変わった形をしているが、最初に触れた「音」は今でも重い。' },
     voidHelm: { id: 'voidHelm', name: '虚空の兜', nameEn: 'VOID HELM', category: 'equipment', slot: 'head', rarity: 'epic', dungeonId: 'dungeon3', description: '崩界の深廊の素材で鍛えた兜。精神と防御を高める。' },
     abyssalArmor: { id: 'abyssalArmor', name: '深淵の鎧', nameEn: 'ABYSSAL ARMOR', category: 'equipment', slot: 'body', rarity: 'epic', dungeonId: 'dungeon3', description: '深淵鉄鉱を用いた最高位の鎧。強靭な防御力を誇る。' },
@@ -1028,6 +1052,14 @@ window.ARSENE_DATA = {
     voidRing: { id: 'voidRing', name: '虚無の指輪', nameEn: 'VOID RING', category: 'equipment', slot: 'accessory', rarity: 'epic', dungeonId: 'dungeon3', description: '虚無の精髄を封じた指輪。あらゆる能力値を高める。' },
     voidBlade: { id: 'voidBlade', name: '虚空刃ヴォイドブレード', nameEn: 'VOID BLADE', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '裂界の虚無を刃へ定着させたD3工房剣。' },
     chaosRod: { id: 'chaosRod', name: '混沌の魔杖カオスロッド', nameEn: 'CHAOS ROD', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '混沌の粒子を魔力へ変換するD3工房杖。' },
+    d3WarriorBlade: { id: 'd3WarriorBlade', name: '城断剣グラン・ブレイク', nameEn: 'GRAND BREAKER', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '城塞核を刃へ鍛え直した戦士向け大剣。基本能力ではなく物理出力を伸ばす。' },
+    d3MageStaff: { id: 'd3MageStaff', name: '虚星杖アストラ・ノクス', nameEn: 'ASTRA NOX', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '虚紡糸で星銀の魔力回路を束ねた魔導士向け杖。' },
+    d3PriestStaff: { id: 'd3PriestStaff', name: '聖環杖ルクス・オラトリオ', nameEn: 'LUX ORATORIO', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '崩れた聖堂の祈りを再構築した僧侶向け杖。回復性能に特化する。' },
+    d3MartialClaw: { id: 'd3MartialClaw', name: '裂空爪ヴァジュラ', nameEn: 'VAJRA RIFT', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '空間そのものを掴み裂く武道家向けの戦爪。' },
+    d3MaestroInstrument: { id: 'd3MaestroInstrument', name: '星蝕琴ノクターン', nameEn: 'ECLIPSE NOCTURNE', category: 'equipment', slot: 'rightHand', rarity: 'epic', stars: 4, dungeonId: 'dungeon3', description: '星銀水と聖堂歯車で組んだ魔奏士向けの機巧弦楽器。' },
+    d3TwinRight: { id: 'd3TwinRight', name: '双界刃・暁裂', nameEn: 'TWIN RIFT DAWN', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '双刃士の右手で攻勢を始める裂界剣。左刃と対になる。' },
+    d3TwinLeft: { id: 'd3TwinLeft', name: '双界刃・宵断', nameEn: 'TWIN RIFT DUSK', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '双刃士の左手で軌道を閉じる裂界剣。右刃と対になる。' },
+    d3GuardianAegis: { id: 'd3GuardianAegis', name: '城界盾アイギス・レグナ', nameEn: 'AEGIS REGNA', category: 'equipment', slot: 'rightHand', rarity: 'epic', stars: 4, dungeonId: 'dungeon3', description: '城塞核と強欲の金核を圧着した守護士専用盾。攻撃ではなく防御性能を武器にする。' },
     cadenza_staff: { id: 'cadenza_staff', name: '魔杖カデンツァ', nameEn: 'CADENZA', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: '独奏卿ゼナカドが振るった魔導指揮杖。杖が描く軌跡に魔力が追従し、ひとりの術者を楽団へと変える。' },
     soloist_mask: { id: 'soloist_mask', name: '独奏卿の仮面', nameEn: 'SOLOIST MASK', category: 'equipment', slot: 'head', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: 'ゼナカドが身につけていた、片眼を覆う妖艶な仮面。' },
     soloist_coat: { id: 'soloist_coat', name: '独奏卿の燕尾服', nameEn: 'SOLOIST COAT', category: 'equipment', slot: 'body', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: '黒・紫・金で仕立てられた独奏卿の燕尾服。魔力と精神を守る。' },
@@ -1073,6 +1105,14 @@ window.ARSENE_DATA = {
     lunaEdge: { id: 'lunaEdge', name: '月影剣ルナエッジ', dungeonId: 'dungeon2', weaponType: 'sword', weaponSprite: 'sword_luna', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 2.8, bonuses: { str: 14, dex: 4, critBonus: 0.05 } },
     voidBlade: { id: 'voidBlade', name: '虚空刃ヴォイドブレード', nameEn: 'VOID BLADE', dungeonId: 'dungeon3', weaponType: 'sword', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 3.4, bonuses: { str: 18, agi: 6, critBonus: 0.06 } },
     chaosRod: { id: 'chaosRod', name: '混沌の魔杖カオスロッド', nameEn: 'CHAOS ROD', dungeonId: 'dungeon3', weaponType: 'staff', weaponSprite: 'staff_chaos', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.6, bonuses: { mag: 20, maxMp: 10 } },
+    d3WarriorBlade: { id: 'd3WarriorBlade', name: '城断剣グラン・ブレイク', weaponType: 'sword', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 32, bonuses: {}, effects: { physicalDamagePercent: .06 } },
+    d3MageStaff: { id: 'd3MageStaff', name: '虚星杖アストラ・ノクス', weaponType: 'staff', weaponSprite: 'staff_chaos', battleSprite: null, attackMotion: 'staffCast', magicAttackPower: 34, bonuses: {} },
+    d3PriestStaff: { id: 'd3PriestStaff', name: '聖環杖ルクス・オラトリオ', weaponType: 'staff', weaponSprite: 'staff_sun', battleSprite: null, attackMotion: 'staffCast', magicAttackPower: 25, magicDefensePower: 12, bonuses: {}, effects: { healingPowerPercent: .12 } },
+    d3MartialClaw: { id: 'd3MartialClaw', name: '裂空爪ヴァジュラ', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 29, bonuses: {}, effects: { criticalRateBonus: .05 } },
+    d3MaestroInstrument: { id: 'd3MaestroInstrument', name: '星蝕琴ノクターン', weaponType: 'instrument', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', magicAttackPower: 32, bonuses: {}, effects: { criticalRateBonus: .04 } },
+    d3TwinRight: { id: 'd3TwinRight', name: '双界刃・暁裂', weaponType: 'sword', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 27, bonuses: {}, effects: { criticalRateBonus: .04 } },
+    d3TwinLeft: { id: 'd3TwinLeft', name: '双界刃・宵断', weaponType: 'sword', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 25, bonuses: {}, effects: { criticalRateBonus: .05 } },
+    d3GuardianAegis: { id: 'd3GuardianAegis', name: '城界盾アイギス・レグナ', weaponType: 'shield', weaponSprite: 'shield_reprise', battleSprite: null, attackMotion: 'shieldBash', damageType: 'physical', defensePower: 34, magicDefensePower: 30, bonuses: {}, effects: { magicDamageReductionPercent: .06 } },
     parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', dungeonId: 'dungeon3', weaponType: 'instrument', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', damageStat: 'dex', power: 4.0, guitarSkillTree: 'versicrellGuitar', bonuses: { dex: 10, mag: 5, critBonus: 0.04 } },
     myrthi_blade: { id: 'myrthi_blade', name: '黒紅刃ミルティア', nameEn: 'MYRTHI BLADE', seriesId: 'myrthi', dungeonId: 'dungeon2', weaponType: 'sword', weaponSprite: 'sword_myrthi', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 3.0, bonuses: { str: 16, agi: 8, critBonus: .06 } }
   },
@@ -1263,7 +1303,7 @@ window.ARSENE_DATA = {
     voidWatcher: {
       id: 'voidWatcher', name: '虚空の監視者', enName: 'VOID WATCHER', dungeonId: 'dungeon3',
       role: 'MAGIC TANK', roleDescription: '魔法防御型。物理攻撃が有効。', element: '虚無', weaknesses: ['斬', '打'], resistances: ['闇', '魔'],
-      spriteClass: 'void-watcher', battleScale: 1.1,
+      sprite: 'assets/enemy-characters/dungeon3/voidWatcher.png', spriteClass: 'void-watcher', battleScale: 1.1,
       stats: { maxHp: 420, atk: 24, def: 13, mag: 38, mnd: 72, spd: 13 }, exp: 95, gold: { min: 40, max: 70 },
       dropTable: [{ itemId: 'voidShard', chance: .45 }, { itemId: 'chaosDust', chance: .22 }, { itemId: 'phantomCore', chance: .10 }],
       ai: [{ id: 'soulBolt', name: '虚空弾', kind: 'magic', weight: .65 }, { id: 'attack', name: '虚空の一瞥', kind: 'magic', weight: .35 }]
@@ -1271,7 +1311,7 @@ window.ARSENE_DATA = {
     abyssalKnight: {
       id: 'abyssalKnight', name: '深淵の騎士', enName: 'ABYSSAL KNIGHT', dungeonId: 'dungeon3',
       role: 'PHYSICAL TANK', roleDescription: '物理防御型。魔法攻撃が有効。', element: '闇', weaknesses: ['光', '魔'], resistances: ['闇', '物理'],
-      spriteClass: 'abyssal-knight', battleScale: 1.3,
+      sprite: 'assets/enemy-characters/dungeon3/abyssalKnight.png', spriteClass: 'abyssal-knight', battleScale: 1.3,
       stats: { maxHp: 520, atk: 40, def: 78, mag: 12, mnd: 14, spd: 10 }, exp: 110, gold: { min: 45, max: 80 },
       dropTable: [{ itemId: 'darkIron', chance: .40 }, { itemId: 'voidShard', chance: .20 }, { itemId: 'voidEssence', chance: .08 }],
       ai: [{ id: 'attack', name: '深淵の剣撃', kind: 'physical', weight: .70 }, { id: 'soulBolt', name: '虚空震撃', kind: 'physical', weight: .30 }]
@@ -1279,7 +1319,7 @@ window.ARSENE_DATA = {
     chaosWitch: {
       id: 'chaosWitch', name: 'カオス・ウィッチ', enName: 'CHAOS WITCH', dungeonId: 'dungeon3',
       element: '混沌', weaknesses: ['聖', '打'], resistances: ['魔', '闇'],
-      spriteClass: 'chaos-witch', battleScale: 1.0,
+      sprite: 'assets/enemy-characters/dungeon3/chaosWitch.png', spriteClass: 'chaos-witch', battleScale: 1.0,
       stats: { maxHp: 300, atk: 18, def: 14, mag: 50, mnd: 22, spd: 16 }, exp: 130, gold: { min: 50, max: 85 },
       dropTable: [{ itemId: 'chaosDust', chance: .50 }, { itemId: 'voidShard', chance: .25 }, { itemId: 'phantomCore', chance: .12 }],
       ai: [{ id: 'soulBolt', name: '混沌魔法', kind: 'magic', weight: .60 }, { id: 'attack', name: '呪縛の指先', kind: 'magic', weight: .40 }]
@@ -1287,7 +1327,7 @@ window.ARSENE_DATA = {
     voidGargoyle: {
       id: 'voidGargoyle', name: '虚空ガーゴイル', enName: 'VOID GARGOYLE', dungeonId: 'dungeon3',
       element: '闇', weaknesses: ['打', '聖'], resistances: ['物理', '魔', '闇'],
-      spriteClass: 'void-gargoyle', battleScale: 1.4,
+      sprite: 'assets/enemy-characters/dungeon3/voidGargoyle.png', spriteClass: 'void-gargoyle', battleScale: 1.4,
       stats: { maxHp: 520, atk: 40, def: 42, mag: 14, mnd: 16, spd: 8 }, exp: 118, gold: { min: 42, max: 75 },
       dropTable: [{ itemId: 'darkIron', chance: .38 }, { itemId: 'voidShard', chance: .18 }, { itemId: 'voidEssence', chance: .10 }],
       ai: [{ id: 'attack', name: '石翼の一撃', kind: 'physical', weight: .75 }, { id: 'soulBolt', name: '虚空咆哮', kind: 'physical', weight: .25 }]
@@ -1295,7 +1335,7 @@ window.ARSENE_DATA = {
     phantomEmperor: {
       id: 'phantomEmperor', name: '幻影皇', enName: 'PHANTOM EMPEROR', dungeonId: 'dungeon3',
       element: '虚無', weaknesses: ['聖', '光'], resistances: ['物理', '闇', '魔'],
-      spriteClass: 'phantom-emperor', battleScale: 1.2,
+      sprite: 'assets/enemy-characters/dungeon3/phantomEmperor.png', spriteClass: 'phantom-emperor', battleScale: 1.2,
       stats: { maxHp: 360, atk: 36, def: 22, mag: 42, mnd: 24, spd: 20 }, exp: 140, gold: { min: 55, max: 90 },
       dropTable: [{ itemId: 'phantomCore', chance: .40 }, { itemId: 'darkIron', chance: .22 }, { itemId: 'voidEssence', chance: .14 }],
       ai: [{ id: 'soulBolt', name: '皇の号令', kind: 'magic', weight: .55 }, { id: 'attack', name: '幻影剣閃', kind: 'physical', weight: .45 }]
@@ -1304,38 +1344,87 @@ window.ARSENE_DATA = {
       id: 'voidOrchestra', name: '虚無の楽団', enName: 'VOID ORCHESTRA', dungeonId: 'dungeon3',
       kind: 'elite',
       element: '虚無', weaknesses: ['光'], resistances: ['物理', '闇', '魔', '毒'],
-      spriteClass: 'void-orchestra', battleScale: 1.15,
+      sprite: 'assets/enemy-characters/dungeon3/voidOrchestra.png', spriteClass: 'void-orchestra', battleScale: 1.15,
       stats: { maxHp: 600, atk: 42, def: 30, mag: 46, mnd: 26, spd: 18 }, exp: 180, gold: { min: 70, max: 120 },
       dropTable: [{ itemId: 'voidEssence', chance: .50 }, { itemId: 'phantomCore', chance: .35 }, { itemId: 'chaosDust', chance: .30 }, { itemId: 'darkIron', chance: .20 }],
       ai: [{ id: 'soulBolt', name: '虚無の交響', kind: 'magic', weight: .60 }, { id: 'attack', name: '楽団の奔流', kind: 'physical', weight: .40 }]
     },
     voidCantor: {
       id: 'voidCantor', name: '虚空の聖唱者', enName: 'VOID CANTOR', dungeonId: 'dungeon3', role: 'HEALER', roleDescription: '傷ついた味方を優先して回復する。',
-      element: '虚無', weaknesses: ['斬', '火'], resistances: ['闇'], spriteClass: 'void-cantor', battleScale: 1.0,
+      element: '虚無', weaknesses: ['斬', '火'], resistances: ['闇'], sprite: 'assets/enemy-characters/dungeon3/voidCantor.png', spriteClass: 'void-cantor', battleScale: 1.0,
       stats: { maxHp: 330, atk: 15, def: 20, mag: 42, mnd: 46, spd: 12 }, exp: 125, gold: { min: 52, max: 86 },
       dropTable: [{ itemId: 'chaosDust', chance: .42 }, { itemId: 'voidEssence', chance: .12 }],
       ai: [{ id: 'voidHeal', name: '虚空治癒', kind: 'heal', power: .22, weight: .58 }, { id: 'soulBolt', name: '聖唱弾', kind: 'magic', weight: .42 }]
     },
     ironChanter: {
       id: 'ironChanter', name: '鉄壁の詠唱兵', enName: 'IRON CHANTER', dungeonId: 'dungeon3', role: 'PHYSICAL BUFFER', roleDescription: '敵全体のDEFを上昇させる。',
-      element: '闇', weaknesses: ['魔', '雷'], resistances: ['物理'], spriteClass: 'iron-chanter', battleScale: 1.05,
+      element: '闇', weaknesses: ['魔', '雷'], resistances: ['物理'], sprite: 'assets/enemy-characters/dungeon3/ironChanter.png', spriteClass: 'iron-chanter', battleScale: 1.05,
       stats: { maxHp: 390, atk: 26, def: 44, mag: 22, mnd: 24, spd: 9 }, exp: 120, gold: { min: 48, max: 82 },
       dropTable: [{ itemId: 'darkIron', chance: .48 }, { itemId: 'voidShard', chance: .20 }],
       ai: [{ id: 'ironChant', name: '鉄壁詠唱', kind: 'defBuff', rate: .30, turns: 3, weight: .48 }, { id: 'attack', name: '鉄杖打ち', kind: 'physical', weight: .52 }]
     },
     arcaneChanter: {
       id: 'arcaneChanter', name: '秘儀の詠唱兵', enName: 'ARCANE CHANTER', dungeonId: 'dungeon3', role: 'MAGIC BUFFER', roleDescription: '敵全体のMDEFを上昇させる。',
-      element: '虚無', weaknesses: ['斬', '打'], resistances: ['魔'], spriteClass: 'arcane-chanter', battleScale: 1.0,
+      element: '虚無', weaknesses: ['斬', '打'], resistances: ['魔'], sprite: 'assets/enemy-characters/dungeon3/arcaneChanter.png', spriteClass: 'arcane-chanter', battleScale: 1.0,
       stats: { maxHp: 350, atk: 18, def: 20, mag: 34, mnd: 48, spd: 11 }, exp: 122, gold: { min: 50, max: 84 },
       dropTable: [{ itemId: 'chaosDust', chance: .46 }, { itemId: 'phantomCore', chance: .12 }],
       ai: [{ id: 'arcaneChant', name: '秘儀障壁', kind: 'mdefBuff', rate: .30, turns: 3, weight: .48 }, { id: 'soulBolt', name: '秘儀弾', kind: 'magic', weight: .52 }]
     },
     riftAssailant: {
       id: 'riftAssailant', name: '裂界の強襲者', enName: 'RIFT ASSAILANT', dungeonId: 'dungeon3', role: 'ATTACKER', roleDescription: '低防御・高攻撃。優先撃破推奨。',
-      element: '虚無', weaknesses: ['光', '打'], resistances: ['闇'], spriteClass: 'rift-assailant', battleScale: 1.05,
+      element: '虚無', weaknesses: ['光', '打'], resistances: ['闇'], sprite: 'assets/enemy-characters/dungeon3/riftAssailant.png', spriteClass: 'rift-assailant', battleScale: 1.05,
       stats: { maxHp: 280, atk: 58, def: 14, mag: 44, mnd: 13, spd: 24 }, exp: 135, gold: { min: 55, max: 92 },
       dropTable: [{ itemId: 'voidShard', chance: .44 }, { itemId: 'phantomCore', chance: .15 }],
       ai: [{ id: 'riftSlash', name: '裂界斬', kind: 'physical', weight: .58 }, { id: 'riftRay', name: '裂界光', kind: 'magic', weight: .42 }]
+    },
+    fortressGolem: {
+      id: 'fortressGolem', name: '侵城ゴーレム', enName: 'FORTRESS GOLEM', dungeonId: 'dungeon3', role: 'HEAVY TANK', roleDescription: '極端な物理防御を持つ城塞型。魔法で崩す。',
+      element: '土', weaknesses: ['魔', '雷'], resistances: ['物理', '打'], sprite: 'assets/enemy-characters/dungeon3/fortressGolem.png', battleScale: 1.35,
+      stats: { maxHp: 610, atk: 44, def: 92, mag: 8, mnd: 18, spd: 6 }, exp: 145, gold: { min: 62, max: 105 },
+      dropTable: [{ itemId: 'fortressStone', chance: .42 }, { itemId: 'darkIron', chance: .35 }, { itemId: 'voidShard', chance: .18 }],
+      ai: [{ id: 'fortressCrash', name: '城壁圧砕', kind: 'physical', weight: .72 }, { id: 'attack', name: '岩塊打ち', kind: 'physical', weight: .28 }]
+    },
+    prismSentinel: {
+      id: 'prismSentinel', name: '白晶の監視機', enName: 'PRISM SENTINEL', dungeonId: 'dungeon3', role: 'MAGIC TANK', roleDescription: '魔法を弾く白晶装甲。物理攻撃が有効。',
+      element: '光', weaknesses: ['斬', '闇'], resistances: ['魔', '光'], sprite: 'assets/enemy-characters/dungeon3/prismSentinel.png', battleScale: 1.05,
+      stats: { maxHp: 460, atk: 28, def: 24, mag: 52, mnd: 88, spd: 14 }, exp: 155, gold: { min: 68, max: 112 },
+      dropTable: [{ itemId: 'voidSilk', chance: .38 }, { itemId: 'chaosDust', chance: .28 }, { itemId: 'sanctumGear', chance: .10 }],
+      ai: [{ id: 'prismRay', name: '白晶収束光', kind: 'magic', weight: .68 }, { id: 'attack', name: '反射衝撃', kind: 'physical', weight: .32 }]
+    },
+    chainReaper: {
+      id: 'chainReaper', name: '鎖葬の刈手', enName: 'CHAIN REAPER', dungeonId: 'dungeon3', role: 'FAST ATTACKER', roleDescription: '高い素早さで連続して圧力をかける。',
+      element: '闇', weaknesses: ['光', '火'], resistances: ['闇'], sprite: 'assets/enemy-characters/dungeon3/chainReaper.png', battleScale: 1.1,
+      stats: { maxHp: 340, atk: 68, def: 18, mag: 20, mnd: 18, spd: 34, agi: 38, dex: 32 }, exp: 170, gold: { min: 72, max: 122 },
+      dropTable: [{ itemId: 'riftClaw', chance: .44 }, { itemId: 'voidShard', chance: .26 }, { itemId: 'phantomCore', chance: .12 }],
+      ai: [{ id: 'chainRend', name: '鎖葬裂き', kind: 'physical', weight: .76 }, { id: 'riftRay', name: '鎖界波', kind: 'magic', weight: .24 }]
+    },
+    voidAlchemist: {
+      id: 'voidAlchemist', name: '虚無錬成師', enName: 'VOID ALCHEMIST', dungeonId: 'dungeon3', role: 'SUPPORT', roleDescription: '回復と魔法防壁で編成を立て直す。',
+      element: '虚無', weaknesses: ['斬', '聖'], resistances: ['魔'], sprite: 'assets/enemy-characters/dungeon3/voidAlchemist.png', battleScale: 1.0,
+      stats: { maxHp: 400, atk: 16, def: 24, mag: 58, mnd: 52, spd: 18 }, exp: 185, gold: { min: 82, max: 136 },
+      dropTable: [{ itemId: 'voidSilk', chance: .42 }, { itemId: 'sanctumGear', chance: .32 }, { itemId: 'voidEssence', chance: .10 }],
+      ai: [{ id: 'voidHeal', name: '虚無再錬成', kind: 'heal', power: .25, weight: .38 }, { id: 'arcaneChant', name: '錬成障壁', kind: 'mdefBuff', rate: .26, turns: 3, weight: .24 }, { id: 'soulBolt', name: '崩界薬弾', kind: 'magic', weight: .38 }]
+    },
+    crimsonBehemoth: {
+      id: 'crimsonBehemoth', name: '深紅城獣', enName: 'CRIMSON BEHEMOTH', dungeonId: 'dungeon3', role: 'BRUISER', roleDescription: '後半層の高耐久・高火力個体。短期決戦推奨。',
+      element: '火', weaknesses: ['氷', '聖'], resistances: ['火', '物理'], sprite: 'assets/enemy-characters/dungeon3/crimsonBehemoth.png', spriteClass: 'crimson-behemoth', battleScale: 1.35,
+      stats: { maxHp: 720, atk: 76, def: 48, mag: 34, mnd: 34, spd: 17 }, exp: 230, gold: { min: 105, max: 168 },
+      dropTable: [{ itemId: 'fortressStone', chance: .35 }, { itemId: 'riftClaw', chance: .34 }, { itemId: 'voidEssence', chance: .14 }],
+      ai: [{ id: 'crimsonCharge', name: '深紅突進', kind: 'physical', weight: .72 }, { id: 'crimsonRoar', name: '灼城咆哮', kind: 'magic', weight: .28 }]
+    },
+    merox: {
+      id: 'merox', legacyIds: ['astralMercuryCore'], name: 'メロクス', enName: 'MEROX', lineage: 'xSuffixTribe', lineageLabel: '〇〇クス族', dungeonId: 'dungeon3', kind: 'rare', role: 'EXP TREASURE', roleDescription: '莫大なEXPを宿す超硬・高速個体。すぐ逃げる。',
+      element: '星', weaknesses: [], resistances: ['物理', '魔'], sprite: 'assets/enemy-characters/dungeon3/merox.png', battleScale: .88, ignoreFloorStatScale: true,
+      stats: { maxHp: 18, atk: 22, def: 96, mag: 14, mnd: 92, spd: 88, agi: 92, dex: 78, luk: 6 }, exp: 1500, gold: { min: 0, max: 0 },
+      dropTable: [{ itemId: 'astralMercury', chance: .40 }],
+      ai: [{ id: 'rareEscape', name: '星界離脱', kind: 'flee', weight: .58 }, { id: 'meroxRam', name: '星銀突進', kind: 'physical', weight: .42 }]
+    },
+    gildedHoarder: {
+      id: 'gildedHoarder', name: '黄金喰らい', enName: 'GILDED HOARDER', dungeonId: 'dungeon3', kind: 'rare', role: 'GOLD TREASURE / THIEF', roleDescription: '大量のGOLDを抱えるが、こちらの財貨や素材を盗んで逃げる。',
+      element: '金', weaknesses: ['打', '雷'], resistances: ['闇'], sprite: 'assets/enemy-characters/dungeon3/gildedHoarder.png', battleScale: 1.0, ignoreFloorStatScale: true,
+      stats: { maxHp: 120, atk: 46, def: 38, mag: 18, mnd: 34, spd: 58, agi: 62, dex: 56, luk: 30 }, exp: 190, gold: { min: 1400, max: 2400 },
+      dropTable: [{ itemId: 'gildedCore', chance: .35 }, { itemId: 'stolenCoin', chance: .80 }],
+      ai: [{ id: 'hoardSteal', name: '強欲のひったくり', kind: 'steal', weight: .54 }, { id: 'hoardEscape', name: '戦利離脱', kind: 'flee', weight: .26 }, { id: 'coinCrash', name: '金貨圧砕', kind: 'physical', weight: .20 }]
     },
     silentHarmonist: {
       id: 'silentHarmonist', name: 'サイレント・ハーモニスト', enName: 'SILENT HARMONIST', dungeonId: 'dungeon2',

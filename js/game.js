@@ -246,6 +246,8 @@
         if (profile.flags.lastBattleResult === undefined) profile.flags.lastBattleResult = null;
         // 図鑑用：一度でも戦闘で出会った敵・入手した装備のID
         if (!Array.isArray(profile.seenEnemies)) profile.seenEnemies = [];
+        // D3希少怪異の正式命名に伴う図鑑ID移行。旧セーブの遭遇記録を失わない。
+        if (profile.seenEnemies.includes('astralMercuryCore')) profile.seenEnemies = [...new Set(profile.seenEnemies.map(id => id === 'astralMercuryCore' ? 'merox' : id))];
         if (!Array.isArray(profile.equipmentArchive)) profile.equipmentArchive = [];
         if (!profile.collectionRewards || typeof profile.collectionRewards !== 'object') profile.collectionRewards = {};
         const knownEquipment = [...Object.entries(profile.inventory || {}).filter(([id, n]) => n > 0 && D.items[id]?.category === 'equipment').map(([id]) => id), ...Object.values(profile.equipment || {}).filter(id => D.items[id]?.category === 'equipment')];
@@ -1236,7 +1238,7 @@
     }
     checkAdvancedJobUnlocks() { const ids = D.advancedJobIds || []; ids.forEach(id => { if (this.isAdvancedJobUnlocked(id)) { const job = D.jobs[id]; if (job && !this.profile.jobs[id]) this.profile.jobs[id] = { level: 1, exp: 0 }; } }); }
     makeEnemy(id, index) {
-      const t = D.enemies[id], floor = this.activeFloor(this.currentDungeonId), scale = floor?.enemyScale || {};
+      const t = D.enemies[id], floor = this.activeFloor(this.currentDungeonId), scale = t.ignoreFloorStatScale ? {} : (floor?.enemyScale || {});
       const rateFor = key => scale[key] ?? (key === 'maxHp' ? scale.hp : 1) ?? 1;
       const stats = Object.fromEntries(Object.entries(t.stats || {}).map(([key, value]) => [key, Math.max(1, Math.round(value * rateFor(key))) ]));
       const rewardRate = scale.rewards || 1;
@@ -1244,6 +1246,13 @@
       return { ...t, uid: `enemy-${index}`, label: String.fromCharCode(65 + index), floorId: floor?.id || t.floorId, floorScale: scale, stats, hp: stats.maxHp, exp: Math.round((t.exp || 0) * rewardRate), gold, alive: true, bindResistance: t.bindResistance || 0, bindTurns: 0 };
     }
     rollEncounter(wins, progression) {
+      if (this.currentDungeonId === 'dungeon3') {
+        let rareRoll = Math.random();
+        for (const rare of D.dungeon3RareEncounters || []) {
+          rareRoll -= rare.chance || 0;
+          if (rareRoll <= 0) return [rare.id];
+        }
+      }
       const tiers = progression || D.encounterProgression || [], tier = [...tiers].reverse().find(entry => wins >= entry.minWins);
       if (!tier) { const encounters = D.normalEncounters || [['shadowSlime', 'shadowSlime']]; return [...encounters[Math.min(wins, encounters.length - 1)]]; }
       const count = roll(tier.count[0], tier.count[1]), totalWeight = tier.pool.reduce((sum, entry) => sum + entry.weight, 0), lineup = [];
@@ -1258,7 +1267,7 @@
       for (const e of this.enemies || []) if (e.id && !seen.includes(e.id)) { seen.push(e.id); added = true; }
       if (added) this.saveProfile();
     }
-    renderEnemies() { this.noteEnemiesSeen(); $('#enemies').classList.toggle('boss-party', this.battleMode !== 'slime'); $('#enemies').innerHTML = this.enemies.map((e, i) => { const statuses = `<button type="button" class="status-strip enemy-statuses" aria-label="敵の状態と解析情報" onclick="event.preventDefault();event.stopPropagation();window.arseneGame?.openEnemyStatus(${i})"></button>`; const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : ''; return e.kind === 'boss' ? `<div role="button" tabindex="0" class="enemy boss-enemy${bossClass} fighter idle" id="${e.uid}" data-enemy="${i}" aria-label="${e.name}"><div class="enemy-hud boss-hud"><span>${e.name} // ${e.title}</span><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>???? / ????</small>${statuses}</div><div class="slime-shadow boss-shadow"></div><div class="noel-sprite${e.spriteClass ? ' ' + e.spriteClass : ''}"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div></div>` : `<div role="button" tabindex="0" class="enemy enemy-${e.id} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" aria-label="${e.name}${e.label}"><div class="enemy-hud"><span>${e.name} ${e.label}</span><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>???? / ????</small>${statuses}</div><div class="slime-shadow"></div><div class="slime"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div></div>`; }).join(''); }
+    renderEnemies() { this.noteEnemiesSeen(); $('#enemies').classList.toggle('boss-party', this.battleMode !== 'slime'); $('#enemies').innerHTML = this.enemies.map((e, i) => { const statuses = `<button type="button" class="status-strip enemy-statuses" aria-label="敵の状態と解析情報" onclick="event.preventDefault();event.stopPropagation();window.arseneGame?.openEnemyStatus(${i})"></button>`; const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : '', rareTag = e.kind === 'rare' ? '<em class="enemy-rare-tag">RARE</em>' : ''; return e.kind === 'boss' ? `<div role="button" tabindex="0" class="enemy boss-enemy${bossClass} fighter idle" id="${e.uid}" data-enemy="${i}" aria-label="${e.name}"><div class="enemy-hud boss-hud"><span>${e.name} // ${e.title}</span><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>???? / ????</small>${statuses}</div><div class="slime-shadow boss-shadow"></div><div class="noel-sprite${e.spriteClass ? ' ' + e.spriteClass : ''}"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div></div>` : `<div role="button" tabindex="0" class="enemy enemy-${e.id} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" aria-label="${e.name}${e.label}"><div class="enemy-hud"><span>${rareTag}${e.name} ${e.label}</span><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>???? / ????</small>${statuses}</div><div class="slime-shadow"></div><div class="slime"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div></div>`; }).join(''); }
     applyEquipmentVisual() {
       const w = this.equippedWeapon(), layer = $('#weapon-layer'); layer.className = `weapon-layer weapon-${w.weaponType} sprite-${w.weaponSprite}`; layer.dataset.weaponId = w.id; layer.dataset.weaponType = w.weaponType; layer.title = w.name; const weaponName = $('#weapon-name'); if (weaponName) weaponName.textContent = `RIGHT HAND // ${w.name}`;
       if (w.battleSprite) layer.style.backgroundImage = `url("${w.battleSprite}")`; else layer.style.removeProperty('background-image');
@@ -1429,7 +1438,7 @@
       if (skillId === 'resonanceBreak') { const stored = this.player.resonance; skill = { ...skill, resonanceStored: stored, power: this.resonanceMultiplier(stored) }; this.player.resonance = 0; this.flashTitle('RESONANCE BREAK', `${stored.toFixed(1)}% // ×${skill.power}`); }
       this.locked = true; this.clearTargets(); this.panel(''); $('#phase-label').textContent = 'ACTION'; await this.beginPlayerTurn(); const setEffects = this.activeSetEffects(), freeMp = skill.kind === 'magical' && skill.mp > 0 && Math.random() < (setEffects.freeMagicMpChance || 0); if (!freeMp) this.player.mp -= this.skillMpCost(skill); else this.flashTitle('MAESTRO', 'MP COST 0'); if (skill.cooldown) this.player.cooldowns[skill.id] = this.turn + skill.cooldown; this.persistVitals(); this.updateHUD();
       const actors = [{ type: 'player', speed: this.player.stats.agi + roll(0, 4) + (skill.speedBonus || 0), act: () => this.playerActionWithSpark(skill, targetIndex) }]; this.enemies.filter(e => e.alive).forEach(e => actors.push({ type: 'enemy', enemy: e, speed: e.stats.spd + roll(0, 4), act: () => this.enemyAttack(e) })); actors.sort((a, b) => b.speed - a.speed);
-      for (const actor of actors) { if (this.finished || this.player.hp <= 0) break; if (actor.type === 'enemy' && !actor.enemy.alive) continue; await actor.act(); await this.battleSleep(300); if (!this.enemies.some(e => e.alive)) { const fallen = this.enemies[0]; if (this.battleMode === 'versicrell' && fallen?.form === 1) { await this.transformVersicrell(fallen); return; } await this.victory(); return; } }
+      for (const actor of actors) { if (this.finished || this.player.hp <= 0) break; if (actor.type === 'enemy' && !actor.enemy.alive) continue; await actor.act(); await this.battleSleep(300); if (!this.enemies.some(e => e.alive)) { const fallen = this.enemies[0]; if (this.battleMode === 'versicrell' && fallen?.form === 1) { await this.transformVersicrell(fallen); return; } if (this.enemies.every(e => e.escaped)) { await this.enemyEncounterEscaped(); return; } await this.victory(); return; } }
       if (this.player.hp <= 0) { await this.defeat(); return; } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands();
     }
     effectivePlayerStat(key) { const base = this.player.stats[key] || 0; return key === 'mag' && (this.player.buffs?.blueEcho || 0) > 0 ? base * 1.10 : base; }
@@ -1569,7 +1578,7 @@
       const el = document.getElementById(enemy.uid); if (!el) return;
       const strike = { id: 'offHandStrike', kind: 'weapon', weaponType: lw.weaponType, damageType: lw.damageType || 'physical', power: rate, agiScale: 0 };
       this.flashTitle(this.usesBareFists() ? '左の拳' : '左手の追撃', lw.name);
-      this.audio.sfx('slash');
+      if (!this.audio.playWeaponAttack(lw.weaponType)) this.audio.sfx('slash');
       const ren = $('#ren'); ren.classList.add('attacking');
       await this.battleSleep(200);
       const outcome = this.rollPlayerAttackOutcome(strike, enemy, { weapon: lw, weaponType: lw.weaponType });
@@ -1813,6 +1822,8 @@
       if (chosen.kind === 'defBuff' && this.enemies.some(e => e.alive && this.turn <= (e.defBuffUntil || 0))) chosen = fallback;
       if (chosen.kind === 'mdefBuff' && this.enemies.some(e => e.alive && this.turn <= (e.mdefBuffUntil || 0))) chosen = fallback;
       if (['heal','defBuff','mdefBuff'].includes(chosen.kind)) { await this.enemySupportAction(enemy, chosen); return; }
+      if (chosen.kind === 'flee') { await this.enemyFlee(enemy, chosen); return; }
+      if (chosen.kind === 'steal') { await this.enemySteal(enemy, chosen); return; }
       const isMagic = chosen.kind === 'magic';
       this.setLog(`${enemy.name}${enemy.label}の${chosen.name}！`); if (isMagic) { this.flashTitle(chosen.name, 'SHADOW MAGIC'); this.audio.sfx('dark'); } const el = document.getElementById(enemy.uid), ren = $('#ren'); el.classList.add('enemy-attacking'); await this.battleSleep(300);
       const balance = D.combatBalance, attackStat = isMagic ? enemy.stats.mag : enemy.stats.atk;
@@ -1852,7 +1863,35 @@
     announceRareDrop(item) { const layer = $('#rare-drop-layer'); if (!layer) return; this.audio.sfx('rareDrop'); const b = document.createElement('div'); b.className = `rare-drop-banner rarity-${item.rarity}`; b.innerHTML = `<small>${item.rarity === 'legendary' ? 'LEGENDARY DROP' : 'EPIC DROP'}</small><b>${item.name}</b>`; layer.appendChild(b); requestAnimationFrame(() => b.classList.add('show')); setTimeout(() => { b.classList.remove('show'); setTimeout(() => b.remove(), 420); }, 2400); }
     async useConsumable(id) { const item = D.items[id], amount = item?.effect?.hp || item?.effect?.mp || 0, key = item?.effect?.hp ? 'hp' : 'mp', maxKey = key === 'hp' ? 'maxHp' : 'maxMp'; if (!item || !(this.profile.inventory[id] > 0)) { this.setLog(`${item?.name || 'アイテム'}を持っていない。`); return; } if (this.player[key] >= this.player.stats[maxKey]) { this.setLog(`${key.toUpperCase()}は満タンだ。`); return; } this.locked = true; this.panel(''); await this.beginPlayerTurn(); const heal = Math.min(amount, this.player.stats[maxKey] - this.player[key]); this.profile.inventory[id]--; this.player[key] += heal; this.persistVitals(); this.audio.sfx('heal'); this.setLog(`${item.name}を使った。${key.toUpperCase()}が${heal}回復！`); this.floating($('#ren'), `+${heal}`, 'heal'); this.updateHUD(); await this.battleSleep(650); await this.enemyOnlyTurn(); }
     async tryEscape() { this.locked = true; this.panel(''); await this.beginPlayerTurn(); const live = this.enemies.filter(e => e.alive), avg = live.reduce((s, e) => s + e.stats.spd, 0) / live.length, chance = clamp(.45 + (this.player.stats.agi - avg) * .025, .35, .9); this.setLog('逃走経路を探している……'); await this.battleSleep(600); if (Math.random() < chance) { this.finished = true; this.persistVitals(); this.audio.sfx('escape'); this.flashTitle('ESCAPED', '戦線を離脱'); await this.battleSleep(700); this.showResult('ESCAPED', '怪異との戦闘から離脱し、拠点へ帰還した。', 'RETURN TO HIDEOUT', this.battleSummaryHTML()); } else { this.setLog('逃げられない！'); await this.battleSleep(450); await this.enemyOnlyTurn(); } }
-    async enemyOnlyTurn() { for (const e of this.enemies.filter(e => e.alive)) { await this.enemyAttack(e); if (this.player.hp <= 0) { await this.defeat(); return; } await this.battleSleep(300); } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands(); }
+    async enemyOnlyTurn() { for (const e of this.enemies.filter(e => e.alive)) { await this.enemyAttack(e); if (this.player.hp <= 0) { await this.defeat(); return; } if (!this.enemies.some(x => x.alive)) { if (this.enemies.every(x => x.escaped)) await this.enemyEncounterEscaped(); else await this.victory(); return; } await this.battleSleep(300); } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands(); }
+
+    async enemyFlee(enemy, action) {
+      const el = document.getElementById(enemy.uid); enemy.alive = false; enemy.escaped = true;
+      this.flashTitle(action.name, 'RARE ENEMY ESCAPED'); this.audio.sfx('escape'); this.setLog(`${enemy.name}${enemy.label}は戦利品を抱えて逃げ出した！`);
+      this.floating(el, 'ESCAPE', 'miss'); el?.classList.add('enemy-escaped'); await this.battleSleep(620); this.updateHUD();
+    }
+    async enemySteal(enemy, action) {
+      const el = document.getElementById(enemy.uid), materials = Object.entries(this.profile.inventory || {}).filter(([id, count]) => count > 0 && D.items[id]?.category === 'material');
+      const canGold = this.profile.gold > 0, stealMaterial = materials.length && (!canGold || Math.random() < .42);
+      this.flashTitle(action.name, 'GOLD / MATERIAL AT RISK'); this.audio.sfx('dark'); el?.classList.add('enemy-attacking'); await this.battleSleep(260);
+      if (stealMaterial) {
+        const [id] = materials[Math.floor(Math.random() * materials.length)]; this.profile.inventory[id]--; enemy.stolenItems ||= {}; enemy.stolenItems[id] = (enemy.stolenItems[id] || 0) + 1;
+        this.setLog(`${enemy.name}は${D.items[id].name}を盗んだ！ 倒せば取り返せる。`); this.floating($('#ren'), `${D.items[id].name} -1`, 'debuff');
+      } else if (canGold) {
+        const floorNo = Math.max(1, (this.floorsOf('dungeon3') || []).findIndex(f => f.id === this.currentFloorId) + 1), amount = Math.max(1, Math.min(Math.round(this.profile.gold * .12), 180 + floorNo * 170));
+        this.profile.gold -= amount; enemy.stolenGold = (enemy.stolenGold || 0) + amount;
+        this.setLog(`${enemy.name}は${amount.toLocaleString('ja-JP')} GOLDを盗んだ！ 倒せば取り返せる。`); this.floating($('#ren'), `GOLD -${amount}`, 'debuff');
+      } else {
+        this.setLog(`${enemy.name}は盗める物を見つけられなかった！`); this.floating(el, 'MISS', 'miss');
+      }
+      enemy.hasStolen = true; this.saveProfile(); el?.classList.remove('enemy-attacking'); this.updateHUD(); await this.battleSleep(440);
+    }
+    async enemyEncounterEscaped() {
+      this.finished = true; this.locked = false; $('#phase-label').textContent = 'ESCAPED';
+      $('#log').innerHTML = '<p>希少怪異は逃走した。この遭遇は階層踏破数に加算されない。</p>';
+      this.panel(this.button('次の戦闘へ', 'NEXT BATTLE', 'next') + this.button('拠点へ戻る', 'HIDEOUT', 'hideout'));
+      this.bindActions({ next: () => this.startBattle(), hideout: () => this.showMenu('home') });
+    }
 
     grantEnemyReward(enemy) {
       // 特殊戦闘モード側で一部の器だけを初期化していても撃破処理を止めない。
@@ -1861,8 +1900,10 @@
       rewards.masteryResults ||= []; rewards.jobResults ||= []; rewards.newRecipes ||= [];
       // 僧侶《施しの祈り》などのGOLD増加パッシブをここで反映する
       const exp = enemy.exp || 0, baseGold = roll(enemy.gold?.min ?? 0, enemy.gold?.max ?? 0);
-      const gold = Math.round(baseGold * (1 + this.passiveEffectRate('goldUp'))), drops = {};
+      const recoveredGold = enemy.stolenGold || 0, gold = Math.round(baseGold * (1 + this.passiveEffectRate('goldUp'))) + recoveredGold, drops = {};
       (enemy.rolledDrops || []).forEach(([id, n]) => { drops[id] = (drops[id] || 0) + n; });
+      Object.entries(enemy.stolenItems || {}).forEach(([id, n]) => { drops[id] = (drops[id] || 0) + n; });
+      if (recoveredGold || Object.keys(enemy.stolenItems || {}).length) this.setLog(`${enemy.name}を撃破！ 盗まれた戦利品を取り返した。`);
       const levels = this.applyRewards({ exp, gold, drops });
       const mastery = this.grantWeaponExp(exp), job = this.grantJobExp(exp);
       rewards.exp += exp; rewards.gold += gold;

@@ -20,6 +20,9 @@
       this.music = new Audio(bgmPath); this.music.loop = true; this.music.preload = 'auto'; this.music.volume = this.musicVolume;
       this.audioId = `${Date.now()}-${Math.random()}`; this.audioFocus = typeof BroadcastChannel === 'function' ? new BroadcastChannel('arsene-rpg-audio-focus') : null;
       if (this.audioFocus) this.audioFocus.onmessage = e => { if (e.data?.type === 'claim' && e.data.id !== this.audioId) { this.music.pause(); this.started = false; } };
+      // 武器種別ごとの通常攻撃SE（実録音）。ctx生成後にAudioBufferとしてデコードして保持する。
+      this.weaponAttackFiles = { sword: '音楽系/効果音/剣で斬る2.mp3', martial: '音楽系/効果音/爪通常.mp3', staff: '音楽系/効果音/杖通常.mp3', instrument: '音楽系/効果音/楽器通常.mp3' };
+      this.weaponAttackBuffers = {}; this.weaponAttackLoadStarted = false;
     }
     async unlock() {
       if (!this.ctx) {
@@ -36,9 +39,23 @@
           this.music.volume = 1;
           this.applyMusicVolume();
         } catch { this.musicSource = null; this.musicGain = null; this.applyMusicVolume(); }
+        this.loadWeaponAttackClips();
       }
       if (this.ctx.state === 'suspended') await this.ctx.resume();
       if (!this.started && !this.muted) { this.audioFocus?.postMessage({ type: 'claim', id: this.audioId }); this.started = true; this.music.play().catch(() => { this.started = false; }); }
+    }
+    async loadWeaponAttackClips() {
+      if (this.weaponAttackLoadStarted || !this.ctx) return; this.weaponAttackLoadStarted = true;
+      await Promise.all(Object.entries(this.weaponAttackFiles).map(async ([type, path]) => {
+        try { const res = await fetch(path); const arr = await res.arrayBuffer(); this.weaponAttackBuffers[type] = await this.ctx.decodeAudioData(arr); } catch {}
+      }));
+    }
+    // 武器の通常攻撃SE。録音済みバッファがあれば再生してtrueを返す（無ければ合成音へフォールバックできるようfalseを返す）。
+    playWeaponAttack(weaponType, volume = .8) {
+      if (!this.ctx || this.muted) return false;
+      const buffer = this.weaponAttackBuffers[weaponType]; if (!buffer) return false;
+      const s = this.ctx.createBufferSource(), g = this.ctx.createGain(); s.buffer = buffer; g.gain.value = volume;
+      s.connect(g); g.connect(this.master); s.start(); return true;
     }
     setMusicOutput(value) { const level = Math.max(0, value); if (this.musicGain) this.musicGain.gain.value = level; else { try { this.music.volume = Math.min(1, level); } catch {} } }
     getMusicOutput() { return this.musicGain ? this.musicGain.gain.value : this.music.volume; }
