@@ -177,7 +177,7 @@
     }
 
     freshProfile() {
-      const p = D.player; return { version: 15, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), musicScores: {}, bossDefeated: { zenacad: false, myrthi: false, versicrell: false, seripes: false }, currentJob: 'mage', jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, guardian: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, unlockedJobs: ['mage'], initialJob: 'mage', jobGrowthGained: {}, jobRebirths: {}, jobMastered: [], growthFraction: {}, learnedPassives: [], equippedPassives: [null], ptActionSlots: [null, null], ptPassiveSlots: [null, null], weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 }, instrument: { level: 1, exp: 0 }, shield: { level: 1, exp: 0 } }, learnedWeaponSkills: [], seenEnemies: [], equipmentArchive: [], collectionRewards: {}, playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0, instrument: 0, shield: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0 }, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, floorWins: {}, dungeon3BattleWins: 0, dungeon3NewSeen: false, guardianUnlocked: false, shieldUnlocked: false, lastBattleResult: null, consecutiveDefeats: 0 }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
+      const p = D.player; return { version: 16, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), musicScores: {}, bossDefeated: { zenacad: false, myrthi: false, versicrell: false, seripes: false }, currentJob: 'mage', jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, guardian: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, unlockedJobs: ['mage'], initialJob: 'mage', jobGrowthGained: {}, jobRebirths: {}, jobMastered: [], growthFraction: {}, learnedPassives: [], equippedPassives: [null], ptActionSlots: [null, null], ptPassiveSlots: [null, null], weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 }, instrument: { level: 1, exp: 0 }, shield: { level: 1, exp: 0 } }, learnedWeaponSkills: [], seenEnemies: [], equipmentArchive: [], collectionRewards: {}, playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0, instrument: 0, shield: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0 }, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, floorWins: {}, dungeon3BattleWins: 0, dungeon3NewSeen: false, guardianUnlocked: false, shieldUnlocked: false, lastBattleResult: null, consecutiveDefeats: 0 }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
     }
     loadProfile() {
       try {
@@ -252,7 +252,9 @@
         if (!profile.collectionRewards || typeof profile.collectionRewards !== 'object') profile.collectionRewards = {};
         const knownEquipment = [...Object.entries(profile.inventory || {}).filter(([id, n]) => n > 0 && D.items[id]?.category === 'equipment').map(([id]) => id), ...Object.values(profile.equipment || {}).filter(id => D.items[id]?.category === 'equipment')];
         profile.equipmentArchive = [...new Set([...profile.equipmentArchive, ...knownEquipment])];
-        profile.version = 15;
+        // v16：武器学を行動EXP＋無制限Lv、閃きをRank/敵Spark Lv方式へ移行。
+        // 旧Lv/EXP/習得技はそのまま保持し、破壊的な再計算は行わない。
+        profile.version = 16;
         return profile;
       } catch { return this.freshProfile(); }
     }
@@ -865,7 +867,8 @@
     gb() { return D.growthBalance || {}; }
     equippedWeaponType() { return this.equippedWeapon()?.weaponType || 'sword'; }
     masteryOf(type = this.equippedWeaponType()) { this.profile.weaponMastery ||= {}; return (this.profile.weaponMastery[type] ||= { level: 1, exp: 0 }); }
-    masteryExpNeeded(level) { const t = this.gb().weaponExpTable || { base: 40, growth: 18, curve: 1.35 }; return Math.ceil(t.base + t.growth * Math.pow(Math.max(0, level - 1), t.curve)); }
+    masteryExpNeeded(level) { const gb = this.gb(), base = gb.weaponExpBase ?? gb.weaponExpTable?.base ?? 20, perLevel = gb.weaponExpPerLevel ?? gb.weaponExpTable?.perLevel ?? 5; return Math.max(1, Math.ceil(base + Math.max(1, Number(level) || 1) * perLevel)); }
+    weaponMasteryMultiplier(type = this.equippedWeaponType()) { return 1 + Math.max(0, this.masteryOf(type).level || 0) * (this.gb().weaponMasteryDamagePerLevel ?? .005); }
     isNoGrowthJob(jobId = this.profile.currentJob) { return (this.gb().noGrowthJobs || []).includes(jobId); }
     // キャラ固有特性。characters.json は "small" 等の記号のみ保持し、実倍率は growthBalance 側で決まる
     characterTrait() { return (this.characterList || []).find(c => c.id === this.profile.selectedCharacter)?.trait || null; }
@@ -876,16 +879,30 @@
     traitHealMult() { const b = this.characterTrait()?.bonuses?.healBonus; return b ? (this.traitScale(b).heal ?? 1) : 1; }
     traitCriticalBonus() { const b = this.characterTrait()?.bonuses?.criticalBonus; return b ? (this.traitScale(b).critical ?? 0) : 0; }
 
-    // 戦闘終了時：装備中カテゴリの武器学だけEXPを加算
-    grantWeaponExp(baseExp) {
+    // ACTION単位：通常攻撃・武器技を実際に使った時だけ対応武器学へ加算する。
+    grantWeaponExp(baseExp, type = this.equippedWeaponType()) {
       if (this.isNoGrowthJob() || !(baseExp > 0)) return null;
-      const type = this.equippedWeaponType(), m = this.masteryOf(type), gb = this.gb();
-      const gain = Math.max(1, Math.round(baseExp * (gb.weaponExpMultiplier ?? 1) * this.traitWeaponExpMult(type)));
+      const m = this.masteryOf(type), gb = this.gb();
+      const gain = Math.max(1, Math.round(baseExp * this.traitWeaponExpMult(type)));
       const before = m.level; m.exp += gain;
-      const max = gb.weaponMasteryMaxLevel ?? 999;
+      const max = gb.weaponMasterySafetyMaxLevel ?? 1000000;
       while (m.level < max && m.exp >= this.masteryExpNeeded(m.level)) { m.exp -= this.masteryExpNeeded(m.level); m.level++; }
       if (m.level >= max) m.exp = 0;
+      this.saveProfile();
       return { type, gain, before, after: m.level, leveled: m.level > before };
+    }
+    isWeaponMasteryAction(skill) { const basics = Object.values(D.basicAttackByWeaponType || {}); return !!skill && (skill.source === 'weapon' || skill.kind === 'weapon' || basics.includes(skill.id)); }
+    sparkEnemyFor(targetIndex = -1) { const selected = targetIndex >= 0 ? this.enemies[targetIndex] : null; if (selected?.alive) return selected; return this.enemies.filter(e => e.alive).sort((a, b) => (b.sparkLevel || 1) - (a.sparkLevel || 1))[0] || null; }
+    grantWeaponActionExp(skill, targetIndex = -1) {
+      if (!this.isWeaponMasteryAction(skill)) return null;
+      const enemy = this.sparkEnemyFor(targetIndex), gb = this.gb();
+      const strong = enemy && (enemy.kind === 'boss' || enemy.kind === 'elite' || enemy.kind === 'rare' || (enemy.sparkLevel || 1) >= (gb.weaponExpStrongSparkLevel ?? 30));
+      const result = this.grantWeaponExp(strong ? (gb.weaponExpStrongAction ?? 2) : (gb.weaponExpPerAction ?? 1), skill.weaponType || this.equippedWeaponType());
+      if (!result) return null;
+      const rewards = (this.battleRewards ||= {}); rewards.masteryResults ||= []; rewards.masteryResults.push(result);
+      if (result.leveled) this.queueGrowthBubble(`${this.weaponTypeName(result.type)}武器学 Lv.UP!`, `Lv.${result.before} → ${result.after}`);
+      this.updateHUD();
+      return result;
     }
 
     // 戦闘終了時：HP/MP を独立した確率判定で成長
@@ -906,25 +923,39 @@
       return out;
     }
 
-    // 攻撃発動時：この攻撃から派生する未習得技を抽選
+    // 攻撃発動時：武器・敵・技ごとの難度と派生倍率から未習得技を抽選。
     learnedWeaponSkillIds() { return this.profile.learnedWeaponSkills ||= []; }
     hasWeaponSkill(id) { return this.learnedWeaponSkillIds().includes(id); }
-    rollSpark(sourceSkillId) {
-      if (this.isNoGrowthJob()) return null;
-      const gb = this.gb();
-      const candidates = Object.values(D.skills).filter(s => s.prerequisiteSkill === sourceSkillId && !this.hasWeaponSkill(s.id));
+    sparkBaseRateForScore(score) { const table = this.gb().sparkRateTable || []; return (table.find(row => score >= row.minScore) || { rate: 0 }).rate || 0; }
+    sparkSourceMultiplier(skill, sourceSkillId) {
+      const cfg = this.gb().sparkSourceMultipliers || { basic: .25, related: .5, direct: 2 };
+      const explicit = skill.sparkFrom?.[sourceSkillId];
+      if (explicit != null) return explicit;
+      if (skill.sparkExclusive) return 0;
+      if (Object.values(D.basicAttackByWeaponType || {}).includes(sourceSkillId)) return cfg.basic ?? .25;
+      return D.skills[sourceSkillId]?.source === 'weapon' ? (cfg.related ?? .5) : 0;
+    }
+    sparkRateBonus(type, skill) {
+      return (this.passiveEffectRate?.('sparkRateBonus') || 0) + (this.equipmentEffectRate?.('sparkRateBonus') || 0);
+    }
+    rollSpark(sourceSkillId, enemy = null) {
+      const source = D.skills[sourceSkillId];
+      if (this.isNoGrowthJob() || !this.isWeaponMasteryAction(source)) return null;
+      const gb = this.gb(), type = source.weaponType || this.equippedWeaponType(), masteryLevel = this.masteryOf(type).level || 1, enemySparkLevel = Math.max(1, enemy?.sparkLevel || 1);
+      const candidates = Object.values(D.skills).filter(s => s.source === 'weapon' && s.weaponType === type && s.sparkRank != null && !this.hasWeaponSkill(s.id)).sort(() => Math.random() - .5);
       for (const skill of candidates) {
-        const type = skill.weaponType;
         if (type && this.equippedWeaponType() !== type) continue;
         const equippedTree = this.equippedWeapon()?.guitarSkillTree;
-        if (equippedTree && skill.weaponType === 'instrument' && skill.guitarTreeId !== equippedTree) continue;
+        if (skill.weaponType === 'instrument' && (equippedTree ? skill.guitarTreeId !== equippedTree : !!skill.guitarTreeId)) continue;
         if (skill.requiredWeaponId && this.profile.equipment?.rightHand !== skill.requiredWeaponId) continue;
-        if ((this.masteryOf(type).level || 1) < (skill.requiredWeaponLevel ?? 1)) continue;
-        const rate = (skill.sparkRate ?? gb.sparkBaseRate ?? 0) * this.traitSparkMult(type);
+        const sourceMultiplier = this.sparkSourceMultiplier(skill, sourceSkillId); if (!(sourceMultiplier > 0)) continue;
+        const score = masteryLevel + enemySparkLevel - skill.sparkRank;
+        const baseRate = this.sparkBaseRateForScore(score);
+        const rate = Math.min(1, baseRate * sourceMultiplier * this.traitSparkMult(type) + this.sparkRateBonus(type, skill));
         if (Math.random() < rate) {
           this.learnedWeaponSkillIds().push(skill.id);
           const pt = this.profile.playtest;
-          if (pt) { pt.sparkLog ||= []; pt.sparkLog.push({ skillId: skill.id, name: skill.name, battle: (pt.battles || 0) + 1 }); }
+          if (pt) { pt.sparkLog ||= []; pt.sparkLog.push({ skillId: skill.id, name: skill.name, battle: (pt.battles || 0) + 1, sourceSkillId, sparkRank: skill.sparkRank, enemySparkLevel, score, rate }); }
           this.saveProfile();
           return skill;
         }
@@ -957,7 +988,7 @@
       const rows = this.unlockedWeaponTypes().map(t => {
         const m = this.masteryOf(t.id), need = this.masteryExpNeeded(m.level), pct = Math.min(100, 100 * m.exp / need);
         const skills = this.learnedWeaponSkills().filter(s => s.weaponType === t.id);
-        return `<div class="mst-row${cur === t.id ? ' current' : ''}"><div class="mst-head"><span>${t.name}</span><b>Lv.${m.level}</b>${cur === t.id ? '<em>装備中</em>' : ''}</div><i class="mst-bar"><em style="width:${pct}%"></em></i><small>${m.exp} / ${need}（${pct.toFixed(2)}%）</small>${skills.length ? `<div class="mst-skills">${skills.map(s => `<mark>${s.name}</mark>`).join('')}</div>` : ''}</div>`;
+        return `<div class="mst-row${cur === t.id ? ' current' : ''}"><div class="mst-head"><span>${t.name}</span><b>Lv.${m.level}</b>${cur === t.id ? '<em>装備中</em>' : ''}</div><i class="mst-bar"><em style="width:${pct}%"></em></i><small>次のLvまで ${pct.toFixed(2)}% ／ 対応武器ダメージ ×${this.weaponMasteryMultiplier(t.id).toFixed(3)}</small>${skills.length ? `<div class="mst-skills">${skills.map(s => `<mark>${s.name}</mark>`).join('')}</div>` : ''}</div>`;
       }).join('');
       return `<div class="st-section"><h3>武器学</h3><div class="mst-list">${rows}</div></div>`;
     }
@@ -1495,7 +1526,10 @@
       value += roll(balance.playerVariance.min, balance.playerVariance.max);
       // 会心抽選は命中抽選より先にrollPlayerAttackOutcome()で行う。
       // outcome未指定は外部拡張との互換用で、従来どおり会心だけを抽選する。
-      if (critical) value *= balance.critical.multiplier; return { value: Math.max(1, Math.round(value)), critical };
+      if (critical) value *= balance.critical.multiplier;
+      // 武器学は基礎能力へ混ぜず、対応武器で与える最終ダメージだけを伸ばす。
+      value *= this.weaponMasteryMultiplier(wType);
+      return { value: Math.max(1, Math.round(value)), critical };
     }
     // 閃き演出：画面フラッシュ＋効果音＋カットインを見せてから技を発動する
     async sparkPresentation(skill) {
@@ -1513,9 +1547,12 @@
     }
     // 攻撃が実際に発動するタイミングで閃きを判定し、成功したらその場で技を差し替える
     async playerActionWithSpark(skill, targetIndex) {
-      const sparked = this.rollSpark(skill.id);
+      // 多段数に関係なく、このACTIONで武器学EXPは1回だけ得る。
+      this.grantWeaponActionExp(skill, targetIndex);
+      const sparked = this.rollSpark(skill.id, this.sparkEnemyFor(targetIndex));
       if (!sparked) { await this.playerAction(skill, targetIndex); return; }
-      // 閃いたターンはMP未消費のまま発動する（executeRound は元の通常攻撃のMP0しか引いていない）
+      // 元の行動を新技へ差し替えて即発動。新技ぶんのMPは追加消費しない。
+      // 元行動が武器技なら、その選択時に支払ったMPだけは従来どおり消費済み。
       await this.sparkPresentation(sparked);
       this.battleSparks ||= []; this.battleSparks.push(sparked);
       await this.playerAction(sparked, targetIndex);
@@ -1905,11 +1942,11 @@
       Object.entries(enemy.stolenItems || {}).forEach(([id, n]) => { drops[id] = (drops[id] || 0) + n; });
       if (recoveredGold || Object.keys(enemy.stolenItems || {}).length) this.setLog(`${enemy.name}を撃破！ 盗まれた戦利品を取り返した。`);
       const levels = this.applyRewards({ exp, gold, drops });
-      const mastery = this.grantWeaponExp(exp), job = this.grantJobExp(exp);
+      // 武器学EXPは撃破EXP比例ではなく、武器ACTIONの実行時に付与済み。
+      const job = this.grantJobExp(exp);
       rewards.exp += exp; rewards.gold += gold;
       Object.entries(drops).forEach(([id, n]) => { rewards.drops[id] = (rewards.drops[id] || 0) + n; });
-      rewards.levels.push(...levels); if (mastery) rewards.masteryResults.push(mastery); if (job) rewards.jobResults.push(job);
-      if (mastery?.leveled) this.queueGrowthBubble(`${this.weaponTypeName(mastery.type)}武器学 Lv.UP!`, `Lv.${mastery.before} → ${mastery.after}`);
+      rewards.levels.push(...levels); if (job) rewards.jobResults.push(job);
       if (job?.to > job?.from) this.queueGrowthBubble('JOB Lv.UP!', `${job.jobName} Lv.${job.from} → ${job.to}`);
       this.updateHUD();
       return { exp, gold };
@@ -1964,7 +2001,7 @@
       const masteryResult = masteryParts.length ? { ...masteryParts[0], gain: masteryParts.reduce((s, r) => s + r.gain, 0), before: masteryParts[0].before, after: masteryParts[masteryParts.length - 1].after, leveled: masteryParts.some(r => r.leveled) } : null;
       const jobResult = jobParts.length ? { ...jobParts[0], exp: jobParts.reduce((s, r) => s + r.exp, 0), from: jobParts[0].from, to: jobParts[jobParts.length - 1].to, learned: [...new Set(jobParts.flatMap(r => r.learned || []))] } : null;
       const newRecipeHTML = (this.battleRewards.newRecipes || []).map(rid => { const r = D.recipes[rid], item = D.items[r?.resultItemId]; return r && item ? `<div class="new-recipe-unlock"><small>NEW RECIPE</small><b>${item.name}</b><span>${item.nameEn || ''}</span><em>工房で製作可能になった</em></div>` : ''; }).join('');
-      // HP/MPだけはロマサガ式に戦闘終了時判定。武器学/JOB EXPは撃破ごとに加算済み。
+      // HP/MPは戦闘終了時判定。武器学EXPは行動時、JOB EXPは撃破時に加算済み。
       const vitalResult = this.rollVitalGrowth();
       this.updateHUD();
       if (vitalResult?.hp) this.queueGrowthBubble('HP UP!', `最大HP +${vitalResult.hp}`);
@@ -2760,25 +2797,25 @@
       // その武器種の技を「習得済み → 未習得」の順で並べる
       // 通常攻撃は技ではないので除き、閃きで覚える技だけを並べる
       const equippedTree = type === this.equippedWeaponType() ? this.equippedWeapon()?.guitarSkillTree : null;
-      const all = Object.values(D.skills).filter(s => s.weaponType === type && s.prerequisiteSkill && (type !== 'instrument' || (equippedTree ? s.guitarTreeId === equippedTree : !s.guitarTreeId)))
-        .sort((a, b) => (a.requiredWeaponLevel ?? 1) - (b.requiredWeaponLevel ?? 1));
+      const all = Object.values(D.skills).filter(s => s.source === 'weapon' && s.weaponType === type && s.sparkRank != null && (type !== 'instrument' || (equippedTree ? s.guitarTreeId === equippedTree : !s.guitarTreeId)))
+        .sort((a, b) => (a.sparkRank ?? 1) - (b.sparkRank ?? 1));
       const learned = this.learnedWeaponSkillIds();
       const mst = this.masteryOf(type);
       const rows = all.map(s => {
         const has = learned.includes(s.id);
         const open = this.artsOpenId === s.id;
         // 派生元の技名は出さない。未習得の技（？？？）の名前がここから漏れてしまうため。
-        const req = s.requiredWeaponLevel ?? 1;
         const meta = has
-          ? `${s.mp ? `MP ${s.mp}` : 'MP 0'}${s.hits > 1 ? ` / ${s.hits}回攻撃` : ''}${s.aoe ? ' / 全体' : ''}`
-          : `武器学 Lv.${req} 必要`;
+          ? `${s.mp ? `MP ${s.mp}` : 'MP 0'}${s.hits > 1 ? ` / ${s.hits}回攻撃` : ''}${s.target === 'all' ? ' / 全体' : ''}`
+          : '強敵・派生技から閃く可能性あり';
         const detail = open && has
           ? `<div class="wa-detail"><p>${s.description || ''}</p><div class="wa-facts">
               <span>威力</span><b>${s.power != null ? `攻撃性能×${s.power}${s.hits > 1 ? ` を${s.hits}回` : ''}` : '—'}</b>
               <span>消費MP</span><b>${s.mp || 0}</b>
               ${s.hits > 1 ? `<span>ヒット数</span><b>${s.hits}回</b>` : ''}
-              ${s.aoe ? '<span>対象</span><b>敵全体</b>' : '<span>対象</span><b>敵単体</b>'}
+              ${s.target === 'all' ? '<span>対象</span><b>敵全体</b>' : `<span>対象</span><b>${s.target === 'self' ? '自分' : '敵単体'}</b>`}
               ${s.element ? `<span>属性</span><b>${s.element}</b>` : ''}
+              <span>閃き難度</span><b>RANK ${s.sparkRank}</b>
             </div></div>`
           : '';
         return `<div class="wa-item ${has ? 'has' : 'lock'}${open ? ' open' : ''}">
@@ -2786,13 +2823,9 @@
             <b>${has ? s.name : '？？？'}</b><small>${meta}</small>${has ? `<em>${open ? '▲' : '▼'}</em>` : '<em class="wa-lock">未修得</em>'}
           </button>${detail}</div>`;
       }).join('');
-      const nextHint = (() => {
-        const next = all.find(s => !learned.includes(s.id));
-        if (!next) return 'この武器の技はすべて習得しています。';
-        return mst.level >= (next.requiredWeaponLevel ?? 1)
-          ? 'この武器で戦い続けると、次の技を閃くことがあります。'
-          : `次の技は武器学 Lv.${next.requiredWeaponLevel} から閃けます（現在 Lv.${mst.level}）。`;
-      })();
+      const nextHint = all.every(s => learned.includes(s.id))
+        ? 'この武器の技はすべて習得しています。'
+        : `武器学Lv.${mst.level}。強敵へ挑むほど上位技を閃きやすく、正しい派生技なら確率が大きく上がります。`;
       panel.innerHTML = `<small>WEAPON ARTS</small><h2>装備・ステータス</h2>${this.equipTabsHtml()}
         <div class="item-tabs wa-tabs">${subTabs}</div>
         <p class="wa-hint">${nextHint}</p>

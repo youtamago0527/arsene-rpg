@@ -101,6 +101,12 @@
     }
   });
 
+  // 異世界敵はdata.js本体の敵定義より後から追加されるため、Spark Levelもここで設定する。
+  // 通常D2相当の刺激値とし、門番は中ボス級。追加敵を作る場合も必ず同時に設定する。
+  const otherWorldSparkLevels = { ow_slime: 14, ow_mage: 16, ow_goblin: 17, ow_bat: 16, ow_rat: 16, ow_bone: 18, ow_warden: 25 };
+  Object.entries(otherWorldSparkLevels).forEach(([id, level]) => { if (D.enemies[id]) D.enemies[id].sparkLevel = level; });
+  D.enemySparkLevels = { ...(D.enemySparkLevels || {}), ...otherWorldSparkLevels };
+
   // ── 異世界ダンジョン ────────────────────────────────────────
   // 1周＝10戦闘（雑魚9＋BOSS1）。通常ダンジョンとは違い短時間で回りきる設計。
   D.otherWorld = {

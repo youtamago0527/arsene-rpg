@@ -42,7 +42,7 @@
     sprite: '画像パス', battleScale: '表示倍率', dungeonId: 'ダンジョン', floorId: '階層',
     power: '威力', mp: '消費MP', hits: 'ヒット数', target: '対象', aoe: '全体攻撃',
     damageType: 'ダメージ種別', weaponType: '武器種', randomTarget: 'ランダム対象',
-    prerequisiteSkill: '派生元の技', requiredWeaponLevel: '必要武器学Lv', sparkRate: '閃き率(0〜1)',
+    prerequisiteSkill: '旧派生元（並び順互換）', sparkRank: '閃き難度', sparkFrom: '派生元ごとの倍率', sparkExclusive: '指定派生限定', sparkLevel: '敵の閃き刺激値',
     powerText: '威力表示', effectText: '効果表示', source: '入手元', jobId: 'JOB', type: 'タイプ',
     slot: '装備部位', rarity: 'レア度', category: '分類',
     attackPower: '攻撃力', defensePower: '防御力', magicAttackPower: '魔法攻撃力', magicDefensePower: '魔法防御力',
@@ -61,11 +61,11 @@
     enemyPhysical: '敵の物理', enemyMagic: '敵の魔法',
     dexRate: '器用さの寄与', enemySpdRate: '敵素早さの寄与',
     scaling: '参照能力', powerKey: '加算する装備能力',
-    weaponExpTable: '武器学の必要EXP', weaponExpMultiplier: '武器EXP倍率',
+    weaponExpTable: '武器学の必要EXP', weaponExpBase: '必要EXP基礎値', weaponExpPerLevel: 'Lvごとの必要EXP増加', weaponMasteryDamagePerLevel: '1Lvごとの最終ダメージ倍率',
     baseHpGrowthRate: 'HP成長率', baseMpGrowthRate: 'MP成長率',
     hpGrowthAmount: 'HP上昇量', mpGrowthAmount: 'MP上昇量',
     jobHpGrowthBonus: 'JOB別HP成長+', jobMpGrowthBonus: 'JOB別MP成長+',
-    jobGrowthPerLevel: 'JOB Lvあたりの成長', sparkBaseRate: '基本閃き率',
+    jobGrowthPerLevel: 'JOB Lvあたりの成長', sparkRateTable: 'Spark Score別の基本閃き率',
     dungeon2BossWins: 'D2ボス解放に必要な勝利数', bossRematchWins: 'ボス再戦に必要な周回数',
     debugPassword: 'デバッグPW', healOnBattleStart: '戦闘開始時に全回復',
     noelEncounterWins: 'ノエル出現の勝利数', zenakadoEncounterWins: 'ゼナカド出現の勝利数',
@@ -128,7 +128,7 @@
     { g: '装備', key: 'enchantTable', label: '強化', list: false, hint: '成功率 / 費用 / powerRate（+1あたりの上昇率）' },
 
     { g: '技', key: 'skills', label: '通常攻撃', list: true, hint: '武器種ごとの「たたかう」', filter: s => s.kind === 'weapon' && !s.prerequisiteSkill },
-    { g: '技', key: 'skills', label: '武器技（閃き）', list: true, hint: 'prerequisiteSkill / requiredWeaponLevel / sparkRate', filter: s => !!s.prerequisiteSkill },
+    { g: '技', key: 'skills', label: '武器技（閃き）', list: true, hint: 'sparkRank / sparkFrom / sparkExclusive', filter: s => s.source === 'weapon' && s.sparkRank != null },
     { g: '技', key: 'skills', label: 'JOB固有技', list: true, hint: 'jobId / power / mp / effect', filter: s => isJobSkill(s) && !isPassive(s) },
     { g: '技', key: 'skills', label: 'パッシブ', list: true, hint: '常時効果', filter: isPassive },
     { g: '技', key: 'skills', label: 'その他の技', list: true, hint: '上記に入らないもの', filter: s => !s.prerequisiteSkill && !isJobSkill(s) && !isPassive(s) && s.kind !== 'weapon' },
@@ -140,7 +140,7 @@
 
     { g: '武器学', key: 'weaponTypes', label: '武器種', list: true, hint: 'id / name / 初期武器 / 解放フラグ', arrayIdKey: 'id' },
     { g: '武器学', key: 'weaponScaling', label: '武器倍率', list: false, hint: '武器種→どの能力を攻撃力に変換するか' },
-    { g: '武器学', key: 'growthBalance', label: '武器学の伸び', list: false, path: 'weaponExpTable', hint: 'base / growth / curve（Lvアップに必要な武器EXP）' },
+    { g: '武器学', key: 'growthBalance', label: '武器学の伸び', list: false, path: 'weaponExpTable', hint: 'base / perLevel（必要EXP = base + Lv×perLevel）' },
     { g: '武器学', key: 'basicAttackByWeaponType', label: '武器種→通常攻撃', list: false, hint: '武器種ごとの通常攻撃ID' },
     { g: '武器学', key: 'weaponArtsCommand', label: '技コマンド名', list: false, hint: '剣技・拳技・魔法などの表示名' },
 
@@ -250,6 +250,14 @@
   .dbg-msg.err{color:#ff9d86}
   .dbg-hint{font-size:11px;color:#67809a}
   .dbg-foot{padding:8px 12px;background:#0a1120;border-top:1px solid #1d3a5c;font-size:11px;color:#67809a}
+  .dbg-spark{position:absolute;inset:46px 8px 36px;z-index:4;display:grid;grid-template-rows:auto 1fr;background:#050a12;border:1px solid #4c3b9d;box-shadow:0 0 30px #251c66cc}
+  .dbg-spark[hidden]{display:none}
+  .dbg-spark-head{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#100d29;border-bottom:1px solid #4c3b9d}
+  .dbg-spark-head b{color:#b8a7ff;letter-spacing:.12em}.dbg-spark-head span{color:#7388a4;font-size:11px}.dbg-spark-head button{margin-left:auto;padding:5px 12px;background:#20194b;color:#ddd6ff;border:1px solid #6553bd;border-radius:4px}
+  .dbg-spark-body{overflow:auto;padding:12px}.dbg-spark-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .dbg-spark-grid label{display:grid;gap:4px;color:#8da2bd;font-size:11px}.dbg-spark-grid select,.dbg-spark-grid input{width:100%;padding:8px;background:#070d18;color:#dbe9f7;border:1px solid #263f60;border-radius:4px}
+  .dbg-spark-result{margin-top:12px;padding:12px;background:#080f20;border:1px solid #3d6b99;border-radius:5px}.dbg-spark-result h3{margin:0 0 9px;color:#69d8ff;font-size:16px}.dbg-spark-result-grid{display:grid;grid-template-columns:1fr auto;gap:5px 12px}.dbg-spark-result-grid span{color:#8fa5bd}.dbg-spark-result-grid b{color:#eef8ff;text-align:right}.dbg-spark-rate{display:block;margin-top:10px;padding:9px;text-align:center;background:#15104a;color:#d8ceff;font-size:18px;border:1px solid #6754c6}.dbg-spark-formula{margin:8px 0 0;color:#7089a5;font:11px/1.6 ui-monospace,Consolas,monospace}
+  @media(max-width:560px){.dbg-spark{inset:46px 4px 36px}.dbg-spark-grid{grid-template-columns:1fr}}
   `;
 
   let state = { cat: 0, id: null, raw: false, draft: null };
@@ -351,6 +359,53 @@
   // ── データ取得ヘルパ ──────────────────────────────────────────
   const D = () => window.ARSENE_DATA || {};
   const cur = () => CATEGORIES[state.cat] || CATEGORIES[0];
+
+  // ── Spark率計算機 ──────────────────────────────────────────
+  // 現在の武器学・キャラ特性・装備補正まで含め、実戦と同じ式を表示する。
+  function sparkBaseRate(score) {
+    return ((D().growthBalance?.sparkRateTable || []).find(row => score >= row.minScore) || { rate: 0 }).rate || 0;
+  }
+  function sparkMultiplier(skill, sourceId) {
+    const game = window.arseneGame;
+    if (game?.sparkSourceMultiplier) return game.sparkSourceMultiplier(skill, sourceId);
+    const cfg = D().growthBalance?.sparkSourceMultipliers || { basic: .25, related: .5, direct: 2 };
+    if (skill.sparkFrom?.[sourceId] != null) return skill.sparkFrom[sourceId];
+    if (skill.sparkExclusive) return 0;
+    if (Object.values(D().basicAttackByWeaponType || {}).includes(sourceId)) return cfg.basic ?? .25;
+    return D().skills?.[sourceId]?.source === 'weapon' ? (cfg.related ?? .5) : 0;
+  }
+  function refreshSparkSources(reset = false) {
+    const skillId = document.getElementById('dbg-spark-skill')?.value, skill = D().skills?.[skillId];
+    const select = document.getElementById('dbg-spark-source'); if (!select || !skill) return;
+    const basicId = D().basicAttackByWeaponType?.[skill.weaponType];
+    const sources = [basicId, ...Object.values(D().skills || {}).filter(s => s.source === 'weapon' && s.weaponType === skill.weaponType && s.id !== skill.id).map(s => s.id)].filter((id, i, a) => id && a.indexOf(id) === i);
+    const directId = Object.entries(skill.sparkFrom || {}).sort((a, b) => b[1] - a[1])[0]?.[0];
+    const keep = !reset && sources.includes(select.value) ? select.value : (directId || basicId || sources[0]);
+    select.innerHTML = sources.map(id => `<option value="${esc(id)}" ${id === keep ? 'selected' : ''}>${esc(D().skills?.[id]?.name || id)}</option>`).join('');
+    const level = document.getElementById('dbg-spark-mastery'), current = window.arseneGame?.profile?.weaponMastery?.[skill.weaponType]?.level;
+    if (level && reset) level.value = current || 1;
+  }
+  function updateSparkCalculator(resetSource = false) {
+    refreshSparkSources(resetSource);
+    const skill = D().skills?.[document.getElementById('dbg-spark-skill')?.value];
+    const enemy = D().enemies?.[document.getElementById('dbg-spark-enemy')?.value];
+    const sourceId = document.getElementById('dbg-spark-source')?.value;
+    const mastery = Math.max(1, Number(document.getElementById('dbg-spark-mastery')?.value) || 1);
+    const out = document.getElementById('dbg-spark-result'); if (!skill || !enemy || !out) return;
+    const enemyLevel = enemy.sparkLevel || 1;
+    const score = mastery + enemyLevel - (skill.sparkRank || 0), base = sparkBaseRate(score), mult = sparkMultiplier(skill, sourceId);
+    const game = window.arseneGame, trait = game?.traitSparkMult?.(skill.weaponType) || 1, bonus = game?.sparkRateBonus?.(skill.weaponType, skill) || 0;
+    const finalRate = Math.min(1, Math.max(0, base * mult * trait + bonus));
+    out.innerHTML = `<h3>${esc(skill.name)}　Spark Rank ${skill.sparkRank}</h3><div class="dbg-spark-result-grid"><span>敵</span><b>${esc(enemy.name)} / Spark Lv.${enemyLevel}</b><span>武器学</span><b>${esc(skill.weaponType)} Lv.${mastery}</b><span>使用技</span><b>${esc(D().skills?.[sourceId]?.name || sourceId)}</b><span>基本閃き率</span><b>${(base * 100).toFixed(2)}%</b><span>派生補正</span><b>×${mult.toFixed(2)}</b><span>キャラ特性</span><b>×${trait.toFixed(2)}</b><span>装備・パッシブ加算</span><b>+${(bonus * 100).toFixed(2)}%</b></div><strong class="dbg-spark-rate">現在の閃き率 ${(finalRate * 100).toFixed(2)}%</strong><p class="dbg-spark-formula">Score = ${mastery} + ${enemyLevel} - ${skill.sparkRank} = ${score}<br>Final = ${(base * 100).toFixed(2)}% × ${mult.toFixed(2)} × ${trait.toFixed(2)} + ${(bonus * 100).toFixed(2)}%</p>`;
+  }
+  function openSparkCalculator() {
+    const panel = document.getElementById('dbg-spark-panel'); if (!panel) return;
+    const skills = Object.values(D().skills || {}).filter(s => s.source === 'weapon' && s.sparkRank != null).sort((a, b) => a.weaponType.localeCompare(b.weaponType) || a.sparkRank - b.sparkRank);
+    const currentEnemy = window.arseneGame?.enemies?.find(e => e.alive)?.id;
+    document.getElementById('dbg-spark-skill').innerHTML = skills.map(s => `<option value="${esc(s.id)}">${esc(s.name)} [${esc(s.weaponType)} R${s.sparkRank}]</option>`).join('');
+    document.getElementById('dbg-spark-enemy').innerHTML = Object.values(D().enemies || {}).sort((a, b) => (a.sparkLevel || 0) - (b.sparkLevel || 0)).map(e => `<option value="${esc(e.id)}" ${e.id === currentEnemy ? 'selected' : ''}>${esc(e.name)} [Spark Lv.${e.sparkLevel || 1}]</option>`).join('');
+    panel.hidden = false; updateSparkCalculator(true);
+  }
   // list:false のとき実際に編集する対象（path があればその入れ子）
   function singleTarget(def) {
     const root = D()[def.key];
@@ -526,6 +581,7 @@
     root.innerHTML = `
       <div class="dbg-bar">
         <b>DEBUG ROOM</b><small>データ編集専用</small><span class="sp"></span>
+        <button id="dbg-spark-open">SPARK計算</button>
         <button id="dbg-export">書き出し</button>
         <button id="dbg-reset" class="danger">全変更を破棄</button>
         <button id="dbg-close">閉じる</button>
@@ -547,6 +603,15 @@
           <div class="dbg-msg"></div>
         </div>
       </div>
+      <section class="dbg-spark" id="dbg-spark-panel" hidden>
+        <header class="dbg-spark-head"><b>SPARK RATE CALCULATOR</b><span>現在データで閃き率を確認</span><button id="dbg-spark-close">閉じる</button></header>
+        <div class="dbg-spark-body"><div class="dbg-spark-grid">
+          <label>閃き候補<select id="dbg-spark-skill"></select></label>
+          <label>対象の敵<select id="dbg-spark-enemy"></select></label>
+          <label>使用する技<select id="dbg-spark-source"></select></label>
+          <label>武器学Lv<input id="dbg-spark-mastery" type="number" min="1" max="1000000" value="1"></label>
+        </div><div class="dbg-spark-result" id="dbg-spark-result"></div></div>
+      </section>
       <div class="dbg-foot"></div>`;
     document.body.appendChild(root);
 
@@ -587,9 +652,14 @@
       if (e.target.id === 'dbg-revert') return revertCurrent();
       if (e.target.id === 'dbg-export') return exportAll();
       if (e.target.id === 'dbg-reset') return resetAll();
+      if (e.target.id === 'dbg-spark-open') return openSparkCalculator();
+      if (e.target.id === 'dbg-spark-close') { document.getElementById('dbg-spark-panel').hidden = true; return; }
       if (e.target.id === 'dbg-close') return close();
     });
-    root.addEventListener('input', e => { if (e.target.id === 'dbg-q') render(); });
+    root.addEventListener('input', e => {
+      if (e.target.id === 'dbg-q') { render(); return; }
+      if (/^dbg-spark-/.test(e.target.id)) updateSparkCalculator(e.target.id === 'dbg-spark-skill');
+    });
   }
 
   function open() { build(); document.getElementById('dbg-root').classList.add('open'); render(); }

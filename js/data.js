@@ -61,11 +61,18 @@ window.ARSENE_DATA = {
   // ══════════════════════════════════════════════════════════════
   growthBalance: {
     // ── 武器学 ──────────────────────────────────────────────
-    weaponMasteryMaxLevel: 999,
-    // 敵から得たEXP × この倍率 が武器学へ入る（敵データは変更しない）
-    weaponExpMultiplier: 1.0,
-    // 必要EXP = base + growth * (lv-1)^curve （小数は切り上げ）
-    weaponExpTable: { base: 40, growth: 18, curve: 1.35 },
+    // 表示上は無制限。異常データ対策だけ十分大きな安全上限を置く。
+    weaponMasterySafetyMaxLevel: 1000000,
+    // 必要EXP = weaponExpBase + 現在Lv × weaponExpPerLevel
+    weaponExpBase: 20,
+    weaponExpPerLevel: 5,
+    weaponExpTable: { base: 20, perLevel: 5 },
+    // 通常攻撃・武器技のACTION単位で加算。多段数では増えない。
+    weaponExpPerAction: 1,
+    weaponExpStrongAction: 2,
+    weaponExpStrongSparkLevel: 30,
+    // 対応武器で与える最終ダメージ。上限は設けない。
+    weaponMasteryDamagePerLevel: 0.005,
 
     // ── HP / MP 成長（戦闘終了時の確率判定）──────────────────
     baseHpGrowthRate: 0.15,
@@ -76,7 +83,14 @@ window.ARSENE_DATA = {
     jobMpGrowthBonus: { warrior: 0.00, martialArtist: 0.02, mage: 0.10, priest: 0.08, guardian: 0.03 },
 
     // ── 閃き ────────────────────────────────────────────────
-    sparkBaseRate: 0.05,
+    // sparkScore = 武器学Lv + 敵Spark Lv - 技Spark Rank
+    sparkRateTable: [
+      { minScore: 30, rate: .15 }, { minScore: 20, rate: .12 }, { minScore: 10, rate: .08 },
+      { minScore: 0, rate: .05 }, { minScore: -9, rate: .02 }, { minScore: -19, rate: .01 },
+      { minScore: -29, rate: .005 }, { minScore: -Infinity, rate: 0 }
+    ],
+    sparkSourceMultipliers: { basic: .25, related: .5, direct: 2.0 },
+    sparkInitialCastFree: true,
     // パッシブは転生1回ごとに「基本値 × この割合」ずつ強くなる。
     // 個別に rebirthStep / max を書けばそちらが優先される。
     passiveRebirthStepRate: 0.4,
@@ -713,8 +727,9 @@ window.ARSENE_DATA = {
     magicCharge: { id: 'magicCharge', name: '魔力装填', nameEn: 'MAGIC CHARGE', source: 'job', jobId: 'magicKnight', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 4, cooldown: 3, powerText: '次の物理攻撃に MAG×0.5 を追加', effect: { type: 'selfMagicCharge' }, effectText: '次に使う物理攻撃・武器技へ魔力依存の追加ダメージ／CT3', description: '刃に魔力を装填する。次の物理攻撃へ魔力分のダメージを上乗せする。' },
 
     // ══ 閃き技（対応する攻撃の使用中に閃く）═══════════════════
-    // weaponType / prerequisiteSkill / requiredWeaponLevel / sparkRate で
-    // 派生ツリーを構成する。戦闘コードに技ごとの条件は書かない。
+    // weaponType / sparkRank / sparkFrom で派生ツリーを構成する。
+    // prerequisiteSkill は旧データとの派生互換にだけ残す。requiredWeaponLevel / sparkRate は
+    // 旧セーブ・調整資料向けの残置値で、現在の習得判定には使用しない。
 
     // ── 楽器の閃きツリー ──
     // 技名は「やられた敵側の実況」。何をされたのか分かっていない。
@@ -723,7 +738,7 @@ window.ARSENE_DATA = {
       weaponType: 'instrument', prerequisiteSkill: 'resonantNote', requiredWeaponLevel: 3, sparkRate: null,
       mp: 3, kind: 'magical', damageType: 'magical', target: 'single',
       power: 1.4, agiScale: 0, criticalModifier: 0.15,
-      powerText: '楽器攻撃性能×1.4', effectText: '敵単体／会心率+15%／MP消費なし',
+      powerText: '楽器攻撃性能×1.4', effectText: '敵単体／会心率+15%',
       description: '指穴を半分ずらして音程を歪ませる。ギター用の技法をリコーダーでやる者がいるとは誰も思わない。'
     },
     guitarGigRecorder: {
@@ -1757,3 +1772,45 @@ window.ARSENE_DATA = {
     }
   }
 };
+
+// ══════════════════════════════════════════════════════════════
+// 武器技の閃き難度 / 敵の閃き刺激値
+// 定義をここへ追加するだけで戦闘側へ反映される。JOB固有技は対象外。
+// ══════════════════════════════════════════════════════════════
+(() => {
+  const D = window.ARSENE_DATA;
+  const weaponSparkDefinitions = {
+    doubleSlash: { sparkRank: 5 }, tripleSlash: { sparkRank: 12 }, sonicBlade: { sparkRank: 22 }, afterimageBlade: { sparkRank: 40 },
+    doubleClaw: { sparkRank: 7 }, vitalPierce: { sparkRank: 12 }, galeFist: { sparkRank: 20 }, shadowStitch: { sparkRank: 35, sparkFrom: { galeFist: 2, vitalPierce: .5 } },
+    fireStorm: { sparkRank: 8 }, fireLance: { sparkRank: 12 }, inferno: { sparkRank: 24, sparkFrom: { fireStorm: 2, fireLance: .5 } }, meteor: { sparkRank: 42 },
+    recorderChoking: { sparkRank: 7 }, guitarGigRecorder: { sparkRank: 15 }, whoseRecorder: { sparkRank: 22 }, cleaningRodStrike: { sparkRank: 40 },
+    preciousSky: { sparkRank: 28 },
+    guardImpact: { sparkRank: 7 }, magicRepulse: { sparkRank: 12 }, fortress: { sparkRank: 22 }, revengeForce: { sparkRank: 36 }
+  };
+  D.weaponSparkDefinitions = weaponSparkDefinitions;
+  Object.entries(weaponSparkDefinitions).forEach(([id, definition]) => {
+    const skill = D.skills[id];
+    if (!skill || skill.source !== 'weapon') return;
+    const basicIds = new Set(Object.values(D.basicAttackByWeaponType || {}));
+    // 通常攻撃は全技へ一律×0.25。旧 prerequisite が通常攻撃でも正規派生×2にはしない。
+    const direct = skill.prerequisiteSkill && !basicIds.has(skill.prerequisiteSkill) ? { [skill.prerequisiteSkill]: 2 } : {};
+    Object.assign(skill, definition, { sparkFrom: { ...direct, ...(definition.sparkFrom || {}) } });
+  });
+
+  const enemySparkLevels = {
+    shadowSlime: 2, soulMage: 6, ratThief: 6, goblin: 7, nightBat: 7, ghostBone: 9,
+    noelFirstEncounter: 18, zenakado: 20,
+    reverbSlime: 10, echoWraith: 12, nocturneChandelier: 12, chimeImp: 12, muteGargoyle: 13,
+    hushMoth: 13, silentKnight: 14, fadingChorister: 14, nocturneBanshee: 15, mutedHound: 15,
+    grimMetronome: 16, voidVioloncello: 16, pallidConductor: 17, noiselessLancer: 17,
+    whisperVeil: 18, stoneChoir: 18, requiemKnight: 19, shatteredDiva: 20, silenceWarden: 21,
+    silentHarmonist: 22, myrthi: 30,
+    voidWatcher: 20, abyssalKnight: 21, voidGargoyle: 22, chaosWitch: 23, voidCantor: 23,
+    ironChanter: 24, phantomEmperor: 24, arcaneChanter: 25, fortressGolem: 25,
+    riftAssailant: 26, prismSentinel: 27, chainReaper: 28, voidAlchemist: 29,
+    crimsonBehemoth: 30, voidOrchestra: 30, gildedHoarder: 32, merox: 34,
+    versicrell: 35, seripes: 40
+  };
+  D.enemySparkLevels = enemySparkLevels;
+  Object.entries(enemySparkLevels).forEach(([id, level]) => { if (D.enemies[id]) D.enemies[id].sparkLevel = level; });
+})();
