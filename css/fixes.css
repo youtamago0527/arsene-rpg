@@ -78,7 +78,7 @@
 .ws-sub button.active span { color: #9fe4ff }
 
 /* ── 第3階層：武器学ごと / 部位ごと。件数バッジ付き ── */
-.ws-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 5px; margin-bottom: 10px }
+.ws-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 5px; margin-bottom: 10px; padding-right: 5px }
 .ws-group button { position: relative; display: grid; gap: 1px; padding: 8px 4px; text-align: center; color: #8fa9c2; background: #040c1a; border: 1px solid #17395a; cursor: pointer }
 .ws-group button b { font-size: 12px; font-weight: 800 }
 .ws-group button span { font: 700 6px Cinzel; letter-spacing: .06em; color: #4d738f }
