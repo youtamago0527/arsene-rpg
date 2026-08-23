@@ -278,7 +278,14 @@
   .dbg-spark-body{overflow:auto;padding:12px}.dbg-spark-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
   .dbg-spark-grid label{display:grid;gap:4px;color:#8da2bd;font-size:11px}.dbg-spark-grid select,.dbg-spark-grid input{width:100%;padding:8px;background:#070d18;color:#dbe9f7;border:1px solid #263f60;border-radius:4px}
   .dbg-spark-result{margin-top:12px;padding:12px;background:#080f20;border:1px solid #3d6b99;border-radius:5px}.dbg-spark-result h3{margin:0 0 9px;color:#69d8ff;font-size:16px}.dbg-spark-result-grid{display:grid;grid-template-columns:1fr auto;gap:5px 12px}.dbg-spark-result-grid span{color:#8fa5bd}.dbg-spark-result-grid b{color:#eef8ff;text-align:right}.dbg-spark-rate{display:block;margin-top:10px;padding:9px;text-align:center;background:#15104a;color:#d8ceff;font-size:18px;border:1px solid #6754c6}.dbg-spark-formula{margin:8px 0 0;color:#7089a5;font:11px/1.6 ui-monospace,Consolas,monospace}
+  .dbg-weapon-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:720px;margin:auto}
+  .dbg-weapon-grid button{display:grid;gap:3px;min-height:82px;padding:12px;text-align:left;background:#091526;color:#dbeeff;border:1px solid #2b5f91;border-radius:5px;cursor:pointer}
+  .dbg-weapon-grid button:hover{background:#102b49;border-color:#62b9ff}.dbg-weapon-grid button.active{border-color:#bfa65b;box-shadow:0 0 14px #967a3577}
+  .dbg-weapon-grid button b{color:#7ed2ff;font-size:15px}.dbg-weapon-grid button span{color:#a9bfd3}.dbg-weapon-grid button small{color:#647d97}
+  .dbg-weapon-all{display:block;width:min(100%,720px);margin:12px auto 0;padding:10px;background:#20194b;color:#ddd6ff;border:1px solid #6553bd;border-radius:5px;cursor:pointer}
+  .dbg-weapon-note{max-width:720px;margin:12px auto;color:#7189a1;font-size:11px}
   @media(max-width:560px){.dbg-spark{inset:46px 4px 36px}.dbg-spark-grid{grid-template-columns:1fr}}
+  @media(max-width:560px){.dbg-weapon-grid{grid-template-columns:1fr}.dbg-weapon-grid button{min-height:66px}}
   `;
 
   let state = { cat: 0, id: null, raw: false, draft: null };
@@ -593,6 +600,44 @@
     msg('破棄しました。ページを再読み込みしてください。');
   }
 
+  const DEBUG_WEAPONS = [
+    { id: 'mageStaff', label: '杖', pose: 'STAFF' },
+    { id: 'ironClaw', label: '体術', pose: 'MARTIAL' },
+    { id: 'classroomRecorder', label: 'リコーダー', pose: 'RECORDER' },
+    { id: 'parentGiftGuitar', label: 'ギター', pose: 'GUITAR' }
+  ];
+
+  function grantDebugWeapon(id, equip = true) {
+    const game = window.arseneGame, item = D().items?.[id], weapon = D().weapons?.[id];
+    if (!game?.profile || !item || !weapon) { msg(`武器データが見つかりません: ${id}`, true); return false; }
+    const profile = game.profile;
+    profile.inventory ||= {}; profile.flags ||= {}; profile.weaponMastery ||= {}; profile.learnedWeaponSkills ||= []; profile.equipmentArchive ||= [];
+    profile.inventory[id] = Math.max(1, profile.inventory[id] || 0);
+    if (weapon.weaponType === 'instrument') profile.flags.instrumentUnlocked = true;
+    profile.weaponMastery[weapon.weaponType] ||= { level: 1, exp: 0 };
+    for (const skill of Object.values(D().skills || {})) {
+      if (skill.source !== 'weapon' || skill.weaponType !== weapon.weaponType || skill.devOnly || skill.futureOnly) continue;
+      if (!profile.learnedWeaponSkills.includes(skill.id)) profile.learnedWeaponSkills.push(skill.id);
+    }
+    if (!profile.equipmentArchive.includes(id)) profile.equipmentArchive.push(id);
+    if (equip) {
+      profile.equipment.rightHand = id;
+      game.sanitizeLeftHandEquipment?.();
+    }
+    game.saveProfile?.(); game.renderMenuSummary?.();
+    return true;
+  }
+
+  function renderDebugWeapons() {
+    const panel = document.getElementById('dbg-weapon-panel'), grid = document.getElementById('dbg-weapon-grid'), game = window.arseneGame;
+    if (!panel || !grid) return;
+    grid.innerHTML = DEBUG_WEAPONS.map(entry => {
+      const item = D().items?.[entry.id], active = game?.profile?.equipment?.rightHand === entry.id;
+      return `<button type="button" data-dbg-weapon="${entry.id}" class="${active ? 'active' : ''}"><b>${entry.label}</b><span>${esc(item?.name || entry.id)}</span><small>${entry.pose} // 取得して右手へ装備</small></button>`;
+    }).join('');
+    panel.hidden = false;
+  }
+
   // ── 組み立て ──────────────────────────────────────────────────
   function build() {
     if (document.getElementById('dbg-root')) return;
@@ -604,6 +649,7 @@
         <b>DEBUG ROOM</b><small>データ編集専用</small><span class="sp"></span>
         <button id="dbg-job-balance">JOB検証</button>
         <button id="dbg-guardian-trial">守護士 強敵戦</button>
+        <button id="dbg-weapon-open">武器表示確認</button>
         <button id="dbg-spark-open">SPARK計算</button>
         <button id="dbg-export">書き出し</button>
         <button id="dbg-reset" class="danger">全変更を破棄</button>
@@ -635,6 +681,10 @@
           <label>武器学Lv<input id="dbg-spark-mastery" type="number" min="1" max="1000000" value="1"></label>
         </div><div class="dbg-spark-result" id="dbg-spark-result"></div></div>
       </section>
+      <section class="dbg-spark dbg-weapon-panel" id="dbg-weapon-panel" hidden>
+        <header class="dbg-spark-head"><b>WEAPON VISUAL CHECK</b><span>確認用武器・武器技を解放して装備</span><button id="dbg-weapon-close">閉じる</button></header>
+        <div class="dbg-spark-body"><div class="dbg-weapon-grid" id="dbg-weapon-grid"></div><button type="button" class="dbg-weapon-all" id="dbg-weapon-all">全4種を所持品へ追加</button><p class="dbg-weapon-note">個別ボタンは取得と同時に右手へ装備します。通常プレイヤーの解放条件は変更しません。</p></div>
+      </section>
       <div class="dbg-foot"></div>`;
     document.body.appendChild(root);
 
@@ -665,6 +715,11 @@
         delPath(state.draft, delRow.dataset.delRow);
         renderForm(); return;
       }
+      const debugWeapon = e.target.closest('[data-dbg-weapon]');
+      if (debugWeapon) {
+        if (grantDebugWeapon(debugWeapon.dataset.dbgWeapon, true)) { renderDebugWeapons(); msg(`${D().items?.[debugWeapon.dataset.dbgWeapon]?.name || debugWeapon.dataset.dbgWeapon}を取得・装備しました。`); }
+        return;
+      }
       if (e.target.id === 'dbg-mode') {
         state.draft = state.raw ? readRawSafe() : collectForm();
         state.raw = !state.raw; render(); return;
@@ -681,6 +736,12 @@
         if (!game || game.profile?.currentJob !== 'guardian' || game.equippedWeaponType?.() !== 'shield') { msg('守護士へ変更し、右手に盾を装備してから開始してください。', true); return; }
         if (game.startDebugGuardianTrial?.()) close();
         return;
+      }
+      if (e.target.id === 'dbg-weapon-open') return renderDebugWeapons();
+      if (e.target.id === 'dbg-weapon-close') { document.getElementById('dbg-weapon-panel').hidden = true; return; }
+      if (e.target.id === 'dbg-weapon-all') {
+        DEBUG_WEAPONS.forEach(entry => grantDebugWeapon(entry.id, false));
+        renderDebugWeapons(); msg('杖・体術・リコーダー・ギターを所持品へ追加し、対応武器技を解放しました。'); return;
       }
       if (e.target.id === 'dbg-spark-open') return openSparkCalculator();
       if (e.target.id === 'dbg-spark-close') { document.getElementById('dbg-spark-panel').hidden = true; return; }

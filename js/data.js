@@ -1,7 +1,7 @@
 window.ARSENE_DATA = {
   // dungeon2BossWins：ミルティ解放に必要なダンジョン2の勝利数。4時間構想の主調整値。
   // debugPassword：拠点の狐を長押しで開くデバッグルームのパスワード
-  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5, dungeon2BossWins: 100, dungeon3MidBossWins: 28, dungeon3TargetWins: 60, debugPassword: '1229', mealGoldRate: 0.3, counterPowerRate: 0.7 },
+  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5, dungeon2BossWins: 100, dungeon3MidBossWins: 28, dungeon3TargetWins: 60, debugPassword: '1229', mealGoldRate: 0.3, counterPowerRate: 0.7, battleMenuTestReturn: true },
   guardianBalance: {
     shieldDefRate: 0.5, shieldMdefRate: 0.5, resonanceGainPerDamage: 0.05,
     fortressReduction: 0.30, resonanceMax: 100,
@@ -53,6 +53,46 @@ window.ARSENE_DATA = {
     martial: { name: '拳技', nameEn: 'FIST ARTS' },
     instrument: { name: '楽奏', nameEn: 'SONG ARTS' },
     shield: { name: '盾技', nameEn: 'SHIELD ARTS' }
+  },
+  // 戦闘コマンドの画像・色はここだけで差し替え可能。
+  // 武器学は weapon-<weaponType> を使い、未登録ならコード内SVGへ戻る。
+  commandVisuals: {
+    iconSheet: 'assets/ui/battle/command-icons-v1.png',
+    // 武器学コマンドはアイコン・名称まで焼き込んだ完成カードを武器種ごとに交換する。
+    weaponCards: {
+      sword: 'assets/ui/battle/lower-ui-v2/weapon-card-sword-v2.png',
+      staff: 'assets/ui/battle/lower-ui-v2/weapon-card-staff-v2.png',
+      martial: 'assets/ui/battle/lower-ui-v2/weapon-card-martial-v2.png',
+      instrument: 'assets/ui/battle/lower-ui-v2/weapon-card-instrument-v2.png',
+      shield: 'assets/ui/battle/lower-ui-v2/weapon-card-shield-v2.png',
+      bow: 'assets/ui/battle/lower-ui-v2/weapon-card-bow-v2.png',
+      spear: 'assets/ui/battle/lower-ui-v2/weapon-card-spear-v2.png',
+      greatsword: 'assets/ui/battle/lower-ui-v2/weapon-card-greatsword-v2.png'
+    },
+    // 元画像は正方形セル3列×2行。displayTile/cropHeightだけで全アイコンの位置を一括調整できる。
+    sheetLayout: { columns: 3, rows: 2, displayTile: 40, cropHeight: 27 },
+    icons: {
+      attack: { column: 0, row: 0 },
+      'weapon-instrument': { column: 1, row: 0 },
+      'weapon-sword': { src: 'assets/ui/battle/weapon-sword-v1.png', chromaKey: 'white' },
+      'weapon-staff': { src: 'assets/ui/battle/weapon-magic-v1.png', chromaKey: 'white' },
+      'weapon-martial': { src: 'assets/ui/battle/weapon-martial-v1.png' },
+      'weapon-bow': { src: 'assets/ui/battle/weapon-bow-v1.png', chromaKey: 'white' },
+      'weapon-spear': { src: 'assets/ui/battle/weapon-spear-v1.png' },
+      'weapon-shield': { src: 'assets/ui/battle/guard-v1.png' },
+      skill: { column: 2, row: 0 },
+      guard: { src: 'assets/ui/battle/guard-v1.png' },
+      item: { column: 1, row: 1 },
+      escape: { column: 2, row: 1 }
+    },
+    tones: {
+      attack: { border: '#b32643', glow: '#ff6b87', background: '#78142f' },
+      weapon: { border: '#275fa5', glow: '#5eb9ff', background: '#123f7c' },
+      skill: { border: '#69409b', glow: '#ca87ff', background: '#402069' },
+      guard: { border: '#a9adb8', glow: '#f1f4fb', background: '#3d414a', iconFilter: 'drop-shadow(0 0 4px #dfeaff)' },
+      item: { border: '#397d69', glow: '#78d6bb', background: '#123e35' },
+      neutral: { border: '#655979', glow: '#c5c6ce', background: '#171421' }
+    }
   },
   startingJobIds: ['warrior', 'martialArtist', 'mage', 'priest'],
 
@@ -173,6 +213,8 @@ window.ARSENE_DATA = {
   combatBalance: {
     playerVariance: { min: -2, max: 2 },
     critical: { base: .06, luckRate: .008, max: .28, multiplier: 1.65 },
+    // 共通コマンド《防御》は物理・魔法を問わず、そのラウンドの最終被ダメージを半減する。
+    guardReduction: .50,
     // 敵→プレイヤーのダメージは比率型：atk × attackScale × defenseK/(defenseK+防御)
     // 引き算型だと工房で装備を更新した瞬間にダメージが 0 か即死かの両極端に振れるため、
     // 防御が上がるほど緩やかに減衰する比率型へ統一している。
@@ -1165,8 +1207,8 @@ window.ARSENE_DATA = {
     // ── 楽器（魔奏士）──
     // ダメージは器用さ（dex）を参照する。weaponScaling.instrument を見ること。
     // 楽奏の証と一緒に配られる最初の楽器。これが無いと武器学《楽器》を使えない。
-    classroomRecorder: { id: 'classroomRecorder', name: '教室のリコーダー', weaponType: 'instrument', weaponSprite: 'staff_01', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 10, bonuses: { dex: 3 } },
-    silentRecorder:    { id: 'silentRecorder',    name: '静寂のリコーダー', weaponType: 'instrument', weaponSprite: 'staff_sun', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 20, magicDefensePower: 6, bonuses: { dex: 6 }, effects: { criticalRateBonus: 0.03 } },
+    classroomRecorder: { id: 'classroomRecorder', name: '教室のリコーダー', weaponType: 'instrument', battlePose: 'recorder', weaponSprite: 'staff_01', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 10, bonuses: { dex: 3 } },
+    silentRecorder:    { id: 'silentRecorder',    name: '静寂のリコーダー', weaponType: 'instrument', battlePose: 'recorder', weaponSprite: 'staff_sun', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 20, magicDefensePower: 6, bonuses: { dex: 6 }, effects: { criticalRateBonus: 0.03 } },
     flameStaff: { id: 'flameStaff', name: 'フレイムスタッフ', weaponType: 'staff', weaponSprite: 'staff_flame', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.6, bonuses: { mag: 6 }, grantsSkillId: 'flame' },
     wizardRod: { id: 'wizardRod', name: 'ウィザードロッド', weaponType: 'staff', weaponSprite: 'staff_wizard', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 2.9, bonuses: { mag: 9 }, grantsSkillId: 'fireball' },
     sunStaff: { id: 'sunStaff', name: '太陽の杖', weaponType: 'staff', weaponSprite: 'staff_sun', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.2, bonuses: { mag: 14 } },
@@ -1178,11 +1220,11 @@ window.ARSENE_DATA = {
     d3MageStaff: { id: 'd3MageStaff', name: '虚紡の杖', weaponType: 'staff', weaponSprite: 'staff_chaos', battleSprite: null, attackMotion: 'staffCast', magicAttackPower: 34, bonuses: {}, effects: { magicDamagePercent: .05 } },
     d3PriestStaff: { id: 'd3PriestStaff', name: '聖堂歯車の杖', weaponType: 'staff', weaponSprite: 'staff_sun', battleSprite: null, attackMotion: 'staffCast', magicAttackPower: 25, magicDefensePower: 14, bonuses: {}, effects: { healingPowerPercent: .15 } },
     d3MartialClaw: { id: 'd3MartialClaw', name: '裂界の爪', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 24, bonuses: {}, effects: { criticalRateBonus: .02 } },
-    d3MaestroInstrument: { id: 'd3MaestroInstrument', name: '星銀の弦琴', weaponType: 'instrument', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', magicAttackPower: 36, bonuses: {}, effects: { criticalRateBonus: .03, magicDamagePercent: .03 } },
+    d3MaestroInstrument: { id: 'd3MaestroInstrument', name: '星銀の弦琴', weaponType: 'instrument', battlePose: 'guitar', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', magicAttackPower: 36, bonuses: {}, effects: { criticalRateBonus: .03, magicDamagePercent: .03 } },
     d3TwinRight: { id: 'd3TwinRight', name: '裂界の双刃・右', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 22, bonuses: {}, effects: { criticalRateBonus: .02 } },
     d3TwinLeft: { id: 'd3TwinLeft', name: '裂界の双刃・左', weaponType: 'martial', weaponSubtype: 'dualBlade', offHandOnly: true, weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 18, bonuses: {}, effects: { criticalRateBonus: .01 } },
     d3GuardianAegis: { id: 'd3GuardianAegis', name: '城塞核の盾', weaponType: 'shield', weaponSprite: 'shield_reprise', battleSprite: null, attackMotion: 'shieldBash', damageType: 'physical', defensePower: 42, magicDefensePower: 38, bonuses: {}, effects: { magicDamageReductionPercent: .08, physicalDamageReductionPercent: .06, resonanceGainPercent: .25 } },
-    parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', dungeonId: 'dungeon3', weaponType: 'instrument', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', damageStat: 'dex', power: 4.0, guitarSkillTree: 'versicrellGuitar', bonuses: { dex: 10, mag: 5, critBonus: 0.04 } },
+    parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', dungeonId: 'dungeon3', weaponType: 'instrument', battlePose: 'guitar', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', damageStat: 'dex', power: 4.0, guitarSkillTree: 'versicrellGuitar', bonuses: { dex: 10, mag: 5, critBonus: 0.04 } },
     myrthi_blade: { id: 'myrthi_blade', name: '黒紅刃ミルティア', nameEn: 'MYRTHI BLADE', seriesId: 'myrthi', dungeonId: 'dungeon2', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_myrthi', battleSprite: null, attackMotion: 'slash', attackPower: 32, bonuses: { str: 16, agi: 8, critBonus: .06 } }
   },
   accessories: {

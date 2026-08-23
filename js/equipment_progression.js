@@ -20,12 +20,13 @@
     const item = addItem(id, { slot: 'rightHand', ...data });
     D.weapons[id] = {
       id, name: item.name, nameEn: item.nameEn, dungeonId: item.dungeonId,
-      weaponType: data.weaponType, weaponSprite: data.weaponSprite || `${data.weaponType}_progression`,
+      weaponType: data.weaponType, weaponSubtype: data.weaponSubtype || null, weaponSprite: data.weaponSprite || `${data.weaponType}_progression`,
       battleSprite: data.battleSprite || null,
-      attackMotion: data.weaponType === 'staff' || data.weaponType === 'instrument' ? 'staffCast' : 'slash',
+      attackMotion: data.weaponType === 'staff' || data.weaponType === 'instrument' ? 'staffCast' : data.weaponType === 'shield' ? 'shieldBash' : 'slash',
       damageStat: data.damageStat || (data.weaponType === 'staff' ? 'mag' : data.weaponType === 'instrument' ? 'dex' : 'str'),
       power: data.power || 2.5, attackPower: data.attackPower || 0,
-      magicAttackPower: data.magicAttackPower || 0, bonuses: data.bonuses || {}, effects: data.effects || {},
+      magicAttackPower: data.magicAttackPower || 0, defensePower: data.defensePower || 0,
+      magicDefensePower: data.magicDefensePower || 0, bonuses: data.bonuses || {}, effects: data.effects || {},
       scaling: data.scaling || null, powerKey: data.powerKey || null, damageType: data.damageType || null,
       offHandOnly: !!data.offHandOnly,
       seriesId: data.seriesId || null, source: data.source
@@ -272,7 +273,7 @@
   Object.assign(D.weapons.myrthi_blade, { name: '黒紅双刃・赫牙', nameEn: 'CRIMSON FANG', attackPower: 48, bonuses: { str: 9, agi: 8 } });
   addWeapon('myrthi_blade_noctis', {
     name: '黒紅双刃・影牙', nameEn: 'SHADOW FANG', dungeonId: 'dungeon2', catalogDungeon: 'dungeon2',
-    slot: 'leftHand', weaponType: 'sword', offHandOnly: true, stars: 5, rarity: 'legendary', seriesId: 'myrthi', source: 'boss',
+    slot: 'leftHand', weaponType: 'martial', weaponSubtype: 'dualBlade', offHandOnly: true, stars: 5, rarity: 'legendary', seriesId: 'myrthi', source: 'boss',
     attackPower: 45, power: 3.05, bonuses: { str: 7, agi: 10 },
     description: '赫牙と対を成す左の黒刃。双刃士が左手へ装備した時、黒紅の軌跡が完成する。'
   });
@@ -299,17 +300,25 @@
   addWeapon('seripes_aegis', {
     name: '聖盾グランド・リプライズ', nameEn: 'GRAND REPRISE AEGIS', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3',
     weaponType: 'shield', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', power: 3.35,
-    bonuses: { vit: 8, mnd: 6, maxHp: 18 }, description: '第三奏卿の大反奏を宿す白盾。守護士は右手、戦士は左手で真価を引き出す。'
+    recommendedJobs: ['guardian'], bonuses: { vit: 8, mnd: 6, maxHp: 18 }, description: '第三奏卿の大反奏を宿す白盾。守護士が受けた衝撃を共鳴へ変える。'
   });
   Object.assign(D.weapons.seripes_aegis, { defensePower: 54, magicDefensePower: 46, damageType: 'physical', damageStat: 'vit' });
-  addArmor('seripes_crown', { name: '不落騎士の白冠', nameEn: 'IMPREGNABLE CROWN', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', slot: 'head', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', defensePower: 24, magicDefensePower: 27, bonuses: { vit: 6, mnd: 5 }, description: '砕けぬ集中を保つ、静かな白銀の冠。' });
-  addArmor('seripes_plate', { name: '反奏騎士の聖鎧', nameEn: 'REPRISE PLATE', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', slot: 'body', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', defensePower: 48, magicDefensePower: 40, bonuses: { maxHp: 38, vit: 9, mnd: 6 }, description: '衝撃を受け止め、次の反撃へ共鳴させる城塞の聖鎧。' });
-  addArmor('seripes_gauntlets', { name: '受響の篭手', nameEn: 'RESONANT GAUNTLETS', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', slot: 'arms', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', defensePower: 27, magicDefensePower: 21, bonuses: { vit: 7, str: 5 }, description: '受けた衝撃を盾と拳へ伝える白銀の篭手。' });
-  addArmor('seripes_greaves', { name: '城塞の白脚', nameEn: 'BASTION GREAVES', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', slot: 'feet', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', defensePower: 29, magicDefensePower: 24, bonuses: { vit: 6, mnd: 4, agi: 3 }, description: 'いかなる衝撃にも陣形を崩さない白き脚甲。' });
-  addArmor('seripes_sigil', { name: '第三奏の白印', nameEn: 'THIRD MAESTRI SIGIL', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', slot: 'accessory', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', magicDefensePower: 18, bonuses: { maxHp: 22, vit: 6, mnd: 6 }, description: '第三奏卿の反奏を刻む白い紋章。守りの音を反撃へ変える。' });
+  addWeapon('seripes_blade', {
+    name: '白鉄の反奏剣', nameEn: 'REPRISE IRON SWORD', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3',
+    weaponType: 'sword', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', power: 3.15,
+    attackPower: 46, defensePower: 16, magicDefensePower: 10, recommendedJobs: ['warrior'],
+    bonuses: { str: 6, vit: 7, maxHp: 12 }, effects: { physicalDamageReductionPercent: .04 },
+    description: 'セリペスが白盾と共に携えた実直な騎士剣。攻めながら受けの姿勢を崩さない。'
+  });
+  addArmor('seripes_crown', { name: '不落騎士の白冠', nameEn: 'IMPREGNABLE CROWN', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', slot: 'head', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', recommendedJobs: ['guardian', 'warrior'], defensePower: 24, magicDefensePower: 27, bonuses: { vit: 6, mnd: 5 }, description: '砕けぬ集中を保つ、静かな白銀の冠。' });
+  addArmor('seripes_plate', { name: '反奏騎士の聖鎧', nameEn: 'REPRISE PLATE', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', slot: 'body', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', recommendedJobs: ['guardian', 'warrior'], defensePower: 48, magicDefensePower: 40, bonuses: { maxHp: 38, vit: 9, mnd: 6 }, description: '衝撃を受け止め、次の反撃へ共鳴させる城塞の聖鎧。' });
+  addArmor('seripes_gauntlets', { name: '受響の篭手', nameEn: 'RESONANT GAUNTLETS', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', slot: 'arms', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', recommendedJobs: ['guardian', 'warrior'], defensePower: 27, magicDefensePower: 21, bonuses: { vit: 7, str: 5 }, description: '受けた衝撃を盾と拳へ伝える白銀の篭手。' });
+  addArmor('seripes_greaves', { name: '城塞の白脚', nameEn: 'BASTION GREAVES', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', slot: 'feet', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', recommendedJobs: ['guardian', 'warrior'], defensePower: 31, magicDefensePower: 25, bonuses: { vit: 6, mnd: 4 }, description: 'いかなる衝撃にも陣形を崩さない白き脚甲。' });
+  addArmor('seripes_sigil', { name: '第三奏の白印', nameEn: 'THIRD MAESTRI SIGIL', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', slot: 'accessory', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', recommendedJobs: ['guardian', 'warrior'], magicDefensePower: 18, bonuses: { maxHp: 22, vit: 6, mnd: 6 }, description: '第三奏卿の反奏を刻む白い紋章。守りの音を反撃へ変える。' });
 
   const seripesRecipes = {
     seripes_aegis_recipe: ['seripes_aegis', 1500, [['seripes_core', 2], ['reprise_fragment', 8], ['phantomCore', 4]]],
+    seripes_blade_recipe: ['seripes_blade', 1450, [['seripes_core', 2], ['reprise_fragment', 8], ['darkIron', 8]]],
     seripes_crown_recipe: ['seripes_crown', 1050, [['seripes_core', 1], ['reprise_fragment', 6], ['darkIron', 5]]],
     seripes_plate_recipe: ['seripes_plate', 1400, [['seripes_core', 2], ['reprise_fragment', 8], ['voidEssence', 5]]],
     seripes_gauntlets_recipe: ['seripes_gauntlets', 1000, [['seripes_core', 1], ['reprise_fragment', 6], ['phantomCore', 4]]],
@@ -320,8 +329,8 @@
   D.bossEquipmentSeries.seripes = {
     id: 'seripes', name: 'SERIPES SERIES', nameJa: 'セリペスシリーズ', stars: 5,
     unlockCondition: { bossDefeated: 'seripes' }, primaryJob: 'guardian', recommendedJobs: ['guardian', 'warrior'],
-    concept: '守護士のRESONANCEと反撃を最大化し、戦士にも堅牢な盾運用を与える防衛シリーズ。',
-    equipment: ['seripes_aegis', 'seripes_crown', 'seripes_plate', 'seripes_gauntlets', 'seripes_greaves', 'seripes_sigil'],
+    concept: '守護士は白盾、戦士は反奏剣を選び、受けた一撃を反撃へ変える防衛シリーズ。',
+    equipment: ['seripes_aegis', 'seripes_blade', 'seripes_crown', 'seripes_plate', 'seripes_gauntlets', 'seripes_greaves', 'seripes_sigil'], maxEquippable: 6,
     recipes: Object.keys(seripesRecipes), dismantle: { materialId: 'reprise_fragment', count: 3 },
     setBonuses: {
       2: { id: 'antiphon', name: 'ANTIPHON', description: '体力 +8% / 精神 +8%', effect: { vitPercent: 8, mndPercent: 8 } },

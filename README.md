@@ -53,7 +53,7 @@ equipment: { rightHand: 'mageStaff' }
 
 ## 画像素材の差し替え方法
 
-蓮は `assets/playable-characters/ren/body-no-weapon.png`、シャドウスライムは `assets/enemy-characters/shadow-slime/battle-idle.png`、現在の背景は `assets/bg/dungeon-battle-01.png` から読み込みます。キャラクターIDごとのフォルダを複製して追加してください。
+蓮の戦闘用画像は `assets/playable-characters/ren/battle/` に置き、`data/characters.json` の `battleSpritesByWeaponType` へ登録します。原画は全身のまま保存し、`backgroundSize` と `backgroundPosition` で頭を切らずに半身表示します。`sword`、`staff`、`martial`、`instrument`、`shield` など武器種ごとに `src` を指定でき、未登録時は `default` へ自動フォールバックします。楽器は武器データの `battlePose: 'recorder'` / `'guitar'` で同じ `instrument` 内でも画像を分けられます。コマンド画像は `assets/ui/battle/command-icons-v1.png`、画像割当と防御を含む色設定は `js/data.js` の `commandVisuals` で差し替えられます。シャドウスライムは `assets/enemy-characters/shadow-slime/battle-idle.png`、背景はダンジョンデータ側の指定から読み込みます。
 
 ## BGM・効果音
 
