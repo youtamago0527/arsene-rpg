@@ -69,6 +69,11 @@ window.ARSENE_DATA = {
       spear: 'assets/ui/battle/lower-ui-v2/weapon-card-spear-v2.png',
       greatsword: 'assets/ui/battle/lower-ui-v2/weapon-card-greatsword-v2.png'
     },
+    // 完成カードごとの見え方を個別に微調整できる。元画像の縦横比は変えず、
+    // size を少し上げる場合だけ周辺をわずかにトリミングしてカードを大きく見せる。
+    weaponCardPresentation: {
+      sword: { size: '104% 104%', position: 'center' }
+    },
     // 元画像は正方形セル3列×2行。displayTile/cropHeightだけで全アイコンの位置を一括調整できる。
     sheetLayout: { columns: 3, rows: 2, displayTile: 40, cropHeight: 27 },
     icons: {

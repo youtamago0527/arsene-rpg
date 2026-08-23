@@ -959,6 +959,8 @@
 /* 武器学も完成画像化。装備変更時は --weapon-card-image だけが切り替わる。 */
 #game .command-panel[data-layout="main"]>button[data-action="weaponArts"]{
   background-image:var(--weapon-card-image,url("../assets/ui/battle/lower-ui-v2/weapon-card-instrument-v2.png"))!important;
+  background-size:var(--weapon-card-size,100% 100%)!important;
+  background-position:var(--weapon-card-position,center)!important;
 }
 #game .command-panel[data-layout="main"]>button[data-action="weaponArts"]::after{display:none}
 #game .command-panel[data-layout="main"]>button[data-action="weaponArts"]>i,

@@ -1733,13 +1733,16 @@
       const toneVisual = D.commandVisuals?.tones?.[tone] || {};
       const weaponType = iconKey?.startsWith('weapon-') ? iconKey.slice(7) : '';
       const weaponCard = weaponType && D.commandVisuals?.weaponCards?.[weaponType];
+      const weaponCardPresentation = weaponType && D.commandVisuals?.weaponCardPresentation?.[weaponType];
       const weaponCardUrl = weaponCard ? new URL(weaponCard, document.baseURI).href.replace(/["\\]/g, '\\$&') : '';
       const toneStyle = [
         toneVisual.border && `--command-tone-border:${toneVisual.border}`,
         toneVisual.glow && `--command-tone-glow:${toneVisual.glow}`,
         toneVisual.background && `--command-tone-bg:${toneVisual.background}`,
         toneVisual.iconFilter && `--command-icon-filter:${toneVisual.iconFilter}`,
-        weaponCardUrl && `--weapon-card-image:url(&quot;${weaponCardUrl}&quot;)`
+        weaponCardUrl && `--weapon-card-image:url(&quot;${weaponCardUrl}&quot;)`,
+        weaponCardPresentation?.size && `--weapon-card-size:${weaponCardPresentation.size}`,
+        weaponCardPresentation?.position && `--weapon-card-position:${weaponCardPresentation.position}`
       ].filter(Boolean).join(';');
       return `<button data-action="${action}" data-tone="${tone}"${toneStyle ? ` style="${toneStyle}"` : ''} ${disabled ? 'disabled' : ''}>${this.commandIconMarkup(iconKey)}<strong>${label}</strong><span>${sub}</span>${detail ? `<em>${detail}</em>` : ''}</button>`;
     }
@@ -1760,6 +1763,13 @@
     cancelAutoPick() {
       if (this.autoPickTimer) clearTimeout(this.autoPickTimer);
       this.autoPickTimer = null;
+    }
+    endAutoBattle() {
+      // 勝敗・逃走の確定後にAUTOの予約や演出中の操作ロックを残さない。
+      this.autoBattle = false;
+      this.autoToggleBusy = false;
+      this.cancelAutoPick();
+      $('#command-panel')?.classList.remove('turn-locked');
     }
     scheduleAutoPick() {
       this.cancelAutoPick();
@@ -2542,7 +2552,7 @@
       enemy.hasStolen = true; this.saveProfile(); el?.classList.remove('enemy-attacking'); this.updateHUD(); await this.battleSleep(440);
     }
     async enemyEncounterEscaped() {
-      this.finished = true; this.locked = false; $('#phase-label').textContent = 'ESCAPED';
+      this.finished = true; this.endAutoBattle(); this.locked = false; $('#phase-label').textContent = 'ESCAPED';
       $('#log').innerHTML = '<p>希少怪異は逃走した。この遭遇は階層踏破数に加算されない。</p>';
       this.panel(this.button('次の戦闘へ', 'NEXT BATTLE', 'next') + this.button('拠点へ戻る', 'HIDEOUT', 'hideout'));
       this.bindActions({ next: () => this.startBattle(), hideout: () => this.showMenu('home') });
@@ -2614,7 +2624,7 @@
     async victory() {
       const quick = !!this.quickResolving;
       this.profile.flags.consecutiveDefeats = 0; this.profile.flags.lastBattleResult = 'victory';
-      this.finished = true; this.audio.sfx('victory'); this.flashTitle('VICTORY', 'ALL SHADOWS ELIMINATED'); $('#ren').classList.add('victory'); await this.battleSleep(quick ? 120 : 1100);
+      this.finished = true; this.endAutoBattle(); this.audio.sfx('victory'); this.flashTitle('VICTORY', 'ALL SHADOWS ELIMINATED'); $('#ren').classList.add('victory'); await this.battleSleep(quick ? 120 : 1100);
       const reward = { exp: this.battleRewards.exp, gold: this.battleRewards.gold, drops: this.battleRewards.drops }, levels = this.battleRewards.levels;
       const masteryParts = this.battleRewards.masteryResults || [], jobParts = this.battleRewards.jobResults || [];
       const masteryResult = masteryParts.length ? { ...masteryParts[0], gain: masteryParts.reduce((s, r) => s + r.gain, 0), before: masteryParts[0].before, after: masteryParts[masteryParts.length - 1].after, leveled: masteryParts.some(r => r.leveled) } : null;
@@ -2668,7 +2678,7 @@
       this.bindActions({ next: () => { $('#ren').classList.remove('victory'); this.startBattle(); }, hideout: () => this.showMenu('home') });
     }
     async defeat() {
-      this.finished = true; this.audio.stopMusic(500); this.audio.sfx('defeat'); $('#ren').classList.add('down');
+      this.finished = true; this.endAutoBattle(); this.audio.stopMusic(500); this.audio.sfx('defeat'); $('#ren').classList.add('down');
       if (this.battleMode === 'debugOverpower') { const damage = this.enemies[0]?.debugDamageTaken || 0, turns = this.turn, resonance = this.player?.resonance || 0; this.restoreDebugBattle(); this.flashTitle('TEST COMPLETE', 'GUARDIAN ENDURANCE'); await this.battleSleep(700); this.showResult('TEST COMPLETE', 'HP無限の強敵検証体に敗北。開始前のセーブ状態へ戻した。', 'DEBUG RESULT', `<div class="boss-result-note"><b>生存 ${turns} ACTION</b><br>総与ダメージ ${Math.round(damage).toLocaleString('ja-JP')}<br>最終RESONANCE ${resonance.toFixed(1)}%</div>`); return; }
       if (this.battleMode === 'noel') { const stats = this.totalStats(); this.profile.flags.noelFirstEncounterCleared = true; this.profile.flags.preNoelBattleWins = Math.max(this.profile.flags.preNoelBattleWins || 0, D.battleProgression.noelEncounterWins); this.profile.flags.postNoelBattleWins = 0; this.profile.currentVitals = { hp: stats.maxHp, mp: stats.maxMp }; this.player.hp = stats.maxHp; this.player.mp = stats.maxMp; this.saveProfile(); this.flashTitle('DEFEAT', 'NOËL — THE ETERNAL JUDGE'); await this.battleSleep(1000); this.showResult('DEFEAT', '圧倒的な裁定の前に敗れた。ノエルは姿を消し、全回復して拠点へ帰還した。', 'THE NEXT KEY', '<div class="workshop-unlock"><b>PHANTOM WORKSHOP</b><strong>工房が解放された！</strong><span>敗北の記録を解析し、装備製作機能が使用可能になりました。</span></div>'); return; }
       const rollback = this.rollbackToCheckpoint();
@@ -2679,7 +2689,7 @@
       if (this.battleMode === 'seripes') { this.flashTitle('DEFEAT', 'SERIPES // REPRISE'); await this.battleSleep(1000); this.showResult('DEFEAT', 'セリペスの反奏を崩せなかった。カズに救助され、HP1で拠点へ帰還した。', 'CHALLENGE FAILED', this.battleSummaryHTML() || '<div class="boss-result-note">報酬・ドロップなし</div>'); return; }
       this.flashTitle('GAME OVER', 'MISSION FAILED'); await this.battleSleep(1000); this.showResult('GAME OVER', 'カズに救助され、HP 1で拠点へ運び込まれた。', 'RETURN TO HIDEOUT', this.battleSummaryHTML());
     }
-    showResult(title, copy, kicker, html) { this.resultContinue = null; $('#result-title').textContent = title; $('#result-copy').textContent = copy; $('#result-kicker').textContent = kicker; $('#rewards').innerHTML = html; $('#result-menu').hidden = false; $('#result-menu').innerHTML = '拠点へ <span>HIDEOUT</span>'; $('#result').hidden = false; $('#result').style.display = 'grid'; }
+    showResult(title, copy, kicker, html) { this.endAutoBattle(); this.locked = false; this.resultContinue = null; $('#result-title').textContent = title; $('#result-copy').textContent = copy; $('#result-kicker').textContent = kicker; $('#rewards').innerHTML = html; $('#result-menu').hidden = false; $('#result-menu').innerHTML = '拠点へ <span>HIDEOUT</span>'; $('#result').hidden = false; $('#result').style.display = 'grid'; }
     showStagedMilestone(rewardBlock, milestone) { this.showResult('VICTORY', '闇を切り裂き、戦利品を獲得した。', 'BATTLE COMPLETE', rewardBlock); this.resultContinue = () => this.showMilestonePopup(milestone); $('#result-menu').innerHTML = '次へ <span>NEXT</span>'; }
     showMilestonePopup(milestone) {
       if (milestone.type === 'floor') this.showResult('ROUTE OPEN', '次の階層に行けるようになりました', 'SAFE ZONE REACHED', `<div class="milestone-popup"><small>NEXT FLOOR UNLOCKED</small><strong>${milestone.nextFloorName}</strong><span>ここまでの進行度はセーフゾーンに記録されました。</span></div><div class="result-actions"><button data-result-action="next-floor" data-target="${milestone.nextFloorId}">進む<small>NEXT FLOOR</small></button><button data-result-action="continue-floor" data-target="${milestone.currentFloorId}">そのまま戦闘<small>KEEP FIGHTING</small></button><button data-result-action="hideout">拠点へ戻る<small>HIDEOUT</small></button></div>`);
