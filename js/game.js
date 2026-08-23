@@ -1546,7 +1546,8 @@
       const basic = this.basicAttackSkill(), wType = this.equippedWeaponType();
       const artsCmd = (D.weaponArtsCommand || {})[wType] || { name: '武器技', nameEn: 'WEAPON ARTS' };
       const arts = this.learnedWeaponSkills().filter(s => s.weaponType === wType && this.weaponSkillMatchesEquipped(s));
-      let html = this.button(basic.name, basic.nameEn || 'ATTACK', 'attack');
+      let html = `<div class="battle-quick-controls"><button class="quick-battle-btn" data-action="quick"><i></i><strong>簡易戦闘</strong><span>QUICK</span></button><button class="auto-battle-btn${this.autoBattle ? ' active' : ''}" data-action="auto-toggle"><i></i><strong>AUTO ×1.5</strong><span>${this.autoBattle ? 'ON' : 'OFF'}</span></button></div>`;
+      html += this.button(basic.name, basic.nameEn || 'ATTACK', 'attack');
       if (arts.length) html += this.button(artsCmd.name, `${artsCmd.nameEn} ▶`, 'weaponArts');
       // 条件待ちの専用技しか無い場合もボタンは出す（中で条件を見せるため）
       if (personal.length || this.conditionalSkillsForJob().length) html += this.button('固有技', 'PERSONAL ▶', 'personal');
@@ -1555,8 +1556,6 @@
       const jobSkills = this.jobLearnedActiveSkills(curJobId).filter(s => s.id !== D.jobs[curJobId]?.signatureSkillId);
       if (jobSkills.length) html += this.button(mainCmd.cmd, `${mainCmd.cmdEn} ▶`, 'mainCmd');
       html += this.button('アイテム', `ITEM ×${itemCount}`, 'item') + this.button('にげる', 'ESCAPE', 'escape');
-      html += `<button class="quick-battle-btn" data-action="quick"><i></i><strong>簡易戦闘</strong><span>QUICK RESOLVE</span></button>`;
-      html += `<button class="auto-battle-btn${this.autoBattle ? ' active' : ''}" data-action="auto-toggle"><i></i><strong>${this.autoBattle ? 'AUTO ON' : 'AUTO OFF'}</strong><span>BATTLE MODE</span></button>`;
       this.panel(html);
       this.bindActions({ attack: () => this.chooseTarget(basic.id), weaponArts: () => this.showWeaponArts(), personal: () => this.showPersonalSkills(), resonance: () => this.chooseTarget('resonanceBreak'), mainCmd: () => this.showCommandSkills(curJobId), item: () => this.showBattleItems(), escape: () => this.tryEscape(), quick: () => this.quickResolveBattle(), 'auto-toggle': () => { this.autoBattle = !this.autoBattle; this.showMainCommands(); } });
       if (this.autoBattle && !this.locked) setTimeout(() => this.autoPickAction(), 700);
