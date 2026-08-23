@@ -1397,7 +1397,39 @@
       for (const e of this.enemies || []) if (e.id && !seen.includes(e.id)) { seen.push(e.id); added = true; }
       if (added) this.saveProfile();
     }
-    renderEnemies() { this.noteEnemiesSeen(); const enemyLayer = $('#enemies'); enemyLayer.classList.toggle('boss-party', this.battleMode !== 'slime'); enemyLayer.dataset.count = String(Math.min(3, Math.max(1, this.enemies.length))); enemyLayer.innerHTML = this.enemies.map((e, i) => { const statuses = `<button type="button" class="status-strip enemy-statuses" aria-label="敵の状態と解析情報" onclick="event.preventDefault();event.stopPropagation();window.arseneGame?.openEnemyStatus(${i})"></button>`; const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : '', rareTag = e.kind === 'rare' ? '<em class="enemy-rare-tag">RARE</em>' : ''; return e.kind === 'boss' ? `<div role="button" tabindex="0" class="enemy boss-enemy${bossClass} fighter idle" id="${e.uid}" data-enemy="${i}" aria-label="${e.name}"><div class="enemy-hud boss-hud"><span>${e.name} // ${e.title}</span><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>???? / ????</small>${statuses}</div><div class="enemy-visual"><div class="slime-shadow boss-shadow"></div><div class="noel-sprite${e.spriteClass ? ' ' + e.spriteClass : ''}"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div></div></div>` : `<div role="button" tabindex="0" class="enemy enemy-${e.id} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" aria-label="${e.name}${e.label}"><div class="enemy-hud"><span>${rareTag}${e.name} ${e.label}</span><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>???? / ????</small>${statuses}</div><div class="enemy-visual"><div class="slime-shadow"></div><div class="slime"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div></div></div>`; }).join(''); }
+    renderEnemies() {
+      this.noteEnemiesSeen();
+      const enemyLayer = $('#enemies');
+      enemyLayer.classList.toggle('boss-party', this.battleMode !== 'slime');
+      enemyLayer.dataset.count = String(Math.min(3, Math.max(1, this.enemies.length)));
+      enemyLayer.innerHTML = this.enemies.map((e, i) => {
+        const statuses = '<div class="status-strip enemy-statuses" aria-hidden="true"></div>';
+        const hpMeter = `<button type="button" class="enemy-hp-meter" aria-label="${e.name}のHPとステータスを確認" onclick="event.preventDefault();event.stopPropagation();window.arseneGame?.openEnemyStatus(${i})"><i style="width:100%"></i></button>`;
+        const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : '';
+        const rareTag = e.kind === 'rare' ? '<em class="enemy-rare-tag">RARE</em>' : '';
+        const scale = Math.max(.65, Math.min(1.5, Number(e.battleScale) || 1));
+        const art = e.sprite
+          ? `<img class="${e.kind === 'boss' ? `noel-sprite monster-image boss-monster-image${e.spriteClass ? ` ${e.spriteClass}` : ''}` : 'slime monster-image'}" src="${e.sprite}" alt="" draggable="false">`
+          : `<div class="${e.kind === 'boss' ? `noel-sprite${e.spriteClass ? ` ${e.spriteClass}` : ''}` : 'slime'}"></div>`;
+        const name = e.kind === 'boss' ? `${e.name} // ${e.title}` : `${rareTag}${e.name} ${e.label}`;
+        return `<div role="button" tabindex="0" class="enemy${e.kind === 'boss' ? ` boss-enemy${bossClass}` : ` enemy-${e.id} delay-${i}`} fighter idle" id="${e.uid}" data-enemy="${i}" style="--enemy-index:${i};--monster-scale:${scale}" aria-label="${e.name}を通常攻撃"><div class="enemy-hud${e.kind === 'boss' ? ' boss-hud' : ''}"><span>${name}</span>${hpMeter}<small>???? / ????</small>${statuses}</div><div class="enemy-visual"><div class="slime-shadow${e.kind === 'boss' ? ' boss-shadow' : ''}"></div>${art}</div></div>`;
+      }).join('');
+      this.enemies.forEach((e, i) => this.bindEnemyTap(e, i));
+    }
+    bindEnemyTap(enemy, index) {
+      const el = document.getElementById(enemy.uid);
+      if (!el || !enemy.alive) return;
+      el.onclick = () => this.attackEnemyFromField(index);
+      el.onkeydown = event => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        this.attackEnemyFromField(index);
+      };
+    }
+    attackEnemyFromField(index) {
+      if (this.locked || this.finished || this.autoBattle || !this.enemies[index]?.alive) return;
+      this.executeRound(this.basicAttackSkill().id, index);
+    }
     applyEquipmentVisual() {
       const w = this.equippedWeapon(), layer = $('#weapon-layer'); layer.className = `weapon-layer weapon-${w.weaponType} sprite-${w.weaponSprite}`; layer.dataset.weaponId = w.id; layer.dataset.weaponType = w.weaponType; layer.title = w.name; const weaponName = $('#weapon-name'); if (weaponName) weaponName.textContent = `RIGHT HAND // ${w.name}`;
       if (w.battleSprite) layer.style.backgroundImage = `url("${w.battleSprite}")`; else layer.style.removeProperty('background-image');
@@ -1562,7 +1594,7 @@
     }
     showCommandSkills(jobId) { const skills = this.jobLearnedActiveSkills(jobId).filter(s => s.id !== D.jobs[jobId]?.signatureSkillId); if (!skills.length) { this.setLog('このコマンドの習得済みスキルがありません。'); return; } this.panel(skills.map(s => { const cd = this.cooldownRemaining(s); return this.button(s.name, cd ? `CT ${cd}` : this.skillCostLabel(s), s.id, !this.canPaySkillCosts(s) || cd > 0); }).join('') + this.button('もどる', 'BACK', 'back')); const actions = { back: () => this.showMainCommands() }; skills.forEach(s => { actions[s.id] = () => { const sk = D.skills[s.id]; if (sk?.randomTarget || sk?.target === 'all' || sk?.target === 'self') this.executeRound(s.id, -1); else this.chooseTarget(s.id); }; }); this.bindActions(actions); }
     chooseTarget(skillId) { const skill = D.skills[skillId]; if (skill?.target === 'all' || skill?.target === 'self') { this.executeRound(skillId, -1); return; } $('#phase-label').textContent = 'SELECT TARGET'; this.setLog('攻撃する敵を選択'); this.enemies.forEach((e, i) => { const el = document.getElementById(e.uid); if (e.alive) { el.classList.add('targetable'); el.onclick = () => this.executeRound(skillId, i); } }); this.panel(this.button('もどる', 'BACK', 'back')); this.bindActions({ back: () => { this.clearTargets(); this.showMainCommands(); } }); }
-    clearTargets() { this.enemies.forEach(e => { const el = document.getElementById(e.uid); if (el) { el.classList.remove('targetable'); el.onclick = null; } }); }
+    clearTargets() { this.enemies.forEach((e, i) => { const el = document.getElementById(e.uid); if (el) { el.classList.remove('targetable'); this.bindEnemyTap(e, i); } }); }
 
     async executeRound(skillId, targetIndex) {
       // randomTarget（ばくれつけん等）はターゲット選択を経ずに発動するため、
@@ -2636,7 +2668,7 @@
       const craftLabel = craftable ? '製作する' : (lackingMaterials ? '素材不足' : 'ゴールド不足');
       const jobs = (item.recommendedJobs || []).map(id => D.jobs?.[id]?.name || id);
       const jobFit = jobs.length ? `<span class="recipe-job-fit">適性：${jobs.join('・')}</span>` : '';
-      return `<article class="recipe-card rarity-${item.rarity}${isNewRecipe ? ' recipe-newly-unlocked' : ''}${craftable ? ' can-craft' : ''}"><div class="recipe-info"><div class="recipe-title"><b>${item.name}${item.stars ? `<small>${'★'.repeat(item.stars)}</small>` : ''}</b>${isNewRecipe ? '<mark class="recipe-new">NEW</mark>' : ''}${owned ? `<em>×${owned}</em>` : ''}</div>${jobFit}<span class="recipe-bonus">${this.bonusText(recipe.resultItemId)}</span></div><details class="recipe-detail"><summary>必要素材${lacking ? `<b class="lack">${lackLabel}</b>` : '<b class="ok">そろっています</b>'}</summary><div class="recipe-materials">${materialsHtml}${goldRow}</div><p class="recipe-desc">${item.description}</p></details><button class="recipe-craft" data-craft="${recipe.id}" ${craftable ? '' : 'disabled'}>${craftLabel}</button></article>`;
+      return `<article class="recipe-card rarity-${item.rarity}${isNewRecipe ? ' recipe-newly-unlocked' : ''}${craftable ? ' can-craft' : ''}"><div class="recipe-info"><div class="recipe-title"><b>${item.name}${item.stars ? `<small>${'★'.repeat(item.stars)}</small>` : ''}</b>${isNewRecipe ? '<mark class="recipe-new">NEW</mark>' : ''}${owned ? `<em>×${owned}</em>` : ''}</div>${jobFit}<span class="recipe-bonus">${this.bonusText(recipe.resultItemId)}</span>${this.craftComparisonHTML(recipe.resultItemId)}</div><details class="recipe-detail"><summary>必要素材${lacking ? `<b class="lack">${lackLabel}</b>` : '<b class="ok">そろっています</b>'}</summary><div class="recipe-materials">${materialsHtml}${goldRow}</div><p class="recipe-desc">${item.description}</p></details><button class="recipe-craft" data-craft="${recipe.id}" ${craftable ? '' : 'disabled'}>${craftLabel}</button></article>`;
     }
     craftMaterialAvailable(id) { const equipped = Object.values(this.profile.equipment || {}).filter(eid => eid === id).length; return Math.max(0, (this.profile.inventory[id] || 0) - equipped); }
     canCraft(recipe) { if (!recipe) return false; if (this.profile.gold < (recipe.gold || 0)) return false; return (recipe.materials || []).every(m => this.craftMaterialAvailable(m.itemId) >= m.count); }
@@ -2964,11 +2996,26 @@
       const all = [...combatRows, ...rows.map(([key, value]) => key === 'critBonus' ? `会心率 ${value >= 0 ? '+' : ''}${Math.round(value * 100)}%` : `${statLabels[key] || key.toUpperCase()} ${value >= 0 ? '+' : ''}${value}`), ...effectRows];
       return all.length ? all.join(' / ') + enchStr : '補正なし' + enchStr;
     }
+    equipmentCombatComparison(equipment = this.profile.equipment) {
+      const stats = this.totalStats(equipment);
+      const weaponType = D.weapons[equipment?.rightHand]?.weaponType || this.equippedWeaponType();
+      return { attack: Math.round(this.attackPowerFor(weaponType, stats, equipment)), defense: Math.round(this.defensePowerFor('physical', stats, equipment)), magicDefense: Math.round(this.defensePowerFor('magical', stats, equipment)) };
+    }
+    combatComparisonHTML(nextEquipment, compact = false) {
+      const before = this.equipmentCombatComparison(), after = this.equipmentCombatComparison(nextEquipment);
+      const rows = [['攻撃力', 'ATK', 'attack'], ['防御力', 'DEF', 'defense'], ['魔法防御', 'MDEF', 'magicDefense']];
+      return `<div class="combat-compare-strip${compact ? ' compact' : ''}">${rows.map(([label, short, key]) => { const delta = after[key] - before[key], state = delta > 0 ? 'up' : delta < 0 ? 'down' : 'same'; return `<div class="${state}"><span>${compact ? short : label}</span>${compact ? '' : `<b>${before[key]}<i>→</i>${after[key]}</b>`}<em>${delta ? `${delta > 0 ? '+' : ''}${delta}` : '±0'}</em></div>`; }).join('')}</div>`;
+    }
+    craftComparisonHTML(id) {
+      const item = D.items[id]; if (!item) return '';
+      const slot = item.slot || (D.weapons[id] ? 'rightHand' : null); if (!slot) return '';
+      return this.combatComparisonHTML({ ...this.profile.equipment, [slot]: id }, true);
+    }
     equipmentPreviewHTML(id) {
       if (!id) return `<div class="equipment-empty-preview"><b>装備候補を選択</b><span>候補をタップすると、現在装備との能力差を確認できます。</span></div>`;
       const item = D.items[id], targetSlot = this.equipSlot || item.slot, currentId = this.profile.equipment[targetSlot], currentItem = D.items[currentId], nextEquipment = { ...this.profile.equipment, [targetSlot]: id }, before = this.totalStats(), after = this.totalStats(nextEquipment), active = currentId === id;
       const rows = Object.keys(statLabels).map(key => { const delta = after[key] - before[key], state = delta > 0 ? 'up' : delta < 0 ? 'down' : 'same', change = delta ? `${delta > 0 ? '+' : ''}${delta} ${delta > 0 ? '↑' : '↓'}` : '－'; return `<div class="compare-row ${state}"><span>${statLabels[key]}</span><b>${before[key]}</b><i>→</i><strong>${after[key]}</strong><em>${change}</em></div>`; }).join('');
-      return `<div class="equipment-swap"><div><small>現在装備</small><b>${currentItem?.name || 'なし'}</b><span>${currentId ? this.bonusText(currentId) : '補正なし'}</span></div><i>→</i><div><small>変更後</small><b>${item.name}</b><span>${this.bonusText(id)}</span></div></div><div class="equipment-description">${item.description}</div><div class="compare-table"><div class="compare-head"><span>能力</span><b>現在</b><i></i><strong>装備後</strong><em>変化</em></div>${rows}</div><button class="equip-confirm" data-equip-confirm="${id}" ${active ? 'disabled' : ''}>${active ? '装備中' : 'この装備に変更'}<span>${active ? 'EQUIPPED' : 'EQUIP'}</span></button>`;
+      return `<div class="equipment-swap"><div><small>現在装備</small><b>${currentItem?.name || 'なし'}</b><span>${currentId ? this.bonusText(currentId) : '補正なし'}</span></div><i>→</i><div><small>変更後</small><b>${item.name}</b><span>${this.bonusText(id)}</span></div></div><div class="equipment-description">${item.description}</div>${this.combatComparisonHTML(nextEquipment)}<div class="compare-table"><div class="compare-head"><span>基礎能力</span><b>現在</b><i></i><strong>装備後</strong><em>変化</em></div>${rows}</div><button class="equip-confirm" data-equip-confirm="${id}" ${active ? 'disabled' : ''}>${active ? '装備中' : 'この装備に変更'}<span>${active ? 'EQUIPPED' : 'EQUIP'}</span></button>`;
     }
     musicScoreSectionHTML() { const scores = Object.values(D.musicScores || {}).filter(score => this.isPlayerContentVisible(score)); return `<section class="music-score-section"><h3>楽曲 <span>MUSIC SCORE // PRIVATE MODE</span></h3><div>${scores.map(score => { const owned = !!this.profile.musicScores?.[score.id], bossName = D.enemies?.[score.unlockBoss]?.name || 'ボス'; return `<article class="music-score-card ${owned ? 'owned' : 'locked'}"><i>♪</i><div><small>${owned ? 'PLAYABLE SCORE' : 'LOCKED SCORE'}</small><b>${owned ? score.title : '????????'}</b><strong>${owned ? `（${score.subtitle}）` : `${bossName}初回撃破で解放`}</strong><span>${owned ? score.description : 'まだ演奏できません。'}</span></div><em>${owned ? 'PRIVATE MODE ITEM' : 'LOCKED'}</em></article>`; }).join('')}</div></section>`; }
     bossSetBonusSectionHTML() {
