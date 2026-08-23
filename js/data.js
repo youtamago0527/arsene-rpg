@@ -121,6 +121,9 @@ window.ARSENE_DATA = {
     // JOB成長は「今就いているJOBで育てた分」だけ乗る。
     // PHANTOM THIEF だけは全JOBの合算をこの割合で引き継げる。
     phantomThiefInheritRate: 0.5,
+    // jobGrowthPerLevel導入前の旧growthテーブルを使うJOBも、
+    // PHANTOM THIEFの50%継承から漏らさない。既存セーブ互換用。
+    phantomLegacyGrowthJobs: ['dualBlade'],
     // PHANTOM THIEF専用「盗奪進行度」。転生回数は含めず、MASTER済みJOBはLv20として扱う。
     // JOB MASTERはJOBレベル到達と重複するため、別枠の加点にはしない。
     phantomStealProgress: {
@@ -224,9 +227,9 @@ window.ARSENE_DATA = {
       skillUnlocks: {}
     },
     priest: {
-      id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。長く潜り続け、稼いで帰るのが得意。', signatureSkillId: 'heal', passiveUnlocks: { 1: 'p_tithe', 5: 'p_spirit', 10: 'p_healArt', 15: 'p_wardBarrier' }, traits: { mealDiscount: { name: '喜捨の徳', nameEn: 'ALMS', rate: .50, rebirthStep: .08, max: .80, text: 'カズのまかない代 -50%', description: '施しには施しが返る。カズのまかないを割引価格で食べられる。長く潜って稼いで帰る僧侶の強み。転生を重ねるほど割引が大きくなる。' } }, growthStats: ['mnd', 'vit'], featureText: '精神・体力を伸ばしやすいジョブ。回復能力や耐久・支援に関係するパッシブを習得できる。',
+      id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。長く潜り続け、稼いで帰るのが得意。', signatureSkillId: 'heal', passiveUnlocks: { 1: 'p_tithe', 5: 'p_spirit', 10: 'p_healArt', 15: 'p_wardBarrier' }, traits: {}, growthStats: ['mnd', 'vit'], featureText: '獲得GOLDを増やし、確率再生と一戦一度のHP→MP変換で長く潜れる。弱い敵を残して待つだけでは資源を永久回復できない。',
       growth: { 1: { mnd: 2 }, 2: { maxMp: 5 }, 3: { mnd: 2 }, 4: { maxMp: 6 }, 5: { mnd: 2, maxHp: 5 }, 6: { maxMp: 8 }, 7: { mnd: 3 }, 8: { maxMp: 8 }, 9: { mnd: 3 }, 10: { mnd: 4, maxMp: 12 }, 11: { mnd: 3 }, 12: { maxMp: 14, maxHp: 5 }, 13: { mnd: 4 }, 14: { maxMp: 12 }, 15: { mnd: 4 }, 16: { maxMp: 16 }, 17: { mnd: 5 }, 18: { maxMp: 14 }, 19: { mnd: 5 }, 20: { mnd: 6, maxMp: 20, maxHp: 8 } },
-      skillUnlocks: {}
+      skillUnlocks: { 3: 'regenerate', 5: 'bodyToMind', 6: 'holyLight', 12: 'greatHeal', 15: 'soulPassage', 16: 'divineSmite' }
     },
     guardian: {
       id: 'guardian', name: '守護士', nameEn: 'GUARDIAN', description: '受けた痛みを共鳴へ変え、盾と反奏で格上を打ち破る基本JOB。',
@@ -263,11 +266,15 @@ window.ARSENE_DATA = {
       skillUnlocks: {}
     },
     dualBlade: {
-      id: 'dualBlade', name: '双刃士', nameEn: 'DUAL BLADE', description: '速度と多段クリティカルを極めた上位職。D2のボス・ミルティ撃破後に解放。',
-      // JOB特性：左手の武器でも追撃する。威力は控えめに始まり、転生で伸ばせる。
-      traits: { offHandPower: { name: '二刀の型', nameEn: 'TWIN FANGS', rate: .25, rebirthStep: .03, max: .50, text: '左手にも武器を持ち2回攻撃（左手25%）', description: '左手にも武器を握り、通常攻撃が右手・左手の2回攻撃になる。左手の威力は力と武器攻撃を合わせた値の25%。転生を重ねるほどこの倍率が上がっていく。' } },
+      id: 'dualBlade', name: '双刃士', nameEn: 'DUAL BLADE', description: '攻撃を当て続けるほど加速する、高STR・高AGIの二刀アタッカー。',
+      signatureSkillId: 'battleDance',
+      passiveUnlocks: { 1: 'p_dualWield', 5: 'p_comboDance', 10: 'p_pursuitBlade', 15: 'p_danceForm' },
+      // 双刃そのもののSTR50%＋AGI50%参照は武器データ側で管理する。
+      // JOB特性ではなくPASSIVEへ分離したため、PHANTOM THIEFも枠を使えば二刀を再現できる。
+      traits: {},
       unlockCondition: { bossDefeated: 'myrthi' },
       growth: { 1: { str: 3, agi: 2 }, 2: { critBonus: .02 }, 3: { str: 3, agi: 2 }, 4: { critBonus: .02 }, 5: { str: 4, agi: 3 }, 6: { critBonus: .03 }, 7: { str: 3, agi: 3 }, 8: { critBonus: .03 }, 9: { str: 4, agi: 3 }, 10: { critBonus: .05, str: 5, agi: 3 }, 11: { str: 4, agi: 3 }, 12: { critBonus: .03, str: 4 }, 13: { agi: 4, str: 3 }, 14: { critBonus: .03, agi: 4 }, 15: { str: 5, agi: 5 }, 16: { critBonus: .04 }, 17: { str: 5, agi: 4 }, 18: { critBonus: .04, str: 4 }, 19: { str: 6, agi: 5 }, 20: { critBonus: .08, str: 7, agi: 6, maxHp: 15 } },
+      growthStats: ['str', 'agi'], featureText: '命中するたび《連舞》が高まり、二刀追撃と会心で一気に加速する。防御・魔防・自己回復は低い。',
       skillUnlocks: {}
     }
   },
@@ -307,10 +314,10 @@ window.ARSENE_DATA = {
     chaosDust:    ['chaosRodRecipe'],
     darkIron:     ['voidHelmRecipe', 'abyssalArmorRecipe'],
     phantomCore:  ['phantomGauntletRecipe', 'voidRingRecipe'],
-    fortressStone: ['d3GuardianAegisRecipe', 'd3WarriorBladeRecipe'],
-    riftClaw: ['d3MartialClawRecipe', 'd3TwinRightRecipe', 'd3TwinLeftRecipe'],
-    voidSilk: ['d3MageStaffRecipe', 'd3PriestStaffRecipe'],
-    sanctumGear: ['d3MaestroInstrumentRecipe'],
+    fortressStone: ['d3GuardianAegisRecipe', 'd3WarriorBladeRecipe', 'fortressHelmRecipe', 'fortressCoatRecipe', 'fortressGlovesRecipe', 'fortressBootsRecipe', 'fortressCharmRecipe'],
+    riftClaw: ['d3MartialClawRecipe', 'd3TwinRightRecipe', 'd3TwinLeftRecipe', 'riftBandRecipe', 'riftVestRecipe', 'riftGuardsRecipe', 'riftBootsRecipe', 'riftCharmRecipe'],
+    voidSilk: ['d3MageStaffRecipe', 'd3PriestStaffRecipe', 'voidweaveHoodRecipe', 'voidweaveRobeRecipe', 'voidweaveGlovesRecipe', 'voidweaveBootsRecipe', 'voidweaveCharmRecipe'],
+    sanctumGear: ['d3MaestroInstrumentRecipe', 'voidweaveCharmRecipe'],
     astralMercury: ['d3MaestroInstrumentRecipe'],
     gildedCore: ['d3GuardianAegisRecipe']
   },
@@ -518,7 +525,9 @@ window.ARSENE_DATA = {
     ]
   },
   musicScores: {
-    cadenzaLoot: { id: 'cadenzaLoot', title: 'CADENZA', subtitle: '戦利品のLOOT', artist: 'ZENAKADO', use: 'privateMode', description: '独奏卿ゼナカドから盗み出した禁断の楽譜。プライベートモードで演奏可能。' }
+    cadenzaLoot: { id: 'cadenzaLoot', title: 'CADENZA', subtitle: '絶望の戦利品', artist: 'ZENAKADO', use: 'privateMode', unlockBoss: 'zenacad', description: '独奏卿ゼナカドから盗み出した禁断の楽譜。プライベートモードで演奏可能。' },
+    rhythm: { id: 'rhythm', title: 'RHYTHM', subtitle: '道化師の楽園', artist: 'MYRTHI', use: 'privateMode', unlockBoss: 'myrthi', description: '黒紅の双刃戦姫ミルティから盗み出したリズムスコア。プライベートモードで演奏可能。' },
+    reprise: { id: 'reprise', title: 'REPRISE', subtitle: '赤狐の怪盗', artist: 'SERIPES', use: 'privateMode', unlockBoss: 'seripes', description: '不落の反奏騎士セリペスから盗み出した反奏の楽譜。プライベートモードで演奏可能。' }
   },
   bossEquipmentSeries: {
     zenacad: {
@@ -654,14 +663,29 @@ window.ARSENE_DATA = {
     abyssalArmorRecipe: { id: 'abyssalArmorRecipe', name: '深淵の鎧', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'darkIron', resultItemId: 'abyssalArmor', resultCount: 1, gold: 750, materials: [{ itemId: 'darkIron', count: 8 }, { itemId: 'voidShard', count: 5 }, { itemId: 'voidEssence', count: 1 }] },
     phantomGauntletRecipe: { id: 'phantomGauntletRecipe', name: '幻影拳甲', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'phantomCore', resultItemId: 'phantomGauntlet', resultCount: 1, gold: 600, materials: [{ itemId: 'phantomCore', count: 4 }, { itemId: 'darkIron', count: 4 }, { itemId: 'chaosDust', count: 3 }] },
     voidRingRecipe: { id: 'voidRingRecipe', name: '虚無の指輪', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'phantomCore', resultItemId: 'voidRing', resultCount: 1, gold: 1000, materials: [{ itemId: 'voidEssence', count: 4 }, { itemId: 'phantomCore', count: 4 }, { itemId: 'chaosDust', count: 3 }] },
-    d3WarriorBladeRecipe: { id: 'd3WarriorBladeRecipe', name: '城断剣グラン・ブレイク', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'fortressStone', resultItemId: 'd3WarriorBlade', resultCount: 1, gold: 1250, materials: [{ itemId: 'fortressStone', count: 8 }, { itemId: 'darkIron', count: 8 }, { itemId: 'voidEssence', count: 2 }] },
-    d3MageStaffRecipe: { id: 'd3MageStaffRecipe', name: '虚星杖アストラ・ノクス', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'voidSilk', resultItemId: 'd3MageStaff', resultCount: 1, gold: 1250, materials: [{ itemId: 'voidSilk', count: 8 }, { itemId: 'chaosDust', count: 8 }, { itemId: 'phantomCore', count: 3 }] },
-    d3PriestStaffRecipe: { id: 'd3PriestStaffRecipe', name: '聖環杖ルクス・オラトリオ', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'voidSilk', resultItemId: 'd3PriestStaff', resultCount: 1, gold: 1200, materials: [{ itemId: 'voidSilk', count: 7 }, { itemId: 'sanctumGear', count: 5 }, { itemId: 'voidEssence', count: 2 }] },
-    d3MartialClawRecipe: { id: 'd3MartialClawRecipe', name: '裂空爪ヴァジュラ', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'riftClaw', resultItemId: 'd3MartialClaw', resultCount: 1, gold: 1200, materials: [{ itemId: 'riftClaw', count: 9 }, { itemId: 'darkIron', count: 5 }, { itemId: 'phantomCore', count: 3 }] },
-    d3MaestroInstrumentRecipe: { id: 'd3MaestroInstrumentRecipe', name: '星蝕琴ノクターン', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'sanctumGear', resultItemId: 'd3MaestroInstrument', resultCount: 1, gold: 1800, materials: [{ itemId: 'sanctumGear', count: 10 }, { itemId: 'voidSilk', count: 6 }, { itemId: 'astralMercury', count: 2 }] },
-    d3TwinRightRecipe: { id: 'd3TwinRightRecipe', name: '双界刃・暁裂', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'riftClaw', resultItemId: 'd3TwinRight', resultCount: 1, gold: 1100, materials: [{ itemId: 'riftClaw', count: 7 }, { itemId: 'voidShard', count: 8 }, { itemId: 'phantomCore', count: 2 }] },
-    d3TwinLeftRecipe: { id: 'd3TwinLeftRecipe', name: '双界刃・宵断', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'riftClaw', resultItemId: 'd3TwinLeft', resultCount: 1, gold: 1100, materials: [{ itemId: 'riftClaw', count: 7 }, { itemId: 'chaosDust', count: 7 }, { itemId: 'phantomCore', count: 2 }] },
-    d3GuardianAegisRecipe: { id: 'd3GuardianAegisRecipe', name: '城界盾アイギス・レグナ', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'fortressStone', resultItemId: 'd3GuardianAegis', resultCount: 1, gold: 1800, materials: [{ itemId: 'fortressStone', count: 12 }, { itemId: 'darkIron', count: 10 }, { itemId: 'gildedCore', count: 2 }] },
+    d3WarriorBladeRecipe: { id: 'd3WarriorBladeRecipe', name: '城塞鉄の剣', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'fortressStone', resultItemId: 'd3WarriorBlade', resultCount: 1, gold: 1250, materials: [{ itemId: 'fortressStone', count: 8 }, { itemId: 'darkIron', count: 8 }, { itemId: 'voidEssence', count: 2 }] },
+    d3MageStaffRecipe: { id: 'd3MageStaffRecipe', name: '虚紡の杖', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'voidSilk', resultItemId: 'd3MageStaff', resultCount: 1, gold: 1250, materials: [{ itemId: 'voidSilk', count: 8 }, { itemId: 'chaosDust', count: 8 }, { itemId: 'phantomCore', count: 3 }] },
+    d3PriestStaffRecipe: { id: 'd3PriestStaffRecipe', name: '聖堂歯車の杖', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'voidSilk', resultItemId: 'd3PriestStaff', resultCount: 1, gold: 1200, materials: [{ itemId: 'voidSilk', count: 7 }, { itemId: 'sanctumGear', count: 5 }, { itemId: 'voidEssence', count: 2 }] },
+    d3MartialClawRecipe: { id: 'd3MartialClawRecipe', name: '裂界の爪', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'riftClaw', resultItemId: 'd3MartialClaw', resultCount: 1, gold: 1200, materials: [{ itemId: 'riftClaw', count: 9 }, { itemId: 'darkIron', count: 5 }, { itemId: 'phantomCore', count: 3 }] },
+    d3MaestroInstrumentRecipe: { id: 'd3MaestroInstrumentRecipe', name: '星銀の弦琴', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'sanctumGear', resultItemId: 'd3MaestroInstrument', resultCount: 1, gold: 1800, materials: [{ itemId: 'sanctumGear', count: 10 }, { itemId: 'voidSilk', count: 6 }, { itemId: 'astralMercury', count: 2 }] },
+    d3TwinRightRecipe: { id: 'd3TwinRightRecipe', name: '裂界の双刃・右', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'riftClaw', resultItemId: 'd3TwinRight', resultCount: 1, gold: 1100, materials: [{ itemId: 'riftClaw', count: 7 }, { itemId: 'voidShard', count: 8 }, { itemId: 'phantomCore', count: 2 }] },
+    d3TwinLeftRecipe: { id: 'd3TwinLeftRecipe', name: '裂界の双刃・左', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'riftClaw', resultItemId: 'd3TwinLeft', resultCount: 1, gold: 1100, materials: [{ itemId: 'riftClaw', count: 7 }, { itemId: 'chaosDust', count: 7 }, { itemId: 'phantomCore', count: 2 }] },
+    d3GuardianAegisRecipe: { id: 'd3GuardianAegisRecipe', name: '城塞核の盾', craftCategory: 'weapon', dungeonId: 'dungeon3', materialUnlockId: 'fortressStone', resultItemId: 'd3GuardianAegis', resultCount: 1, gold: 1800, materials: [{ itemId: 'fortressStone', count: 12 }, { itemId: 'darkIron', count: 10 }, { itemId: 'gildedCore', count: 2 }] },
+    fortressHelmRecipe: { id: 'fortressHelmRecipe', name: '城塞の兜', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'fortressStone', resultItemId: 'fortressHelm', resultCount: 1, gold: 620, materials: [{ itemId: 'fortressStone', count: 5 }, { itemId: 'darkIron', count: 4 }] },
+    fortressCoatRecipe: { id: 'fortressCoatRecipe', name: '城塞の外套', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'fortressStone', resultItemId: 'fortressCoat', resultCount: 1, gold: 920, materials: [{ itemId: 'fortressStone', count: 8 }, { itemId: 'darkIron', count: 7 }, { itemId: 'voidEssence', count: 1 }] },
+    fortressGlovesRecipe: { id: 'fortressGlovesRecipe', name: '城塞の手甲', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'fortressStone', resultItemId: 'fortressGloves', resultCount: 1, gold: 680, materials: [{ itemId: 'fortressStone', count: 5 }, { itemId: 'darkIron', count: 5 }] },
+    fortressBootsRecipe: { id: 'fortressBootsRecipe', name: '城塞の脚甲', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'fortressStone', resultItemId: 'fortressBoots', resultCount: 1, gold: 680, materials: [{ itemId: 'fortressStone', count: 5 }, { itemId: 'darkIron', count: 5 }] },
+    fortressCharmRecipe: { id: 'fortressCharmRecipe', name: '核石のお守り', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'fortressStone', resultItemId: 'fortressCharm', resultCount: 1, gold: 760, materials: [{ itemId: 'fortressStone', count: 6 }, { itemId: 'gildedCore', count: 1 }] },
+    voidweaveHoodRecipe: { id: 'voidweaveHoodRecipe', name: '虚紡の帽子', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'voidSilk', resultItemId: 'voidweaveHood', resultCount: 1, gold: 620, materials: [{ itemId: 'voidSilk', count: 5 }, { itemId: 'chaosDust', count: 4 }] },
+    voidweaveRobeRecipe: { id: 'voidweaveRobeRecipe', name: '虚紡のローブ', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'voidSilk', resultItemId: 'voidweaveRobe', resultCount: 1, gold: 920, materials: [{ itemId: 'voidSilk', count: 8 }, { itemId: 'chaosDust', count: 7 }, { itemId: 'voidEssence', count: 1 }] },
+    voidweaveGlovesRecipe: { id: 'voidweaveGlovesRecipe', name: '虚紡の手袋', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'voidSilk', resultItemId: 'voidweaveGloves', resultCount: 1, gold: 680, materials: [{ itemId: 'voidSilk', count: 5 }, { itemId: 'sanctumGear', count: 3 }] },
+    voidweaveBootsRecipe: { id: 'voidweaveBootsRecipe', name: '虚紡の靴', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'voidSilk', resultItemId: 'voidweaveBoots', resultCount: 1, gold: 680, materials: [{ itemId: 'voidSilk', count: 5 }, { itemId: 'chaosDust', count: 4 }] },
+    voidweaveCharmRecipe: { id: 'voidweaveCharmRecipe', name: '聖堂歯車の護符', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'voidSilk', resultItemId: 'voidweaveCharm', resultCount: 1, gold: 760, materials: [{ itemId: 'voidSilk', count: 5 }, { itemId: 'sanctumGear', count: 4 }] },
+    riftBandRecipe: { id: 'riftBandRecipe', name: '裂界の鉢巻', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'riftClaw', resultItemId: 'riftBand', resultCount: 1, gold: 620, materials: [{ itemId: 'riftClaw', count: 5 }, { itemId: 'voidShard', count: 4 }] },
+    riftVestRecipe: { id: 'riftVestRecipe', name: '裂界の胴着', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'riftClaw', resultItemId: 'riftVest', resultCount: 1, gold: 920, materials: [{ itemId: 'riftClaw', count: 8 }, { itemId: 'voidShard', count: 7 }, { itemId: 'phantomCore', count: 1 }] },
+    riftGuardsRecipe: { id: 'riftGuardsRecipe', name: '裂界の手甲', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'riftClaw', resultItemId: 'riftGuards', resultCount: 1, gold: 680, materials: [{ itemId: 'riftClaw', count: 5 }, { itemId: 'phantomCore', count: 2 }] },
+    riftBootsRecipe: { id: 'riftBootsRecipe', name: '裂界の脚甲', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'riftClaw', resultItemId: 'riftBoots', resultCount: 1, gold: 680, materials: [{ itemId: 'riftClaw', count: 5 }, { itemId: 'voidShard', count: 4 }] },
+    riftCharmRecipe: { id: 'riftCharmRecipe', name: '裂爪のお守り', craftCategory: 'armor', dungeonId: 'dungeon3', materialUnlockId: 'riftClaw', resultItemId: 'riftCharm', resultCount: 1, gold: 760, materials: [{ itemId: 'riftClaw', count: 6 }, { itemId: 'phantomCore', count: 2 }] },
     cadenza_staff_recipe: { id: 'cadenza_staff_recipe', seriesId: 'zenacad', craftCategory: 'boss', resultItemId: 'cadenza_staff', resultCount: 1, gold: 850, materials: [{ itemId: 'zenacad_core', count: 2 }, { itemId: 'cadenza_fragment', count: 8 }, { itemId: 'manaDrop', count: 6 }] },
     soloist_mask_recipe: { id: 'soloist_mask_recipe', seriesId: 'zenacad', craftCategory: 'boss', resultItemId: 'soloist_mask', resultCount: 1, gold: 620, materials: [{ itemId: 'zenacad_core', count: 1 }, { itemId: 'cadenza_fragment', count: 6 }, { itemId: 'moonstone', count: 3 }] },
     soloist_coat_recipe: { id: 'soloist_coat_recipe', seriesId: 'zenacad', craftCategory: 'boss', resultItemId: 'soloist_coat', resultCount: 1, gold: 780, materials: [{ itemId: 'zenacad_core', count: 2 }, { itemId: 'cadenza_fragment', count: 7 }, { itemId: 'tatteredRobe', count: 5 }] },
@@ -701,13 +725,19 @@ window.ARSENE_DATA = {
     p_manaStore:   { id: 'p_manaStore', name: '魔力貯蔵', nameEn: 'MANA STORAGE', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'statPercent', stat: 'maxMp', rate: .10 }, effectText: '最大MP +10%', description: '体内に魔力を蓄える。最大MPが10%上昇する。' },
     p_spellBoost:  { id: 'p_spellBoost', name: '魔法増幅', nameEn: 'SPELL BOOST', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'magicDamageUp', rate: .10, rebirthStep: .03, max: .30 }, effectText: '攻撃魔法ダメージ +10%', description: '攻撃魔法の威力を高める。' },
     // 僧侶Lv1：長く潜って稼ぐ役どころ。戦闘で得るGOLDが増える。
-    p_tithe:       { id: 'p_tithe', name: '施しの祈り', nameEn: 'TITHE', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'goldUp', rate: .40, rebirthStep: .12 }, effectText: '獲得GOLD +40%', description: '善を積む祈り。倒した怪異が遺すものを、余さず拾い上げる。' },
-    p_spirit:      { id: 'p_spirit', name: '祈祷', nameEn: 'PRAYER', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'mpRegen', rate: .03, rebirthStep: .01, max: .08 }, effectText: '自ターン開始時に最大MPの3%回復', description: '絶えず祈りを捧げる。自分のターン開始時、魔力がわずかに満ちる。' },
-    p_healArt:     { id: 'p_healArt', name: '治癒術', nameEn: 'HEALING ART', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'healUp', rate: .10 }, effectText: 'HP回復量 +10%', description: '癒やしの術を高める。' },
+    p_tithe:       { id: 'p_tithe', name: '施しの祈り', nameEn: 'TITHE', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'goldUp', rate: .60, rebirthStep: .08, max: 1.00 }, effectText: '獲得GOLD +60%', description: '僧侶で敵を倒して得るGOLDを増やす。転職だけでは利益は発生せず、実際に戦って稼ぐための能力。' },
+    p_spirit:      { id: 'p_spirit', name: '祈祷', nameEn: 'PRAYER', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'heavyHitRegenerate', thresholdRate: .10, chance: .40, healRate: .15, turns: 3 }, effectText: '最大HP10%以上の実被ダメージ時、1ラウンド1回40%で3T再生', description: '大きな痛みを受けたときだけ祈りが応える。1回の実被ダメージが最大HPの10%以上なら、そのラウンドの最初の1回だけ40%で判定し、3ターンの再生を得る。発動中の再発動は効果を重ねず、残り時間だけを更新する。自傷では発動しない。' },
+    p_healArt:     { id: 'p_healArt', name: '治癒術', nameEn: 'HEALING ART', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'healUp', rate: .25, rebirthStep: .05, max: .50 }, effectText: 'HP回復量 +25%', description: '癒やしの術を高め、ヒールと継続回復の効果を大きくする。' },
     p_wardBarrier: { id: 'p_wardBarrier', name: '魔法障壁', nameEn: 'WARD BARRIER', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'magicResist', rate: .10, rebirthStep: .03, max: .30 }, effectText: '被魔法ダメージ -10%', description: '魔を退ける薄い障壁を常に纏う。' },
     p_spellBlade:  { id: 'p_spellBlade', name: '魔剣適性', nameEn: 'SPELL BLADE', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'multiStatPercent', stats: { str: .03, mag: .03 } }, effectText: '力 +3% / 魔力 +3%', description: '刃と魔を同時に扱う適性。' },
     p_manaFlow:    { id: 'p_manaFlow', name: '魔力循環', nameEn: 'MANA FLOW', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'statPercent', stat: 'maxMp', rate: .05 }, effectText: '最大MP +5%', description: '魔力を絶えず巡らせる。最大MPが5%上昇する。' },
     p_elemental:   { id: 'p_elemental', name: '属性増幅', nameEn: 'ELEMENTAL BOOST', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'elementDamageUp', rate: .08 }, effectText: '属性攻撃ダメージ +8%', description: '属性を帯びた攻撃の威力を高める。' },
+
+    // ══ 双刃士PASSIVE（双刃は体術武器学を共有）════════════════
+    p_dualWield: { id: 'p_dualWield', name: '二刀の型', nameEn: 'DUAL WIELD', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'dualWield', rate: .25, rebirthTable: { 0: .25, 1: .30, 2: .35, 3: .40, 4: .45, 5: .50, 6: .55, 7: .60, 8: .65, 9: .70, 10: .75, 11: .80, 12: .85, 13: .90, 14: .95, 15: 1.00 }, max: 1.00 }, effectText: '左手にも双刃を装備可能／右手命中後に左手追撃25%', description: '左右の双刃を一つの型として操る。左手は独立した命中・会心判定を行い、武器効果と体術武器学も適用される。' },
+    p_comboDance: { id: 'p_comboDance', name: '連舞', nameEn: 'CHAIN DANCE', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'comboDance', damagePerStack: .02, maxStacks: 5, maxCriticalBonus: .10 }, effectText: '命中ごとに連舞+1（最大5）／1段階ごと与ダメ+2%／MAXで会心+10%', description: '右手・左手・多段攻撃の各Hitで加速する。MISSすると連舞は0へ戻る。' },
+    p_pursuitBlade: { id: 'p_pursuitBlade', name: '追刃', nameEn: 'PURSUIT BLADE', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'offHandCritical', rate: .15, comboBonusOnCritical: 1 }, effectText: '左手追撃の会心率+15%／左手会心時に連舞+1追加', description: '追撃の刃を急所へ滑り込ませ、舞の速度を一気に引き上げる。' },
+    p_danceForm: { id: 'p_danceForm', name: '舞踏', nameEn: 'WAR DANCE', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'comboMaxBoost', agiRate: .20, offHandRate: .10 }, effectText: '連舞MAX中 AGI+20%／左手追撃倍率+10%', description: '連舞が頂点に達したときだけ完成する双刃士の戦闘舞踏。MISSすれば即座に失われる。' },
 
     // ══ 魔奏士 固有スキル ═════════════════════════════════════
     // アンサンブル：3ターンのあいだ魔奏士パッシブの発動率を引き上げる。
@@ -876,9 +906,10 @@ window.ARSENE_DATA = {
     doubleStrike: { id: 'doubleStrike', name: '連撃', nameEn: 'DOUBLE STRIKE', source: 'job', jobId: 'martialArtist', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 6, power: 2.0, hits: 2, agiScale: 0, powerText: 'ATK×2.0×2回', effectText: '2回攻撃／各攻撃で個別クリティカル判定', description: '間を置かず二撃を叩き込む。' },
     breakFist: { id: 'breakFist', name: '崩拳', nameEn: 'BREAK FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 8, power: 3.8, ignoreDef: .40, agiScale: 0, powerText: 'ATK×3.8', effectText: '敵DEFを40%無視', description: '防御の隙間へ衝撃を通し、敵DEFの一部を無視する。' },
     shadowRush: { id: 'shadowRush', name: '無影連舞', nameEn: 'SHADOW RUSH', source: 'job', jobId: 'martialArtist', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 3, agiScale: 0, powerText: 'ATK×2.0×3回', effectText: '3回攻撃／各攻撃で個別クリティカル判定', description: '影すら残さない三連撃。' },
-    heal: { id: 'heal', name: 'ヒール', nameEn: 'HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 3, type: 'ACTIVE', kind: 'support', target: 'self', mp: 6, powerText: 'MND×3.0＋20', effect: { type: 'hpRecover', baseHeal: 30, spiritScaling: 1.0 }, effectText: '精神を参照して自身のHPを回復', description: '精神力を癒やしの力へ変え、自身のHPを回復する。' },
+    heal: { id: 'heal', name: 'ヒール', nameEn: 'HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 6, powerText: 'MND×2.0＋30', effect: { type: 'hpRecover', baseHeal: 30, spiritScaling: 2.0 }, effectText: '精神を参照して自身のHPを大きく回復', description: '精神力を癒やしの力へ変え、自身のHPを回復する。' },
     holyLight: { id: 'holyLight', name: 'ホーリーライト', nameEn: 'HOLY LIGHT', source: 'job', jobId: 'priest', unlockJobLevel: 6, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 8, power: 4.0, agiScale: 0, elementId: 'light', powerText: 'MAG×4.0', effectText: '敵単体へ光属性魔法攻撃', description: '聖なる光を放ち、敵単体へ魔法ダメージを与える。' },
-    regenerate: { id: 'regenerate', name: 'リジェネレート', nameEn: 'REGENERATE', source: 'job', jobId: 'priest', unlockJobLevel: 9, type: 'ACTIVE', kind: 'support', target: 'self', mp: 10, powerText: '最大HPの12%×3回', effect: { type: 'regenerate', maxHpRate: .12, turns: 3 }, effectText: '3ターン、ターン開始時にHP回復', description: '継続する癒やしの力を自身へ付与する。' },
+    regenerate: { id: 'regenerate', name: 'リジェネレート', nameEn: 'REGENERATE', source: 'job', jobId: 'priest', unlockJobLevel: 3, type: 'ACTIVE', kind: 'support', target: 'self', mp: 8, powerText: '各ターン35%で最大HP15%×3T', effect: { type: 'regenerate', maxHpRate: .15, triggerChance: .35, turns: 3 }, effectText: '3ターン、各ターン35%で最大HPの15%回復', description: '3ターン祈りを保ち、ターン開始ごとに35%で傷を癒やす。運良く3回すべて成功すれば最大HPの45%（回復強化込みではさらに増加）を取り戻す。' },
+    bodyToMind: { id: 'bodyToMind', name: 'ボディ・トゥ・マインド', nameEn: 'BODY TO MIND', source: 'job', jobId: 'priest', unlockJobLevel: 5, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, maxUsesPerBattle: 1, powerText: '最大HP20% → 最大MP25%', effect: { type: 'hpToMp', hpCostRate: .20, mpRecoverRate: .25 }, effectText: '最大HP20%を消費し最大MP25%回復／1戦1回／HP不足時不可', description: '肉体に宿る生命力を魔力へ転換する、一戦一度の循環術。リジェネレートが連続成功すれば傷を補えるが、同じ敵を残して変換を繰り返すことはできない。' },
     warCry: { id: 'warCry', name: '雄叫び', nameEn: 'WAR CRY', source: 'job', jobId: 'warrior', unlockJobLevel: 12, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 4, powerText: '自身DEF +35%／3T', effect: { type: 'selfDefUp', rate: .35, turns: 3 }, effectText: '自身のDEF +35%／3ターン、CT4', description: '魂の底から放つ雄叫び。一時的に防御力を大幅に高める。' },
     titanBlow: { id: 'titanBlow', name: '天地崩拳', nameEn: 'TITAN BLOW', source: 'job', jobId: 'warrior', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 14, power: 8.0, agiScale: 0, powerText: 'ATK×8.0', effectText: '極大物理ダメージ', description: '全身の力を一点に凝縮した、天地を砕く究極の一撃。' },
     arcaneExplosion: { id: 'arcaneExplosion', name: '魔力爆発', nameEn: 'ARCANE EXPLOSION', source: 'job', jobId: 'mage', unlockJobLevel: 12, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 16, power: 3.8, agiScale: 0, powerText: 'MAG×3.8', effectText: '敵全体へ高威力魔法攻撃', description: '体内に蓄えた魔力を一気に爆発させ、周囲の敵すべてを薙ぎ払う。' },
@@ -886,6 +917,7 @@ window.ARSENE_DATA = {
     swiftBarrage: { id: 'swiftBarrage', name: '迅雷四連撃', nameEn: 'SWIFT BARRAGE', source: 'job', jobId: 'martialArtist', unlockJobLevel: 12, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 4, agiScale: 0, powerText: 'ATK×2.0×4回', effectText: '4回攻撃／各攻撃で個別クリティカル判定', description: '稲妻のような四連撃。体術の極みが生み出す怒涛の連打。' },
     shadowSeven: { id: 'shadowSeven', name: '幻影七閃', nameEn: 'SHADOW SEVEN', source: 'job', jobId: 'martialArtist', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 18, power: 2.5, hits: 5, agiScale: 0, powerText: 'ATK×2.5×5回', effectText: '5回攻撃／各攻撃で個別クリティカル判定', description: '影を七つに見せる五連閃。武道家の至高の多段技。' },
     greatHeal: { id: 'greatHeal', name: 'グレートヒール', nameEn: 'GREAT HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 12, type: 'ACTIVE', kind: 'support', target: 'self', mp: 12, powerText: 'MND×5.0＋40', effect: { type: 'hpRecover', mndScale: 5, base: 40 }, effectText: 'MND参照で大量HP回復', description: '精神力のすべてを傾けた大回復術。大きく傷を癒やし、戦場への帰還を可能にする。' },
+    soulPassage: { id: 'soulPassage', name: '魂送の祈り', nameEn: 'SOUL PASSAGE', source: 'job', jobId: 'priest', unlockJobLevel: 15, type: 'ACTIVE', kind: 'magical', damageType: 'magical', target: 'single', mp: 14, powerText: '即死確率 5～60%', effect: { type: 'instantDeath', baseChance: .20, statEdgeRate: .008, minChance: .05, maxChance: .60 }, effectText: '20%＋（MAG＋MND－敵MND）×0.8%／BOSS無効', description: '魂を静かに彼方へ送る祈り。魔力と精神を鍛えた僧侶ほど成功しやすいが、強い魔法防御には阻まれる。' },
     divineSmite: { id: 'divineSmite', name: '神裁の一閃', nameEn: 'DIVINE SMITE', source: 'job', jobId: 'priest', unlockJobLevel: 16, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 22, power: 7.0, agiScale: 0, elementId: 'light', powerText: 'MAG×7.0', effectText: '敵単体へ極大光属性魔法攻撃', description: '神の裁定を下す一閃。光を凝縮した究極の聖魔法。' },
     resonantSpell: { id: 'resonantSpell', name: '共鳴魔法', nameEn: 'RESONANT SPELL', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 3, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 14, power: 3.2, agiScale: 0, powerText: 'MAG×3.2', effectText: '敵全体へ魔法攻撃', description: '魔奏士の共鳴する魔力を解き放ち、敵全体を攻撃する。' },
     celestialNote: { id: 'celestialNote', name: '天韻の一節', nameEn: 'CELESTIAL NOTE', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 6, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 18, power: 8.0, agiScale: 0, powerText: 'MAG×8.0', effectText: '敵単体へ強力な魔法攻撃', description: '天上の旋律を一音に凝縮した、高威力の魔法弾。' },
@@ -896,7 +928,7 @@ window.ARSENE_DATA = {
     sunderDance: { id: 'sunderDance', name: '乱舞斬', nameEn: 'SUNDER DANCE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 3, ignoreDef: .20, agiScale: 0, powerText: 'ATK×2.0×3回', effectText: '3回攻撃 / DEF20%無視', description: '舞うように放つ三連斬。防御を部分的に無視する。' },
     crimsonRush: { id: 'crimsonRush', name: '黒紅突進', nameEn: 'CRIMSON RUSH', source: 'job', jobId: 'dualBlade', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 15, power: 7.0, ignoreDef: .30, agiScale: 0, powerText: 'ATK×7.0', effectText: 'DEF30%無視の高威力突進', description: '黒紅の軌跡を描きながら敵へ一直線に突進する。' },
     dualEdgeBarrage: { id: 'dualEdgeBarrage', name: '双刃乱打', nameEn: 'DUAL EDGE BARRAGE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 12, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 16, power: 1.8, hits: 5, agiScale: 0, powerText: 'ATK×1.8×5回', effectText: '5回物理攻撃', description: '双刃を猛烈に振り回す五連打。各攻撃が個別にクリティカルを狙う。' },
-    battleDance: { id: 'battleDance', name: '戦姫乱舞', nameEn: 'BATTLE DANCE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 24, power: 2.0, hits: 7, agiScale: 0, powerText: 'ATK×2.0×7回', effectText: '7回物理攻撃 // 双刃士の頂点', description: '戦場を舞台に踊るような七連撃。双刃士の奥義。' },
+    battleDance: { id: 'battleDance', name: '戦姫乱舞', nameEn: 'WAR PRINCESS DANCE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 20, type: 'ACTIVE', kind: 'physical', damageType: 'physical', weaponType: 'martial', requiresWeaponSubtype: 'dualBlade', target: 'single', mp: 16, power: .5, hits: 5, hitPowersDual: [.45, .45, .50, .50, .85], hitPowersSingle: [.50, .55, .85], agiScale: 0, powerText: '二刀時 0.45+0.45+0.50+0.50+0.85（計×2.75）', effectText: '各Hit独立命中・会心／片手時3Hit／連舞MAXなら最終Hit×1.5後に連舞0', description: 'ミルティから盗んだ双刃士の象徴技。二刀で真価を発揮し、連舞MAXでは《戦姫乱舞・極》へ変化する。' },
 
     // ── 盾学：防御性能を攻撃へ転換する守護士の武器技 ──
     shieldBash: { id: 'shieldBash', name: 'シールドバッシュ', nameEn: 'SHIELD BASH', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', mp: 0, kind: 'weapon', damageType: 'physical', target: 'single', power: 1.0, powerText: '盾攻撃性能×1.0', effectText: 'DEF×0.5＋MDEF×0.5を攻撃へ転換', description: '盾の防御性能を乗せて敵を打ち据える基本攻撃。' },
@@ -924,6 +956,7 @@ window.ARSENE_DATA = {
     ironClaw: { id: 'ironClaw', name: '鉄の爪', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '拳に装着する鋼の爪。素早い連撃に適する。' },
     guardianAegis: { id: 'guardianAegis', name: '反奏の白盾', nameEn: 'REPRISE AEGIS', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, description: 'セリペスの砕けた光から再構成された白銀の盾。守護士が右手武器として扱う。' },
     guardianProof: { id: 'guardianProof', name: '守護士の証', nameEn: 'PROOF OF THE GUARDIAN', category: 'key', rarity: 'epic', description: '攻撃を受け、力へ変えて返す者の資格を示す白銀の証。' },
+    dualBladeProof: { id: 'dualBladeProof', name: '双刃士の証', nameEn: 'PROOF OF THE DUAL BLADE', category: 'key', rarity: 'epic', description: '左右の刃を舞のように繋ぐ者の資格を示す黒紅の証。' },
     magicKnightProof: { id: 'magicKnightProof', name: '魔奏士の証', nameEn: 'PROOF OF THE ARCANE PLAYER', category: 'key', rarity: 'epic', description: '旋律と魔を繋ぐ古い紋章。新たな生き方を選ぶ資格を示す。' },
     arcaneMaestroProof: { id: 'arcaneMaestroProof', name: '楽奏の証', nameEn: 'PROOF OF THE ARCANE MAESTRO', category: 'key', rarity: 'epic', description: '音と魔を繋ぐ古い譜面。楽器を武器として扱う資格を示す。' },
     rebirthArcana: { id: 'rebirthArcana', name: '輪廻のアルカナ', nameEn: 'ARCANA OF REBIRTH', category: 'special', rarity: 'legendary', noSell: true, description: '極めた力を捨て、さらなる高みへ至るためのアルカナ。JOB Lv20からの転生に1個消費する。' },
@@ -1064,17 +1097,32 @@ window.ARSENE_DATA = {
     voidHelm: { id: 'voidHelm', name: '虚空の兜', nameEn: 'VOID HELM', category: 'equipment', slot: 'head', rarity: 'epic', dungeonId: 'dungeon3', description: '崩界の深廊の素材で鍛えた兜。精神と防御を高める。' },
     abyssalArmor: { id: 'abyssalArmor', name: '深淵の鎧', nameEn: 'ABYSSAL ARMOR', category: 'equipment', slot: 'body', rarity: 'epic', dungeonId: 'dungeon3', description: '深淵鉄鉱を用いた最高位の鎧。強靭な防御力を誇る。' },
     phantomGauntlet: { id: 'phantomGauntlet', name: '幻影拳甲', nameEn: 'PHANTOM GAUNTLET', category: 'equipment', slot: 'arms', rarity: 'epic', dungeonId: 'dungeon3', description: '幻影核の力が宿る拳甲。攻撃力と俊敏を高める。' },
-    voidRing: { id: 'voidRing', name: '虚無の指輪', nameEn: 'VOID RING', category: 'equipment', slot: 'accessory', rarity: 'epic', dungeonId: 'dungeon3', description: '虚無の精髄を封じた指輪。あらゆる能力値を高める。' },
-    voidBlade: { id: 'voidBlade', name: '虚空刃ヴォイドブレード', nameEn: 'VOID BLADE', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '裂界の虚無を刃へ定着させたD3工房剣。' },
-    chaosRod: { id: 'chaosRod', name: '混沌の魔杖カオスロッド', nameEn: 'CHAOS ROD', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '混沌の粒子を魔力へ変換するD3工房杖。' },
-    d3WarriorBlade: { id: 'd3WarriorBlade', name: '城断剣グラン・ブレイク', nameEn: 'GRAND BREAKER', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '城塞核を刃へ鍛え直した戦士向け大剣。基本能力ではなく物理出力を伸ばす。' },
-    d3MageStaff: { id: 'd3MageStaff', name: '虚星杖アストラ・ノクス', nameEn: 'ASTRA NOX', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '虚紡糸で星銀の魔力回路を束ねた魔導士向け杖。' },
-    d3PriestStaff: { id: 'd3PriestStaff', name: '聖環杖ルクス・オラトリオ', nameEn: 'LUX ORATORIO', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '崩れた聖堂の祈りを再構築した僧侶向け杖。回復性能に特化する。' },
-    d3MartialClaw: { id: 'd3MartialClaw', name: '裂空爪ヴァジュラ', nameEn: 'VAJRA RIFT', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '空間そのものを掴み裂く武道家向けの戦爪。' },
-    d3MaestroInstrument: { id: 'd3MaestroInstrument', name: '星蝕琴ノクターン', nameEn: 'ECLIPSE NOCTURNE', category: 'equipment', slot: 'rightHand', rarity: 'epic', stars: 4, dungeonId: 'dungeon3', description: '星銀水と聖堂歯車で組んだ魔奏士向けの機巧弦楽器。' },
-    d3TwinRight: { id: 'd3TwinRight', name: '双界刃・暁裂', nameEn: 'TWIN RIFT DAWN', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '双刃士の右手で攻勢を始める裂界剣。左刃と対になる。' },
-    d3TwinLeft: { id: 'd3TwinLeft', name: '双界刃・宵断', nameEn: 'TWIN RIFT DUSK', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '双刃士の左手で軌道を閉じる裂界剣。右刃と対になる。' },
-    d3GuardianAegis: { id: 'd3GuardianAegis', name: '城界盾アイギス・レグナ', nameEn: 'AEGIS REGNA', category: 'equipment', slot: 'rightHand', rarity: 'epic', stars: 4, dungeonId: 'dungeon3', description: '城塞核と強欲の金核を圧着した守護士専用盾。攻撃ではなく防御性能を武器にする。' },
+    voidRing: { id: 'voidRing', name: '虚無の指輪', nameEn: 'VOID RING', category: 'equipment', slot: 'accessory', rarity: 'epic', dungeonId: 'dungeon3', description: '虚無の精髄を封じ、攻防とHP・MPを補う指輪。' },
+    voidBlade: { id: 'voidBlade', name: '虚空の剣', nameEn: 'VOID BLADE', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '裂界の虚無を刃へ定着させたD3工房剣。' },
+    chaosRod: { id: 'chaosRod', name: '混沌の杖', nameEn: 'CHAOS ROD', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', description: '混沌の粉塵を魔力へ変換するD3工房杖。' },
+    d3WarriorBlade: { id: 'd3WarriorBlade', name: '城塞鉄の剣', nameEn: 'FORTRESS IRON SWORD', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', recommendedJobs: ['warrior'], description: '侵城ゴーレムの城塞核石を深淵鉄で挟んだ、重く堅実な剣。' },
+    d3MageStaff: { id: 'd3MageStaff', name: '虚紡の杖', nameEn: 'VOIDWEAVE STAFF', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', recommendedJobs: ['mage'], description: '白晶の監視機から採れた虚紡糸を芯へ巻いた魔導杖。' },
+    d3PriestStaff: { id: 'd3PriestStaff', name: '聖堂歯車の杖', nameEn: 'SANCTUM GEAR STAFF', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', recommendedJobs: ['priest'], description: '虚無錬成師の聖堂歯車を組み込み、祈りを安定させる杖。' },
+    d3MartialClaw: { id: 'd3MartialClaw', name: '裂界の爪', nameEn: 'RIFT CLAW', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', recommendedJobs: ['martialArtist'], description: '鎖葬の刈手が落とす裂界爪を研いだ、軽量の戦爪。' },
+    d3MaestroInstrument: { id: 'd3MaestroInstrument', name: '星銀の弦琴', nameEn: 'ASTRAL STRINGER', category: 'equipment', slot: 'rightHand', rarity: 'epic', stars: 4, dungeonId: 'dungeon3', recommendedJobs: ['magicKnight'], description: 'メロクスの星銀水と聖堂歯車で調律した、工房製の弦楽器。' },
+    d3TwinRight: { id: 'd3TwinRight', name: '裂界の双刃・右', nameEn: 'RIFT TWIN RIGHT', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', recommendedJobs: ['dualBlade'], description: '裂界爪を細身の刃へ鍛えた右手用の双刃。' },
+    d3TwinLeft: { id: 'd3TwinLeft', name: '裂界の双刃・左', nameEn: 'RIFT TWIN LEFT', category: 'equipment', slot: 'rightHand', offHandOnly: true, rarity: 'rare', stars: 3, dungeonId: 'dungeon3', recommendedJobs: ['dualBlade'], description: '右手用と重さを合わせた、左手専用の双刃。' },
+    d3GuardianAegis: { id: 'd3GuardianAegis', name: '城塞核の盾', nameEn: 'FORTRESS CORE SHIELD', category: 'equipment', slot: 'rightHand', rarity: 'epic', stars: 4, dungeonId: 'dungeon3', recommendedJobs: ['guardian'], description: '城塞核石を強欲の金核で圧着した、守護士向けの大型盾。' },
+    fortressHelm: { id: 'fortressHelm', name: '城塞の兜', category: 'equipment', slot: 'head', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', buildType: 'heavy', recommendedJobs: ['warrior', 'guardian'], description: '侵城ゴーレムの核石を額へ重ねた兜。' },
+    fortressCoat: { id: 'fortressCoat', name: '城塞の外套', category: 'equipment', slot: 'body', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', buildType: 'heavy', recommendedJobs: ['warrior', 'guardian'], description: '城塞核石の小片を深淵鉄の布へ縫い込んだ外套。' },
+    fortressGloves: { id: 'fortressGloves', name: '城塞の手甲', category: 'equipment', slot: 'arms', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', buildType: 'heavy', recommendedJobs: ['warrior', 'guardian'], description: '重い武器と盾を支えるための核石入り手甲。' },
+    fortressBoots: { id: 'fortressBoots', name: '城塞の脚甲', category: 'equipment', slot: 'feet', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', buildType: 'heavy', recommendedJobs: ['warrior', 'guardian'], description: '侵城ゴーレムの外殻を再利用した脚甲。' },
+    fortressCharm: { id: 'fortressCharm', name: '核石のお守り', category: 'equipment', slot: 'accessory', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', buildType: 'heavy', recommendedJobs: ['warrior', 'guardian'], description: '小さな城塞核石を金具へ収めた防護のお守り。' },
+    voidweaveHood: { id: 'voidweaveHood', name: '虚紡の帽子', category: 'equipment', slot: 'head', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', buildType: 'caster', recommendedJobs: ['mage', 'priest', 'magicKnight'], description: '白晶の監視機が残す虚紡糸で編んだ帽子。' },
+    voidweaveRobe: { id: 'voidweaveRobe', name: '虚紡のローブ', category: 'equipment', slot: 'body', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', buildType: 'caster', recommendedJobs: ['mage', 'priest', 'magicKnight'], description: '虚紡糸を重ね、魔力を通しやすくしたローブ。' },
+    voidweaveGloves: { id: 'voidweaveGloves', name: '虚紡の手袋', category: 'equipment', slot: 'arms', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', buildType: 'caster', recommendedJobs: ['mage', 'priest', 'magicKnight'], description: '聖堂歯車の細片を指先へ縫い込んだ手袋。' },
+    voidweaveBoots: { id: 'voidweaveBoots', name: '虚紡の靴', category: 'equipment', slot: 'feet', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', buildType: 'caster', recommendedJobs: ['mage', 'priest', 'magicKnight'], description: '虚紡糸の魔力回路で術者の足元を守る靴。' },
+    voidweaveCharm: { id: 'voidweaveCharm', name: '聖堂歯車の護符', category: 'equipment', slot: 'accessory', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', buildType: 'caster', recommendedJobs: ['mage', 'priest', 'magicKnight'], description: '虚無錬成師の歯車を虚紡糸で留めた術式護符。' },
+    riftBand: { id: 'riftBand', name: '裂界の鉢巻', category: 'equipment', slot: 'head', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', buildType: 'striker', recommendedJobs: ['martialArtist', 'dualBlade'], description: '裂界爪の粉を染み込ませた丈夫な鉢巻。' },
+    riftVest: { id: 'riftVest', name: '裂界の胴着', category: 'equipment', slot: 'body', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', buildType: 'striker', recommendedJobs: ['martialArtist', 'dualBlade'], description: '裂界爪の繊維と虚空片を編んだ軽い胴着。' },
+    riftGuards: { id: 'riftGuards', name: '裂界の手甲', category: 'equipment', slot: 'arms', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', buildType: 'striker', recommendedJobs: ['martialArtist', 'dualBlade'], description: '鎖葬の刈手の爪を手の甲へ沿わせた防具。' },
+    riftBoots: { id: 'riftBoots', name: '裂界の脚甲', category: 'equipment', slot: 'feet', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', buildType: 'striker', recommendedJobs: ['martialArtist', 'dualBlade'], description: '虚空片を薄く重ね、踏み込みを妨げない脚甲。' },
+    riftCharm: { id: 'riftCharm', name: '裂爪のお守り', category: 'equipment', slot: 'accessory', rarity: 'rare', stars: 3, dungeonId: 'dungeon3', buildType: 'striker', recommendedJobs: ['martialArtist', 'dualBlade'], description: '小さな裂界爪と幻影核を結んだ攻撃用のお守り。' },
     cadenza_staff: { id: 'cadenza_staff', name: '魔杖カデンツァ', nameEn: 'CADENZA', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: '独奏卿ゼナカドが振るった魔導指揮杖。杖が描く軌跡に魔力が追従し、ひとりの術者を楽団へと変える。' },
     soloist_mask: { id: 'soloist_mask', name: '独奏卿の仮面', nameEn: 'SOLOIST MASK', category: 'equipment', slot: 'head', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: 'ゼナカドが身につけていた、片眼を覆う妖艶な仮面。' },
     soloist_coat: { id: 'soloist_coat', name: '独奏卿の燕尾服', nameEn: 'SOLOIST COAT', category: 'equipment', slot: 'body', rarity: 'legendary', stars: 5, seriesId: 'zenacad', description: '黒・紫・金で仕立てられた独奏卿の燕尾服。魔力と精神を守る。' },
@@ -1118,18 +1166,18 @@ window.ARSENE_DATA = {
     sunStaff: { id: 'sunStaff', name: '太陽の杖', weaponType: 'staff', weaponSprite: 'staff_sun', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.2, bonuses: { mag: 14 } },
     cadenza_staff: { id: 'cadenza_staff', name: '魔杖カデンツァ', seriesId: 'zenacad', weaponType: 'staff', weaponSprite: 'staff_cadenza', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.05, bonuses: { mag: 11, maxMp: 8 } },
     lunaEdge: { id: 'lunaEdge', name: '月影剣ルナエッジ', dungeonId: 'dungeon2', weaponType: 'sword', weaponSprite: 'sword_luna', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 2.8, bonuses: { str: 14, dex: 4, critBonus: 0.05 } },
-    voidBlade: { id: 'voidBlade', name: '虚空刃ヴォイドブレード', nameEn: 'VOID BLADE', dungeonId: 'dungeon3', weaponType: 'sword', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 3.4, bonuses: { str: 18, agi: 6, critBonus: 0.06 } },
-    chaosRod: { id: 'chaosRod', name: '混沌の魔杖カオスロッド', nameEn: 'CHAOS ROD', dungeonId: 'dungeon3', weaponType: 'staff', weaponSprite: 'staff_chaos', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', damageStat: 'mag', power: 3.6, bonuses: { mag: 20, maxMp: 10 } },
-    d3WarriorBlade: { id: 'd3WarriorBlade', name: '城断剣グラン・ブレイク', weaponType: 'sword', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 32, bonuses: {}, effects: { physicalDamagePercent: .06 } },
-    d3MageStaff: { id: 'd3MageStaff', name: '虚星杖アストラ・ノクス', weaponType: 'staff', weaponSprite: 'staff_chaos', battleSprite: null, attackMotion: 'staffCast', magicAttackPower: 34, bonuses: {} },
-    d3PriestStaff: { id: 'd3PriestStaff', name: '聖環杖ルクス・オラトリオ', weaponType: 'staff', weaponSprite: 'staff_sun', battleSprite: null, attackMotion: 'staffCast', magicAttackPower: 25, magicDefensePower: 12, bonuses: {}, effects: { healingPowerPercent: .12 } },
-    d3MartialClaw: { id: 'd3MartialClaw', name: '裂空爪ヴァジュラ', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 29, bonuses: {}, effects: { criticalRateBonus: .05 } },
-    d3MaestroInstrument: { id: 'd3MaestroInstrument', name: '星蝕琴ノクターン', weaponType: 'instrument', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', magicAttackPower: 32, bonuses: {}, effects: { criticalRateBonus: .04 } },
-    d3TwinRight: { id: 'd3TwinRight', name: '双界刃・暁裂', weaponType: 'sword', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 27, bonuses: {}, effects: { criticalRateBonus: .04 } },
-    d3TwinLeft: { id: 'd3TwinLeft', name: '双界刃・宵断', weaponType: 'sword', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 25, bonuses: {}, effects: { criticalRateBonus: .05 } },
-    d3GuardianAegis: { id: 'd3GuardianAegis', name: '城界盾アイギス・レグナ', weaponType: 'shield', weaponSprite: 'shield_reprise', battleSprite: null, attackMotion: 'shieldBash', damageType: 'physical', defensePower: 34, magicDefensePower: 30, bonuses: {}, effects: { magicDamageReductionPercent: .06 } },
+    voidBlade: { id: 'voidBlade', name: '虚空の剣', nameEn: 'VOID BLADE', dungeonId: 'dungeon3', weaponType: 'sword', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 28, bonuses: {}, effects: { criticalRateBonus: .04 } },
+    chaosRod: { id: 'chaosRod', name: '混沌の杖', nameEn: 'CHAOS ROD', dungeonId: 'dungeon3', weaponType: 'staff', weaponSprite: 'staff_chaos', battleSprite: 'assets/weapons/staff/mage-staff-01.png', attackMotion: 'staffCast', magicAttackPower: 30, bonuses: { maxMp: 10 }, effects: { magicDamagePercent: .03 } },
+    d3WarriorBlade: { id: 'd3WarriorBlade', name: '城塞鉄の剣', weaponType: 'sword', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 32, bonuses: {}, effects: { physicalDamagePercent: .06 } },
+    d3MageStaff: { id: 'd3MageStaff', name: '虚紡の杖', weaponType: 'staff', weaponSprite: 'staff_chaos', battleSprite: null, attackMotion: 'staffCast', magicAttackPower: 34, bonuses: {}, effects: { magicDamagePercent: .05 } },
+    d3PriestStaff: { id: 'd3PriestStaff', name: '聖堂歯車の杖', weaponType: 'staff', weaponSprite: 'staff_sun', battleSprite: null, attackMotion: 'staffCast', magicAttackPower: 25, magicDefensePower: 14, bonuses: {}, effects: { healingPowerPercent: .15 } },
+    d3MartialClaw: { id: 'd3MartialClaw', name: '裂界の爪', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 24, bonuses: {}, effects: { criticalRateBonus: .02 } },
+    d3MaestroInstrument: { id: 'd3MaestroInstrument', name: '星銀の弦琴', weaponType: 'instrument', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', magicAttackPower: 36, bonuses: {}, effects: { criticalRateBonus: .03, magicDamagePercent: .03 } },
+    d3TwinRight: { id: 'd3TwinRight', name: '裂界の双刃・右', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 22, bonuses: {}, effects: { criticalRateBonus: .02 } },
+    d3TwinLeft: { id: 'd3TwinLeft', name: '裂界の双刃・左', weaponType: 'martial', weaponSubtype: 'dualBlade', offHandOnly: true, weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 18, bonuses: {}, effects: { criticalRateBonus: .01 } },
+    d3GuardianAegis: { id: 'd3GuardianAegis', name: '城塞核の盾', weaponType: 'shield', weaponSprite: 'shield_reprise', battleSprite: null, attackMotion: 'shieldBash', damageType: 'physical', defensePower: 42, magicDefensePower: 38, bonuses: {}, effects: { magicDamageReductionPercent: .08, physicalDamageReductionPercent: .06, resonanceGainPercent: .25 } },
     parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', dungeonId: 'dungeon3', weaponType: 'instrument', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', damageStat: 'dex', power: 4.0, guitarSkillTree: 'versicrellGuitar', bonuses: { dex: 10, mag: 5, critBonus: 0.04 } },
-    myrthi_blade: { id: 'myrthi_blade', name: '黒紅刃ミルティア', nameEn: 'MYRTHI BLADE', seriesId: 'myrthi', dungeonId: 'dungeon2', weaponType: 'sword', weaponSprite: 'sword_myrthi', battleSprite: null, attackMotion: 'slash', damageStat: 'str', power: 3.0, bonuses: { str: 16, agi: 8, critBonus: .06 } }
+    myrthi_blade: { id: 'myrthi_blade', name: '黒紅刃ミルティア', nameEn: 'MYRTHI BLADE', seriesId: 'myrthi', dungeonId: 'dungeon2', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_myrthi', battleSprite: null, attackMotion: 'slash', attackPower: 32, bonuses: { str: 16, agi: 8, critBonus: .06 } }
   },
   accessories: {
     slimeRing: { id: 'slimeRing', name: 'スライムリング', bonuses: { vit: 2, luk: 2 } },
@@ -1150,7 +1198,10 @@ window.ARSENE_DATA = {
     cursedNecklace: { id: 'cursedNecklace', name: '呪われた首飾り', bonuses: { mag: 3, luk: -1 } },
     maestri_baton: { id: 'maestri_baton', name: '七奏のタクト', seriesId: 'zenacad', bonuses: { mag: 4, maxMp: 12 } },
     echoPendant: { id: 'echoPendant', name: '残響のペンダント', dungeonId: 'dungeon2', bonuses: { maxMp: 16, mag: 5 } },
-    voidRing: { id: 'voidRing', name: '虚無の指輪', dungeonId: 'dungeon3', bonuses: { str: 5, mag: 5, agi: 5, vit: 5, mnd: 5, maxHp: 20, maxMp: 15 } },
+    voidRing: { id: 'voidRing', name: '虚無の指輪', dungeonId: 'dungeon3', attackPower: 4, magicAttackPower: 4, defensePower: 4, magicDefensePower: 4, bonuses: { maxHp: 20, maxMp: 15 } },
+    fortressCharm: { id: 'fortressCharm', name: '核石のお守り', dungeonId: 'dungeon3', defensePower: 5, magicDefensePower: 5, bonuses: { maxHp: 10 }, effects: { physicalDamageReductionPercent: .02 } },
+    voidweaveCharm: { id: 'voidweaveCharm', name: '聖堂歯車の護符', dungeonId: 'dungeon3', magicAttackPower: 5, magicDefensePower: 5, bonuses: { maxMp: 8 }, effects: { magicDamagePercent: .03, healingPowerPercent: .05 } },
+    riftCharm: { id: 'riftCharm', name: '裂爪のお守り', dungeonId: 'dungeon3', attackPower: 4, bonuses: {}, effects: { criticalRateBonus: .02 } },
     myrthi_metro: { id: 'myrthi_metro', name: '第二奏のメトロノーム', seriesId: 'myrthi', bonuses: { agi: 6, critBonus: .05 } }
   },
   armors: {
@@ -1216,9 +1267,21 @@ window.ARSENE_DATA = {
     abyssCoat: { id: 'abyssCoat', name: '深域の外套', slot: 'body', dungeonId: 'dungeon2', bonuses: { maxHp: 20, vit: 6, mnd: 5 } },
     abyssGloves: { id: 'abyssGloves', name: '魔蝕のグローブ', slot: 'arms', dungeonId: 'dungeon2', bonuses: { str: 4, mag: 4, dex: 3 } },
     nightwalkerBoots: { id: 'nightwalkerBoots', name: '夜渡りのブーツ', slot: 'feet', dungeonId: 'dungeon2', bonuses: { agi: 7, dex: 3 } },
-    voidHelm: { id: 'voidHelm', name: '虚空の兜', slot: 'head', dungeonId: 'dungeon3', bonuses: { mnd: 8, vit: 7, maxHp: 16 } },
-    abyssalArmor: { id: 'abyssalArmor', name: '深淵の鎧', slot: 'body', dungeonId: 'dungeon3', bonuses: { vit: 12, maxHp: 30, mnd: 5 } },
-    phantomGauntlet: { id: 'phantomGauntlet', name: '幻影拳甲', slot: 'arms', dungeonId: 'dungeon3', bonuses: { str: 8, agi: 6, dex: 4 } },
+    voidHelm: { id: 'voidHelm', name: '虚空の兜', slot: 'head', dungeonId: 'dungeon3', defensePower: 9, magicDefensePower: 8, bonuses: { maxHp: 16 } },
+    abyssalArmor: { id: 'abyssalArmor', name: '深淵の鎧', slot: 'body', dungeonId: 'dungeon3', defensePower: 23, magicDefensePower: 10, bonuses: { maxHp: 30 }, effects: { physicalDamageReductionPercent: .03 } },
+    phantomGauntlet: { id: 'phantomGauntlet', name: '幻影拳甲', slot: 'arms', dungeonId: 'dungeon3', attackPower: 8, defensePower: 5, bonuses: {}, effects: { criticalRateBonus: .02 } },
+    fortressHelm: { id: 'fortressHelm', name: '城塞の兜', slot: 'head', dungeonId: 'dungeon3', defensePower: 10, magicDefensePower: 5, bonuses: {} },
+    fortressCoat: { id: 'fortressCoat', name: '城塞の外套', slot: 'body', dungeonId: 'dungeon3', defensePower: 22, magicDefensePower: 10, bonuses: { maxHp: 20 }, effects: { physicalDamageReductionPercent: .03 } },
+    fortressGloves: { id: 'fortressGloves', name: '城塞の手甲', slot: 'arms', dungeonId: 'dungeon3', attackPower: 5, defensePower: 7, bonuses: {} },
+    fortressBoots: { id: 'fortressBoots', name: '城塞の脚甲', slot: 'feet', dungeonId: 'dungeon3', defensePower: 12, magicDefensePower: 4, bonuses: {} },
+    voidweaveHood: { id: 'voidweaveHood', name: '虚紡の帽子', slot: 'head', dungeonId: 'dungeon3', magicAttackPower: 8, magicDefensePower: 8, bonuses: { maxMp: 6 } },
+    voidweaveRobe: { id: 'voidweaveRobe', name: '虚紡のローブ', slot: 'body', dungeonId: 'dungeon3', defensePower: 6, magicAttackPower: 10, magicDefensePower: 16, bonuses: { maxMp: 10 } },
+    voidweaveGloves: { id: 'voidweaveGloves', name: '虚紡の手袋', slot: 'arms', dungeonId: 'dungeon3', magicAttackPower: 7, magicDefensePower: 6, bonuses: {}, effects: { healingPowerPercent: .04 } },
+    voidweaveBoots: { id: 'voidweaveBoots', name: '虚紡の靴', slot: 'feet', dungeonId: 'dungeon3', defensePower: 5, magicDefensePower: 8, bonuses: { maxMp: 6 } },
+    riftBand: { id: 'riftBand', name: '裂界の鉢巻', slot: 'head', dungeonId: 'dungeon3', attackPower: 5, defensePower: 5, bonuses: {}, effects: { criticalRateBonus: .01 } },
+    riftVest: { id: 'riftVest', name: '裂界の胴着', slot: 'body', dungeonId: 'dungeon3', attackPower: 10, defensePower: 11, magicDefensePower: 4, bonuses: {} },
+    riftGuards: { id: 'riftGuards', name: '裂界の手甲', slot: 'arms', dungeonId: 'dungeon3', attackPower: 7, defensePower: 4, bonuses: {}, effects: { criticalRateBonus: .02 } },
+    riftBoots: { id: 'riftBoots', name: '裂界の脚甲', slot: 'feet', dungeonId: 'dungeon3', attackPower: 3, defensePower: 7, magicDefensePower: 4, bonuses: {}, effects: { criticalRateBonus: .01 } },
     myrthi_headband: { id: 'myrthi_headband', name: '律動の髪飾り', seriesId: 'myrthi', slot: 'head', bonuses: { agi: 8, critBonus: .04 } },
     myrthi_coat: { id: 'myrthi_coat', name: '黒紅の戦舞装', seriesId: 'myrthi', slot: 'body', bonuses: { maxHp: 20, vit: 8, agi: 5 } },
     myrthi_bangle: { id: 'myrthi_bangle', name: '拍動のバングル', seriesId: 'myrthi', slot: 'arms', bonuses: { str: 10, agi: 4 } },
@@ -1239,8 +1302,24 @@ window.ARSENE_DATA = {
       id: 'noelFirstEncounter', name: 'ノエル', enName: 'NOËL — THE ETERNAL JUDGE', kind: 'boss', encounter: 1,
       music: '音楽系/ダンジョン/ダンジョン1ノエルのテーマ.mp3',
       title: '永遠の裁定者', element: '闇 / 裁定', sprite: 'assets/enemy-characters/noel/battle-first-encounter.png',
-      dynamicScale: 100, cannotDefeat: true, exp: 0, gold: { min: 0, max: 0 }, dropTable: [],
+      dynamicScale: 50, cannotDefeat: true,
+      // 3ターンはプレイヤーを観察し、4ターン目に強制裁定する初回敗北イベント。
+      scriptedDefeat: { idleTurns: 3 },
+      exp: 0, gold: { min: 0, max: 0 }, dropTable: [],
       ai: [{ id: 'eternalJudgement', name: 'エターナル・ジャッジメント', kind: 'magic', unavoidable: true, weight: 1 }]
+    },
+    debugOverpowerEnemy: {
+      id: 'debugOverpowerEnemy', name: '強敵検証体 Ω', enName: 'DEBUG OVERPOWERED TARGET',
+      title: '能力差耐久試験', kind: 'boss', dungeonId: 'dungeon3', devOnly: true, debugOnly: true, hideInArchive: true,
+      element: '無', sprite: 'assets/enemy-characters/dungeon3/fortressGolem.png', spriteClass: 'fortress-golem', battleScale: 1.35,
+      // HPは減らない。回復を封じる必中の圧力下で、純粋な防御・盾受け・反撃性能を測る守護士向け試験。
+      infiniteHp: true, trialRules: { maxActions: 30, baselineMaxHp: 80, targetNeutralHits: 5, healingMultiplier: 0, attacksUnavoidable: true, label: '回復封印／必中' },
+      stats: { maxHp: 999999, atk: 65, def: 95, mag: 60, mnd: 90, dex: 30, agi: 22, spd: 22 },
+      sparkLevel: 1, exp: 0, gold: { min: 0, max: 0 }, dropTable: [],
+      ai: [
+        { id: 'overpowerCrush', name: '超過圧砕', kind: 'physical', unavoidable: true, weight: .55 },
+        { id: 'overpowerRay', name: '超過魔砲', kind: 'magic', unavoidable: true, weight: .45 }
+      ]
     },
     zenakado: {
       id: 'zenakado', name: 'ゼナカド', enName: 'ZENAKADO — THE SOLOIST', kind: 'boss', encounter: 1,

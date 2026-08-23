@@ -69,7 +69,17 @@
     dungeon2BossWins: 'D2ボス解放に必要な勝利数', bossRematchWins: 'ボス再戦に必要な周回数',
     debugPassword: 'デバッグPW', healOnBattleStart: '戦闘開始時に全回復',
     noelEncounterWins: 'ノエル出現の勝利数', zenakadoEncounterWins: 'ゼナカド出現の勝利数',
-    starterWeaponId: '初期武器', unlockFlag: '解放フラグ', damageStats: '参照能力'
+    starterWeaponId: '初期武器', unlockFlag: '解放フラグ', damageStats: '参照能力',
+    devOnly: '開発専用', futureOnly: '将来予約', contentState: '実装状態', balanceState: '数値状態',
+    releaseFlag: '正式解放フラグ', releaseFlags: 'D4〜D7正式解放', roadmap: '後半ロードマップ', d3ToD4Transition: 'D3→D4転生導線',
+    bossId: 'ボスID', origin: '音楽用語', title: '異名', battleTheme: '戦闘テーマ', mechanics: '固有ギミック', designNote: '設計メモ',
+    scoreId: 'SCORE ID', proofItemId: 'JOBの証', unlockJobId: '解放JOB', unlockWeaponMastery: '解放武器学',
+    attackScaling: '攻撃参照', simulationAssumptions: 'Monte Carlo前提', activeDebuffs: '維持DEBUFF数', maintainDots: '維持DOT', maintainSignatureBuff: 'MASTER効果維持', chooseCurrentWeakness: '弱点属性を選択', hpCostEnabled: 'HP消費を有効化',
+    dotRules: 'DOT共通ルール', ignoresDefense: '防御無視', canCritical: '会心発生', timing: '発生タイミング',
+    bossDefault: 'ボス標準対応', bossResistanceAllowed: 'ボス耐性を許可', note: '注記',
+    magicElements: '魔法属性', ids: '属性ID', multipliers: '属性倍率',
+    strongResist: '強耐性', resist: '耐性', normal: '通常', weak: '弱点', greatWeak: '大弱点', specialMin: '特殊最小', specialMax: '特殊最大',
+    subtitle: '楽曲名', artist: '関連ボス', use: '使用先', unlockBoss: '解放ボス'
   };
   const labelOf = k => LABELS[k] || k;
 
@@ -147,6 +157,17 @@
     { g: 'ダンジョン', key: 'dungeons', label: 'ダンジョン・階層', list: true, hint: 'floors / winsToClear / encounterProgression', arrayIdKey: 'id' },
     { g: 'ダンジョン', key: 'battleProgression', label: 'D1の進行', list: false, hint: 'ノエル / ゼナカドの出現勝利数' },
     { g: 'ダンジョン', key: 'settings', label: '解放条件など', list: false, hint: 'ボス再戦回数 / D2ボス解放 / デバッグPW' },
+
+    // 通常プレイヤーUIには一切接続しない、D4〜D7の先行予約データ。
+    // future_data.js が登録した内容だけをここから確認・調整できる。
+    { g: '将来予約（DEV）', key: 'futureBosses', label: 'D4〜D7 七奏卿', list: true, hint: 'ボス能力 / 戦闘テーマ / 固有ギミック（正式ダンジョン未実装）' },
+    { g: '将来予約（DEV）', key: 'futureBossRewards', label: '撃破報酬予約', list: true, hint: 'SCORE / JOBの証 / 解放JOB / 武器学' },
+    { g: '将来予約（DEV）', key: 'musicScores', label: '予約SCORE', list: true, hint: 'D4〜D7のPRIVATE MODE用SCORE', filter: score => score.devOnly === true && score.contentState === 'reserved' },
+    { g: '将来予約（DEV）', key: 'futureContent', label: '正式解放フラグ', list: false, path: 'releaseFlags', hint: '予約データの正式公開状態。通常ゲームへの接続は将来実装時に行う' },
+    { g: '将来予約（DEV）', key: 'futureContent', label: '後半ロードマップ', list: false, path: 'roadmap', hint: 'D4〜D7 / 七奏卿 / JOB / 武器 / 武器学の対応' },
+    { g: '将来予約（DEV）', key: 'futureContent', label: 'D3→D4転生導線', list: false, path: 'd3ToD4Transition', hint: 'D4正式実装時に接続する輪廻のアルカナ×2とセリペス台詞' },
+    { g: '将来予約（DEV）', key: 'futureContent', label: 'DOT共通ルール', list: false, path: 'dotRules', hint: 'D5以降で使用するDOTの共通予約仕様' },
+    { g: '将来予約（DEV）', key: 'futureContent', label: '五属性・倍率', list: false, path: 'magicElements', hint: '炎 / 氷 / 雷 / 光 / 闇と耐性・弱点倍率' },
 
     { g: 'バランス', key: 'combatBalance', label: '戦闘計算', list: false, hint: '会心率 / 敵ダメージ式 / ばらつき' },
     { g: 'バランス', key: 'growthBalance', label: '成長全体', list: false, hint: 'HP/MP成長率 / 閃き率 / 特性倍率' },
@@ -581,6 +602,8 @@
     root.innerHTML = `
       <div class="dbg-bar">
         <b>DEBUG ROOM</b><small>データ編集専用</small><span class="sp"></span>
+        <button id="dbg-job-balance">JOB検証</button>
+        <button id="dbg-guardian-trial">守護士 強敵戦</button>
         <button id="dbg-spark-open">SPARK計算</button>
         <button id="dbg-export">書き出し</button>
         <button id="dbg-reset" class="danger">全変更を破棄</button>
@@ -652,6 +675,13 @@
       if (e.target.id === 'dbg-revert') return revertCurrent();
       if (e.target.id === 'dbg-export') return exportAll();
       if (e.target.id === 'dbg-reset') return resetAll();
+      if (e.target.id === 'dbg-job-balance') return window.ARSENE_JOB_BALANCE?.show();
+      if (e.target.id === 'dbg-guardian-trial') {
+        const game = window.arseneGame;
+        if (!game || game.profile?.currentJob !== 'guardian' || game.equippedWeaponType?.() !== 'shield') { msg('守護士へ変更し、右手に盾を装備してから開始してください。', true); return; }
+        if (game.startDebugGuardianTrial?.()) close();
+        return;
+      }
       if (e.target.id === 'dbg-spark-open') return openSparkCalculator();
       if (e.target.id === 'dbg-spark-close') { document.getElementById('dbg-spark-panel').hidden = true; return; }
       if (e.target.id === 'dbg-close') return close();
