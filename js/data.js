@@ -60,7 +60,7 @@ window.ARSENE_DATA = {
     iconSheet: 'assets/ui/battle/command-icons-v1.png',
     // 武器学コマンドはアイコン・名称まで焼き込んだ完成カードを武器種ごとに交換する。
     weaponCards: {
-      sword: 'assets/ui/battle/lower-ui-v2/weapon-card-sword-v2.png',
+      sword: 'assets/ui/battle/lower-ui-v2/weapon-card-sword-v3.png',
       staff: 'assets/ui/battle/lower-ui-v2/weapon-card-staff-v2.png',
       martial: 'assets/ui/battle/lower-ui-v2/weapon-card-martial-v2.png',
       instrument: 'assets/ui/battle/lower-ui-v2/weapon-card-instrument-v2.png',

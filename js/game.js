@@ -9,7 +9,7 @@
 
   class BattleGame {
     constructor() {
-      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.simpleBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.enhanceWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.enhanceArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
+      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.autoToggleBusy = false; this.autoPickTimer = null; this.simpleBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.enhanceWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.enhanceArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
       this.currentDungeonId = 'dungeon1';
       this.battleMusic = encodeURI('音楽系/戦闘用/零時侵蝕 (Without Lead Vocal).mp3');
       this.menuMusic = encodeURI('音楽系/拠点/Midnight Ramen Den.mp3');
@@ -1214,7 +1214,7 @@
     progressState() { const f = this.profile.flags, noelGoal = D.battleProgression?.noelEncounterWins || 3, zenakadoGoal = D.battleProgression?.zenakadoEncounterWins || 7; if (!f.noelFirstEncounterCleared) { const wins = Math.max(0, f.preNoelBattleWins || 0); return { phase: 'noel', wins, goal: noelGoal, ready: wins >= noelGoal, bossId: 'noelFirstEncounter', bossName: 'NOËL' }; } if (!f.zenakadoDefeated) { const wins = Math.max(0, f.postNoelBattleWins || 0); return { phase: 'zenakado', wins, goal: zenakadoGoal, ready: wins >= zenakadoGoal, bossId: 'zenakado', bossName: 'ZENAKADO' }; } return { phase: 'complete', wins: zenakadoGoal, goal: zenakadoGoal, ready: false, bossId: null, bossName: 'DUNGEON CLEAR' }; }
 
     startBattle() {
-      this.battleMode = 'slime'; const hadRamenBuff = !!this.profile.flags.ramenBuffActive, stats = this.totalStats(), vitals = this.storedVitals(stats); if (hadRamenBuff) { this.profile.flags.ramenBuffActive = false; this.saveProfile(); } this.player = this.freshBattlePlayer(stats, D.settings.healOnBattleStart ? stats.maxHp : vitals.hp, D.settings.healOnBattleStart ? stats.maxMp : vitals.mp);
+      this.closeBattleMenu(); this.cancelAutoPick(); this.battleMode = 'slime'; const hadRamenBuff = !!this.profile.flags.ramenBuffActive, stats = this.totalStats(), vitals = this.storedVitals(stats); if (hadRamenBuff) { this.profile.flags.ramenBuffActive = false; this.saveProfile(); } this.player = this.freshBattlePlayer(stats, D.settings.healOnBattleStart ? stats.maxHp : vitals.hp, D.settings.healOnBattleStart ? stats.maxMp : vitals.mp);
       const dungeon = this.getDungeon(), dungeon2 = this.currentDungeonId === 'dungeon2', dungeon3 = this.currentDungeonId === 'dungeon3';
       let wins, lineup;
       const floor = this.activeFloor(this.currentDungeonId);
@@ -1632,6 +1632,16 @@
     flashTitle(main, sub = '') { const a = $('#announcer'); a.innerHTML = `<strong>${main}</strong><span>${sub}</span>`; a.classList.remove('show'); void a.offsetWidth; a.classList.add('show'); }
     battleSleep(ms) { const speed = this.simpleBattle ? 2.5 : this.autoBattle ? 1.5 : 1; return sleep(Math.max(40, Math.floor(ms / speed))); }
     updateBattleAssistButtons() { const simple = $('[data-action="simpleBattle"]'), auto = $('[data-action="autoBattle"]'); if (simple) { simple.classList.toggle('active', this.simpleBattle); simple.setAttribute('aria-pressed', String(this.simpleBattle)); } if (auto) { auto.classList.toggle('active', this.autoBattle); auto.setAttribute('aria-pressed', String(this.autoBattle)); } }
+    keepAutoControlVisible() {
+      if (!this.autoBattle) { this.panel(''); return; }
+      this.showMainCommands();
+      $('#command-panel')?.classList.add('turn-locked');
+    }
+    closeBattleMenu() {
+      const pop = $('#battle-menu-popover'), button = $('#battle-menu-button');
+      if (pop) pop.hidden = true;
+      button?.setAttribute('aria-expanded', 'false');
+    }
     renderBattleMenu() {
       const pop = $('#battle-menu-popover'); if (!pop) return;
       const volumes = this.audio.getVolumes(), labels = { bgm: 'BGM', sfx: 'SE', voice: 'VOICE' };
@@ -1739,11 +1749,38 @@
     }
     bindActions(actions) {
       const root = this.commandActionRoot || $('#command-panel');
-      root.onclick = async e => { const b = e.target.closest('[data-action]'); if (b && !b.disabled && !this.locked) { await this.audio.unlock(); this.audio.sfx('ui'); actions[b.dataset.action]?.(); } };
+      root.onclick = async e => {
+        const b = e.target.closest('[data-action]');
+        // AUTOだけは敵演出・ダメージ表示中でも停止できる。次の自動行動を予約しないため、
+        // ピンチ時にOFFを押しても追加の一手が走らない。
+        const canInterrupt = b?.dataset.action === 'autoBattle';
+        if (b && !b.disabled && (!this.locked || canInterrupt)) { await this.audio.unlock(); this.audio.sfx('ui'); actions[b.dataset.action]?.(); }
+      };
+    }
+    cancelAutoPick() {
+      if (this.autoPickTimer) clearTimeout(this.autoPickTimer);
+      this.autoPickTimer = null;
+    }
+    scheduleAutoPick() {
+      this.cancelAutoPick();
+      if (!this.autoBattle || this.locked || this.finished) return;
+      this.autoPickTimer = setTimeout(() => {
+        this.autoPickTimer = null;
+        this.autoPickAction();
+      }, 700);
+    }
+    toggleAutoBattle() {
+      // 演出中でも停止できるが、連打で複数の予約タイマーが走らないよう短時間だけ受け付けを絞る。
+      if (this.autoToggleBusy || this.finished) return;
+      this.autoToggleBusy = true;
+      this.autoBattle = !this.autoBattle;
+      this.cancelAutoPick();
+      this.showMainCommands();
+      if (this.locked) $('#command-panel')?.classList.add('turn-locked');
+      setTimeout(() => { this.autoToggleBusy = false; }, 180);
     }
     showMainCommands() {
       $('#phase-label').textContent = this.autoBattle ? 'AUTO' : 'TURN';
-      const itemCount = (this.profile.inventory.potion || 0) + (this.profile.inventory.manaPotion || 0);
       const basic = this.basicAttackSkill(), wType = this.equippedWeaponType();
       const artsCmd = (D.weaponArtsCommand || {})[wType] || { name: '武器技', nameEn: 'WEAPON ARTS' };
       const arts = this.learnedWeaponSkills().filter(s => s.weaponType === wType && this.weaponSkillMatchesEquipped(s));
@@ -1766,18 +1803,18 @@
         + this.button(artsCmd.name, arts.length ? `${artsCmd.nameEn} ▶` : '未習得', 'weaponArts', !arts.length, `weapon-${wType}`)
         + this.button('スキル', skills.length ? 'SKILL ▶' : '未習得', 'skills', !skills.length, 'skill')
         + this.button('防御', 'GUARD // 50%', 'guard', false, 'guard')
-        + this.button('アイテム', `ITEM ×${itemCount}`, 'item', false, 'item')
+        + this.button('アイテム', 'ITEM', 'item', false, 'item')
         + this.button('にげる', 'ESCAPE', 'escape', false, 'escape')
-        + this.button('簡易戦闘', this.simpleBattle ? 'SIMPLE // ON' : 'SIMPLE // OFF', 'simpleBattle', false, 'simple')
+        + this.button('一掃', 'SWEEP', 'quick', false, 'simple')
         + this.button('AUTO', this.autoBattle ? 'AUTO // ON' : 'AUTO // OFF', 'autoBattle', false, 'auto');
       this.panel(html, 'main');
-      this.bindActions({ attack: () => this.chooseTarget(basic.id), weaponArts: () => this.showWeaponArts(), skills: () => this.showCombinedSkills(), guard: () => this.guardAction(), item: () => this.showBattleItems(), escape: () => this.tryEscape(), simpleBattle: () => { this.simpleBattle = !this.simpleBattle; $('#game')?.classList.toggle('simple-battle', this.simpleBattle); this.showMainCommands(); }, autoBattle: () => { this.autoBattle = !this.autoBattle; this.showMainCommands(); } }); this.updateBattleAssistButtons();
-      if (this.autoBattle && !this.locked) setTimeout(() => this.autoPickAction(), 700);
+      this.bindActions({ attack: () => this.chooseTarget(basic.id), weaponArts: () => this.showWeaponArts(), skills: () => this.showCombinedSkills(), guard: () => this.guardAction(), item: () => this.showBattleItems(), escape: () => this.tryEscape(), quick: () => this.quickResolveBattle(), autoBattle: () => this.toggleAutoBattle() }); this.updateBattleAssistButtons();
+      this.scheduleAutoPick();
     }
     autoPickAction() { if (!this.autoBattle || this.locked || this.finished) return; const maxHp = this.player.stats.maxHp, maxMp = this.player.stats.maxMp, hpPct = this.player.hp / maxHp; if (hpPct < 0.4 && (this.profile.inventory.potion || 0) > 0) { this.useConsumable('potion'); return; } if (this.player.mp < maxMp * 0.2 && (this.profile.inventory.manaPotion || 0) > 0) { this.useConsumable('manaPotion'); return; } const aliveEnemies = this.enemies.filter(e => e.alive); const skills = this.availableSkills().filter(s => this.canPaySkillCosts(s) && this.cooldownRemaining(s) === 0); const weapon = this.equippedWeapon(); const atkScore = weapon?.power || 1; let best = { type: 'attack', score: atkScore }; for (const s of skills) { let score = 0; if (s.kind === 'support') { if (s.effect?.type === 'hpRecover') score = hpPct < 0.75 ? (1 - hpPct) * 200 : 0; else if (s.effect?.type === 'mpRecover') score = this.player.mp < maxMp * 0.5 ? 45 : 0; else if (s.effect?.type === 'regenerate') score = hpPct < 0.8 && !(this.player.buffs.regenerate > 0) ? 38 : 0; else if (s.effect?.type === 'hpToMp') score = this.player.mp < maxMp * .45 && hpPct > .55 ? 48 : 0; } else if (s.kind === 'hybrid') { score = (s.strScale + s.magScale) * 12; } else { const multi = s.target === 'all' ? Math.min(aliveEnemies.length, 3) * 0.7 : 1; score = (s.power || 1) * (s.hits || 1) * multi; } if (score > best.score) best = { type: 'skill', skill: s, score }; } if (best.type === 'skill') { const s = best.skill; if (s.target === 'all' || s.target === 'self') { this.executeRound(s.id, -1); } else { this.executeRound(s.id, this.enemies.findIndex(e => e.alive)); } } else { this.executeRound('attack', this.enemies.findIndex(e => e.alive)); } }
     async quickResolveBattle() {
       if (this.locked || this.finished || this.battleMode === 'debugOverpower') return;
-      this.locked = true; this.quickResolving = true; this.autoBattle = false; this.panel(''); $('#phase-label').textContent = 'QUICK';
+      this.locked = true; this.quickResolving = true; this.autoBattle = false; this.cancelAutoPick(); this.panel(''); $('#phase-label').textContent = 'QUICK';
       const enemies = this.enemies.filter(enemy => enemy.alive), stats = this.playerCombatStats(), pDef = this.defensePowerFor('physical', stats), mDef = this.defensePowerFor('magical', stats);
       const basic = this.basicAttackSkill(), learned = [basic, ...this.availableSkills()].filter((skill, index, list) => skill && list.findIndex(s => s.id === skill.id) === index);
       const offensive = learned.filter(skill => skill.kind !== 'support'), attackValue = skill => {
@@ -1952,7 +1989,7 @@
       if (skillId === 'resonanceBreak' && (!this.resonanceEnabled() || !(this.player?.resonance > 0))) return;
       if (this.locked || !skill || this.cooldownRemaining(skill) > 0 || !this.canPaySkillCosts(skill) || !this.skillEquipmentReady(skill) || (!self && (aoe ? !this.enemies.some(e => e.alive) : !this.enemies[targetIndex]?.alive))) return;
       if (skillId === 'resonanceBreak') { const stored = this.player.resonance; skill = { ...skill, resonanceStored: stored, power: this.resonanceMultiplier(stored) }; this.player.resonance = 0; this.flashTitle('RESONANCE BREAK', `${stored.toFixed(1)}% // ×${skill.power}`); }
-      this.locked = true; this.clearTargets(); this.panel(''); $('#phase-label').textContent = 'ACTION'; await this.beginPlayerTurn(); const setEffects = this.activeSetEffects(), freeMp = skill.kind === 'magical' && skill.mp > 0 && Math.random() < (setEffects.freeMagicMpChance || 0); if (!freeMp) this.player.mp -= this.skillMpCost(skill); else this.flashTitle('MAESTRO', 'MP COST 0'); if (skill.cooldown) this.player.cooldowns[skill.id] = this.turn + skill.cooldown; this.persistVitals(); this.updateHUD();
+      this.locked = true; this.clearTargets(); this.keepAutoControlVisible(); $('#phase-label').textContent = 'ACTION'; await this.beginPlayerTurn(); const setEffects = this.activeSetEffects(), freeMp = skill.kind === 'magical' && skill.mp > 0 && Math.random() < (setEffects.freeMagicMpChance || 0); if (!freeMp) this.player.mp -= this.skillMpCost(skill); else this.flashTitle('MAESTRO', 'MP COST 0'); if (skill.cooldown) this.player.cooldowns[skill.id] = this.turn + skill.cooldown; this.persistVitals(); this.updateHUD();
       const actors = [{ type: 'player', speed: this.playerCombatStats().agi + roll(0, 4) + (skill.speedBonus || 0), act: () => this.playerActionWithSpark(skill, targetIndex) }]; this.enemies.filter(e => e.alive).forEach(e => actors.push({ type: 'enemy', enemy: e, speed: e.stats.spd + roll(0, 4), act: () => this.enemyAttack(e) })); actors.sort((a, b) => b.speed - a.speed);
       for (const actor of actors) { if (this.finished || this.player.hp <= 0) break; if (actor.type === 'enemy' && !actor.enemy.alive) continue; await actor.act(); await this.battleSleep(300); if (!this.enemies.some(e => e.alive)) { const fallen = this.enemies[0]; if (this.battleMode === 'versicrell' && fallen?.form === 1) { await this.transformVersicrell(fallen); return; } if (this.enemies.every(e => e.escaped)) { await this.enemyEncounterEscaped(); return; } await this.victory(); return; } }
       if (this.player.hp <= 0) { await this.defeat(); return; } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands();
@@ -2469,10 +2506,10 @@
     queueGrowthBubble(title, detail = '') { this.growthBubbleQueue = (this.growthBubbleQueue || Promise.resolve()).then(() => this.showGrowthBubble(title, detail)); return this.growthBubbleQueue; }
     async showGrowthBubble(title, detail = '') { const ren = $('#ren'), field = $('#battlefield'); if (!ren || !field) return; const rr = ren.getBoundingClientRect(), fr = field.getBoundingClientRect(), bubble = document.createElement('div'); bubble.className = 'growth-bubble'; bubble.innerHTML = `<b>${title}</b>${detail ? `<span>${detail}</span>` : ''}`; bubble.style.left = `${rr.left - fr.left + rr.width * .52}px`; bubble.style.top = `${Math.max(92, rr.top - fr.top + 12)}px`; $('#float-layer').appendChild(bubble); this.audio.sfx('heal'); await this.battleSleep(1250); bubble.remove(); }
     announceRareDrop(item) { const layer = $('#rare-drop-layer'); if (!layer) return; this.audio.sfx('rareDrop'); const b = document.createElement('div'); b.className = `rare-drop-banner rarity-${item.rarity}`; b.innerHTML = `<small>${item.rarity === 'legendary' ? 'LEGENDARY DROP' : 'EPIC DROP'}</small><b>${item.name}</b>`; layer.appendChild(b); requestAnimationFrame(() => b.classList.add('show')); setTimeout(() => { b.classList.remove('show'); setTimeout(() => b.remove(), 420); }, 2400); }
-    async useConsumable(id) { const item = D.items[id], amount = item?.effect?.hp || item?.effect?.mp || 0, key = item?.effect?.hp ? 'hp' : 'mp', maxKey = key === 'hp' ? 'maxHp' : 'maxMp'; if (!item || !(this.profile.inventory[id] > 0)) { this.setLog(`${item?.name || 'アイテム'}を持っていない。`); return; } if (this.player[key] >= this.player.stats[maxKey]) { this.setLog(`${key.toUpperCase()}は満タンだ。`); return; } this.locked = true; this.panel(''); await this.beginPlayerTurn(); const heal = Math.min(amount, this.player.stats[maxKey] - this.player[key]); this.profile.inventory[id]--; this.player[key] += heal; this.persistVitals(); this.audio.sfx('heal'); this.setLog(`${item.name}を使った。${key.toUpperCase()}が${heal}回復！`); this.floating($('#ren'), `+${heal}`, 'heal'); this.updateHUD(); await this.battleSleep(650); await this.enemyOnlyTurn(); }
+    async useConsumable(id) { const item = D.items[id], amount = item?.effect?.hp || item?.effect?.mp || 0, key = item?.effect?.hp ? 'hp' : 'mp', maxKey = key === 'hp' ? 'maxHp' : 'maxMp'; if (!item || !(this.profile.inventory[id] > 0)) { this.setLog(`${item?.name || 'アイテム'}を持っていない。`); return; } if (this.player[key] >= this.player.stats[maxKey]) { this.setLog(`${key.toUpperCase()}は満タンだ。`); return; } this.locked = true; this.keepAutoControlVisible(); await this.beginPlayerTurn(); const heal = Math.min(amount, this.player.stats[maxKey] - this.player[key]); this.profile.inventory[id]--; this.player[key] += heal; this.persistVitals(); this.audio.sfx('heal'); this.setLog(`${item.name}を使った。${key.toUpperCase()}が${heal}回復！`); this.floating($('#ren'), `+${heal}`, 'heal'); this.updateHUD(); await this.battleSleep(650); await this.enemyOnlyTurn(); }
     async guardAction() {
       if (this.locked || this.finished) return;
-      this.locked = true; this.clearTargets(); this.panel(''); $('#phase-label').textContent = 'GUARD';
+      this.locked = true; this.clearTargets(); this.keepAutoControlVisible(); $('#phase-label').textContent = 'GUARD';
       await this.beginPlayerTurn();
       const reduction = D.combatBalance?.guardReduction ?? .50;
       this.player.buffs.guardUntil = this.turn; this.player.buffs.guardReduction = reduction;
@@ -2480,7 +2517,7 @@
       this.floating($('#ren'), 'GUARD', 'heal'); this.setLog(`防御態勢！ このラウンドに受けるダメージを${Math.round(reduction * 100)}%軽減する。`);
       this.updateHUD(); await this.battleSleep(420); await this.enemyOnlyTurn();
     }
-    async tryEscape() { if (this.battleMode === 'debugOverpower') { const damage = this.enemies[0]?.debugDamageTaken || 0, turns = this.turn; this.finished = true; this.restoreDebugBattle(); this.audio.sfx('escape'); this.showResult('TEST ABORTED', '強敵検証を中断し、開始前のセーブ状態へ戻した。', 'GUARDIAN TRIAL', `<div class="boss-result-note">生存 ${turns} ACTION　/　総与ダメージ ${Math.round(damage).toLocaleString('ja-JP')}</div>`); return; } this.locked = true; this.panel(''); await this.beginPlayerTurn(); const live = this.enemies.filter(e => e.alive), avg = live.reduce((s, e) => s + e.stats.spd, 0) / live.length, chance = clamp(.45 + (this.player.stats.agi - avg) * .025, .35, .9); this.setLog('逃走経路を探している……'); await this.battleSleep(600); if (Math.random() < chance) { this.finished = true; this.persistVitals(); this.audio.sfx('escape'); this.flashTitle('ESCAPED', '戦線を離脱'); await this.battleSleep(700); this.showResult('ESCAPED', '怪異との戦闘から離脱し、拠点へ帰還した。', 'RETURN TO HIDEOUT', this.battleSummaryHTML()); } else { this.setLog('逃げられない！'); await this.battleSleep(450); await this.enemyOnlyTurn(); } }
+    async tryEscape() { if (this.battleMode === 'debugOverpower') { const damage = this.enemies[0]?.debugDamageTaken || 0, turns = this.turn; this.finished = true; this.restoreDebugBattle(); this.audio.sfx('escape'); this.showResult('TEST ABORTED', '強敵検証を中断し、開始前のセーブ状態へ戻した。', 'GUARDIAN TRIAL', `<div class="boss-result-note">生存 ${turns} ACTION　/　総与ダメージ ${Math.round(damage).toLocaleString('ja-JP')}</div>`); return; } this.locked = true; this.keepAutoControlVisible(); await this.beginPlayerTurn(); const live = this.enemies.filter(e => e.alive), avg = live.reduce((s, e) => s + e.stats.spd, 0) / live.length, chance = clamp(.45 + (this.player.stats.agi - avg) * .025, .35, .9); this.setLog('逃走経路を探している……'); await this.battleSleep(600); if (Math.random() < chance) { this.finished = true; this.persistVitals(); this.audio.sfx('escape'); this.flashTitle('ESCAPED', '戦線を離脱'); await this.battleSleep(700); this.showResult('ESCAPED', '怪異との戦闘から離脱し、拠点へ帰還した。', 'RETURN TO HIDEOUT', this.battleSummaryHTML()); } else { this.setLog('逃げられない！'); await this.battleSleep(450); await this.enemyOnlyTurn(); } }
     async enemyOnlyTurn() { for (const e of this.enemies.filter(e => e.alive)) { await this.enemyAttack(e); if (this.player.hp <= 0) { await this.defeat(); return; } if (!this.enemies.some(x => x.alive)) { if (this.enemies.every(x => x.escaped)) await this.enemyEncounterEscaped(); else await this.victory(); return; } await this.battleSleep(300); } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands(); }
 
     async enemyFlee(enemy, action) {
@@ -2651,7 +2688,7 @@
     }
     handleResultAction(action, target) { if (action === 'hideout') { this.showMenu('home'); return; } if (action === 'boss-now') { this.startBossByKey(target); return; } if (action === 'next-floor' || action === 'continue-floor') { this.currentDungeonId = this.floorDungeonId(target) || this.currentDungeonId; this.currentFloorId = target; $('#ren').classList.remove('victory'); this.startBattle(); } }
 
-    showMenu(panel = 'home') { if (this.player) this.persistVitals(); const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
+    showMenu(panel = 'home') { if (this.player) this.persistVitals(); this.closeBattleMenu(); this.cancelAutoPick(); const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
     renderMenuSummary() { const t = this.totalStats(), v = this.storedVitals(t), need = this.expNeeded(), workshopUnlocked = !!this.profile.flags.noelFirstEncounterCleared, buff = !!this.profile.flags.ramenBuffActive, progress = this.progressState();  $('#menu-hp').textContent = `${v.hp} / ${t.maxHp}`; $('#menu-mp').textContent = `${v.mp} / ${t.maxMp}`; $('#hideout-hp-bar').style.width = `${100 * v.hp / t.maxHp}%`; $('#hideout-mp-bar').style.width = `${100 * v.mp / t.maxMp}%`; $('#menu-gold').textContent = this.profile.gold.toLocaleString('ja-JP'); const mType = this.equippedWeaponType(), mst = this.masteryOf(mType), mNeed = this.masteryExpNeeded(mst.level), expPct = Math.min(100, 100 * mst.exp / mNeed); $('#menu-exp-text').textContent = `${expPct.toFixed(2)}%`; $('#menu-exp-bar').style.width = `${expPct}%`; const mLabel = $('#menu-exp-label'); if (mLabel) mLabel.textContent = `${this.weaponTypeName(mType)} Lv.${mst.level}`; const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {}, jlv = jst.level || 1, jneed = this.jobExpNeeded(jlv), jexp = jst.exp || 0, jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100; const jexpLabel = $('#menu-jexp-label'), jexpText = $('#menu-jexp-text'), jexpBar = $('#menu-jexp-bar'); if (jexpLabel) jexpLabel.textContent = `${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}`; const mLv = $('#menu-level'); if (mLv) mLv.textContent = `${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}`; if (jexpText) jexpText.textContent = jneed ? `${jpct.toFixed(2)}%` : 'MASTER'; if (jexpBar) jexpBar.style.width = `${jpct}%`; $('#workshop-nav').hidden = !workshopUnlocked; const bossButton = $('#menu-screen [data-menu="boss"]'); const d2p = this.dungeon2FloorProgress(), myrthiReady = this.isMyrthiUnlocked() && !this.isBossDefeated('myrthi'); if (myrthiReady) { bossButton.hidden = false; bossButton.firstChild.textContent = '黒紅の双刃を追う'; bossButton.querySelector('span').textContent = d2p.total ? `MYRTHI // ${d2p.floors} / ${d2p.total} 階 踏破` : `MYRTHI // BATTLE ${d2p.done} / ${d2p.goal}`; } else { bossButton.hidden = !progress.ready; bossButton.firstChild.textContent = progress.phase === 'noel' ? 'ノエルの反応を追う' : 'ゼナカドの旋律を追う'; bossButton.querySelector('span').textContent = `${progress.bossName} // BATTLE ${Math.min(progress.wins, progress.goal)} / ${progress.goal}`; } const buffEl = $('#hideout-buff'); buffEl.classList.toggle('active', buff); buffEl.querySelector('strong').textContent = buff ? '最大HP ＋3%' : '効果なし'; buffEl.querySelector('span').textContent = buff ? '効果：次のダンジョン1回のみ' : 'カズのまかないで次の潜入を強化'; }
     renderMenuPanel(name) {
       [...$('#menu-nav').querySelectorAll('button')].forEach(b => b.classList.toggle('active', b.dataset.menu === name)); const panel = $('#menu-panel'); panel.hidden = name === 'home'; panel.classList.toggle('panel-tall', name === 'equipment' || name === 'system'); if (name === 'home') { panel.innerHTML = ''; return; }
