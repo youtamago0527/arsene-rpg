@@ -71,14 +71,18 @@ window.ARSENE_DATA = {
     weaponExpPerAction: 1,
     weaponExpStrongAction: 2,
     weaponExpStrongSparkLevel: 30,
+    // EXPは持ち越すが、武器学Lv.UPは1戦につき1まで。
+    weaponMasteryLevelUpsPerBattle: 1,
     // 対応武器で与える最終ダメージ。上限は設けない。
     weaponMasteryDamagePerLevel: 0.005,
 
     // ── HP / MP 成長（戦闘終了時の確率判定）──────────────────
     baseHpGrowthRate: 0.15,
     baseMpGrowthRate: 0.08,
-    hpGrowthAmount: { min: 3, max: 6 },
+    hpGrowthAmount: { min: 1, max: 5 },
     mpGrowthAmount: { min: 1, max: 3 },
+    // 最弱帯の雑魚ではHPが成長しない。敵側の閃き刺激値を強さランクとして共用。
+    vitalGrowthMinSparkLevel: 10,
     jobHpGrowthBonus: { warrior: 0.10, martialArtist: 0.07, mage: 0.00, priest: 0.05, guardian: 0.12 },
     jobMpGrowthBonus: { warrior: 0.00, martialArtist: 0.02, mage: 0.10, priest: 0.08, guardian: 0.03 },
 

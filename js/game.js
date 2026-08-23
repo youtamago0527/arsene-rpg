@@ -951,11 +951,12 @@
     // ACTION単位：通常攻撃・武器技を実際に使った時だけ対応武器学へ加算する。
     grantWeaponExp(baseExp, type = this.equippedWeaponType()) {
       if (this.isNoGrowthJob() || !(baseExp > 0)) return null;
-      const m = this.masteryOf(type), gb = this.gb();
+      const m = this.masteryOf(type), gb = this.gb(), rewards = (this.battleRewards ||= {});
+      rewards.masteryLevelUps ||= {};
       const gain = Math.max(1, Math.round(baseExp * this.traitWeaponExpMult(type)));
       const before = m.level; m.exp += gain;
-      const max = gb.weaponMasterySafetyMaxLevel ?? 1000000;
-      while (m.level < max && m.exp >= this.masteryExpNeeded(m.level)) { m.exp -= this.masteryExpNeeded(m.level); m.level++; }
+      const max = gb.weaponMasterySafetyMaxLevel ?? 1000000, battleCap = gb.weaponMasteryLevelUpsPerBattle ?? 1;
+      while (m.level < max && (rewards.masteryLevelUps[type] || 0) < battleCap && m.exp >= this.masteryExpNeeded(m.level)) { m.exp -= this.masteryExpNeeded(m.level); m.level++; rewards.masteryLevelUps[type] = (rewards.masteryLevelUps[type] || 0) + 1; }
       if (m.level >= max) m.exp = 0;
       this.saveProfile();
       return { type, gain, before, after: m.level, leveled: m.level > before };
@@ -978,10 +979,13 @@
     rollVitalGrowth() {
       if (this.isNoGrowthJob()) return null;
       const gb = this.gb(), job = this.profile.currentJob, out = { hp: 0, mp: 0 };
+      const strongest = Math.max(0, ...(this.enemies || []).map(enemy => enemy.sparkLevel || 0));
+      const rankedEnemy = (this.enemies || []).some(enemy => ['boss', 'elite', 'rare'].includes(enemy.kind));
+      const hpEligible = rankedEnemy || strongest >= (gb.vitalGrowthMinSparkLevel ?? 10);
       const hpRate = (gb.baseHpGrowthRate ?? 0) + ((gb.jobHpGrowthBonus || {})[job] ?? 0);
       const mpRate = ((gb.baseMpGrowthRate ?? 0) + ((gb.jobMpGrowthBonus || {})[job] ?? 0)) * this.traitMpGrowthMult();
       const amt = r => Math.floor(Math.random() * ((r?.max ?? 1) - (r?.min ?? 1) + 1)) + (r?.min ?? 1);
-      if (Math.random() < hpRate) out.hp = amt(gb.hpGrowthAmount);
+      if (hpEligible && Math.random() < hpRate) out.hp = amt(gb.hpGrowthAmount);
       if (Math.random() < mpRate) out.mp = amt(gb.mpGrowthAmount);
       if (!out.hp && !out.mp) return null;
       const b = this.profile.baseStats; this.profile.currentVitals ||= { hp: b.maxHp, mp: b.maxMp };
