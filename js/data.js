@@ -81,8 +81,10 @@ window.ARSENE_DATA = {
     baseMpGrowthRate: 0.08,
     hpGrowthAmount: { min: 1, max: 5 },
     mpGrowthAmount: { min: 1, max: 3 },
-    // 最弱帯の雑魚ではHPが成長しない。敵側の閃き刺激値を強さランクとして共用。
-    vitalGrowthMinSparkLevel: 10,
+    // 最大HPが100増えるごとに、HP成長へ必要な敵Spark Lvも10上がる。
+    // HP 0～99: 全敵 / 100～199: Spark Lv.10以上 / 200～299: Lv.20以上…
+    vitalGrowthHpTierSize: 100,
+    vitalGrowthSparkPerTier: 10,
     jobHpGrowthBonus: { warrior: 0.10, martialArtist: 0.07, mage: 0.00, priest: 0.05, guardian: 0.12 },
     jobMpGrowthBonus: { warrior: 0.00, martialArtist: 0.02, mage: 0.10, priest: 0.08, guardian: 0.03 },
 

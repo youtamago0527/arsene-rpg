@@ -980,8 +980,10 @@
       if (this.isNoGrowthJob()) return null;
       const gb = this.gb(), job = this.profile.currentJob, out = { hp: 0, mp: 0 };
       const strongest = Math.max(0, ...(this.enemies || []).map(enemy => enemy.sparkLevel || 0));
-      const rankedEnemy = (this.enemies || []).some(enemy => ['boss', 'elite', 'rare'].includes(enemy.kind));
-      const hpEligible = rankedEnemy || strongest >= (gb.vitalGrowthMinSparkLevel ?? 10);
+      const currentMaxHp = this.profile.baseStats?.maxHp || this.player?.stats?.maxHp || 0;
+      const hpTier = Math.floor(Math.max(0, currentMaxHp) / (gb.vitalGrowthHpTierSize ?? 100));
+      const requiredSparkLevel = hpTier * (gb.vitalGrowthSparkPerTier ?? 10);
+      const hpEligible = strongest >= requiredSparkLevel;
       const hpRate = (gb.baseHpGrowthRate ?? 0) + ((gb.jobHpGrowthBonus || {})[job] ?? 0);
       const mpRate = ((gb.baseMpGrowthRate ?? 0) + ((gb.jobMpGrowthBonus || {})[job] ?? 0)) * this.traitMpGrowthMult();
       const amt = r => Math.floor(Math.random() * ((r?.max ?? 1) - (r?.min ?? 1) + 1)) + (r?.min ?? 1);
