@@ -1555,12 +1555,45 @@
       const jobSkills = this.jobLearnedActiveSkills(curJobId).filter(s => s.id !== D.jobs[curJobId]?.signatureSkillId);
       if (jobSkills.length) html += this.button(mainCmd.cmd, `${mainCmd.cmdEn} ▶`, 'mainCmd');
       html += this.button('アイテム', `ITEM ×${itemCount}`, 'item') + this.button('にげる', 'ESCAPE', 'escape');
+      html += `<button class="quick-battle-btn" data-action="quick"><i></i><strong>簡易戦闘</strong><span>QUICK RESOLVE</span></button>`;
       html += `<button class="auto-battle-btn${this.autoBattle ? ' active' : ''}" data-action="auto-toggle"><i></i><strong>${this.autoBattle ? 'AUTO ON' : 'AUTO OFF'}</strong><span>BATTLE MODE</span></button>`;
       this.panel(html);
-      this.bindActions({ attack: () => this.chooseTarget(basic.id), weaponArts: () => this.showWeaponArts(), personal: () => this.showPersonalSkills(), resonance: () => this.chooseTarget('resonanceBreak'), mainCmd: () => this.showCommandSkills(curJobId), item: () => this.showBattleItems(), escape: () => this.tryEscape(), 'auto-toggle': () => { this.autoBattle = !this.autoBattle; this.showMainCommands(); } });
+      this.bindActions({ attack: () => this.chooseTarget(basic.id), weaponArts: () => this.showWeaponArts(), personal: () => this.showPersonalSkills(), resonance: () => this.chooseTarget('resonanceBreak'), mainCmd: () => this.showCommandSkills(curJobId), item: () => this.showBattleItems(), escape: () => this.tryEscape(), quick: () => this.quickResolveBattle(), 'auto-toggle': () => { this.autoBattle = !this.autoBattle; this.showMainCommands(); } });
       if (this.autoBattle && !this.locked) setTimeout(() => this.autoPickAction(), 700);
     }
     autoPickAction() { if (!this.autoBattle || this.locked || this.finished) return; const maxHp = this.player.stats.maxHp, maxMp = this.player.stats.maxMp, hpPct = this.player.hp / maxHp; if (hpPct < 0.4 && (this.profile.inventory.potion || 0) > 0) { this.useConsumable('potion'); return; } if (this.player.mp < maxMp * 0.2 && (this.profile.inventory.manaPotion || 0) > 0) { this.useConsumable('manaPotion'); return; } const aliveEnemies = this.enemies.filter(e => e.alive); const skills = this.availableSkills().filter(s => this.canPaySkillCosts(s) && this.cooldownRemaining(s) === 0); const weapon = this.equippedWeapon(); const atkScore = weapon?.power || 1; let best = { type: 'attack', score: atkScore }; for (const s of skills) { let score = 0; if (s.kind === 'support') { if (s.effect?.type === 'hpRecover') score = hpPct < 0.75 ? (1 - hpPct) * 200 : 0; else if (s.effect?.type === 'mpRecover') score = this.player.mp < maxMp * 0.5 ? 45 : 0; else if (s.effect?.type === 'regenerate') score = hpPct < 0.8 && !(this.player.buffs.regenerate > 0) ? 38 : 0; else if (s.effect?.type === 'hpToMp') score = this.player.mp < maxMp * .45 && hpPct > .55 ? 48 : 0; } else if (s.kind === 'hybrid') { score = (s.strScale + s.magScale) * 12; } else { const multi = s.target === 'all' ? Math.min(aliveEnemies.length, 3) * 0.7 : 1; score = (s.power || 1) * (s.hits || 1) * multi; } if (score > best.score) best = { type: 'skill', skill: s, score }; } if (best.type === 'skill') { const s = best.skill; if (s.target === 'all' || s.target === 'self') { this.executeRound(s.id, -1); } else { this.executeRound(s.id, this.enemies.findIndex(e => e.alive)); } } else { this.executeRound('attack', this.enemies.findIndex(e => e.alive)); } }
+    async quickResolveBattle() {
+      if (this.locked || this.finished || this.battleMode === 'debugOverpower') return;
+      this.locked = true; this.quickResolving = true; this.autoBattle = false; this.panel(''); $('#phase-label').textContent = 'QUICK';
+      const enemies = this.enemies.filter(enemy => enemy.alive), stats = this.playerCombatStats(), pDef = this.defensePowerFor('physical', stats), mDef = this.defensePowerFor('magical', stats);
+      const basic = this.basicAttackSkill(), learned = [basic, ...this.availableSkills()].filter((skill, index, list) => skill && list.findIndex(s => s.id === skill.id) === index);
+      const offensive = learned.filter(skill => skill.kind !== 'support'), attackValue = skill => {
+        const magical = skill.damageType === 'magical' || skill.kind === 'magical', base = magical ? this.attackPowerFor(this.equippedWeaponType(), stats) : this.attackPowerFor(this.equippedWeaponType(), stats);
+        const hits = Math.max(1, skill.hits || 1), power = Math.max(.65, skill.power || (skill.kind === 'hybrid' ? (skill.strScale || 0) + (skill.magScale || 0) : 1));
+        const targets = skill.target === 'all' ? Math.min(2.2, 1 + Math.max(0, enemies.length - 1) * .55) : 1;
+        return Math.max(1, base * power * hits * targets);
+      };
+      // 簡易戦闘は手動操作より弱い。技選択・対象選択のロスを非公開の効率補正として含める。
+      const quickEfficiency = .78, best = offensive.sort((a, b) => attackValue(b) - attackValue(a))[0] || basic, bestPower = attackValue(best) * quickEfficiency, basicPower = attackValue(basic) * quickEfficiency;
+      const usableMpTurns = best.mp > 0 ? Math.floor(this.player.mp / this.skillMpCost(best)) : 99;
+      const enemyDurability = enemies.reduce((sum, enemy) => sum + enemy.hp * (1 + ((enemy.stats.def || 0) + (enemy.stats.mnd || 0)) / 180), 0);
+      const initialTurns = Math.max(1, Math.ceil(enemyDurability / Math.max(1, bestPower))), skillTurns = Math.min(initialTurns, usableMpTurns), remainingDurability = Math.max(0, enemyDurability - bestPower * skillTurns);
+      const turns = Math.max(1, skillTurns + Math.ceil(remainingDurability / Math.max(1, basicPower)));
+      const incomingPerTurn = enemies.reduce((sum, enemy) => { const physical = Math.max(1, (enemy.stats.atk || 0) - pDef * .58), magical = Math.max(1, (enemy.stats.mag || 0) - mDef * .58); return sum + Math.max(physical, magical); }, 0);
+      const hasHeal = learned.some(skill => ['hpRecover', 'regenerate'].includes(skill.effect?.type)), supportReduction = hasHeal ? .84 : 1;
+      const estimatedDamage = Math.max(0, Math.round(incomingPerTurn * turns * .64 * supportReduction));
+      const mpCost = Math.min(this.player.mp, skillTurns * this.skillMpCost(best));
+      const won = estimatedDamage < this.player.hp;
+      const lines = [`内部判定：${turns}ターン`, best.id === basic.id ? `${basic.name}を軸に最短経路を選択` : `${best.name}を優先して敵陣を突破`, won && estimatedDamage === 0 ? '敵の攻撃を受ける前に制圧' : `予測損耗 HP -${Math.min(this.player.hp - 1, estimatedDamage)} / MP -${mpCost}`];
+      this.battleRewards.quickReport = `<section class="quick-result-log"><small>QUICK BATTLE LOG</small>${lines.map(line => `<p>${line}</p>`).join('')}</section>`;
+      this.setLog(`簡易戦闘を実行――${lines.at(-1)}`); this.flashTitle('QUICK BATTLE', won ? 'RESOLVED' : 'FAILED');
+      this.player.mp = Math.max(0, this.player.mp - mpCost);
+      if (!won) { this.player.hp = 0; this.persistVitals(); this.updateHUD(); await this.battleSleep(120); await this.defeat(); this.quickResolving = false; return; }
+      this.player.hp = Math.max(1, this.player.hp - estimatedDamage); this.turn = turns;
+      const masteryGain = Math.max(1, Math.min(8, turns)), mastery = this.grantWeaponExp(masteryGain, this.equippedWeaponType()); if (mastery) this.battleRewards.masteryResults.push(mastery);
+      enemies.forEach(enemy => { enemy.hp = 0; enemy.alive = false; enemy.rolledDrops = this.rollDrops(enemy); document.getElementById(enemy.uid)?.classList.add('defeated'); this.grantEnemyReward(enemy); });
+      this.persistVitals(); this.updateHUD(); await this.battleSleep(120); await this.victory(); this.quickResolving = false;
+    }
     // 所持している回復系の消費アイテムをすべて並べる。
     // 以前は回復薬と魔力回復薬を直書きしていたため、アイテムを足しても
     // 戦闘中のアイテム欄に出てこなかった。
@@ -2176,13 +2209,13 @@
       rewards.exp += exp; rewards.gold += gold;
       Object.entries(drops).forEach(([id, n]) => { rewards.drops[id] = (rewards.drops[id] || 0) + n; });
       rewards.levels.push(...levels); if (job) rewards.jobResults.push(job);
-      if (job?.to > job?.from) this.queueGrowthBubble('JOB Lv.UP!', `${job.jobName} Lv.${job.from} → ${job.to}`);
+      if (job?.to > job?.from && !this.quickResolving) this.queueGrowthBubble('JOB Lv.UP!', `${job.jobName} Lv.${job.from} → ${job.to}`);
       this.updateHUD();
       return { exp, gold };
     }
     battleSummaryHTML() {
-      const r = this.battleRewards; if (!r || (!r.exp && !r.gold && !Object.keys(r.drops).length)) return '';
-      return this.rewardHTML({ exp: r.exp, gold: r.gold, drops: r.drops }, r.levels);
+      const r = this.battleRewards, quick = r?.quickReport || ''; if (!r || (!r.exp && !r.gold && !Object.keys(r.drops).length)) return quick;
+      return `${quick}${this.rewardHTML({ exp: r.exp, gold: r.gold, drops: r.drops }, r.levels)}`;
     }
     rollDrops(enemy) {
       const drops = []; (enemy.dropTable || []).forEach(d => { if (Math.random() < d.chance) drops.push([d.itemId, 1]); }); return drops;
@@ -2223,8 +2256,9 @@
     }
     scoreGetHTML(id) { const score = D.musicScores?.[id]; return score ? `<div class="score-get"><small>SCORE GET</small><strong>${score.title}</strong><b>（${score.subtitle}）</b><span>演奏可能になった</span><em>PRIVATE MODE ITEM</em></div>` : ''; }
     async victory() {
+      const quick = !!this.quickResolving;
       this.profile.flags.consecutiveDefeats = 0; this.profile.flags.lastBattleResult = 'victory';
-      this.finished = true; this.audio.sfx('victory'); this.flashTitle('VICTORY', 'ALL SHADOWS ELIMINATED'); $('#ren').classList.add('victory'); await this.battleSleep(1100);
+      this.finished = true; this.audio.sfx('victory'); this.flashTitle('VICTORY', 'ALL SHADOWS ELIMINATED'); $('#ren').classList.add('victory'); await this.battleSleep(quick ? 120 : 1100);
       const reward = { exp: this.battleRewards.exp, gold: this.battleRewards.gold, drops: this.battleRewards.drops }, levels = this.battleRewards.levels;
       const masteryParts = this.battleRewards.masteryResults || [], jobParts = this.battleRewards.jobResults || [];
       const masteryResult = masteryParts.length ? { ...masteryParts[0], gain: masteryParts.reduce((s, r) => s + r.gain, 0), before: masteryParts[0].before, after: masteryParts[masteryParts.length - 1].after, leveled: masteryParts.some(r => r.leveled) } : null;
@@ -2233,13 +2267,13 @@
       // HP/MPは戦闘終了時判定。武器学EXPは行動時、JOB EXPは撃破時に加算済み。
       const vitalResult = this.rollVitalGrowth();
       this.updateHUD();
-      if (vitalResult?.hp) this.queueGrowthBubble('HP UP!', `最大HP +${vitalResult.hp}`);
-      if (vitalResult?.mp) this.queueGrowthBubble('MP UP!', `最大MP +${vitalResult.mp}`);
-      if (this.growthBubbleQueue) await this.growthBubbleQueue;
+      if (vitalResult?.hp && !quick) this.queueGrowthBubble('HP UP!', `最大HP +${vitalResult.hp}`);
+      if (vitalResult?.mp && !quick) this.queueGrowthBubble('MP UP!', `最大MP +${vitalResult.mp}`);
+      if (this.growthBubbleQueue && !quick) await this.growthBubbleQueue;
       const pt = this.profile.playtest; if (pt) { pt.battles = (pt.battles || 0) + 1; if (masteryResult) pt.weaponUse[masteryResult.type] = (pt.weaponUse[masteryResult.type] || 0) + 1; }
       const sparks = this.battleSparks || []; this.battleSparks = [];
       this.saveProfile(); this.persistVitals(); this.updateHUD();
-      const rewardBlock = `${this.rewardHTML(reward, levels)}${this.growthResultHTML(masteryResult, vitalResult, sparks)}${this.jobResultHTML(jobResult)}${newRecipeHTML}`;
+      const rewardBlock = `${this.battleRewards.quickReport || ''}${this.rewardHTML(reward, levels)}${this.growthResultHTML(masteryResult, vitalResult, sparks)}${this.jobResultHTML(jobResult)}${newRecipeHTML}`;
       if (this.battleMode === 'slime') { if (this.floorsOf(this.currentDungeonId)) this.recordFloorWin(this.currentFloorId); if (this.currentDungeonId === 'dungeon3') { this.profile.flags.dungeon3BattleWins = (this.profile.flags.dungeon3BattleWins || 0) + 1; } else if (this.currentDungeonId === 'dungeon2') { this.profile.flags.dungeon2BattleWins = (this.profile.flags.dungeon2BattleWins || 0) + 1; } else { if (this.profile.flags.noelFirstEncounterCleared) this.profile.flags.postNoelBattleWins = (this.profile.flags.postNoelBattleWins || 0) + 1; else this.profile.flags.preNoelBattleWins = (this.profile.flags.preNoelBattleWins || 0) + 1; this.profile.flags.normalBattleWins = (this.profile.flags.normalBattleWins || 0) + 1; } this.saveProfile(); }
       if (this.battleMode === 'zenakado') { const firstClear = !this.isBossDefeated('zenacad'), firstScore = !this.profile.flags.zenakadoScoreClaimed; this.markBossDefeated('zenacad'); this.profile.flags.zenakadoDefeated = false; this.profile.flags.postNoelBattleWins = 0; this.profile.flags.temporaryBossCompleted = true; this.noteBossRematchSnapshot('zenakado'); const stageOne = this.grantStageOneReward(); if (firstScore) { this.profile.musicScores.cadenzaLoot = true; this.profile.flags.zenakadoScoreClaimed = true; } this.saveProfile(); const stolen = firstClear ? '<div class="boss-recipe-unlock"><small>PHANTOM STEAL</small><b>NEW RECIPES STOLEN</b><strong>《ZENACAD SERIES》</strong><span>工房に BOSS EQUIPMENT と JOB SYSTEM が追加された！</span></div>' : ''; this.showResult('VICTORY', '独奏卿ゼナカドを打ち倒し、禁断の楽譜と装備製法を盗み出した！', 'BOSS CLEARED', `${rewardBlock}${firstScore ? this.scoreGetHTML('cadenzaLoot') : ''}${this.stageOneRewardHTML(stageOne)}${stolen}`); return; }
       if (this.battleMode === 'myrthi') { const firstScore = !this.profile.musicScores?.rhythm, myrthiReward = this.grantMyrthiFirstReward(); this.markBossDefeated('myrthi'); this.profile.flags.dungeon2BattleWins = (this.profile.flags.dungeon2BattleWins || 0) + 1; this.profile.flags.dungeon2Clear = true; this.profile.musicScores ||= {}; if (firstScore) this.profile.musicScores.rhythm = true; this.noteBossRematchSnapshot('myrthi'); this.saveProfile(); this.showResult('VICTORY', '黒紅の双刃戦姫ミルティを打ち倒した！ 双刃士の証と旋律を盗み取った！', 'BOSS CLEARED', `${rewardBlock}${this.specialItemHTML(myrthiReward)}${firstScore ? this.scoreGetHTML('rhythm') : ''}<div class="boss-recipe-unlock"><small>PHANTOM STEAL</small><b>NEW RECIPES STOLEN</b><strong>《MYRTHI SERIES》</strong><span>工房にMYRTHI SERIESが追加された！</span></div>`); return; }
@@ -2257,7 +2291,7 @@
       if (drops.length) parts.push(drops.map(([id, n]) => `${D.items[id]?.name || id} ×${n}`).join(' / '));
       if (levels.length) parts.push(`LEVEL UP! → LV.${levels[levels.length - 1].to}`);
       if (jobResult) parts.push(`JEXP <b>+${jobResult.exp}</b>${jobResult.to > jobResult.from ? ` / ${jobResult.jobName} Lv.${jobResult.to}` : ''}`);
-      $('#log').innerHTML = `<p>${parts.join('　')}</p>`; $('#phase-label').textContent = 'CLEARED';
+      $('#log').innerHTML = `${this.battleRewards.quickReport || ''}<p>${parts.join('　')}</p>`; $('#phase-label').textContent = 'CLEARED';
       this.panel(this.button('次の戦闘へ', 'NEXT BATTLE', 'next') + this.button('拠点へ戻る', 'HIDEOUT', 'hideout'));
       this.bindActions({ next: () => { $('#ren').classList.remove('victory'); this.startBattle(); }, hideout: () => this.showMenu('home') });
     }
