@@ -1401,18 +1401,23 @@
       this.noteEnemiesSeen();
       const enemyLayer = $('#enemies');
       enemyLayer.classList.toggle('boss-party', this.battleMode !== 'slime');
-      enemyLayer.dataset.count = String(Math.min(3, Math.max(1, this.enemies.length)));
-      enemyLayer.innerHTML = this.enemies.map((e, i) => {
+      const enemyHudRow = $('#enemy-hud-row'), enemyCount = Math.min(4, Math.max(1, this.enemies.length));
+      enemyLayer.dataset.count = String(enemyCount);
+      enemyHudRow.dataset.count = String(enemyCount);
+      enemyHudRow.innerHTML = this.enemies.map((e, i) => {
         const statuses = '<div class="status-strip enemy-statuses" aria-hidden="true"></div>';
         const hpMeter = `<button type="button" class="enemy-hp-meter" aria-label="${e.name}のHPとステータスを確認" onclick="event.preventDefault();event.stopPropagation();window.arseneGame?.openEnemyStatus(${i})"><i style="width:100%"></i></button>`;
-        const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : '';
         const rareTag = e.kind === 'rare' ? '<em class="enemy-rare-tag">RARE</em>' : '';
+        const name = e.kind === 'boss' ? `${e.name} // ${e.title}` : `${rareTag}${e.name} ${e.label}`;
+        return `<div id="${e.uid}-hud" class="enemy-hud${e.kind === 'boss' ? ' boss-hud' : ''}"><span>${name}</span>${hpMeter}<small>???? / ????</small>${statuses}</div>`;
+      }).join('');
+      enemyLayer.innerHTML = this.enemies.map((e, i) => {
+        const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : '';
         const scale = Math.max(.65, Math.min(1.5, Number(e.battleScale) || 1));
         const art = e.sprite
           ? `<img class="${e.kind === 'boss' ? `noel-sprite monster-image boss-monster-image${e.spriteClass ? ` ${e.spriteClass}` : ''}` : 'slime monster-image'}" src="${e.sprite}" alt="" draggable="false">`
           : `<div class="${e.kind === 'boss' ? `noel-sprite${e.spriteClass ? ` ${e.spriteClass}` : ''}` : 'slime'}"></div>`;
-        const name = e.kind === 'boss' ? `${e.name} // ${e.title}` : `${rareTag}${e.name} ${e.label}`;
-        return `<div role="button" tabindex="0" class="enemy${e.kind === 'boss' ? ` boss-enemy${bossClass}` : ` enemy-${e.id} delay-${i}`} fighter idle" id="${e.uid}" data-enemy="${i}" style="--enemy-index:${i};--monster-scale:${scale}" aria-label="${e.name}を通常攻撃"><div class="enemy-hud${e.kind === 'boss' ? ' boss-hud' : ''}"><span>${name}</span>${hpMeter}<small>???? / ????</small>${statuses}</div><div class="enemy-visual"><div class="slime-shadow${e.kind === 'boss' ? ' boss-shadow' : ''}"></div>${art}</div></div>`;
+        return `<div role="button" tabindex="0" class="enemy${e.kind === 'boss' ? ` boss-enemy${bossClass}` : ` enemy-${e.id} delay-${i}`} fighter idle" id="${e.uid}" data-enemy="${i}" style="--monster-scale:${scale}" aria-label="${e.name}を通常攻撃"><div class="enemy-visual"><div class="slime-shadow${e.kind === 'boss' ? ' boss-shadow' : ''}"></div>${art}</div></div>`;
       }).join('');
       this.enemies.forEach((e, i) => this.bindEnemyTap(e, i));
     }
@@ -1439,7 +1444,7 @@
       const p = this.player, expNeed = this.expNeeded(); $('#player-hp').textContent = `${p.hp} / ${p.stats.maxHp}`; $('#player-mp').textContent = `${p.mp} / ${p.stats.maxMp}`; $('#player-hp-bar').style.width = `${100 * p.hp / p.stats.maxHp}%`; $('#player-mp-bar').style.width = `${100 * p.mp / p.stats.maxMp}%`; const expBar = $('#player-exp-bar'), mType = this.equippedWeaponType(), m = this.masteryOf(mType), mNeed = this.masteryExpNeeded(m.level), expPct = Math.min(100, 100 * m.exp / mNeed); if (expBar) { expBar.style.width = `${expPct}%`; $('#player-exp-label').textContent = `${expPct.toFixed(2)}%`; } const mName = $('#player-exp-name'); if (mName) mName.textContent = `${this.weaponTypeName(mType)} Lv.${m.level}`; const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {}, jlv = jst.level || 1, jneed = this.jobExpNeeded(jlv), jexp = jst.exp || 0, jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100, jexpBar = $('#player-jexp-bar'), jexpName = $('#player-jexp-name'); if (jexpName) jexpName.textContent = `${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}`; if (jexpBar) { jexpBar.style.width = `${jpct}%`; $('#player-jexp-label').textContent = jneed ? `${jpct.toFixed(2)}%` : 'MASTER'; } const jobLabel = $('#player-job-label'); if (jobLabel) jobLabel.textContent = `${D.jobs[jid]?.name || ''} Lv.${jlv}`; $('#turn-label').textContent = `TURN ${String(this.turn).padStart(2, '0')}`;
       const rr = $('#resonance-row'), resonance = Math.min(D.guardianBalance?.resonanceMax || 100, this.player?.resonance || 0); if (rr) { rr.hidden = !this.resonanceEnabled(); rr.classList.toggle('max', resonance >= 100); $('#resonance-bar').style.width = `${resonance}%`; $('#resonance-label').textContent = resonance >= 100 ? 'MAX' : `${resonance.toFixed(1)}%`; }
       this.renderBattleStatuses();
-      this.enemies.forEach(e => { const el = document.getElementById(e.uid); if (el) $('.enemy-hp-meter i', el).style.width = `${100 * e.hp / e.stats.maxHp}%`; });
+      this.enemies.forEach(e => { const hud = document.getElementById(`${e.uid}-hud`), bar = hud?.querySelector('.enemy-hp-meter i'); if (bar) bar.style.width = `${100 * e.hp / e.stats.maxHp}%`; hud?.classList.toggle('defeated', !e.alive); });
     }
     statusEffectDescription(label, detail = '') {
       if (detail && detail !== label) return detail;
@@ -1468,7 +1473,7 @@
     }
     canInspectEnemyStats(enemy) { return !!enemy?.statsVisible || (this.profile.enemyStatInsights || []).includes(enemy?.id); }
     enemyBattleStatsHTML(enemy) { const visible = this.canInspectEnemyStats(enemy), value = key => visible ? (enemy?.stats?.[key] ?? '－') : '???', hp = visible ? `${enemy.hp} / ${enemy.stats.maxHp}` : '??? / ???'; return `<section class="battle-stat-debug enemy-analysis${visible ? ' revealed' : ' locked'}"><header><b>ENEMY ANALYSIS</b><span>${visible ? '解析完了' : 'ANALYSIS LOCKED'}</span></header><div class="battle-vitals"><span>HP <b>${hp}</b></span><span>属性 <b>${visible ? (enemy.element || '－') : '???'}</b></span></div><div class="battle-stat-grid"><div class="battle-stat-row"><span>攻撃 ATK</span><b>${value('atk')}</b><em>－</em></div><div class="battle-stat-row"><span>防御 DEF</span><b>${value('def')}</b><em>－</em></div><div class="battle-stat-row"><span>魔力 MAG</span><b>${value('mag')}</b><em>－</em></div><div class="battle-stat-row"><span>精神 MND</span><b>${value('mnd')}</b><em>－</em></div><div class="battle-stat-row"><span>速度 SPD</span><b>${value('spd')}</b><em>－</em></div><div class="battle-stat-row"><span>弱点</span><b>${visible ? ((enemy.weaknesses || []).join(' / ') || '－') : '???'}</b><em>－</em></div></div>${visible ? '' : '<p class="analysis-note">称号・解析スキルなどの獲得で開示される予定です。</p>'}</section>`; }
-    openEnemyStatus(index) { const enemy = this.enemies[index], strip = enemy ? document.getElementById(enemy.uid)?.querySelector('.enemy-statuses') : null; if (enemy && strip) this.showStatusGroup(`${enemy.name}${enemy.label || ''}`, strip); }
+    openEnemyStatus(index) { const enemy = this.enemies[index], strip = enemy ? document.getElementById(`${enemy.uid}-hud`)?.querySelector('.enemy-statuses') : null; if (enemy && strip) this.showStatusGroup(`${enemy.name}${enemy.label || ''}`, strip); }
     showStatusGroup(owner, strip) {
       const panel = $('#battle-status-detail'), list = $('#battle-status-copy'); if (!panel || !list) return;
       const chips = [...strip.querySelectorAll('.status-chip')], isPlayer = strip.id === 'player-statuses', enemy = !isPlayer ? this.enemies.find(e => e.uid === strip.dataset.enemyUid) : null;
@@ -1508,7 +1513,7 @@
         playerStrip.innerHTML = chips.join(''); playerStrip.dataset.statusOwner = this.playerName(); playerStrip.tabIndex = 0; playerStrip.setAttribute('role', 'button'); playerStrip.title = 'タップでステータスと状態を確認'; playerStrip.onclick = e => { e.preventDefault(); e.stopPropagation(); this.showStatusGroup(this.playerName(), playerStrip); };
       }
       this.enemies.forEach(e => {
-        const el = document.getElementById(e.uid), strip = el?.querySelector('.enemy-statuses'); if (!strip) return;
+        const strip = document.getElementById(`${e.uid}-hud`)?.querySelector('.enemy-statuses'); if (!strip) return;
         const chips = [];
         if ((e.bindTurns || 0) > 0) chips.push(this.statusChip(`足止め ${e.bindTurns}`, 'debuff', '', e.bindTurns <= 1));
         if (this.turn <= (e.confuseUntil || 0)) chips.push(this.statusChip('混乱', 'debuff', '', e.confuseUntil - this.turn + 1 <= 1));
