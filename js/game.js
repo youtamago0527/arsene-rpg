@@ -2705,7 +2705,7 @@
     enchantContent() {
       const et = D.enchantTable, enchants = this.profile.weaponEnchants || {}, weapons = Object.values(D.weapons).filter(w => this.isPlayerContentVisible(w) && w.id && this.isPlayerContentVisible(D.items[w.id]));
       if (!weapons.length) return '<p>強化可能な武器がありません。</p>';
-      const cards = weapons.map(w => {
+      const cardFor = w => {
         const level = enchants[w.id] || 0, isEquipped = this.profile.equipment.rightHand === w.id;
         const invCount = this.profile.inventory[w.id] || 0, hasSpare = invCount >= 2;
         if (level >= et.maxLevel) return `<article class="enchant-card max"><b>${w.name}</b><span>+${level} MAX</span><small>最大強化達成</small></article>`;
@@ -2713,8 +2713,10 @@
         const canEnchant = hasSpare && canAfford;
         const spareText = isEquipped ? `所持 ×${invCount}（うち1個装備中） / 予備 ${Math.max(0, invCount - 1)}` : `所持 ×${invCount}`;
         return `<article class="enchant-card${level > 0 ? ' enhanced' : ''}"><div class="enchant-card-header"><b>${w.name}</b><strong>+${level} → +${nextLevel}</strong></div>${this.enchantGainHTML(w, level)}<div class="enchant-card-body"><span>成功率 <b>${rateText}</b></span><span>費用 <b>${cost} GOLD</b></span><small>${spareText}</small>${!hasSpare ? '<small class="enchant-warn">同じ武器が追加で必要</small>' : ''}${!canAfford ? '<small class="enchant-warn">GOLD不足</small>' : ''}</div><button data-enchant="${w.id}" ${canEnchant ? '' : 'disabled'}>強化する</button></article>`;
-      }).join('');
-      return `<div class="workshop-section-title"><b>武器強化</b><span>WEAPON ENCHANT</span></div><p class="workshop-warning">同じ武器1個を素材として強化します。+3まで成功率100%。+4以降は失敗で武器が消滅します。</p><div class="enchant-grid">${cards}</div>`;
+      };
+      const groups = (D.weaponTypes || []).map(type => ({ ...type, items: weapons.filter(w => w.weaponType === type.id) })).filter(group => group.items.length);
+      const tree = groups.map(group => `<section class="enchant-tree-group"><header><i>◆</i><b>${group.name}</b><span>${group.nameEn}</span><em>${group.items.length}</em></header><div class="enchant-grid">${group.items.map(cardFor).join('')}</div></section>`).join('');
+      return `<div class="workshop-section-title"><b>武器強化</b><span>WEAPON ENCHANT</span></div><p class="workshop-warning">同じ武器1個を素材として強化します。+3まで成功率100%。+4以降は失敗で武器が消滅します。</p><div class="enchant-tree">${tree}</div>`;
     }
     enchantGainHTML(item, level = 0) {
       const powerRate = D.enchantTable?.powerRate ?? .15, currentRate = 1 + level * powerRate, nextRate = currentRate + powerRate;
@@ -2972,7 +2974,7 @@
       const armorSlots = ['head','body','arms','feet','accessory','leftHand'];
       const armors = Object.values(D.items || {}).filter(item => this.isPlayerContentVisible(item) && item.category === 'equipment' && armorSlots.includes(item.slot));
       if (!armors.length) return '<p>強化可能な防具がありません。</p>';
-      const cards = armors.map(item => {
+      const cardFor = item => {
         const id = item.id, level = enchants[id] || 0;
         const isEquipped = Object.values(this.profile.equipment).includes(id);
         const invCount = this.profile.inventory[id] || 0, hasSpare = invCount >= 2;
@@ -2981,8 +2983,10 @@
         const canEnchant = hasSpare && canAfford;
         const spareText = isEquipped ? `所持 ×${invCount}（うち1個装備中） / 予備 ${Math.max(0, invCount - 1)}` : `所持 ×${invCount}`;
         return `<article class="enchant-card${level > 0 ? ' enhanced' : ''}"><div class="enchant-card-header"><b>${item.name}</b><strong>+${level} → +${nextLevel}</strong></div>${this.enchantGainHTML(item, level)}<div class="enchant-card-body"><span>成功率 <b>${rateText}</b></span><span>費用 <b>${cost} GOLD</b></span><small>${spareText}</small>${!hasSpare ? '<small class="enchant-warn">同じ防具が追加で必要</small>' : ''}${!canAfford ? '<small class="enchant-warn">GOLD不足</small>' : ''}</div><button data-armor-enchant="${id}" ${canEnchant ? '' : 'disabled'}>強化する</button></article>`;
-      }).join('');
-      return `<div class="workshop-section-title"><b>防具強化</b><span>ARMOR ENCHANT</span></div><p class="workshop-warning">同じ防具1個を素材として強化します。+3まで成功率100%。+4以降は失敗で防具が消滅します。</p><div class="enchant-grid">${cards}</div>`;
+      };
+      const groups = (D.workshop?.armorTabs || []).map(type => ({ ...type, items: armors.filter(item => item.slot === type.id) })).filter(group => group.items.length);
+      const tree = groups.map(group => `<section class="enchant-tree-group"><header><i>◆</i><b>${group.name}</b><span>${group.enName}</span><em>${group.items.length}</em></header><div class="enchant-grid">${group.items.map(cardFor).join('')}</div></section>`).join('');
+      return `<div class="workshop-section-title"><b>防具強化</b><span>ARMOR ENCHANT</span></div><p class="workshop-warning">同じ防具1個を素材として強化します。+3まで成功率100%。+4以降は失敗で防具が消滅します。</p><div class="enchant-tree">${tree}</div>`;
     }
     enchantArmor(itemId) {
       const item = D.items[itemId]; if (!item) return;
