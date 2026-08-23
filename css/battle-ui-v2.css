@@ -956,11 +956,11 @@
   #game .command-panel[data-layout="main"]>button:nth-last-child(-n+2){min-height:28px;height:28px}
 }
 
-/* 武器学も完成画像化。装備変更時は --weapon-card-image だけが切り替わる。 */
+/* 共通「武器技」カード。装備ごとの差はタップ後の技一覧で反映する。 */
 #game .command-panel[data-layout="main"]>button[data-action="weaponArts"]{
-  background-image:var(--weapon-card-image,url("../assets/ui/battle/lower-ui-v2/weapon-card-instrument-v2.png"))!important;
-  background-size:var(--weapon-card-size,100% 100%)!important;
-  background-position:var(--weapon-card-position,center)!important;
+  background-image:url("../assets/ui/battle/lower-ui-v2/command-weapon-v3.png")!important;
+  background-size:100% 100%!important;
+  background-position:center!important;
 }
 #game .command-panel[data-layout="main"]>button[data-action="weaponArts"]::after{display:none}
 #game .command-panel[data-layout="main"]>button[data-action="weaponArts"]>i,
@@ -998,3 +998,58 @@
 #game .command-panel.turn-locked>button:not([data-action="autoBattle"]){opacity:.45;pointer-events:none;filter:saturate(.55)}
 #game .command-panel.turn-locked>button[data-action="autoBattle"]{animation:autoInterruptPulse 1.15s ease-in-out infinite}
 @keyframes autoInterruptPulse{50%{filter:brightness(1.34);box-shadow:0 0 12px #e5bb55aa}}
+
+/* 支給されたTURN / WAVEフレーム。文字だけをライブ情報として上から3段で重ねる。 */
+.battle-topbar .turn-info{
+  width:84px;
+  min-width:84px;
+  max-width:90px;
+  height:140px;
+  min-height:140px;
+  max-height:150px;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  border:0;
+  clip-path:none;
+  overflow:hidden;
+  background:url("../assets/ui/battle/turn-wave-panel-v2.png") center/100% 100% no-repeat;
+  box-shadow:none;
+}
+.battle-topbar .turn-info::before{display:none}
+.battle-topbar .turn-info>*{position:relative;z-index:1;margin:0;align-self:center}
+.battle-topbar .turn-info span{font:700 14px/1 Cinzel,serif;letter-spacing:.16em;color:#fff}
+.battle-topbar .turn-info span{font-size:12px;margin-bottom:10px}
+.battle-topbar .turn-info b{font:700 28px/1 Cinzel,serif;letter-spacing:.03em;color:#fff;margin-bottom:12px}
+.battle-topbar .turn-info small{font:700 9px/1 Cinzel,serif;letter-spacing:.03em;color:#fff;white-space:nowrap}
+.battle-topbar .turn-info #checkpoint-label{display:none!important}
+.battle-topbar{inset:max(14px,env(safe-area-inset-top)) 14px auto}
+@media(max-width:393px){.battle-topbar .turn-info{width:84px;min-width:84px;height:140px;min-height:140px}}
+
+/* 敵名プレート: 3体でも画面内へ均等配置。役割色は後から data-kind で追加できる。 */
+#game .enemies{left:8px;right:8px;gap:8px;width:auto;justify-content:space-between}
+#game .enemy{flex:0 1 145px;width:calc((100% - 16px)/3);max-width:145px}
+#game .enemy-nameplate{
+  --nameplate-accent:#b861ff;
+  width:145px;
+  max-width:100%;
+  height:34px;
+  min-height:34px;
+  padding:4px 8px 2px;
+  grid-template-rows:16px 10px;
+  overflow:visible;
+}
+#game .enemy[data-kind="boss"] .enemy-nameplate{--nameplate-accent:#ff405a}
+#game .enemy[data-kind="rare"] .enemy-nameplate{--nameplate-accent:#ffcf59}
+#game .enemy-nameplate::before{box-shadow:inset 0 0 14px color-mix(in srgb,var(--nameplate-accent) 24%,transparent)}
+#game .enemy-nameplate::after{left:8px;right:8px;top:20px;background:linear-gradient(90deg,transparent,var(--nameplate-accent) 16%,#fff 50%,var(--nameplate-accent) 84%,transparent);box-shadow:0 0 4px color-mix(in srgb,var(--nameplate-accent) 72%,transparent)}
+#game .enemy-nameplate>span{overflow:visible;text-overflow:clip;white-space:nowrap;font-size:13px;font-weight:700;line-height:1;text-align:center;text-shadow:0 1px 2px #0009,0 0 6px color-mix(in srgb,var(--nameplate-accent) 38%,transparent)}
+#game .enemy-nameplate>span.long-name{font-size:11px;letter-spacing:-.04em}
+#game .enemy-nameplate .enemy-statuses{height:10px;min-height:10px;margin:0;gap:1px}
+#game .enemy-nameplate .status-chip{width:10px;min-width:10px;max-width:10px;height:10px;padding:0;font-size:0;line-height:1;border-width:1px}
+#game .enemy[data-size="boss"]{flex-basis:100%;max-width:none;width:100%}
+#game .boss-enemy .enemy-nameplate{width:min(210px,70vw);max-width:210px;height:42px;min-height:42px;grid-template-rows:22px 12px}
+#game .boss-enemy .enemy-nameplate::after{top:27px}

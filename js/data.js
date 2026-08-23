@@ -58,6 +58,9 @@ window.ARSENE_DATA = {
   // 武器学は weapon-<weaponType> を使い、未登録ならコード内SVGへ戻る。
   commandVisuals: {
     iconSheet: 'assets/ui/battle/command-icons-v1.png',
+    // 下部の「武器技」カードは共通デザイン。装備中の武器種による違いは、
+    // タップ後に開く技一覧だけへ反映する（個別カード表示は必要になった時だけ再有効化）。
+    useDynamicWeaponCards: false,
     // 武器学コマンドはアイコン・名称まで焼き込んだ完成カードを武器種ごとに交換する。
     weaponCards: {
       sword: 'assets/ui/battle/lower-ui-v2/weapon-card-sword-v3.png',
