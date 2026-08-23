@@ -86,14 +86,14 @@
     </section>
 
     <section class="battle-console">
-      <div class="turn-info"><span id="phase-label">ENCOUNTER</span><b id="turn-label">TURN 01</b></div>
+      <div class="turn-info"><span id="phase-label">ENCOUNTER</span><b id="turn-label">TURN 01</b><small id="checkpoint-label" hidden></small></div>
       <div id="log" class="battle-log" role="button" tabindex="0" aria-label="戦闘ログ。タップで全履歴を表示" aria-live="polite"><small>COMBAT LOG // TAP</small><div class="battle-log-lines"><p>闇の気配が近づいてくる……</p></div></div>
       <div id="command-panel" class="command-panel"></div>
     </section>
   </main>
 
   <div id="result" class="result-overlay" hidden>
-    <div class="result-card"><small id="result-kicker">BATTLE COMPLETE</small><h1 id="result-title">VICTORY</h1><p id="result-copy"></p><div id="rewards" class="rewards"></div><button id="result-menu" type="button" data-go-menu onclick="window.arseneGame?.showMenu('home')">拠点へ <span>HIDEOUT</span></button></div>
+      <div class="result-card"><small id="result-kicker">BATTLE COMPLETE</small><h1 id="result-title">VICTORY</h1><p id="result-copy"></p><div id="rewards" class="rewards"></div><button id="result-menu" type="button">拠点へ <span>HIDEOUT</span></button></div>
   </div>
   <section id="menu-screen" class="menu-screen hideout-screen" hidden aria-label="或世盗の拠点">
     <div class="hideout-shell hideout-art-shell">
