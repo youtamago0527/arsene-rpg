@@ -1,4 +1,13 @@
 .hideout-art-shell{position:relative;width:min(1024px,100%);height:100svh;min-height:0;padding:0;background:#000;border:0;box-shadow:0 0 80px #000;overflow:hidden}
+/* FFT風の細身セリフ体を拠点のライブ文字へ統一。画像に焼き込まれた文字には影響しない。 */
+.hideout-art-shell,
+.hideout-art-shell button,
+.hideout-art-shell input,
+.hideout-art-shell select,
+.hideout-art-shell textarea,
+.hideout-art-shell output{
+  font-family:"Cormorant Garamond","Yu Mincho","Hiragino Mincho ProN",serif!important;
+}
 .hideout-full-art{display:block;width:100%;height:100%;object-fit:fill;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none;pointer-events:none}
 .hideout-top-art{display:none;position:absolute;z-index:1;left:0;top:0;width:100%;height:auto;object-fit:fill;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none;pointer-events:none}
 .hideout-top-art[hidden]{display:none!important}
@@ -165,8 +174,23 @@
 .hideout-art-shell[data-character-id="sora"] .art-boss span{font-size:clamp(5px,1.15vw,7px);letter-spacing:.04em}
 
 /* ACTIVE BUFFの枠も画像内の空欄へライブ情報を戻す。 */
-.hideout-art-shell[data-character-id="sora"] #hideout-buff>strong{display:flex!important;left:42%!important;top:10%!important;width:23%!important;height:76%!important;background:#07101ad6!important;color:#eee4cd!important;font-size:clamp(8px,1.8vw,12px)!important}
-.hideout-art-shell[data-character-id="sora"] #hideout-buff>span{display:flex!important;left:65%!important;right:1%!important;top:10%!important;height:76%!important;background:#07101ad6!important;color:#a9c9ff!important;font-size:clamp(6px,1.25vw,9px)!important}
+.hideout-art-shell[data-character-id="sora"] #hideout-buff>strong,
+.hideout-art-shell[data-character-id="sora"] #hideout-buff>span{
+  top:8%!important;
+  height:84%!important;
+  align-items:center!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+  font-family:"Cormorant Garamond","Yu Mincho","Hiragino Mincho ProN",serif!important;
+  font-size:clamp(9px,2.25vw,14px)!important;
+  font-weight:700!important;
+  line-height:1!important;
+  letter-spacing:.015em!important;
+  text-shadow:0 1px 3px #000,0 0 7px #000!important;
+}
+.hideout-art-shell[data-character-id="sora"] #hideout-buff>strong{display:flex!important;left:42%!important;width:19%!important;justify-content:center!important;background:#07101ad6!important;color:#eee4cd!important}
+.hideout-art-shell[data-character-id="sora"] #hideout-buff>span{display:flex!important;left:61%!important;right:1%!important;padding:0 4px!important;background:#07101ad6!important;color:#a9c9ff!important}
 
 @media(max-width:520px){
   .hideout-art-shell>.hideout-selected-character{left:6.5%;top:24%;width:31%;height:24%}
