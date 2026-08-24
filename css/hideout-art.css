@@ -196,8 +196,20 @@
   letter-spacing:.015em!important;
   text-shadow:0 1px 3px #000,0 0 7px #000!important;
 }
-.hideout-art-shell[data-character-id="sora"] #hideout-buff>strong{display:flex!important;left:42%!important;width:19%!important;justify-content:center!important;background:#07101ad6!important;color:#eee4cd!important}
-.hideout-art-shell[data-character-id="sora"] #hideout-buff>span{display:flex!important;left:61%!important;right:1%!important;padding:0 4px!important;background:#07101ad6!important;color:#a9c9ff!important}
+.hideout-art-shell[data-character-id="sora"] #hideout-buff>strong{
+  display:flex!important;
+  left:42%!important;
+  right:1%!important;
+  width:auto!important;
+  justify-content:center!important;
+  padding:0 4px!important;
+  background:#07101ad6!important;
+  color:#eee4cd!important;
+  font-size:clamp(11px,3vw,18px)!important;
+  letter-spacing:.04em!important;
+}
+.hideout-art-shell[data-character-id="sora"] #hideout-buff.active>strong{color:#ffe09a!important;text-shadow:0 1px 3px #000,0 0 9px #b87b2899!important}
+.hideout-art-shell[data-character-id="sora"] #hideout-buff>span{display:none!important}
 
 @media(max-width:520px){
   .hideout-art-shell>.hideout-selected-character{left:6.5%;top:24%;width:31%;height:24%}

@@ -2406,7 +2406,7 @@
     activeMealBuff() { const id = this.activeMealBuffType(); return id ? D.foodMenu?.buffs?.[id] || null : null; }
     mealGoldBonusRate() { return this.activeMealBuff()?.goldRate || 0; }
     mealExpBonusRate() { return this.activeMealBuff()?.expRate || 0; }
-    mealEffectLabel(meal = this.activeMealBuff()) { if (!meal) return '効果なし'; if (meal.maxHpRate) return `最大HP ＋${Math.round(meal.maxHpRate * 100)}%`; if (meal.goldRate) return `GOLD ＋${Math.round(meal.goldRate * 100)}%`; if (meal.expRate) return `EXP ＋${Math.round(meal.expRate * 100)}%`; return meal.description || '効果あり'; }
+    mealEffectLabel(meal = this.activeMealBuff()) { if (!meal) return 'カズのまかないで'; if (meal.maxHpRate) return `最大HP ＋${Math.round(meal.maxHpRate * 100)}%`; if (meal.goldRate) return `GOLD ＋${Math.round(meal.goldRate * 100)}%`; if (meal.expRate) return `EXP ＋${Math.round(meal.expRate * 100)}%`; return meal.description || '効果あり'; }
     clearMealBuff() { if (!this.profile?.flags) return; this.profile.flags.ramenBuffActive = false; this.profile.flags.ramenBuffType = null; }
     isMealUnlocked(id) { const meal = D.foodMenu?.buffs?.[id]; return !!meal && (!meal.unlockBoss || this.isBossDefeated(meal.unlockBoss)) && (!meal.unlockFlag || !!this.profile?.flags?.[meal.unlockFlag]); }
     mealPriceFor(id) { const meal = D.foodMenu?.buffs?.[id]; return meal?.priceType === 'goldRate' ? this.mealPrice() : (meal?.price || 0); }
