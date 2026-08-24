@@ -433,7 +433,12 @@
       const safeImage = String(c.hideoutPortrait || c.image || '').replace(/["\\]/g, '\\$&');
       const portrait = $('.hideout-player-portrait'), sceneActor = $('.hideout-selected-character'), shell = $('.hideout-art-shell'), fullArt = $('.hideout-full-art'), topArt = $('.hideout-top-art');
       if (portrait) { portrait.style.backgroundImage = `url("${safeImage}")`; portrait.setAttribute('aria-label', `${this.playerName()}のステータスと装備を確認`); }
-      if (shell) shell.dataset.characterId = c.id;
+      if (shell) {
+        // 上下分割素材はソラで確立した同一レイアウトを共有する。
+        // 実際の選択キャラIDは別属性へ保持し、表示データやテーマ判定には影響させない。
+        shell.dataset.characterId = c.hideoutTopArt ? 'sora' : c.id;
+        shell.dataset.selectedCharacterId = c.id;
+      }
       if (fullArt && c.hideoutArt) {
         fullArt.src = c.hideoutArt;
         fullArt.alt = `${this.playerName()}の拠点`;

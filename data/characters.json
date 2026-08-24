@@ -22,6 +22,8 @@
     "image": "assets/playable-characters/ren/body-no-weapon.png",
     "hideoutPortrait": "assets/playable-characters/ren/ui/hideout-portrait-v2.png",
     "hideoutImage": null,
+    "hideoutArt": "assets/ui/hideout/ren-hideout-lower-v2.png",
+    "hideoutTopArt": "assets/ui/hideout/ren-hideout-upper-v2.png",
     "portraitMode": "cutout",
     "imageFocus": "50% 20%",
     "battleSprite": "assets/playable-characters/ren/battle/ren-back-idle-v1.png",
