@@ -1131,6 +1131,13 @@
 }
 #game .boss-enemy .enemy-hud label,#game .boss-enemy .enemy-hud small{color:#edd9ff}
 
+/* 3体時はHPパネル同士が接触しないよう、各カードの内側へ収める。 */
+#game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-hud{
+  width:calc(100% - 8px);
+  max-width:92px;
+  padding-inline:4px;
+}
+
 /* Player HUD readability: スマホでもJOB／武器学名の上端を切らず、大きく読む。 */
 #game .player-card{
   min-height:142px;
