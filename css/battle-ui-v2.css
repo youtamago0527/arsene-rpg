@@ -1086,6 +1086,51 @@
 #game .boss-enemy .enemy-nameplate{width:min(210px,70vw);max-width:210px;height:42px;min-height:42px;grid-template-rows:22px 12px}
 #game .boss-enemy .enemy-nameplate::after{top:27px}
 
+/* 敵の待機は小さな上下動へ統一。旧モンスター固有の大揺れ・回転は戦闘画面では使わない。 */
+@keyframes battleEnemyGentleBob{0%,100%{translate:0 0}50%{translate:0 -3px}}
+@keyframes battleBossGentleBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+#game .enemy:not(.boss-enemy):not(.enemy-escaped) .slime[style*="background-image"]{animation:none!important}
+#game .enemy:not(.boss-enemy):not(.enemy-attacking):not(.hit):not(.defeated):not(.enemy-escaped) .enemy-visual{
+  animation:battleEnemyGentleBob 2.8s ease-in-out infinite!important;
+}
+#game .enemy.delay-1:not(.enemy-attacking):not(.hit):not(.defeated):not(.enemy-escaped) .enemy-visual{animation-delay:-.8s!important}
+#game .enemy.delay-2:not(.enemy-attacking):not(.hit):not(.defeated):not(.enemy-escaped) .enemy-visual{animation-delay:-1.6s!important}
+#game .boss-enemy:not(.enemy-attacking):not(.hit):not(.defeated):not(.guitar-axe-windup):not(.silver-claw) .noel-sprite{
+  animation:battleBossGentleBob 3.2s ease-in-out infinite!important;
+}
+
+/* D2は現在すべて個別PNG。旧スプライトシート用の300〜400%切り抜きを解除する。 */
+#game .enemy-silentHarmonist .slime[style*="background-image"],
+#game .enemy-echoWraith .slime[style*="background-image"],
+#game .enemy-muteGargoyle .slime[style*="background-image"],
+#game .enemy-nocturneChandelier .slime[style*="background-image"],
+#game .enemy-silentKnight .slime[style*="background-image"],
+#game .enemy-reverbSlime .slime[style*="background-image"],
+#game .enemy-nocturneBanshee .slime[style*="background-image"]{
+  background-size:contain!important;
+  background-position:center bottom!important;
+}
+
+/* ボス名札の下に専用の余白を取り、顔へ重ならないようにする。 */
+#game .boss-enemy .enemy-visual{inset:48px 0 31px}
+
+/* ボスだけの紫→紅HP。通常敵の赤バーと視覚的に分離する。 */
+#game .boss-enemy .enemy-hud{
+  border-color:#8e63c7;
+  background:linear-gradient(105deg,#0a0718f2,#190a24ed 58%,#250817e8);
+  box-shadow:inset 0 0 10px #7b35b533,0 0 10px #a03b8b33;
+}
+#game .boss-enemy .enemy-hud .enemy-hp-meter{
+  border-color:#b178ef;
+  background:#090313;
+  box-shadow:inset 0 0 6px #000,0 0 7px #8d3cff66;
+}
+#game .boss-enemy .enemy-hud .enemy-hp-meter i{
+  background:linear-gradient(90deg,#5524db 0%,#a838e8 48%,#ff356f 100%);
+  box-shadow:0 0 8px #d447ff,0 0 14px #ff315f88;
+}
+#game .boss-enemy .enemy-hud label,#game .boss-enemy .enemy-hud small{color:#edd9ff}
+
 /* Player HUD readability: スマホでもJOB／武器学名の上端を切らず、大きく読む。 */
 #game .player-card{
   min-height:142px;
