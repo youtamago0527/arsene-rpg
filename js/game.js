@@ -2839,7 +2839,44 @@
     }
     handleResultAction(action, target) { if (action === 'hideout') { this.showMenu('home'); return; } if (action === 'boss-now') { this.startBossByKey(target); return; } if (action === 'next-floor' || action === 'continue-floor') { this.currentDungeonId = this.floorDungeonId(target) || this.currentDungeonId; this.currentFloorId = target; $('#ren').classList.remove('victory'); this.startBattle(); } }
 
-    showMenu(panel = 'home') { if (this.player) this.persistVitals(); this.closeBattleMenu(); this.cancelAutoPick(); if (panel === 'home' && this.activeMealBuffType()) { this.clearMealBuff(); this.saveProfile(); } const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
+    showMenu(panel = 'home') { if (this.player) this.persistVitals(); this.closeBattleMenu(); this.cancelAutoPick(); if (panel === 'home' && this.activeMealBuffType()) { this.clearMealBuff(); this.saveProfile(); } const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderHideoutRouteStatus(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
+    hideoutRouteStatus() {
+      const available = (D.dungeons || []).filter(dungeon => this.isDungeonUnlocked(dungeon.id));
+      const dungeon = available[available.length - 1] || this.getDungeon('dungeon1');
+      const dungeonNo = String(dungeon?.id || 'dungeon1').replace('dungeon', 'D');
+      const floors = this.floorsOf(dungeon?.id) || [];
+      let current;
+      if (floors.length) {
+        const floor = this.activeFloor(dungeon.id) || floors[0];
+        const floorIndex = Math.max(0, floors.findIndex(entry => entry.id === floor.id));
+        const wins = this.floorWins(floor.id), goal = floor.winsToClear ?? 33;
+        current = `${dungeonNo}・${floorIndex + 1}F　${Math.min(wins, goal)} / ${goal}`;
+      } else {
+        const progress = this.progressState();
+        current = `${dungeonNo}　BATTLE ${Math.min(progress.wins, progress.goal)} / ${progress.goal}`;
+      }
+
+      let targetId = 'noelFirstEncounter', defeatedId = null;
+      if (dungeon?.id === 'dungeon1') {
+        const progress = this.progressState();
+        targetId = progress.phase === 'noel' ? 'noelFirstEncounter' : 'zenakado';
+        defeatedId = targetId === 'zenakado' ? 'zenacad' : null;
+      } else if (dungeon?.id === 'dungeon2') {
+        targetId = 'myrthi'; defeatedId = 'myrthi';
+      } else if (dungeon?.id === 'dungeon3') {
+        targetId = this.isBossDefeated('versicrell') ? 'seripes' : 'versicrell';
+        defeatedId = targetId;
+      }
+      const encountered = this.hasMetEnemy(targetId)
+        || (defeatedId && this.isBossDefeated(defeatedId))
+        || (targetId === 'noelFirstEncounter' && !!this.profile.flags.noelFirstEncounterCleared);
+      return { current, target: encountered ? (D.enemies[targetId]?.name || targetId) : '？？？' };
+    }
+    renderHideoutRouteStatus() {
+      const status = this.hideoutRouteStatus(), current = $('#hideout-route-current'), target = $('#hideout-next-target');
+      if (current) current.textContent = status.current;
+      if (target) target.textContent = status.target;
+    }
     renderMenuSummary() { const t = this.totalStats(), v = this.storedVitals(t), need = this.expNeeded(), workshopUnlocked = !!this.profile.flags.noelFirstEncounterCleared, progress = this.progressState();  $('#menu-hp').textContent = `${v.hp} / ${t.maxHp}`; $('#menu-mp').textContent = `${v.mp} / ${t.maxMp}`; $('#hideout-hp-bar').style.width = `${100 * v.hp / t.maxHp}%`; $('#hideout-mp-bar').style.width = `${100 * v.mp / t.maxMp}%`; $('#menu-gold').textContent = this.profile.gold.toLocaleString('ja-JP'); const mType = this.equippedWeaponType(), mst = this.masteryOf(mType), mNeed = this.masteryExpNeeded(mst.level), expPct = Math.min(100, 100 * mst.exp / mNeed); $('#menu-exp-text').textContent = `${expPct.toFixed(2)}%`; $('#menu-exp-bar').style.width = `${expPct}%`; const mLabel = $('#menu-exp-label'); if (mLabel) mLabel.textContent = `${this.weaponTypeName(mType)} Lv.${mst.level}`; const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {}, jlv = jst.level || 1, jneed = this.jobExpNeeded(jlv), jexp = jst.exp || 0, jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100; const jexpLabel = $('#menu-jexp-label'), jexpText = $('#menu-jexp-text'), jexpBar = $('#menu-jexp-bar'); if (jexpLabel) jexpLabel.textContent = `${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}`; const mLv = $('#menu-level'); if (mLv) mLv.textContent = `${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}`; if (jexpText) jexpText.textContent = jneed ? `${jpct.toFixed(2)}%` : 'MASTER'; if (jexpBar) jexpBar.style.width = `${jpct}%`; $('#workshop-nav').hidden = !workshopUnlocked; const bossButton = $('#menu-screen [data-menu="boss"]'), bossTitle = bossButton?.querySelector('b'); const d2p = this.dungeon2FloorProgress(), myrthiReady = this.isMyrthiUnlocked() && !this.isBossDefeated('myrthi'); if (myrthiReady) { bossButton.hidden = false; if (bossTitle) bossTitle.textContent = '黒紅の双刃を追う'; bossButton.querySelector('span').textContent = d2p.total ? `MYRTHI // ${d2p.floors} / ${d2p.total} 階 踏破` : `MYRTHI // BATTLE ${d2p.done} / ${d2p.goal}`; } else { bossButton.hidden = !progress.ready; if (bossTitle) bossTitle.textContent = progress.phase === 'noel' ? 'ノエルの反応を追う' : 'ゼナカドの旋律を追う'; bossButton.querySelector('span').textContent = `${progress.bossName} // BATTLE ${Math.min(progress.wins, progress.goal)} / ${progress.goal}`; } const buffEl = $('#hideout-buff'), meal = this.activeMealBuff(); buffEl.classList.toggle('active', !!meal); buffEl.querySelector('strong').textContent = this.mealEffectLabel(meal); buffEl.querySelector('span').textContent = meal ? `効果：${meal.name}／帰還・敗北まで有効` : 'カズのまかないで潜入を強化'; }
     renderMenuPanel(name) {
       [...$('#menu-nav').querySelectorAll('button')].forEach(b => b.classList.toggle('active', b.dataset.menu === name)); const panel = $('#menu-panel'); panel.hidden = name === 'home'; panel.dataset.panel = name; panel.classList.toggle('panel-tall', name !== 'home'); panel.scrollTop = 0; if (name === 'home') { panel.innerHTML = ''; return; }

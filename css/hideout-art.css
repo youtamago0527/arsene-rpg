@@ -140,12 +140,19 @@
 .hideout-art-shell[data-character-id="sora"] .hideout-player-portrait:hover,.hideout-art-shell[data-character-id="sora"] .hideout-player-portrait:focus-visible{outline:0!important;box-shadow:none!important;filter:none!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-player>div:last-child{display:block!important;left:0!important;right:0!important;top:0!important;bottom:0!important;background:transparent!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-player strong{left:2%!important;top:0!important;width:96%!important;height:28%!important;padding:0 3%!important;background:linear-gradient(90deg,#050a14e8,#050a1499 72%,transparent)!important;color:#f0d6a0!important;font-size:clamp(11px,2.5vw,18px)!important}
-.hideout-art-shell[data-character-id="sora"] .hideout-meter{left:2%!important;right:2%!important;height:31%!important;grid-template-columns:11% minmax(0,1fr)!important;gap:3%!important;padding:0 2%!important;background:#050a14d8!important;border:1px solid #8b6a39!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-meter{left:2%!important;right:2%!important;height:31%!important;grid-template-columns:11% minmax(0,1fr)!important;gap:3%!important;padding:0 2%!important;background:transparent!important;border:0!important;box-shadow:none!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-meter:not(.mp){top:32%!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-meter.mp{top:66%!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-meter>span{font-size:clamp(7px,1.7vw,11px)!important;color:#ead4a8!important}
-.hideout-art-shell[data-character-id="sora"] .hideout-meter>i{height:32%!important;border-color:#8b6a39!important;background:#090d17!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-meter>i{width:82%!important;height:32%!important;border-color:#8b6a39!important;background:#090d17!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-meter output{font-size:clamp(7px,1.65vw,11px)!important}
+.hideout-route-status{display:none}
+.hideout-art-shell[data-character-id="sora"] .hideout-route-status{position:absolute;display:grid;left:2%;right:2%;top:101%;height:18%;grid-template-columns:1.08fr .92fr;align-items:stretch;gap:2%;font-family:"Cormorant Garamond","Yu Mincho","Hiragino Mincho ProN",serif!important;pointer-events:none}
+.hideout-art-shell[data-character-id="sora"] .hideout-route-status>span{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:4%;min-width:0;padding:0 3%;background:linear-gradient(90deg,#050a14e8,#081323c2 78%,transparent)}
+.hideout-art-shell[data-character-id="sora"] .hideout-route-status>span+span{background:linear-gradient(90deg,#120921dc,#080d19d2)}
+.hideout-art-shell[data-character-id="sora"] .hideout-route-status small{display:block!important;position:static!important;width:auto!important;height:auto!important;color:#b99a66!important;font-size:clamp(5px,1.05vw,7px)!important;font-weight:700!important;line-height:1!important;letter-spacing:.09em!important;white-space:nowrap}
+.hideout-art-shell[data-character-id="sora"] .hideout-route-status b{min-width:0;overflow:hidden;color:#f2e5c8;font-size:clamp(6px,1.28vw,9px);font-weight:700;line-height:1;letter-spacing:.02em;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 3px #000}
+.hideout-art-shell[data-character-id="sora"] #hideout-next-target{color:#c9a6ff;text-align:right}
 
 /* GOLD／武器学／JOBは支給枠の内側へライブ値と以前のバーを重ねる。 */
 .hideout-art-shell[data-character-id="sora"] .hideout-resources .hideout-gold{left:2.9%!important;width:24.5%!important}
