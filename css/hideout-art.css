@@ -1,5 +1,7 @@
 .hideout-art-shell{position:relative;width:min(1024px,100%);height:100svh;min-height:0;padding:0;background:#000;border:0;box-shadow:0 0 80px #000;overflow:hidden}
 .hideout-full-art{display:block;width:100%;height:100%;object-fit:fill;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none;pointer-events:none}
+.hideout-top-art{display:none;position:absolute;z-index:1;left:0;top:0;width:100%;height:auto;object-fit:fill;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none;pointer-events:none}
+.hideout-top-art[hidden]{display:none!important}
 .hideout-art-shell>.hideout-kazu-hotspot{position:absolute;z-index:7;left:53%;top:29%;width:17%;height:18%;padding:0;border:0;border-radius:30%;background:transparent;box-shadow:none;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none}
 .hideout-art-shell>.hideout-kazu-hotspot:focus-visible{outline:2px solid #e8bc62;outline-offset:2px;box-shadow:0 0 18px #e8a93d88}
 .hideout-art-shell>.hideout-fox-hotspot{position:absolute;z-index:6;left:69%;top:31%;right:auto;bottom:auto;width:22%;height:17%;padding:0;border:0;border-radius:46%;background:transparent;box-shadow:none;clip-path:none;filter:none;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
@@ -100,6 +102,21 @@
 .hideout-art-shell[data-character-id="sora"] .hideout-menu [data-menu="system"]{left:74.5%!important;top:80.5%!important;width:22.2%!important;height:10.3%!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-menu .private-mode{left:2.5%!important;top:91.5%!important;width:94.9%!important;height:6.2%!important}
 .hideout-art-shell[data-character-id="sora"] .art-boss{top:26%!important}
+
+/* ソラは支給された上部／下部の2枚を、縦長スマホの1画面へ比率優先で合成する。 */
+.hideout-art-shell[data-character-id="sora"] .hideout-top-art{display:block;height:29.5%;z-index:2}
+.hideout-art-shell[data-character-id="sora"] .hideout-full-art{position:absolute;left:0;top:29.5%;width:100%;height:70.5%;z-index:1}
+.hideout-art-shell[data-character-id="sora"] .hideout-resources>div{top:14.7%!important;height:6.5%!important}
+.hideout-art-shell[data-character-id="sora"] #hideout-buff{left:18.5%!important;top:23.2%!important;width:78%!important;height:4.1%!important;background:transparent!important}
+.hideout-art-shell[data-character-id="sora"]>.hideout-kazu-hotspot{left:48%!important;top:38%!important;width:22%!important;height:23%!important}
+.hideout-art-shell[data-character-id="sora"]>.hideout-fox-hotspot{left:68%!important;top:39%!important;width:24%!important;height:22%!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-menu [data-menu="battle"]{top:59.5%!important;height:10.2%!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-menu [data-menu="food"]{top:59.5%!important;height:10.2%!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-menu [data-menu="workshop"]{top:70.3%!important;height:10.1%!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-menu [data-menu="equipment"]{top:70.3%!important;height:10.1%!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-menu [data-menu="archive"],.hideout-art-shell[data-character-id="sora"] .hideout-menu [data-menu="job"],.hideout-art-shell[data-character-id="sora"] .hideout-menu [data-menu="items"],.hideout-art-shell[data-character-id="sora"] .hideout-menu [data-menu="system"]{top:81.2%!important;height:10.2%!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-menu .private-mode{top:92.6%!important;height:5.3%!important}
+.hideout-art-shell[data-character-id="sora"] .art-boss{top:30.5%!important}
 
 @media(max-width:520px){
   .hideout-art-shell>.hideout-selected-character{left:6.5%;top:24%;width:31%;height:24%}

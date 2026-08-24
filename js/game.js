@@ -429,7 +429,7 @@
     applyCharacterPresentation() {
       const c = this.selectedCharacterData(); if (!c) return;
       const safeImage = String(c.hideoutPortrait || c.image || '').replace(/["\\]/g, '\\$&');
-      const portrait = $('.hideout-player-portrait'), sceneActor = $('.hideout-selected-character'), shell = $('.hideout-art-shell'), fullArt = $('.hideout-full-art');
+      const portrait = $('.hideout-player-portrait'), sceneActor = $('.hideout-selected-character'), shell = $('.hideout-art-shell'), fullArt = $('.hideout-full-art'), topArt = $('.hideout-top-art');
       if (portrait) { portrait.style.backgroundImage = `url("${safeImage}")`; portrait.setAttribute('aria-label', `${this.playerName()}のステータスと装備を確認`); }
       if (shell) shell.dataset.characterId = c.id;
       if (fullArt && c.hideoutArt) {
@@ -438,6 +438,17 @@
       } else if (fullArt) {
         fullArt.src = 'assets/ui/hideout/ren-ui-v1.png';
         fullArt.alt = '或世盗の拠点・麺処おくのほそ道';
+      }
+      if (topArt) {
+        if (c.hideoutTopArt) {
+          topArt.src = c.hideoutTopArt;
+          topArt.alt = `${this.playerName()}の拠点上部UI`;
+          topArt.hidden = false;
+        } else {
+          topArt.removeAttribute('src');
+          topArt.alt = '';
+          topArt.hidden = true;
+        }
       }
       if (sceneActor) {
         const hideoutImage = String(c.hideoutImage || '').replace(/["\\]/g, '\\$&');
