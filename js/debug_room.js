@@ -648,6 +648,7 @@
       <div class="dbg-bar">
         <b>DEBUG ROOM</b><small>データ編集専用</small><span class="sp"></span>
         <button id="dbg-job-balance">JOB検証</button>
+        <button id="dbg-infinite-score">無限奏廊</button>
         <button id="dbg-guardian-trial">守護士 強敵戦</button>
         <button id="dbg-weapon-open">武器表示確認</button>
         <button id="dbg-spark-open">SPARK計算</button>
@@ -731,6 +732,11 @@
       if (e.target.id === 'dbg-export') return exportAll();
       if (e.target.id === 'dbg-reset') return resetAll();
       if (e.target.id === 'dbg-job-balance') return window.ARSENE_JOB_BALANCE?.show();
+      if (e.target.id === 'dbg-infinite-score') {
+        const game = window.arseneGame;
+        if (!game?.isDebugAllowed?.()) { msg('DEBUG認証後に使用できます。', true); return; }
+        close(); game.showMenu?.('otherworld'); game.renderMenuPanel?.(game.isRun?.() ? 'infinite-score' : 'infinite-score-warning'); return;
+      }
       if (e.target.id === 'dbg-guardian-trial') {
         const game = window.arseneGame;
         if (!game || game.profile?.currentJob !== 'guardian' || game.equippedWeaponType?.() !== 'shield') { msg('守護士へ変更し、右手に盾を装備してから開始してください。', true); return; }

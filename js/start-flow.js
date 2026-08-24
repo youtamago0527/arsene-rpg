@@ -52,12 +52,15 @@
       const params = new URLSearchParams(location.search);
       const localHost = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
       const scenario = params.get('local');
-      if (!localHost || !['versicrell-ready', 'd3-route', 'd3-mid-ready', 'd3-final-ready'].includes(scenario)) return false;
+      if (!localHost || !['versicrell-ready', 'd3-route', 'd3-mid-ready', 'd3-final-ready', 'infinite-score-ready'].includes(scenario)) return false;
       this.root.hidden = true;
       this.root.style.display = 'none';
       if (scenario === 'versicrell-ready') {
         this.game.prepareLocalVersicrellScenario();
         this.game.startVersicrellBoss();
+      } else if (scenario === 'infinite-score-ready') {
+        this.game.prepareLocalInfiniteScoreScenario();
+        this.game.showMenu('otherworld');
       } else {
         this.game.prepareLocalD3RouteScenario(scenario.replace('d3-', ''));
         this.game.showMenu('dungeon-select');

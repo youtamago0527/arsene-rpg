@@ -709,8 +709,15 @@
       }
       return total;
     }
-    // 現在ジョブで習得済みのパッシブ（そのジョブの能力として常時有効）
-    currentJobPassives() { const job = D.jobs[this.profile.currentJob]; if (!job) return []; const lv = this.profile.jobs?.[this.profile.currentJob]?.level || 1; return Object.entries(job.passiveUnlocks || {}).filter(([l]) => Number(l) <= lv).map(([, id]) => D.skills[id]).filter(Boolean); }
+    // 転生後も、一度習得したJOBアビリティは再ロックしない。
+    // 現在Lvに加え、永久習得配列とMASTER履歴を参照することで旧セーブも救済する。
+    jobAbilityLearned(jobId, skillId, unlockLevel = 1) {
+      const level = this.profile.jobs?.[jobId]?.level || 1;
+      if (level >= Number(unlockLevel || 1) || this.isJobMastered(jobId)) return true;
+      return (this.profile.learnedPassives || []).includes(skillId) || (this.profile.learnedJobSkills || []).includes(skillId);
+    }
+    // 現在ジョブで永久習得済みのパッシブ（転生後もそのジョブの能力として常時有効）
+    currentJobPassives() { const jobId = this.profile.currentJob, job = D.jobs[jobId]; if (!job) return []; return Object.entries(job.passiveUnlocks || {}).filter(([l, id]) => this.jobAbilityLearned(jobId, id, l)).map(([, id]) => D.skills[id]).filter(Boolean); }
     // 他ジョブから持ち込んで装備中のパッシブ
     equippedPassiveList() { const slots = this.isPhantomThief() ? (this.profile.ptPassiveSlots || []) : (this.profile.equippedPassives || []); return slots.slice(0, this.passiveSlotCount()).map(id => D.skills[id]).filter(s => s?.type === 'PASSIVE'); }
     // 実際に効果を発揮する全パッシブ（現在ジョブ習得分＋装備分、重複除去）
@@ -1212,12 +1219,12 @@
     // 固有技＝現在ジョブの固有スキル（戦士→ちからため、武道家→ばくれつけん等）
     personalSkills() {
       if (this.isPhantomThief()) return [...new Set(this.profile.ptActionSlots || [])].map(id => D.skills[id]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE');
-      const sig = D.skills[D.jobs[this.profile.currentJob]?.signatureSkillId], lv = this.profile.jobs?.[this.profile.currentJob]?.level || 1;
-      return this.isPlayerContentVisible(sig) && sig.type !== 'PASSIVE' && lv >= (sig.unlockJobLevel || 1) ? [sig] : [];
+      const jobId = this.profile.currentJob, sig = D.skills[D.jobs[jobId]?.signatureSkillId];
+      return this.isPlayerContentVisible(sig) && sig.type !== 'PASSIVE' && this.jobAbilityLearned(jobId, sig.id, sig.unlockJobLevel || 1) ? [sig] : [];
     }
     resonanceEnabled() { return this.profile.currentJob === 'guardian' || (this.isPhantomThief() && this.isJobMastered('guardian')); }
     resonanceMultiplier(value = this.player?.resonance || 0) { return (D.guardianBalance?.resonanceTiers || []).find(t => value >= t.min)?.multiplier || 0; }
-    jobLearnedActiveSkills(jobId) { const job = D.jobs[jobId]; if (!this.isPlayerContentVisible(job)) return []; const jlv = this.profile.jobs[jobId]?.level || 0; const list = Object.entries(job.skillUnlocks || {}).filter(([lv]) => Number(lv) <= jlv).map(([, id]) => D.skills[id]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE'); const sig = D.skills[job.signatureSkillId]; if (this.isPlayerContentVisible(sig) && sig.type !== 'PASSIVE' && jlv >= (sig.unlockJobLevel || 1) && !list.some(s => s.id === sig.id)) list.unshift(sig); return list; }
+    jobLearnedActiveSkills(jobId) { const job = D.jobs[jobId]; if (!this.isPlayerContentVisible(job)) return []; const list = Object.entries(job.skillUnlocks || {}).filter(([lv, id]) => this.jobAbilityLearned(jobId, id, lv)).map(([, id]) => D.skills[id]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE'); const sig = D.skills[job.signatureSkillId]; if (this.isPlayerContentVisible(sig) && sig.type !== 'PASSIVE' && this.jobAbilityLearned(jobId, sig.id, sig.unlockJobLevel || 1) && !list.some(s => s.id === sig.id)) list.unshift(sig); return list; }
     masteredActions() { return (this.profile.jobMastered || []).map(id => D.skills[D.jobs[id]?.signatureSkillId]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE'); }
     setPhantomAction(idx, skillId) { const max = this.actionSlotCount(); this.profile.ptActionSlots ||= new Array(max).fill(null); while (this.profile.ptActionSlots.length < max) this.profile.ptActionSlots.push(null); if (skillId) this.profile.ptActionSlots = this.profile.ptActionSlots.map(v => v === skillId ? null : v); this.profile.ptActionSlots[idx] = skillId || null; this.saveProfile(); this.audio.sfx('heal'); if (this.jobUI) this.jobUI.modal = null; this.renderMenuPanel('job'); }
     skillEquipmentReady(skill) { const required = skill?.requiresWeaponSubtype; return !required || this.equippedWeapon()?.weaponSubtype === required; }
@@ -2979,7 +2986,7 @@
       // パッシブ発動中だけ開く専用技（魔奏士のスフォルツァンド等）。
       // 技自体はどのテーブルにも載っていないので、バフ元パッシブの習得Lvに紐づけて並べる。
       this.conditionalSkillsForJob(jobId).forEach(({ skill, level }) => abilityEntries.push([level, skill.id]));
-      const skillRows = abilityEntries.sort((a, b) => a[0] - b[0]).map(([lv, id]) => { const s = D.skills[id], learned = p.level >= lv, cond = s?.requiresBuff ? this.buffSourceName(jobId, s.requiresBuff) : ''; return `<button class="jar${learned ? ' learned' : ' locked'}${cond ? ' jar-cond' : ''}"${learned ? ` data-job-skill-detail="${id}"` : ''}><span class="jar-lv">Lv.${lv}</span><span class="jar-nm">${s?.name || id}</span><em class="jar-type">${s?.type === 'PASSIVE' ? 'P' : 'A'}</em><small class="jar-st">${learned ? (cond ? `《${cond}》中` : '習得済') : 'LOCK'}</small></button>`; }).join('');
+      const skillRows = abilityEntries.sort((a, b) => a[0] - b[0]).map(([lv, id]) => { const s = D.skills[id], learned = this.jobAbilityLearned(jobId, id, lv), cond = s?.requiresBuff ? this.buffSourceName(jobId, s.requiresBuff) : ''; return `<button class="jar${learned ? ' learned' : ' locked'}${cond ? ' jar-cond' : ''}"${learned ? ` data-job-skill-detail="${id}"` : ''}><span class="jar-lv">Lv.${lv}</span><span class="jar-nm">${s?.name || id}</span><em class="jar-type">${s?.type === 'PASSIVE' ? 'P' : 'A'}</em><small class="jar-st">${learned ? (cond ? `《${cond}》中` : '習得済') : 'LOCK'}</small></button>`; }).join('');
       let condHtml = '';
       if (isAdv && !avail && j.unlockCondition) { const c = j.unlockCondition, bOk = c.bossDefeated ? this.isBossDefeated(c.bossDefeated) : true, bName = c.bossDefeated ? (D.enemies[c.bossDefeated]?.name || c.bossDefeated) : ''; const jcs = Object.entries(c.jobLevels || {}).map(([rid, rlv]) => { const cur = this.profile.jobs[rid]?.level || 0, ok = cur >= rlv; return `<div class="cond-row${ok ? ' ok' : ' ng'}"><b>${ok ? '✓' : '✕'} ${D.jobs[rid]?.name || rid} Lv${rlv}</b><small>現在 Lv.${cur}</small></div>`; }).join(''); condHtml = `<div class="jconds"><h4>解放条件</h4>${bName ? `<div class="cond-row${bOk ? ' ok' : ' ng'}"><b>${bOk ? '✓' : '✕'} ${bName}を撃破</b></div>` : ''}${jcs}</div>`; }
       // ファントムシーフは自分では育たないので、代わりに「他JOBから盗んだ能力」を出す。
@@ -3018,7 +3025,7 @@
       const sigHtml = sig ? `<div class="abset-block"><h4 class="abset-h">JOB SKILL <span>SIGNATURE</span></h4><div class="ab-row ab-static" data-job-skill-detail="${sig.id}"><div class="ab-val filled"><div><b>${sig.name}</b><small>${sig.effectText || sig.description || ''}</small></div></div></div></div>` : '';
       // JOB PASSIVE：現在ジョブでLv5/10/15到達により習得済みのもの
       const levels = this.gb().jobPassiveLevels || [5, 10, 15];
-      const jobPassiveRows = Object.entries(job?.passiveUnlocks || {}).map(([lv, id]) => { const s = D.skills[id], ok = jobLv >= Number(lv); return `<div class="per-row${ok ? ' learned' : ' locked'}"${ok ? ` data-job-skill-detail="${id}"` : ''}><span>Lv.${lv}</span><b>${s?.name || id}</b><em>PASSIVE</em><small>${ok ? '習得済' : `Lv.${lv}で習得`}</small></div>`; }).join('') || '<p class="modal-empty">このJOBにパッシブはありません</p>';
+      const jobPassiveRows = Object.entries(job?.passiveUnlocks || {}).map(([lv, id]) => { const s = D.skills[id], ok = this.jobAbilityLearned(currentId, id, lv); return `<div class="per-row${ok ? ' learned' : ' locked'}"${ok ? ` data-job-skill-detail="${id}"` : ''}><span>Lv.${lv}</span><b>${s?.name || id}</b><em>PASSIVE</em><small>${ok ? '習得済' : `Lv.${lv}で習得`}</small></div>`; }).join('') || '<p class="modal-empty">このJOBにパッシブはありません</p>';
       // EQUIP PASSIVE：他ジョブで習得したパッシブを装備する枠（通常1／PT2）
       const slotCount = this.passiveSlotCount();
       const slots = isPT ? (this.profile.ptPassiveSlots || []) : (this.profile.equippedPassives || []);
