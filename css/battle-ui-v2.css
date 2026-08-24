@@ -1095,3 +1095,5 @@
   #game .player-meta span{font-size:9.5px}
   #game .xp-cell>small{font-size:8.5px;letter-spacing:.02em}
 }
+#game[data-character-id="sora"] .player-meta strong{font-size:18px;letter-spacing:.055em}
+@media(max-width:393px){#game[data-character-id="sora"] .player-meta strong{font-size:17px}}

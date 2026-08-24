@@ -1566,9 +1566,10 @@
       } : (typeof spriteEntry === 'string' ? { src: spriteEntry } : (spriteEntry || {}));
       const characterSprite = spriteConfig.src || (typeof fallbackSprite === 'string' ? fallbackSprite : fallbackSprite?.src) || character?.battleSprite || character?.image || '';
       const absoluteSprite = characterSprite ? new URL(characterSprite, document.baseURI).href : '';
-      const ren = $('#ren'), safeSprite = String(absoluteSprite).replace(/["\\]/g, '\\$&');
+      const ren = $('#ren'), gameRoot = $('#game'), characterId = character?.id || 'ren', safeSprite = String(absoluteSprite).replace(/["\\]/g, '\\$&');
+      if (gameRoot) gameRoot.dataset.characterId = characterId;
       if (ren) {
-        ren.dataset.characterId = character?.id || 'ren';
+        ren.dataset.characterId = characterId;
         ren.dataset.weaponType = w.weaponType || 'unknown';
         ren.dataset.customPortrait = customSprite ? 'true' : 'false';
         ren.dataset.spriteSource = absoluteSprite;
