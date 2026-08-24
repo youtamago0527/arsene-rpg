@@ -94,7 +94,11 @@
   // PHANTOM THIEF：能力は常時50%継承、JOB MASTER時は固有ACTIONをSTEAL
   // ════════════════════════════════════════════════════════════
   P.ptCfg = function () { return D().phantomThief || { stealRate: 0.5, actionSlotCount: 2, signatureActions: {} }; };
-  P.ptStealRate = function () { return this.ptCfg().stealRate ?? 0.5; };
+  P.ptStealRate = function () {
+    const character = (this.characterList || []).find(c => c.id === this.profile?.selectedCharacter);
+    const personalRate = Number(character?.trait?.bonuses?.phantomStealRate);
+    return Number.isFinite(personalRate) ? personalRate : (this.ptCfg().stealRate ?? 0.5);
+  };
   P.ptActionSlotMax = function () { return this.ptCfg().actionSlotCount ?? 2; };
 
   // PHANTOM THIEFはJEXPを持たないため、同じ欄を「盗奪進行度」として使う。
@@ -854,11 +858,14 @@
   P.renderMenuPanel = function (name) {
     const panel = $('#menu-panel');
     if (panel) {
-      if (name === 'lenny') { panel.hidden = false; this.renderLennyPanel(panel); return; }
-      if (name === 'phantom-tutorial') { panel.hidden = false; this.ptTutorialPage = 0; this.renderPhantomTutorial(panel); return; }
-      if (name === 'otherworld') { panel.hidden = false; this.owAbilityFrom = name; this.renderOtherWorldPanel(panel); return; }
-      if (name === 'otherworld-select') { panel.hidden = false; this.owAbilityFrom = name; this.renderOwDungeonSelect(panel); return; }
-      if (name === 'otherworld-job-confirm') { panel.hidden = false; this.owAbilityFrom = name; this.renderOwJobConfirm(panel); return; }
+      // 異世界の案内画面も他の拠点ページと同じ固定キャンバスを使用する。
+      // 内容量で枠が伸び縮みせず、中身だけをスクロールする。
+      const prepareOtherWorldPanel = () => { panel.hidden = false; panel.dataset.panel = name; panel.classList.add('panel-tall'); panel.scrollTop = 0; };
+      if (name === 'lenny') { prepareOtherWorldPanel(); this.renderLennyPanel(panel); return; }
+      if (name === 'phantom-tutorial') { prepareOtherWorldPanel(); this.ptTutorialPage = 0; this.renderPhantomTutorial(panel); return; }
+      if (name === 'otherworld') { prepareOtherWorldPanel(); this.owAbilityFrom = name; this.renderOtherWorldPanel(panel); return; }
+      if (name === 'otherworld-select') { prepareOtherWorldPanel(); this.owAbilityFrom = name; this.renderOwDungeonSelect(panel); return; }
+      if (name === 'otherworld-job-confirm') { prepareOtherWorldPanel(); this.owAbilityFrom = name; this.renderOwJobConfirm(panel); return; }
     }
     // JOB以外の画面へ移ったら異世界フローの印は落とす（拠点メニューを普通に触りに行った場合）
     if (name !== 'job') this.owAbilityReturn = false;

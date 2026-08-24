@@ -19,6 +19,7 @@
       this.transferMode = null;
       this.transferExportCode = '';
       this.chosenCharacter = null;
+      this.chosenPlayerName = '';
       this.chosenWeaponType = null;
       this.chosenJob = null;
     }
@@ -27,14 +28,14 @@
       try {
         [this.prologue, this.characters] = await Promise.all([
           fetch('data/prologue.json').then(response => response.json()),
-          fetch('data/characters.json?v=0.3.5').then(response => response.json())
+          fetch('data/characters.json?v=0.3.8').then(response => response.json())
         ]);
       } catch (error) {
         console.error('Start flow data could not be loaded.', error);
         this.prologue = [{ id: 'fallback', time: '00:00', text: 'その名は――\n\n或世盗。\n\nARSÈNE.', effect: 'arsene' }];
         this.characters = [{ id: 'ren', name: '蓮', nameEn: 'REN', available: true, type: 'MAGE', description: '魔力とMPに優れた魔法型。', trait: { name: '魔導の才', description: '杖の武器学成長に小ボーナス。' }, tendency: { str: 2, vit: 3, mag: 5, mnd: 4, agi: 3, luk: 3 }, image: 'assets/playable-characters/ren/body-no-weapon.png', portraitMode: 'cutout' }];
       }
-      const protagonistOrder = ['roga', 'ren', 'sho', 'shizuma'];
+      const protagonistOrder = ['roga', 'ren', 'sho', 'shizuma', 'kyosuke', 'sora'];
       this.characters.sort((a, b) => {
         const ai = protagonistOrder.indexOf(a.id), bi = protagonistOrder.indexOf(b.id);
         return (ai < 0 ? protagonistOrder.length : ai) - (bi < 0 ? protagonistOrder.length : bi);
@@ -112,6 +113,8 @@
         if (event.target.closest('[data-prologue-skip]')) { event.stopPropagation(); this.showCharacterSelect(); return; }
         const preview = event.target.closest('[data-preview-character]');
         if (preview) { this.showCharacterSelect(preview.dataset.previewCharacter); return; }
+        const cycle = event.target.closest('[data-cycle-character]');
+        if (cycle) { this.cycleCharacter(Number(cycle.dataset.cycleCharacter) || 1); return; }
         const select = event.target.closest('[data-select-character]');
         if (select) { this.askCharacter(select.dataset.selectCharacter); return; }
         const weaponPick = event.target.closest('[data-select-weapon]');
@@ -145,6 +148,10 @@
         if (output) output.textContent = `${slider.value}%`;
       };
       this.root.addEventListener('input', updateVolume);
+      this.root.addEventListener('input', event => {
+        const nameInput = event.target.closest('[data-player-name]');
+        if (nameInput) this.chosenPlayerName = String(nameInput.value || '').slice(0, 12);
+      });
       this.root.addEventListener('change', updateVolume);
       addEventListener('keydown', event => {
         if (this.root.hidden || !['Enter', ' ', 'Spacebar'].includes(event.key)) return;
@@ -228,7 +235,7 @@
       await sleep(520);
       current.classList.remove('leaving');
       this.prologueIndex = 0;
-      this.chosenCharacter = null; this.chosenWeaponType = null; this.chosenJob = null;
+      this.chosenCharacter = null; this.chosenPlayerName = ''; this.chosenWeaponType = null; this.chosenJob = null;
       this.setScreen('prologue');
       this.renderPrologue();
     }
@@ -248,51 +255,70 @@
     advancePrologue() { this.prologueIndex += 1; if (this.prologueIndex >= this.prologue.length) this.showCharacterSelect(); else this.renderPrologue(); }
 
     selectableCharacters() { return this.characters.filter(c => c.available); }
+    cycleCharacter(delta) {
+      const list = this.selectableCharacters(); if (!list.length) return;
+      const index = Math.max(0, list.findIndex(c => c.id === this.previewCharacterId));
+      this.showCharacterSelect(list[(index + delta + list.length) % list.length].id);
+    }
+    escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]); }
+    normalizedPlayerName(character) { return String(this.chosenPlayerName || '').trim().slice(0, 12) || character?.name || '蓮'; }
     stars(n) { const v = Math.max(0, Math.min(5, Number(n) || 0)); return `<i class="stars"><b>${'★'.repeat(v)}</b><em>${'★'.repeat(5 - v)}</em></i>`; }
 
     showCharacterSelect(focusId) {
       this.setScreen('select');
       const list = this.selectableCharacters();
       if (!list.length) return;
+      const previousId = this.previewCharacterId;
       const current = list.find(c => c.id === (focusId || this.previewCharacterId)) || list[0];
+      if (!this.chosenPlayerName || (previousId && previousId !== current.id)) this.chosenPlayerName = current.name;
       this.previewCharacterId = current.id;
       this.game.applyCharacterTheme(current.theme);
 
-      const tendencyKeys = [['str', '力'], ['vit', '体力'], ['mag', '魔力'], ['mnd', '精神'], ['agi', '素早さ'], ['luk', '運']];
+      const tendencyKeys = [['str', '力'], ['vit', '体力'], ['mag', '魔力'], ['mnd', '精神'], ['agi', '素早さ'], ['dex', '器用さ'], ['luk', '運']];
       const tendency = tendencyKeys.map(([k, label]) => `<div class="tend-row"><span>${label}</span>${this.stars(current.tendency?.[k])}</div>`).join('');
       const trait = current.trait;
       const nl = text => (text || '').split('\n').filter(Boolean).map(line => `<p>${line}</p>`).join('');
 
       $('.character-stage', this.root).innerHTML = `
         <article class="character-card available" data-character="${current.id}" data-portrait="${current.portraitMode || 'scene'}">
-          <div class="cc-art"><img src="${current.image}" alt="${current.name}" style="object-position:${current.imageFocus || '50% 20%'}"></div>
           <div class="card-info">
             <h2>${current.name}</h2><h3>${current.nameEn}</h3>
+            <label class="cc-player-name"><small>PLAYER NAME</small><input type="text" maxlength="12" inputmode="text" autocomplete="off" data-player-name value="${this.escapeHtml(this.normalizedPlayerName(current))}" aria-label="ゲーム内で使用する名前"><span>ゲーム内表示名（12文字まで）</span></label>
             <div class="cc-type"><small>TYPE</small><b>${current.type || ''}</b>${current.typeLabel ? `<span>${current.typeLabel}</span>` : ''}</div>
             <div class="cc-desc">${nl(current.description)}</div>
             ${trait ? `<div class="cc-trait"><small>CHARACTER TRAIT</small><b>${trait.name}</b>${trait.nameEn ? `<span class="cc-trait-en">${trait.nameEn}</span>` : ''}<div class="cc-trait-desc">${nl(trait.description)}</div></div>` : ''}
             <div class="cc-tendency"><small>INITIAL TENDENCY</small><div class="tend-grid">${tendency}</div></div>
             <button class="cc-select" data-select-character="${current.id}">SELECT</button>
           </div>
+          <div class="cc-art"><img src="${current.image}" alt="${current.name}" style="object-position:${current.imageFocus || '50% 20%'}"></div>
         </article>`;
 
-      $('.character-switcher', this.root).innerHTML = list.map(c => `
-        <button type="button" class="mini-card ${c.id === current.id ? 'active' : ''}" data-preview-character="${c.id}" aria-pressed="${c.id === current.id}" style="--mini-primary:${c.theme?.primary || '#2f9dff'};--mini-glow:${c.theme?.glow || '#147dd8'}">
+      const currentIndex = list.findIndex(c => c.id === current.id);
+      // 全員を常時表示する。回転操作は維持しつつ、追加キャラが隠れているように
+      // 見えないようにする（スマホでは 3×2、広い画面では縦リスト）。
+      const carouselCards = list.map((c, index) => {
+        const active = index === currentIndex;
+        return `<button type="button" class="mini-card ${active ? 'active' : 'nearby'}" data-preview-character="${c.id}" aria-pressed="${active}" style="--mini-primary:${c.theme?.primary || '#2f9dff'};--mini-glow:${c.theme?.glow || '#147dd8'}">
           <span class="mini-art"><img src="${c.image}" alt="" style="object-position:${c.imageFocus || '50% 20%'}"></span>
           <b>${c.name}</b><small>${c.type || ''}</small>
-        </button>`).join('');
+        </button>`;
+      }).join('');
+      $('.character-switcher', this.root).innerHTML = `<button type="button" class="character-cycle" data-cycle-character="-1" aria-label="前のキャラクター">‹</button><div class="character-carousel">${carouselCards}</div><button type="button" class="character-cycle" data-cycle-character="1" aria-label="次のキャラクター">›</button><small class="character-count">${currentIndex + 1} / ${list.length}</small>`;
     }
 
     askCharacter(id) {
       const character = this.characters.find(entry => entry.id === id && entry.available);
       if (!character) { this.toast('このPHANTOMはまだ選択できません。'); return; }
-      this.openConfirm(`${character.name}で進みますか？`, () => { this.chosenCharacter = character; this.game.applyCharacterTheme(character.theme); this.showJobSelect(); });
+      const playerName = this.normalizedPlayerName(character);
+      this.openConfirm(`${playerName}で進みますか？`, () => { this.chosenCharacter = character; this.chosenPlayerName = playerName; this.game.applyCharacterTheme(character.theme); this.showJobSelect(); });
     }
 
     // ── 得意武器選択 ──────────────────────────────────────────
     showWeaponSelect() {
       this.setScreen('weapon');
-      const types = this.game.weaponTypeList().filter(t => t.starterWeaponId);
+      const starterTypeIds = ['sword', 'martial', 'staff'], weaponTypes = this.game.weaponTypeList();
+      const types = starterTypeIds.map(id => weaponTypes.find(type => type.id === id)).filter(type => type?.starterWeaponId);
+      if (this.chosenWeaponType && !starterTypeIds.includes(this.chosenWeaponType)) this.chosenWeaponType = null;
       $('.weapon-grid', this.root).innerHTML = types.map(type => {
         const w = window.ARSENE_DATA.weapons[type.starterWeaponId];
         const bonus = Object.entries(w?.bonuses || {}).map(([k, v]) => `${this.statLabel(k)} ${v >= 0 ? '+' : ''}${v}`).join(' / ') || '補正なし';
@@ -331,6 +357,7 @@
       const profile = this.game.freshProfile();
       profile.selectedCharacter = character.id;
       profile.playerCharacter = character.id;
+      profile.customPlayerName = this.normalizedPlayerName(character);
       profile.prologueCompleted = true;
       profile.openingWatched = true;
       profile.flags.prologueCompleted = true;
@@ -341,7 +368,7 @@
       this.game.applyCharacterPresentation();
       this.game.saveProfile();
       this.writeMeta({ openingWatched: true });
-      const startName = $('.start-card strong', this.root); if (startName) startName.textContent = character.nameEn;
+      const startName = $('.start-card strong', this.root); if (startName) startName.textContent = this.normalizedPlayerName(character);
       this.setScreen('game-start');
       this.game.audio.stopMusic(900);
       await sleep(2800);

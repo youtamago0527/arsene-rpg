@@ -334,6 +334,28 @@ window.ARSENE_DATA = {
       skillUnlocks: {}
     }
   },
+  // 証を初めて盗んだ直後に表示するJOB案内。
+  // 後続JOBはここへ1件足すだけで、ボス初回撃破の報酬導線へ同じ形式で追加できる。
+  jobUnlockTutorials: {
+    magicKnight: {
+      proofItemId: 'magicKnightProof',
+      role: '楽器をメイン武器にして、自分へ演奏バフを重ねながら専用技で戦う魔法寄りの前衛。',
+      build: '楽器を装備 → 《フォルテ》や《クレッシェンド》を維持 → 解放された専用技で攻める。',
+      tips: ['MAGとSTRの両方を活かせる。', 'バフが切れると専用技も使えなくなるため、演奏の残りターンを意識する。']
+    },
+    dualBlade: {
+      proofItemId: 'dualBladeProof',
+      role: '双刃を左右に持ち、命中を重ねるほど連舞で加速する高速アタッカー。',
+      build: '右手・左手に双刃を装備 → 通常攻撃と体術技で連舞を貯める → MAXで《戦姫乱舞・極》を撃つ。',
+      tips: ['STR・AGI・会心率を伸ばすと火力、回避、行動順が一緒に伸びる。', 'MISSで連舞が0になる。命中を確保して連撃を続けるのが大切。']
+    },
+    guardian: {
+      proofItemId: 'guardianProof',
+      role: '右手の盾で格上の攻撃を受け、RESONANCEへ変えて反撃する耐久型JOB。',
+      build: '盾を右手に装備 → 《防御》や守護術で耐える → 溜まったRESONANCEを《共鳴破》へ変える。',
+      tips: ['VIT・MNDと盾の防御性能が攻防の両方に関わる。', '強い敵ほど共鳴を稼げるが、無理に受け続けず防御と回復を使い分ける。']
+    }
+  },
   jobCommandAbilities: {
     warrior: { cmd: '剣技', cmdEn: 'SWORD ARTS' },
     mage: { cmd: '魔導', cmdEn: 'ARCANA' },
@@ -574,10 +596,19 @@ window.ARSENE_DATA = {
   // カズの売り物。所持上限は maxStack（アイテム側）で縛る。
   shopItems: ['cupRamenMiso', 'cupRamenShio'],
   foodMenu: {
+    buffs: {
+      makanai: { id: 'makanai', name: '店主特製・怪盗まかない', priceType: 'goldRate', goldRate: .30, maxHpRate: .03, description: 'HP・MPを全回復し、潜入中は最大HPが3%上昇する。拠点帰還・敗北で消滅。' },
+      sapporoMiso: { id: 'sapporoMiso', name: '札幌味噌ラーメン', price: 100, unlockBoss: 'zenacad', goldRate: .10, description: '潜入中、獲得GOLDが10%増加する。拠点帰還・敗北で消滅。' },
+      // EXP強化案は予約として保持。現段階の裏メニュー効果はGOLD +20%のみ。
+      taiwanMazesoba: { id: 'taiwanMazesoba', name: '台湾まぜそば', price: 150, unlockFlag: 'taiwanMazesobaUnlocked', secretMenu: true, goldRate: .20, reservedBuff: { expRate: .10 }, description: '潜入中、獲得GOLDが20%増加する。拠点帰還・敗北で消滅。', unlockByMeal: { mealId: 'sapporoMiso', chance: .01 } }
+    },
     comingSoon: [
-      { id: 'sapporoMiso', name: '札幌味噌ラーメン' },
       { id: 'asahikawaShoyu', name: '旭川醤油ラーメン' },
       { id: 'hakodateShio', name: '函館塩ラーメン' }
+    ],
+    // デバッグ用の常設枠。料理バフではなく、所持品へ直接追加する。
+    testItems: [
+      { id: 'rebirthArcana', price: 100, label: 'REBIRTH TEST', description: 'JOB Lv20からの転生に必要な特別なアルカナ。テスト用に100 GOLDで用意した。' }
     ]
   },
   musicScores: {

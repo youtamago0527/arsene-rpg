@@ -230,5 +230,86 @@
       "surface": "#141a22",
       "glowSoftness": "1.7"
     }
+  },
+  {
+    "id": "sora",
+    "name": "ソラ",
+    "nameEn": "SORA",
+    "available": true,
+    "type": "REAR GUARD",
+    "typeLabel": "後列支援型",
+    "description": "後列から戦況を支える支援型。\n未知の力を扱う器用さと、豊かな魔力を持つ。",
+    "trait": {
+      "id": "collectorInstinct",
+      "name": "蒐集の才",
+      "nameEn": "COLLECTOR INSTINCT",
+      "description": "まだ見ぬ武器の扱いに高い適性を持つ。\n敵からのアイテム獲得率が2%上昇する。",
+      "bonuses": {
+        "weaponGrowthBonus": { "instrument": "small" },
+        "dropRateBonus": 0.02
+      }
+    },
+    "tendency": { "str": 2, "vit": 2, "mag": 4, "mnd": 4, "agi": 3, "dex": 5, "luk": 3 },
+    "baseStats": { "str": 10, "vit": 10, "mag": 14, "mnd": 14, "agi": 12, "dex": 16, "luk": 12, "maxHp": 76, "maxMp": 44 },
+    "image": "assets/playable-characters/sora/select/sora-luna-phantom-v2.png",
+    "hideoutPortrait": null,
+    "hideoutImage": null,
+    "hideoutArt": "assets/ui/hideout/sora-ui-v1.png",
+    "portraitMode": "cutout",
+    "imageFocus": "50% 18%",
+    "battleSprite": null,
+    "voice": null,
+    "skills": ["quickSlash"],
+    "theme": {
+      "id": "moon-teal",
+      "name": "MOON TEAL × BLACK",
+      "primary": "#69d7dc",
+      "secondary": "#135064",
+      "border": "#71e0e7",
+      "glow": "#39aeba",
+      "textAccent": "#b8fbff",
+      "surface": "#071d29",
+      "glowSoftness": "1.15"
+    }
+  },
+  {
+    "id": "kyosuke",
+    "name": "京介",
+    "nameEn": "KYOUSUKE",
+    "available": true,
+    "type": "TRICKSTER",
+    "typeLabel": "技巧・適応型",
+    "description": "飄々として本心を見せない謎多き青年。\n特定の武器に偏らず、奪った力の扱いに長ける。",
+    "trait": {
+      "id": "phantomDisposition",
+      "name": "怪盗の資質",
+      "nameEn": "PHANTOM DISPOSITION",
+      "description": "ファントムシーフ時、他者より強く力を引き出す。\n盗奪適性は60%。",
+      "bonuses": {
+        "phantomStealRate": 0.6,
+        "passiveMastery": { "normalSlotCount": 1, "chanceBonus": 0.1, "effectMultiplier": 1.15 }
+      }
+    },
+    "tendency": { "str": 4, "vit": 4, "mag": 3, "mnd": 2, "agi": 3, "dex": 4, "luk": 3 },
+    "baseStats": { "str": 14, "vit": 14, "mag": 12, "mnd": 10, "agi": 12, "dex": 14, "luk": 12, "maxHp": 84, "maxMp": 38 },
+    "image": "assets/playable-characters/kyosuke/select/kyosuke-phantom-cutout-v1.png",
+    "hideoutPortrait": null,
+    "hideoutImage": null,
+    "portraitMode": "cutout",
+    "imageFocus": "50% 18%",
+    "battleSprite": null,
+    "voice": null,
+    "skills": ["quickSlash"],
+    "theme": {
+      "id": "gold-black",
+      "name": "GOLD × BLACK",
+      "primary": "#d7ad57",
+      "secondary": "#493b23",
+      "border": "#d4ad5d",
+      "glow": "#a77a2e",
+      "textAccent": "#f7dda0",
+      "surface": "#171208",
+      "glowSoftness": "1.1"
+    }
   }
 ]
