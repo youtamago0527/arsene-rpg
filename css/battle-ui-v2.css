@@ -1059,3 +1059,39 @@
 #game .enemy[data-size="boss"]{flex-basis:100%;max-width:none;width:100%}
 #game .boss-enemy .enemy-nameplate{width:min(210px,70vw);max-width:210px;height:42px;min-height:42px;grid-template-rows:22px 12px}
 #game .boss-enemy .enemy-nameplate::after{top:27px}
+
+/* Player HUD readability: スマホでもJOB／武器学名の上端を切らず、大きく読む。 */
+#game .player-card{
+  min-height:142px;
+  padding:10px 11px 9px 13px;
+}
+#game .player-meta{
+  min-height:25px;
+  margin-bottom:4px;
+  align-items:center;
+  column-gap:8px;
+}
+#game .player-meta strong{font-size:20px;line-height:1.1}
+#game .player-meta span{font-size:10px;line-height:1.2;overflow:visible;text-overflow:clip}
+#game .meter-row{grid-template-columns:22px minmax(0,1fr) 66px;gap:5px;margin:4px 0}
+#game .meter-row label{font-size:11px;line-height:1}
+#game .meter-row output{font-size:9px;line-height:1}
+#game .xp-row{margin-top:7px;gap:7px}
+#game .xp-cell{grid-template-rows:15px 14px;gap:2px;overflow:visible}
+#game .xp-cell>small{
+  display:block;
+  height:15px;
+  overflow:visible;
+  font-size:9px;
+  line-height:15px;
+  letter-spacing:.04em;
+  text-overflow:clip;
+}
+#game .xp-cell .meter{height:14px}
+#game .xp-cell .meter output{font-size:8px}
+@media(max-width:393px){
+  #game .player-card{min-height:140px;padding-left:11px;padding-right:9px}
+  #game .player-meta strong{font-size:19px}
+  #game .player-meta span{font-size:9.5px}
+  #game .xp-cell>small{font-size:8.5px;letter-spacing:.02em}
+}
