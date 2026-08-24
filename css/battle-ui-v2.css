@@ -1175,6 +1175,15 @@
   max-width:92px;
   padding-inline:4px;
 }
+#game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate{
+  left:50%;
+  translate:-50% 0;
+  width:calc(100% - 8px);
+  max-width:94px;
+  padding-inline:4px;
+}
+#game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span{font-size:11px}
+#game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{font-size:9.5px}
 
 /* Player HUD readability: スマホでもJOB／武器学名の上端を切らず、大きく読む。 */
 #game .player-card{
