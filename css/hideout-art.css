@@ -161,9 +161,9 @@
 .hideout-art-shell[data-character-id="sora"] #menu-gold[data-amount-size="compact"]{font-size:clamp(13px,3.9vw,18px)!important;letter-spacing:.015em!important}
 .hideout-art-shell[data-character-id="sora"] #menu-gold[data-amount-size="tiny"]{font-size:clamp(11px,3.2vw,15px)!important;letter-spacing:0!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-resources .hideout-progress{left:28.8%!important;width:45.2%!important}
-.hideout-art-shell[data-character-id="sora"] .hideout-progress::before,.hideout-art-shell[data-character-id="sora"] .hideout-progress::after{content:"";position:absolute;z-index:0;top:7%;width:46%;height:86%;box-sizing:border-box;background:linear-gradient(135deg,#07101df8,#0b1422f8);border:0;box-shadow:none}
+.hideout-art-shell[data-character-id="sora"] .hideout-progress::before,.hideout-art-shell[data-character-id="sora"] .hideout-progress::after{content:"";position:absolute;z-index:0;top:7%;width:46%;height:86%;box-sizing:border-box;background:linear-gradient(135deg,#07101daa,#0b1422aa);border:0;box-shadow:none}
 .hideout-art-shell[data-character-id="sora"] .hideout-progress::before{left:1%}.hideout-art-shell[data-character-id="sora"] .hideout-progress::after{right:1%}
-.hideout-art-shell[data-character-id="sora"] .hideout-progress>small{top:12%!important;height:34%!important;background:#08101dd9!important;color:#d6b374!important;font-size:clamp(9px,2.3vw,15px)!important;line-height:1!important;text-shadow:0 1px 2px #000,0 0 7px #b6813044!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-progress>small{top:12%!important;height:34%!important;background:#08101d8c!important;color:#d6b374!important;font-size:clamp(9px,2.3vw,15px)!important;line-height:1!important;text-shadow:0 1px 2px #000,0 0 7px #b6813044!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-progress>small#menu-exp-label{left:3%!important;width:43%!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-progress>small.jexp-label{left:54%!important;width:43%!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-progress>strong{left:3%!important;top:57%!important;width:43%!important;height:25%!important;background:transparent!important;font-size:clamp(8px,2vw,12px)!important}
