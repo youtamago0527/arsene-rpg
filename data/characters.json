@@ -258,7 +258,29 @@
     "hideoutTopArt": "assets/ui/hideout/sora-hideout-upper-v2.png",
     "portraitMode": "cutout",
     "imageFocus": "50% 18%",
-    "battleSprite": null,
+    "battleSprite": "assets/playable-characters/sora/battle/sora-instrument-back-v1.png",
+    "battleSpritesByWeaponType": {
+      "default": {
+        "src": "assets/playable-characters/sora/battle/sora-instrument-back-v1.png",
+        "backgroundSize": "auto 134%",
+        "backgroundPosition": "52% 0%",
+        "left": "-42px",
+        "bottom": "-52px",
+        "width": "280px",
+        "height": "278px",
+        "blendMode": "normal"
+      },
+      "instrument": {
+        "src": "assets/playable-characters/sora/battle/sora-instrument-back-v1.png",
+        "backgroundSize": "auto 134%",
+        "backgroundPosition": "52% 0%",
+        "left": "-42px",
+        "bottom": "-52px",
+        "width": "280px",
+        "height": "278px",
+        "blendMode": "normal"
+      }
+    },
     "voice": null,
     "skills": ["quickSlash"],
     "theme": {

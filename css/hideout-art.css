@@ -140,7 +140,7 @@
 
 /* GOLD／武器学／JOBは支給枠の内側へライブ値と以前のバーを重ねる。 */
 .hideout-art-shell[data-character-id="sora"] .hideout-resources .hideout-gold{left:2.9%!important;width:24.5%!important}
-.hideout-art-shell[data-character-id="sora"] .hideout-gold>strong{left:12%!important;right:12%!important;top:47%!important;height:30%!important;background:transparent!important;font-size:clamp(10px,2.2vw,16px)!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-gold>strong{left:12%!important;right:12%!important;top:57%!important;height:25%!important;justify-content:flex-end!important;padding-right:3%!important;background:transparent!important;color:#f5ddac!important;font-family:"Cormorant Garamond",Cinzel,serif!important;font-size:clamp(10px,2.45vw,15px)!important;font-style:italic!important;font-weight:700!important;font-variant-numeric:tabular-nums!important;letter-spacing:.035em!important;text-shadow:0 1px 3px #000,0 0 6px #000!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-resources .hideout-progress{left:28.8%!important;width:45.2%!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-progress::before,.hideout-art-shell[data-character-id="sora"] .hideout-progress::after{content:"";position:absolute;z-index:0;top:7%;width:46%;height:86%;box-sizing:border-box;background:linear-gradient(135deg,#07101df8,#0b1422f8);border:0;box-shadow:none}
 .hideout-art-shell[data-character-id="sora"] .hideout-progress::before{left:1%}.hideout-art-shell[data-character-id="sora"] .hideout-progress::after{right:1%}
@@ -154,7 +154,7 @@
 .hideout-art-shell[data-character-id="sora"] .hideout-progress .hideout-exp>em{background:linear-gradient(90deg,#c68418,#ffd761)!important;box-shadow:0 0 8px #eebd47!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-progress .hideout-exp.hideout-jexp>em{background:linear-gradient(90deg,#7c2ac8,#b66cff)!important;box-shadow:0 0 8px #a248ed!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-progress>small,.hideout-art-shell[data-character-id="sora"] .hideout-progress>strong,.hideout-art-shell[data-character-id="sora"] .hideout-progress>.hideout-exp{z-index:2!important}
-.hideout-art-shell[data-character-id="sora"] .hideout-progress>strong{z-index:4!important;color:#fff!important;text-shadow:0 1px 3px #000,0 0 6px #000!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-progress>strong{z-index:4!important;color:#fff!important;font-family:"Cormorant Garamond",Cinzel,serif!important;font-size:clamp(10px,2.45vw,15px)!important;font-style:italic!important;font-weight:700!important;font-variant-numeric:tabular-nums!important;letter-spacing:.035em!important;text-shadow:0 1px 3px #000,0 0 6px #000!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-menu button:hover,.hideout-art-shell[data-character-id="sora"] .hideout-menu button:focus-visible{outline:0!important;filter:none!important;box-shadow:none!important}
 .hideout-art-shell[data-character-id="sora"] .art-boss b,.hideout-art-shell[data-character-id="sora"] .art-boss span{display:block;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;writing-mode:horizontal-tb!important}
 .hideout-art-shell[data-character-id="sora"] .art-boss b{font-size:clamp(7px,1.8vw,10px)}
