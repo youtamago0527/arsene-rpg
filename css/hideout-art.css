@@ -141,6 +141,9 @@
 /* GOLD／武器学／JOBは支給枠の内側へライブ値と以前のバーを重ねる。 */
 .hideout-art-shell[data-character-id="sora"] .hideout-resources .hideout-gold{left:2.9%!important;width:24.5%!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-gold>strong{left:12%!important;right:12%!important;top:57%!important;height:25%!important;justify-content:flex-end!important;padding-right:3%!important;background:transparent!important;color:#f5ddac!important;font-family:"Cormorant Garamond",Cinzel,serif!important;font-size:clamp(10px,2.45vw,15px)!important;font-style:italic!important;font-weight:700!important;font-variant-numeric:tabular-nums!important;letter-spacing:.035em!important;text-shadow:0 1px 3px #000,0 0 6px #000!important}
+.hideout-art-shell[data-character-id="sora"] #menu-gold[data-amount-size="large"]{font-size:clamp(15px,4.7vw,22px)!important}
+.hideout-art-shell[data-character-id="sora"] #menu-gold[data-amount-size="compact"]{font-size:clamp(13px,3.9vw,18px)!important;letter-spacing:.015em!important}
+.hideout-art-shell[data-character-id="sora"] #menu-gold[data-amount-size="tiny"]{font-size:clamp(11px,3.2vw,15px)!important;letter-spacing:0!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-resources .hideout-progress{left:28.8%!important;width:45.2%!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-progress::before,.hideout-art-shell[data-character-id="sora"] .hideout-progress::after{content:"";position:absolute;z-index:0;top:7%;width:46%;height:86%;box-sizing:border-box;background:linear-gradient(135deg,#07101df8,#0b1422f8);border:0;box-shadow:none}
 .hideout-art-shell[data-character-id="sora"] .hideout-progress::before{left:1%}.hideout-art-shell[data-character-id="sora"] .hideout-progress::after{right:1%}

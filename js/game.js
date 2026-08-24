@@ -19,6 +19,8 @@
       this.otherWorldMusic = encodeURI('音楽系/戦闘用/星霞の理由 -Reason to Fade-異世界バトルBGM.mp3');
       this.audio = new ArseneAudio(this.battleMusic);
       this.battleAudioRestore = { bgm: .42, sfx: .72, voice: .70 };
+      const goldAmount = $('#menu-gold');
+      if (goldAmount) { const fitGold = () => { const digits = (goldAmount.textContent.match(/\d/g) || []).length; goldAmount.dataset.amountSize = digits >= 9 ? 'tiny' : digits >= 7 ? 'compact' : 'large'; }; this.goldAmountObserver = new MutationObserver(fitGold); this.goldAmountObserver.observe(goldAmount, { childList: true, characterData: true, subtree: true }); fitGold(); }
       $('#log').addEventListener('click', () => this.toggleBattleLog());
       $('#log').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.toggleBattleLog(); } });
       $('#battlefield').addEventListener('click', e => {
@@ -1684,10 +1686,17 @@
         strip.innerHTML = chips.join(''); strip.dataset.statusOwner = `${e.name}${e.label || ''}`; strip.dataset.enemyUid = e.uid; strip.tabIndex = 0; strip.setAttribute('role', 'button'); strip.title = 'タップで敵の状態と解析情報を確認'; strip.onclick = event => { event.preventDefault(); event.stopPropagation(); this.showStatusGroup(strip.dataset.statusOwner, strip); };
       });
     }
-    resetBattleLog() { this.battleLogHistory = []; this.battleEvents = []; this.battleLogExpanded = false; $('#log')?.classList.remove('expanded'); }
+    resetBattleLog() { this.clearQuickResultPopup(); this.battleLogHistory = []; this.battleEvents = []; this.battleLogExpanded = false; $('#log')?.classList.remove('expanded'); }
     setLog(text) { if (!text) return; this.battleLogHistory ||= []; this.battleLogHistory.push(text); if (this.battleLogHistory.length > 100) this.battleLogHistory.shift(); this.renderBattleLog(); }
     renderBattleLog() { const log = $('#log'); if (!log) return; const rows = this.battleLogExpanded ? this.battleLogHistory : this.battleLogHistory.slice(-5); log.innerHTML = `<small>COMBAT LOG // ${this.battleLogExpanded ? 'TAP TO CLOSE' : 'TAP FOR HISTORY'}</small><div class="battle-log-lines">${rows.map(t => `<p>${t}</p>`).join('')}</div>`; log.scrollTop = this.battleLogExpanded ? log.scrollHeight : 0; }
     toggleBattleLog() { this.battleLogExpanded = !this.battleLogExpanded; $('#log')?.classList.toggle('expanded', this.battleLogExpanded); this.renderBattleLog(); }
+    clearQuickResultPopup() { $('#quick-result-popup')?.remove(); }
+    showQuickResultPopup() {
+      const report = this.battleRewards?.quickReport, field = $('#battlefield'); if (!report || !field) return;
+      this.clearQuickResultPopup(); const popup = document.createElement('div'); popup.id = 'quick-result-popup'; popup.className = 'quick-result-popup';
+      popup.innerHTML = `${report}<button type="button" aria-label="クイックバトルログを閉じる">閉じる <span>CLOSE</span></button>`;
+      popup.querySelector('button').addEventListener('click', () => this.clearQuickResultPopup()); field.appendChild(popup);
+    }
     flashTitle(main, sub = '') { const a = $('#announcer'); a.innerHTML = `<strong>${main}</strong><span>${sub}</span>`; a.classList.remove('show'); void a.offsetWidth; a.classList.add('show'); }
     battleSleep(ms) { const speed = this.simpleBattle ? 2.5 : this.autoBattle ? 1.5 : 1; return sleep(Math.max(40, Math.floor(ms / speed))); }
     updateBattleAssistButtons() { const simple = $('[data-action="simpleBattle"]'), auto = $('[data-action="autoBattle"]'); if (simple) { simple.classList.toggle('active', this.simpleBattle); simple.setAttribute('aria-pressed', String(this.simpleBattle)); } if (auto) { auto.classList.toggle('active', this.autoBattle); auto.setAttribute('aria-pressed', String(this.autoBattle)); } }
@@ -2787,7 +2796,7 @@
       if (drops.length) parts.push(drops.map(([id, n]) => `${D.items[id]?.name || id} ×${n}`).join(' / '));
       if (levels.length) parts.push(`LEVEL UP! → LV.${levels[levels.length - 1].to}`);
       if (jobResult) parts.push(`JEXP <b>+${jobResult.exp}</b>${jobResult.to > jobResult.from ? ` / ${jobResult.jobName} Lv.${jobResult.to}` : ''}`);
-      $('#log').innerHTML = `${this.battleRewards.quickReport || ''}<p>${parts.join('　')}</p>`; $('#phase-label').textContent = 'CLEARED';
+      $('#log').innerHTML = `<p>${parts.join('　')}</p>`; $('#phase-label').textContent = 'CLEARED'; this.showQuickResultPopup();
       const boss = this.resultBossRematchEntry();
       const bossButton = boss ? this.button('ボス戦へ', `BOSS // ${boss.name}`, 'bossBattle') : '';
       this.panel(this.button('次の戦闘へ', 'NEXT BATTLE', 'next') + bossButton + this.button('拠点へ戻る', 'HIDEOUT', 'hideout'));
