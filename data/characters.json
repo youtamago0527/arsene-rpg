@@ -259,6 +259,12 @@
     "portraitMode": "cutout",
     "imageFocus": "50% 18%",
     "battleSprite": "assets/playable-characters/sora/battle/sora-instrument-back-v1.png",
+    "battleAttackFrames": {
+      "ready": "assets/playable-characters/sora/battle/attack-common-v1/sora-attack-01-ready-v1.png",
+      "lift": "assets/playable-characters/sora/battle/attack-common-v1/sora-attack-02-lift-v1.png",
+      "release": "assets/playable-characters/sora/battle/attack-common-v1/sora-attack-03-release-v1.png",
+      "scope": "allWeapons"
+    },
     "battleSpritesByWeaponType": {
       "default": {
         "src": "assets/playable-characters/sora/battle/sora-instrument-back-v1.png",

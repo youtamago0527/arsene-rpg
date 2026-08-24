@@ -1587,6 +1587,20 @@
           '--battle-character-blend': spriteConfig.blendMode
         };
         Object.entries(visualProps).forEach(([name, value]) => value ? ren.style.setProperty(name, value) : ren.style.removeProperty(name));
+        const attackFrames = character?.battleAttackFrames || {};
+        const attackFrameProps = {
+          '--battle-attack-ready': attackFrames.ready,
+          '--battle-attack-lift': attackFrames.lift,
+          '--battle-attack-release': attackFrames.release
+        };
+        Object.entries(attackFrameProps).forEach(([name, value]) => {
+          if (value) {
+            const absoluteFrame = new URL(value, document.baseURI).href;
+            ren.style.setProperty(name, `url("${String(absoluteFrame).replace(/["\\]/g, '\\$&')}")`);
+            const preload = new Image(); preload.src = absoluteFrame;
+          } else ren.style.removeProperty(name);
+        });
+        ren.dataset.attackScope = attackFrames.scope || '';
         if (spriteConfig.chromaKey && absoluteSprite) this.chromaKeyImage(absoluteSprite, spriteConfig.chromaKey).then(prepared => {
           if (ren.dataset.spriteSource === absoluteSprite) ren.style.setProperty('--battle-character-image', `url("${String(prepared).replace(/["\\]/g, '\\$&')}")`);
         });

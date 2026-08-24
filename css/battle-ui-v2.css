@@ -313,6 +313,32 @@
   mix-blend-mode:var(--battle-character-blend,normal);
   filter:drop-shadow(0 6px 3px #000c) drop-shadow(0 0 7px var(--character-glow));
 }
+
+/* ソラの3コマ攻撃は武器種に依存しない。通常攻撃・武器技・物理攻撃スキルで共通使用する。 */
+#game #ren[data-character-id="sora"][data-custom-portrait="false"][data-attack-scope="allWeapons"].attacking .ren-sprite{
+  background-image:none!important;
+  animation:soraCommonAttackBody .65s ease-in-out both!important;
+  filter:drop-shadow(0 6px 3px #000c) drop-shadow(0 0 11px #79e9ffbb)!important;
+}
+#game #ren[data-character-id="sora"][data-custom-portrait="false"][data-attack-scope="allWeapons"].attacking .ren-sprite::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:var(--battle-attack-ready) center top/auto 134% no-repeat;
+  animation:soraCommonAttackFrames .65s steps(1,end) both;
+}
+@keyframes soraCommonAttackFrames{
+  0%,24%{background-image:var(--battle-attack-ready)}
+  25%,54%{background-image:var(--battle-attack-lift)}
+  55%,91%{background-image:var(--battle-attack-release)}
+  92%,100%{background-image:var(--battle-attack-ready)}
+}
+@keyframes soraCommonAttackBody{
+  0%,100%{transform:translate3d(0,0,0)}
+  54%{transform:translate3d(7px,-2px,0)}
+  72%{transform:translate3d(18px,0,0)}
+}
 #game .ren-shadow{display:none}
 #game .player-card{
   right:8px;
