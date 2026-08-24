@@ -159,6 +159,7 @@
 .hideout-art-shell[data-character-id="sora"] .hideout-progress>small,.hideout-art-shell[data-character-id="sora"] .hideout-progress>strong,.hideout-art-shell[data-character-id="sora"] .hideout-progress>.hideout-exp{z-index:2!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-progress>strong{z-index:4!important;color:#fff!important;font-family:"Cormorant Garamond",Cinzel,serif!important;font-size:clamp(10px,2.45vw,15px)!important;font-style:italic!important;font-weight:700!important;font-variant-numeric:tabular-nums!important;letter-spacing:.035em!important;text-shadow:0 1px 3px #000,0 0 6px #000!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-menu button:hover,.hideout-art-shell[data-character-id="sora"] .hideout-menu button:focus-visible{outline:0!important;filter:none!important;box-shadow:none!important}
+.hideout-art-shell .hideout-menu button,.hideout-art-shell .hideout-menu button:not(.private-mode){border:0!important;background:transparent!important;box-shadow:none!important}
 .hideout-art-shell[data-character-id="sora"] .art-boss b,.hideout-art-shell[data-character-id="sora"] .art-boss span{display:block;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;writing-mode:horizontal-tb!important}
 .hideout-art-shell[data-character-id="sora"] .art-boss b{font-size:clamp(7px,1.8vw,10px)}
 .hideout-art-shell[data-character-id="sora"] .art-boss span{font-size:clamp(5px,1.15vw,7px);letter-spacing:.04em}
