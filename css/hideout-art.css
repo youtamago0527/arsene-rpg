@@ -120,8 +120,9 @@
 .hideout-art-shell[data-character-id="sora"] .hideout-menu [data-menu="system"]{left:74.6%!important;top:80.1%!important;width:23%!important;height:11.4%!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-menu .private-mode{left:2.7%!important;top:92.3%!important;width:94.9%!important;height:6.8%!important}
 .hideout-art-shell[data-character-id="sora"] .art-boss{top:30.8%!important;right:3.2%!important;width:35%!important}
-.hideout-art-shell[data-character-id="sora"] .kazu-bubble{left:29%!important;top:45.5%!important;bottom:auto!important;max-width:42%!important}
-.hideout-art-shell[data-character-id="sora"] .kazu-bubble::after{left:auto!important;right:-9px!important;top:58%!important;bottom:auto!important;border-color:transparent!important;border-left-color:#4a8fd4!important}
+.hideout-art-shell[data-character-id="sora"] .kazu-bubble{z-index:12!important;left:auto!important;right:3.2%!important;top:30.8%!important;bottom:auto!important;width:35%!important;max-width:none!important;box-sizing:border-box}
+.hideout-art-shell[data-character-id="sora"] .kazu-bubble::after{left:14px!important;right:auto!important;top:auto!important;bottom:-8px!important;border-color:transparent!important;border-top-color:#4a8fd4!important}
+.hideout-art-shell[data-character-id="sora"].kazu-speaking .art-boss{pointer-events:none!important}
 
 /* 上下素材で異なる外枠余白をそろえ、右上へライブHP/MPを戻す。 */
 .hideout-art-shell[data-character-id="sora"] .hideout-top-art{left:1.7%;width:96.6%}

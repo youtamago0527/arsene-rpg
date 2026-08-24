@@ -3908,8 +3908,10 @@
       const bubble = document.createElement('div');
       bubble.id = 'kazu-bubble'; bubble.className = 'kazu-bubble'; bubble.textContent = text;
       shell.appendChild(bubble);
-      let timer = setTimeout(() => bubble.remove(), 6000);
-      bubble.addEventListener('click', () => { clearTimeout(timer); bubble.remove(); });
+      shell.classList.add('kazu-speaking');
+      const close = () => { bubble.remove(); shell.classList.remove('kazu-speaking'); };
+      let timer = setTimeout(close, 6000);
+      bubble.addEventListener('click', () => { clearTimeout(timer); close(); });
     }
   }
   window.BattleGame = BattleGame; // 異世界モジュールから prototype を拡張するため公開する
