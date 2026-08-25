@@ -11,6 +11,24 @@
   P.isCfg = function () { return D().infiniteScore || {}; };
   P.isDebugAllowed = function () { return !!window.arseneDebugRoom?.isUnlocked?.() || this.localScenario?.id === 'infinite-score-ready'; };
   P.isRun = function () { return this.profile?.infiniteScore?.active ? this.profile.infiniteScore : null; };
+  P.isEnsureRunShape = function (run = this.isRun()) {
+    if (!run) return null;
+    run.version = 2;
+    run.floor = Math.max(1, Number(run.floor) || 1);
+    run.encounterCountOnFloor = Math.max(0, Number(run.encounterCountOnFloor) || 0);
+    run.lootBag = Array.isArray(run.lootBag) ? run.lootBag : [];
+    run.importedItems = Array.isArray(run.importedItems) ? run.importedItems : [];
+    run.equipment = run.equipment && typeof run.equipment === 'object' ? run.equipment : {};
+    run.buffs = { treasureBonus:0, rareBonus:0, goldBonus:0, qualityBattles:0, ...(run.buffs || {}) };
+    run.log = Array.isArray(run.log) ? run.log : [];
+    run.dungeonGold = Math.max(0, Number(run.dungeonGold) || 0);
+    run.seed = (Number(run.seed) || 527) >>> 0;
+    run.rngState = (Number(run.rngState) || run.seed) >>> 0;
+    run.uidCounter = Math.max(run.lootBag.length, Number(run.uidCounter) || 0);
+    const map=run.floorMap,validMap=map&&map.floor===run.floor&&Array.isArray(map.nodes)&&map.nodes.length>0&&Array.isArray(map.links)&&map.nodes.some(n=>n?.id===map.currentId);
+    if (!validMap) { run.floorMap=null; run.pendingChoices=null; }
+    return run;
+  };
   P.isSave = function () { this.saveProfile(); return this.isRun(); };
   P.isPlayExploreMusic = function () { this.audio?.playTrack?.(encodeURI('音楽系/ダンジョン/ダンジョン1Moonlit Reliquary.mp3')); };
   P.isRand = function () {
@@ -127,7 +145,8 @@
   P.renderOtherWorldPanel = function (panel) {
     origRenderOw.call(this, panel);
     if (!this.isDebugAllowed()) return;
-    const active = this.isRun();
+    const active = this.isEnsureRunShape(this.isRun());
+    if (active) this.saveProfile();
     panel.insertAdjacentHTML('beforeend', `<button class="ow-enter is-score-entry" data-is-action="${active ? 'resume' : 'warning'}"><b>無限奏廊</b><span>INFINITE SCORE // DEBUG${active ? ` // FLOOR ${active.floor}` : ''}</span></button>`);
   };
   P.isRenderWarning = function (panel) {
@@ -187,7 +206,7 @@
     }
     run.floorMap={floor:run.floor,width,rows,nodes,links,currentId:nodes[0].id,generatedAt:Date.now()};run.pendingChoices=null;this.isLog(`FLOOR ${run.floor} MAP生成`,{nodes:nodes.length,links:links.length});return run.floorMap;
   };
-  P.isFloorMap = function () { const r=this.isRun();if(!r)return null;if(!r.floorMap||r.floorMap.floor!==r.floor)this.isCreateFloorMap();return r.floorMap; };
+  P.isFloorMap = function () { const r=this.isEnsureRunShape();if(!r)return null;if(!r.floorMap||r.floorMap.floor!==r.floor)this.isCreateFloorMap();return r.floorMap; };
   P.isMapNode = function (id) { return this.isFloorMap()?.nodes.find(n=>n.id===id)||null; };
   P.isMapNextNodes = function () { const map=this.isFloorMap();if(!map)return[];const ids=map.links.filter(([a])=>a===map.currentId).map(([,b])=>b);return ids.map(id=>this.isMapNode(id)).filter(n=>n&&!n.visited); };
   P.isMapBackNode = function () { const map=this.isFloorMap();if(!map)return null;const id=map.links.slice().reverse().find(([,b])=>b===map.currentId)?.[0];return id?this.isMapNode(id):null; };
@@ -385,7 +404,26 @@
 
   // ── パネル接続と操作 ─────────────────────────────────────
   const origRenderPanel=P.renderMenuPanel,infinitePanel=$('#menu-panel'),infinitePanelHome=infinitePanel?.parentNode,infinitePanelNext=infinitePanel?.nextSibling;
-  P.renderMenuPanel=function(name){const panel=$('#menu-panel');if(panel&&name.startsWith('infinite-score')){if(panel.parentNode!==document.body)document.body.appendChild(panel);panel.hidden=false;panel.style.display='block';panel.classList.add('panel-tall');panel.scrollTop=0;if(name==='infinite-score-warning')this.isRenderWarning(panel);else if(name==='infinite-score-import')this.isRenderImport(panel);else if(name==='infinite-score-bag')this.isRenderBag(panel);else if(name==='infinite-score-equipment')this.isRenderEquipment(panel);else if(name==='infinite-score-debug')this.isRenderDebug(panel);else if(name==='infinite-score-choices')this.isRenderChoices(panel);else if(name==='infinite-score-map')this.isRenderMap(panel);else this.isRenderExplore(panel);return;}if(panel&&infinitePanelHome&&panel.parentNode===document.body)infinitePanelHome.insertBefore(panel,infinitePanelNext?.parentNode===infinitePanelHome?infinitePanelNext:null);if(panel)panel.style.display='';return origRenderPanel.call(this,name);};
+  P.renderMenuPanel=function(name){
+    name=String(name||'');
+    const panel=$('#menu-panel');
+    if(panel&&name.startsWith('infinite-score')){
+      if(panel.parentNode!==document.body)document.body.appendChild(panel);
+      panel.hidden=false;panel.style.display='block';panel.classList.add('panel-tall');panel.scrollTop=0;
+      if(name==='infinite-score-warning')this.isRenderWarning(panel);
+      else if(name==='infinite-score-import')this.isRenderImport(panel);
+      else if(name==='infinite-score-bag')this.isRenderBag(panel);
+      else if(name==='infinite-score-equipment')this.isRenderEquipment(panel);
+      else if(name==='infinite-score-debug')this.isRenderDebug(panel);
+      else if(name==='infinite-score-choices')this.isRenderChoices(panel);
+      else if(name==='infinite-score-map')this.isRenderMap(panel);
+      else this.isRenderExplore(panel);
+      return;
+    }
+    if(panel&&infinitePanelHome&&panel.parentNode===document.body)infinitePanelHome.insertBefore(panel,infinitePanelNext?.parentNode===infinitePanelHome?infinitePanelNext:null);
+    if(panel)panel.style.display='';
+    return origRenderPanel.call(this,name);
+  };
 
   document.addEventListener('click',e=>{if(e.target.closest('[data-is-action="resume"]'))window.arseneGame?.isPlayExploreMusic?.();},true);
   document.addEventListener('click',e=>{const a=e.target.closest('[data-is-action="explore-log"]'),g=window.arseneGame;if(!a||!g)return;e.preventDefault();e.stopImmediatePropagation();g.isExploreLogExpanded=!g.isExploreLogExpanded;g.isRenderExplore($('#menu-panel'));});
