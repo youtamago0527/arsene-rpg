@@ -28,6 +28,18 @@
 }
 .auto-speed-indicator small{font:700 6px/1 "Cormorant Garamond",Cinzel,serif;letter-spacing:.08em}
 .auto-speed-indicator strong{font:italic 700 14px/1 "Cormorant Garamond",Cinzel,serif;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+
+/* 拠点のライブ数値と同じFFT調の細身セリフ体を戦闘ステータスにも使用する。 */
+#game,
+#game button,
+#game output,
+#game .player-card,
+#game .player-card *,
+#game .enemy-nameplate,
+#game .enemy-hud,
+#game .battle-log{
+  font-family:"Cormorant Garamond","Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif!important;
+}
 .auto-speed-indicator.active{color:#ffdc75;opacity:1;text-shadow:0 0 7px #e7aa35,0 1px 3px #000}
 .battle-menu-popover{pointer-events:auto;position:absolute;right:0;top:46px;width:min(252px,calc(100vw - 24px));padding:10px;background:linear-gradient(150deg,#080913fa,#02030afa);border:1px solid #8a724e;box-shadow:inset 0 0 0 2px #181522,0 14px 34px #000;display:grid;gap:8px;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}.battle-menu-popover[hidden]{display:none}
 .battle-menu-header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #443554;padding:0 0 7px}.battle-menu-header small{font:700 9px Cinzel;letter-spacing:.2em;color:#c5a0ff}.battle-menu-header button{width:28px;height:26px;padding:0!important;border-color:#67445c!important;background:#0a0910!important;color:#e9dfea;font-size:16px!important;box-shadow:inset 0 0 8px #4a173333}
@@ -1231,6 +1243,18 @@
 }
 #game .xp-cell .meter{height:14px}
 #game .xp-cell .meter output{font-size:8px}
+/* FFT調の文字配色。名称・見出しは古金、戦闘中に読む現在値は白で分離する。 */
+#game .player-meta strong,
+#game .player-meta span,
+#game .meter-row label,
+#game .xp-cell>small,
+#game .resonance-row>small{
+  color:#e4c88f!important;
+  text-shadow:0 1px 3px #000,0 0 7px #b57c2d55;
+}
+#game .meter-row output,
+#game .xp-cell .meter output,
+#game .resonance-row>output{color:#fff!important}
 @media(max-width:393px){
   #game .player-card{min-height:140px;padding-left:11px;padding-right:9px}
   #game .player-meta strong{font-size:19px}

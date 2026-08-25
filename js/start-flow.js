@@ -28,7 +28,7 @@
       try {
         [this.prologue, this.characters] = await Promise.all([
           fetch('data/prologue.json').then(response => response.json()),
-          fetch('data/characters.json?v=0.4.2').then(response => response.json())
+          fetch('data/characters.json?v=0.4.6').then(response => response.json())
         ]);
       } catch (error) {
         console.error('Start flow data could not be loaded.', error);
@@ -281,9 +281,13 @@
       const tendency = tendencyKeys.map(([k, label]) => `<div class="tend-row"><span>${label}</span>${this.stars(current.tendency?.[k])}</div>`).join('');
       const trait = current.trait;
       const nl = text => (text || '').split('\n').filter(Boolean).map(line => `<p>${line}</p>`).join('');
+      const selectionImage = current.selectPortrait || current.hideoutTopArt || current.image;
+      const selectionFocus = current.selectFacePosition || (current.selectPortrait ? '50% 50%' : '50% 24%');
+      const selectionPortraitMode = current.selectPortrait ? 'select-face' : (current.hideoutTopArt ? 'hideout-face' : (current.portraitMode || 'scene'));
 
       $('.character-stage', this.root).innerHTML = `
-        <article class="character-card available" data-character="${current.id}" data-portrait="${current.portraitMode || 'scene'}">
+        <article class="character-card available" data-character="${current.id}" data-portrait="${selectionPortraitMode}">
+          <div class="cc-art"><img src="${selectionImage}" alt="${current.name}" style="--select-face-position:${selectionFocus};object-position:${selectionFocus}"></div>
           <div class="card-info">
             <h2>${current.name}</h2><h3>${current.nameEn}</h3>
             <label class="cc-player-name"><small>PLAYER NAME</small><input type="text" maxlength="12" inputmode="text" autocomplete="off" data-player-name value="${this.escapeHtml(this.normalizedPlayerName(current))}" aria-label="ゲーム内で使用する名前"><span>ゲーム内表示名（12文字まで）</span></label>
@@ -293,7 +297,6 @@
             <div class="cc-tendency"><small>INITIAL TENDENCY</small><div class="tend-grid">${tendency}</div></div>
             <button class="cc-select" data-select-character="${current.id}">SELECT</button>
           </div>
-          <div class="cc-art"><img src="${current.image}" alt="${current.name}" style="object-position:${current.imageFocus || '50% 20%'}"></div>
         </article>`;
 
       const currentIndex = list.findIndex(c => c.id === current.id);
@@ -301,10 +304,7 @@
       // 見えないようにする（スマホでは 3×2、広い画面では縦リスト）。
       const carouselCards = list.map((c, index) => {
         const active = index === currentIndex;
-        return `<button type="button" class="mini-card ${active ? 'active' : 'nearby'}" data-preview-character="${c.id}" aria-pressed="${active}" style="--mini-primary:${c.theme?.primary || '#2f9dff'};--mini-glow:${c.theme?.glow || '#147dd8'}">
-          <span class="mini-art"><img src="${c.image}" alt="" style="object-position:${c.imageFocus || '50% 20%'}"></span>
-          <b>${c.name}</b><small>${c.type || ''}</small>
-        </button>`;
+        return `<button type="button" class="mini-card ${active ? 'active' : 'nearby'}" data-preview-character="${c.id}" aria-pressed="${active}" style="--mini-primary:${c.theme?.primary || '#2f9dff'};--mini-glow:${c.theme?.glow || '#147dd8'}"><b>${c.name}</b></button>`;
       }).join('');
       $('.character-switcher', this.root).innerHTML = `<button type="button" class="character-cycle" data-cycle-character="-1" aria-label="前のキャラクター">‹</button><div class="character-carousel">${carouselCards}</div><button type="button" class="character-cycle" data-cycle-character="1" aria-label="次のキャラクター">›</button><small class="character-count">${currentIndex + 1} / ${list.length}</small>`;
     }
@@ -312,8 +312,10 @@
     askCharacter(id) {
       const character = this.characters.find(entry => entry.id === id && entry.available);
       if (!character) { this.toast('このPHANTOMはまだ選択できません。'); return; }
+      const nameInput = $('[data-player-name]', this.root);
+      if (nameInput) this.chosenPlayerName = String(nameInput.value || '').slice(0, 12);
       const playerName = this.normalizedPlayerName(character);
-      this.openConfirm(`${playerName}で進みますか？`, () => { this.chosenCharacter = character; this.chosenPlayerName = playerName; this.game.applyCharacterTheme(character.theme); this.showJobSelect(); });
+      this.openConfirm(`名前は「${playerName}」でよろしいですか？`, () => { this.chosenCharacter = character; this.chosenPlayerName = playerName; this.game.applyCharacterTheme(character.theme); this.showJobSelect(); });
     }
 
     // ── 得意武器選択 ──────────────────────────────────────────

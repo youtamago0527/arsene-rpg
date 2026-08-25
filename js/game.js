@@ -9,7 +9,7 @@
 
   class BattleGame {
     constructor() {
-      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.autoToggleBusy = false; this.autoPickTimer = null; this.simpleBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.enhanceWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.enhanceArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false; this.lastBattleAction = null; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
+      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.autoBattleSpeedIndex = -1; this.autoToggleBusy = false; this.autoPickTimer = null; this.simpleBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.enhanceWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.enhanceArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false; this.lastBattleAction = null; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
       // 旧セーブ・新規プロファイルの両方で楽器学を必ず初期化する。
       this.profile.weaponMastery.instrument ||= { level: 1, exp: 0 };
       this.currentDungeonId = 'dungeon1';
@@ -1759,7 +1759,15 @@
       popup.querySelector('button').addEventListener('click', () => this.clearQuickResultPopup()); field.appendChild(popup);
     }
     flashTitle(main, sub = '') { const a = $('#announcer'); a.innerHTML = `<strong>${main}</strong><span>${sub}</span>`; a.classList.remove('show'); void a.offsetWidth; a.classList.add('show'); }
-    autoBattleSpeedMultiplier() { return clamp(Number(this.profile?.autoBattleSpeed || D.settings.autoBattleSpeed || 1.5), 1, 3); }
+    autoBattleSpeedSteps() {
+      const configured = Array.isArray(D.settings.autoBattleSpeedSteps) ? D.settings.autoBattleSpeedSteps : [D.settings.autoBattleSpeed || 1.5];
+      const steps = configured.map(Number).filter(speed => Number.isFinite(speed) && speed >= 1 && speed <= 3);
+      return steps.length ? steps : [1.5];
+    }
+    autoBattleSpeedMultiplier() {
+      const steps = this.autoBattleSpeedSteps(), index = clamp(Number(this.autoBattleSpeedIndex) || 0, 0, steps.length - 1);
+      return steps[index];
+    }
     battleSleep(ms) { const speed = this.simpleBattle ? 2.5 : this.autoBattle ? this.autoBattleSpeedMultiplier() : 1; return sleep(Math.max(40, Math.floor(ms / speed))); }
     updateBattleAssistButtons() {
       const simple = $('[data-action="simpleBattle"]'), auto = $('[data-action="autoBattle"]'), indicator = $('#auto-speed-indicator');
@@ -1908,6 +1916,7 @@
     endAutoBattle() {
       // 勝敗・逃走の確定後にAUTOの予約や演出中の操作ロックを残さない。
       this.autoBattle = false;
+      this.autoBattleSpeedIndex = -1;
       this.autoToggleBusy = false;
       this.cancelAutoPick();
       $('#command-panel')?.classList.remove('turn-locked');
@@ -1918,13 +1927,23 @@
       this.autoPickTimer = setTimeout(() => {
         this.autoPickTimer = null;
         this.autoPickAction();
-      }, 700);
+      }, Math.max(180, Math.round(700 / this.autoBattleSpeedMultiplier())));
     }
     toggleAutoBattle() {
-      // 演出中でも停止できるが、連打で複数の予約タイマーが走らないよう短時間だけ受け付けを絞る。
+      // OFF → 設定された倍率を順番に進む → OFF。将来は設定配列へ3を足すだけで×3を追加できる。
+      // 演出中でも切替できるが、連打で複数の予約タイマーが走らないよう短時間だけ受け付けを絞る。
       if (this.autoToggleBusy || this.finished) return;
       this.autoToggleBusy = true;
-      this.autoBattle = !this.autoBattle;
+      const steps = this.autoBattleSpeedSteps();
+      if (!this.autoBattle) {
+        this.autoBattle = true;
+        this.autoBattleSpeedIndex = 0;
+      } else if (this.autoBattleSpeedIndex < steps.length - 1) {
+        this.autoBattleSpeedIndex += 1;
+      } else {
+        this.autoBattle = false;
+        this.autoBattleSpeedIndex = -1;
+      }
       this.cancelAutoPick();
       this.showMainCommands();
       setTimeout(() => { this.autoToggleBusy = false; }, 180);
@@ -1956,7 +1975,7 @@
         + this.button('アイテム', 'ITEM', 'item', false, 'item')
         + this.button('再行動', 'REPEAT', 'repeat', false, 'repeat')
         + this.button('一掃', 'SWEEP', 'quick', false, 'simple')
-        + this.button('AUTO', this.autoBattle ? 'AUTO // ON' : 'AUTO // OFF', 'autoBattle', false, 'auto');
+        + this.button('AUTO', this.autoBattle ? `AUTO // ×${this.autoBattleSpeedMultiplier()}` : 'AUTO // OFF', 'autoBattle', false, 'auto');
       this.panel(html, 'main');
       // AUTOを演出中にOFFへ切り替えた場合、旧パネルのturn-lockedがDOMに残ることがある。
       // 現在の戦闘ロック状態と必ず同期し、ターン終了後に通常コマンドを再び操作可能にする。
@@ -1967,7 +1986,7 @@
     autoPickAction() { if (!this.autoBattle || this.locked || this.finished) return; const maxHp = this.player.stats.maxHp, maxMp = this.player.stats.maxMp, hpPct = this.player.hp / maxHp; if (hpPct < 0.4 && (this.profile.inventory.potion || 0) > 0) { this.useConsumable('potion'); return; } if (this.player.mp < maxMp * 0.2 && (this.profile.inventory.manaPotion || 0) > 0) { this.useConsumable('manaPotion'); return; } const aliveEnemies = this.enemies.filter(e => e.alive); const skills = this.availableSkills().filter(s => this.canPaySkillCosts(s) && this.cooldownRemaining(s) === 0); const weapon = this.equippedWeapon(); const atkScore = weapon?.power || 1; let best = { type: 'attack', score: atkScore }; for (const s of skills) { let score = 0; if (s.kind === 'support') { if (s.effect?.type === 'hpRecover') score = hpPct < 0.75 ? (1 - hpPct) * 200 : 0; else if (s.effect?.type === 'mpRecover') score = this.player.mp < maxMp * 0.5 ? 45 : 0; else if (s.effect?.type === 'regenerate') score = hpPct < 0.8 && !(this.player.buffs.regenerate > 0) ? 38 : 0; else if (s.effect?.type === 'hpToMp') score = this.player.mp < maxMp * .45 && hpPct > .55 ? 48 : 0; } else if (s.kind === 'hybrid') { score = (s.strScale + s.magScale) * 12; } else { const multi = s.target === 'all' ? Math.min(aliveEnemies.length, 3) * 0.7 : 1; score = (s.power || 1) * (s.hits || 1) * multi; } if (score > best.score) best = { type: 'skill', skill: s, score }; } if (best.type === 'skill') { const s = best.skill; if (s.target === 'all' || s.target === 'self') { this.executeRound(s.id, -1); } else { this.executeRound(s.id, this.enemies.findIndex(e => e.alive)); } } else { this.executeRound('attack', this.enemies.findIndex(e => e.alive)); } }
     async quickResolveBattle() {
       if (this.locked || this.finished || this.battleMode === 'debugOverpower') return;
-      this.locked = true; this.quickResolving = true; this.autoBattle = false; this.cancelAutoPick(); this.panel(''); $('#phase-label').textContent = 'QUICK';
+      this.locked = true; this.quickResolving = true; this.autoBattle = false; this.autoBattleSpeedIndex = -1; this.cancelAutoPick(); this.panel(''); $('#phase-label').textContent = 'QUICK';
       const enemies = this.enemies.filter(enemy => enemy.alive), stats = this.playerCombatStats(), pDef = this.defensePowerFor('physical', stats), mDef = this.defensePowerFor('magical', stats);
       const basic = this.basicAttackSkill(), learned = [basic, ...this.availableSkills()].filter((skill, index, list) => skill && list.findIndex(s => s.id === skill.id) === index);
       const offensive = learned.filter(skill => skill.kind !== 'support'), attackValue = skill => {
@@ -2456,7 +2475,7 @@
     activeMealBuff() { const id = this.activeMealBuffType(); return id ? D.foodMenu?.buffs?.[id] || null : null; }
     mealGoldBonusRate() { return this.activeMealBuff()?.goldRate || 0; }
     mealExpBonusRate() { return this.activeMealBuff()?.expRate || 0; }
-    mealEffectLabel(meal = this.activeMealBuff()) { if (!meal) return 'カズのまかないで'; if (meal.maxHpRate) return `最大HP ＋${Math.round(meal.maxHpRate * 100)}%`; if (meal.goldRate) return `GOLD ＋${Math.round(meal.goldRate * 100)}%`; if (meal.expRate) return `EXP ＋${Math.round(meal.expRate * 100)}%`; return meal.description || '効果あり'; }
+    mealEffectLabel(meal = this.activeMealBuff()) { if (!meal) return 'カズのまかないで潜入を強化'; if (meal.maxHpRate) return `最大HP ＋${Math.round(meal.maxHpRate * 100)}%`; if (meal.goldRate) return `GOLD ＋${Math.round(meal.goldRate * 100)}%`; if (meal.expRate) return `EXP ＋${Math.round(meal.expRate * 100)}%`; return meal.description || '効果あり'; }
     clearMealBuff() { if (!this.profile?.flags) return; this.profile.flags.ramenBuffActive = false; this.profile.flags.ramenBuffType = null; }
     isMealUnlocked(id) { const meal = D.foodMenu?.buffs?.[id]; return !!meal && (!meal.unlockBoss || this.isBossDefeated(meal.unlockBoss)) && (!meal.unlockFlag || !!this.profile?.flags?.[meal.unlockFlag]); }
     mealPriceFor(id) { const meal = D.foodMenu?.buffs?.[id]; return meal?.priceType === 'goldRate' ? this.mealPrice() : (meal?.price || 0); }

@@ -1,7 +1,7 @@
 window.ARSENE_DATA = {
   // dungeon2BossWins：ミルティ解放に必要なダンジョン2の勝利数。4時間構想の主調整値。
   // debugPassword：拠点の狐を長押しで開くデバッグルームのパスワード
-  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5, dungeon2BossWins: 100, dungeon3MidBossWins: 28, dungeon3TargetWins: 60, debugPassword: '1229', mealGoldRate: 0.3, counterPowerRate: 0.7, battleMenuTestReturn: true, autoBattleSpeed: 1.5 },
+  settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5, dungeon2BossWins: 100, dungeon3MidBossWins: 28, dungeon3TargetWins: 60, debugPassword: '1229', mealGoldRate: 0.3, counterPowerRate: 0.7, battleMenuTestReturn: true, autoBattleSpeed: 1.5, autoBattleSpeedSteps: [1.5, 2] },
   guardianBalance: {
     shieldDefRate: 0.5, shieldMdefRate: 0.5, resonanceGainPerDamage: 0.05,
     fortressReduction: 0.30, resonanceMax: 100,

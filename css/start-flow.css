@@ -212,3 +212,65 @@
   to{opacity:1;transform:none}}
 @media(max-width:760px){.title-content .title-logo{width:92vw}}
 @media(prefers-reduced-motion:reduce){.title-content .title-logo{animation:none}}
+
+/* キャラクター選択：一覧は名前だけ。選択中は拠点上部素材から顔だけを
+   円形に切り抜き、名前の上へ表示する。下側に画像領域は作らない。 */
+.select-screen .character-card{
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:auto minmax(0,1fr)!important;
+}
+.select-screen .character-card .cc-art{
+  grid-column:1;grid-row:1;align-self:center;justify-self:center;
+  width:clamp(104px,19vw,150px);height:clamp(104px,19vw,150px);
+  margin:12px auto 4px;border:2px solid var(--character-border);border-radius:50%;
+  background:#02040b;box-shadow:0 0 calc(20px * var(--character-glow-softness)) color-mix(in srgb,var(--character-glow) 58%,transparent)
+}
+.select-screen .character-card .card-info{
+  grid-column:1;grid-row:2;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch
+}
+.character-card[data-portrait="hideout-face"] .cc-art img{
+  position:absolute!important;inset:0!important;
+  width:100%!important;height:100%!important;margin:0!important;padding:0!important;
+  object-fit:cover!important;object-position:var(--select-face-position,50% 24%)!important;
+  transform:scale(2.45)!important;transform-origin:var(--select-face-position,50% 24%)!important;
+  image-rendering:auto!important;filter:none!important;
+}
+.character-card[data-portrait="hideout-face"] .cc-art::after{
+  display:none
+}
+.character-card[data-portrait="select-face"] .cc-art img{
+  position:absolute!important;inset:0!important;
+  width:100%!important;height:100%!important;margin:0!important;padding:0!important;
+  object-fit:cover!important;object-position:var(--select-face-position,50% 50%)!important;
+  transform:none!important;image-rendering:auto!important;filter:none!important
+}
+.character-card[data-portrait="select-face"] .cc-art::after{display:none}
+.character-carousel .mini-card{
+  min-height:46px;display:flex;align-items:center;justify-content:center;
+  padding:8px 5px;text-align:center
+}
+.character-carousel .mini-card b{
+  width:100%;font-family:"Cormorant Garamond","Yu Mincho","Hiragino Mincho ProN",serif;
+  font-size:clamp(12px,2vw,16px);line-height:1.15;letter-spacing:.08em;
+  white-space:nowrap;overflow:hidden;text-overflow:clip
+}
+/* 特性説明は全員2行分の高さを確保し、直後の能力値・★の開始位置を固定する。 */
+.select-screen .cc-trait{
+  height:108px;min-height:108px;box-sizing:border-box;align-content:start;overflow:hidden
+}
+.select-screen .cc-trait-desc{
+  min-height:42px;display:grid;align-content:start;grid-auto-rows:min-content
+}
+.select-screen .cc-tendency{margin-top:0;align-self:start}
+.select-screen .tend-row{min-height:18px}
+@media(max-width:699px){
+  .character-carousel{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .character-carousel .mini-card{min-height:34px;padding:5px 2px}
+  .character-carousel .mini-card b{font-size:clamp(10px,3.2vw,13px);letter-spacing:.03em}
+  .select-screen .character-card{grid-template-rows:112px minmax(0,1fr)!important}
+  .select-screen .character-card .cc-art{width:96px;height:96px;margin:7px auto 3px}
+  .select-screen .character-card .card-info{overflow:auto}
+  .select-screen .cc-trait{height:78px;min-height:78px}
+  .select-screen .cc-trait-desc{min-height:27px}
+  .select-screen .tend-row{min-height:12px}
+}

@@ -139,15 +139,15 @@
 .hideout-art-shell[data-character-id="sora"] .hideout-player-portrait{display:block!important;left:-54%!important;top:0!important;width:50%!important;height:100%!important;background:none!important;border:0!important;box-shadow:none!important;filter:none!important;opacity:1!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-player-portrait:hover,.hideout-art-shell[data-character-id="sora"] .hideout-player-portrait:focus-visible{outline:0!important;box-shadow:none!important;filter:none!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-player>div:last-child{display:block!important;left:0!important;right:0!important;top:0!important;bottom:0!important;background:transparent!important}
-.hideout-art-shell[data-character-id="sora"] .hideout-player strong{left:2%!important;top:0!important;width:96%!important;height:28%!important;padding:0 3%!important;background:linear-gradient(90deg,#050a14e8,#050a1499 72%,transparent)!important;color:#f0d6a0!important;font-size:clamp(11px,2.5vw,18px)!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-player strong{left:18%!important;top:0!important;width:80%!important;height:28%!important;padding:0 3%!important;background:linear-gradient(90deg,#050a14e8,#050a1499 72%,transparent)!important;color:#f0d6a0!important;font-size:clamp(11px,2.5vw,18px)!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-meter{left:2%!important;right:2%!important;height:31%!important;grid-template-columns:11% minmax(0,1fr)!important;gap:3%!important;padding:0 2%!important;background:transparent!important;border:0!important;box-shadow:none!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-meter:not(.mp){top:32%!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-meter.mp{top:66%!important}
-.hideout-art-shell[data-character-id="sora"] .hideout-meter>span{font-size:clamp(7px,1.7vw,11px)!important;color:#ead4a8!important}
-.hideout-art-shell[data-character-id="sora"] .hideout-meter>i{width:82%!important;height:32%!important;border-color:#8b6a39!important;background:#090d17!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-meter>span{position:absolute!important;right:62%!important;width:10%!important;text-align:right!important;font-size:clamp(7px,1.7vw,11px)!important;color:#ead4a8!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-meter>i{grid-column:2!important;width:70%!important;height:32%!important;justify-self:end!important;border-color:#8b6a39!important;background:#090d17!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-meter output{font-size:clamp(7px,1.65vw,11px)!important}
 .hideout-route-status{display:none}
-.hideout-art-shell[data-character-id="sora"] .hideout-route-status{position:absolute;display:grid;left:2%;right:2%;top:101%;height:18%;grid-template-columns:1.08fr .92fr;align-items:stretch;gap:2%;font-family:"Cormorant Garamond","Yu Mincho","Hiragino Mincho ProN",serif!important;pointer-events:none}
+.hideout-art-shell[data-character-id="sora"] .hideout-route-status{display:none!important}
 .hideout-art-shell[data-character-id="sora"] .hideout-route-status>span{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:4%;min-width:0;padding:0 3%;background:linear-gradient(90deg,#050a14e8,#081323c2 78%,transparent)}
 .hideout-art-shell[data-character-id="sora"] .hideout-route-status>span+span{background:linear-gradient(90deg,#120921dc,#080d19d2)}
 .hideout-art-shell[data-character-id="sora"] .hideout-route-status small{display:block!important;position:static!important;width:auto!important;height:auto!important;color:#b99a66!important;font-size:clamp(5px,1.05vw,7px)!important;font-weight:700!important;line-height:1!important;letter-spacing:.09em!important;white-space:nowrap}
@@ -203,13 +203,267 @@
   width:auto!important;
   justify-content:center!important;
   padding:0 4px!important;
-  background:#07101ad6!important;
+  background:transparent!important;
   color:#eee4cd!important;
   font-size:clamp(11px,3vw,18px)!important;
   letter-spacing:.04em!important;
+  line-height:1.05!important;
+  text-align:center!important;
+  white-space:normal!important;
+  overflow:visible!important;
+  text-wrap:balance!important;
 }
 .hideout-art-shell[data-character-id="sora"] #hideout-buff.active>strong{color:#ffe09a!important;text-shadow:0 1px 3px #000,0 0 9px #b87b2899!important}
 .hideout-art-shell[data-character-id="sora"] #hideout-buff>span{display:none!important}
+
+/* 久住翔：上下の支給素材は共通splitレイアウトを使い、紫の焼き付き欄だけを
+   背景になじむ半透明面で覆ってライブの武器学／JOB値を重ねる。 */
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-top-art{left:1.7%!important;width:96.6%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-player{top:2.3%!important;right:3.3%!important;width:39%!important;height:10.5%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-player-portrait{left:-55%!important;width:53%!important;background:none!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-player strong{background:linear-gradient(90deg,#0b0615e8,#0b0615a8 72%,transparent)!important;color:#e7c9ff!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-meter>i{border-color:#7e5a91!important;background:#090511!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-resources>div{top:14.5%!important;height:7.1%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-resources .hideout-gold{left:2.4%!important;width:24.9%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-gold>strong{left:13%!important;right:10%!important;top:57%!important;height:25%!important;color:#f2dba7!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-resources .hideout-progress{left:25.6%!important;width:49.5%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-progress::before,
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-progress::after{top:4%!important;height:91%!important;background:linear-gradient(135deg,#0a0616e8,#140824df)!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-progress>small{background:#10081bd8!important;color:#d9b4e9!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-progress>strong{color:#fff4ff!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-progress .hideout-exp{border-color:#a377b6!important;background:#07030d!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-progress .hideout-exp.hideout-jexp{border-color:#874ca8!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-progress .hideout-exp>em{background:linear-gradient(90deg,#b27525,#f2d278)!important;box-shadow:0 0 8px #d9a84f!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-progress .hideout-exp.hideout-jexp>em{background:linear-gradient(90deg,#6121a8,#c36cff)!important;box-shadow:0 0 8px #a54ef0!important}
+.hideout-art-shell[data-selected-character-id="sho"] #hideout-buff{left:18.2%!important;top:23.15%!important;width:78.7%!important;height:4.4%!important}
+.hideout-art-shell[data-selected-character-id="sho"] #hideout-buff>strong{left:38%!important;right:2%!important;background:transparent!important;color:#eadcf3!important}
+.hideout-art-shell[data-selected-character-id="sho"] #hideout-buff.active>strong{color:#f0c8ff!important;text-shadow:0 1px 3px #000,0 0 9px #9c43e099!important}
+.hideout-art-shell[data-selected-character-id="sho"]>.hideout-kazu-hotspot{left:46%!important;top:35.5%!important;width:23%!important;height:23.5%!important}
+.hideout-art-shell[data-selected-character-id="sho"]>.hideout-fox-hotspot{left:68%!important;top:37.5%!important;width:25%!important;height:21%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-menu [data-menu="battle"]{left:2.8%!important;top:60.9%!important;width:45.1%!important;height:10.5%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-menu [data-menu="food"]{left:49%!important;top:60.9%!important;width:45.5%!important;height:10.5%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-menu [data-menu="workshop"]{left:2.8%!important;top:72.1%!important;width:45.1%!important;height:9.5%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-menu [data-menu="equipment"]{left:49%!important;top:72.1%!important;width:45.5%!important;height:9.5%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-menu [data-menu="archive"]{left:2.8%!important;top:82.1%!important;width:22.6%!important;height:11%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-menu [data-menu="job"]{left:26.3%!important;top:82.1%!important;width:22.4%!important;height:11%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-menu [data-menu="items"]{left:49.6%!important;top:82.1%!important;width:22.5%!important;height:11%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-menu [data-menu="system"]{left:73%!important;top:82.1%!important;width:22.2%!important;height:11%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .hideout-menu .private-mode{left:2.8%!important;top:93.4%!important;width:92.4%!important;height:6.2%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .art-boss{top:30.7%!important;right:3.5%!important;width:35%!important}
+.hideout-art-shell[data-selected-character-id="sho"] .kazu-bubble{left:auto!important;right:3.5%!important;top:30.7%!important;width:35%!important}
+
+/* 全主人公共通の拠点2段目。支給画像の中央にある黒金4枠だけをCSSで切り出し、
+   GOLD／武器学／JOB／お知らせは透明なライブ要素として重ねる。 */
+.hideout-art-shell .hideout-resources{--resource-row-top:12.2%;--resource-row-height:5.9%}
+.hideout-art-shell[data-character-id="sora"] .hideout-resources{--resource-row-top:14.25%;--resource-row-height:7.5%}
+.hideout-art-shell .hideout-resources::before{
+  display:block!important;
+  z-index:0!important;
+  left:0!important;
+  top:var(--resource-row-top)!important;
+  width:100%!important;
+  height:var(--resource-row-height)!important;
+  background-color:#020204!important;
+  background-image:url("../assets/ui/hideout/common-resource-row-v1.png")!important;
+  background-repeat:no-repeat!important;
+  background-position:center 50%!important;
+  background-size:100% 225%!important;
+  opacity:1!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.hideout-art-shell[data-character-id="sora"] .hideout-resources::before{display:block!important}
+.hideout-art-shell .hideout-resources>div{
+  display:block!important;
+  z-index:1!important;
+  top:var(--resource-row-top)!important;
+  height:var(--resource-row-height)!important;
+  background:transparent!important;
+}
+.hideout-art-shell[data-character-id="sora"] .hideout-resources>div{
+  top:var(--resource-row-top)!important;
+  height:var(--resource-row-height)!important;
+}
+.hideout-art-shell .hideout-resources .hideout-gold{left:0!important;width:25%!important}
+.hideout-art-shell .hideout-resources .hideout-progress{left:25%!important;width:50%!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-resources .hideout-gold{left:0!important;width:25%!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-resources .hideout-progress{left:25%!important;width:50%!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-gold>strong{
+  left:12%!important;right:12%!important;top:57%!important;height:25%!important;
+  justify-content:flex-end!important;padding:0 3%!important;background:transparent!important;
+}
+.hideout-art-shell[data-character-id="sora"] .hideout-progress::before,
+.hideout-art-shell[data-character-id="sora"] .hideout-progress::after{display:none!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-progress>small{background:transparent!important}
+.hideout-art-shell .hideout-progress>small{
+  top:8%!important;
+  height:34%!important;
+  align-items:center!important;
+  justify-content:center!important;
+  color:#e4c88f!important;
+  font-family:"Cormorant Garamond","Yu Mincho","Hiragino Mincho ProN",serif!important;
+  font-size:clamp(9px,2.35vw,15px)!important;
+  font-weight:700!important;
+  line-height:1!important;
+  letter-spacing:.04em!important;
+  text-shadow:0 1px 3px #000,0 0 7px #c18d3c55!important;
+}
+.hideout-art-shell[data-character-id="sora"] .hideout-progress>small#menu-exp-label,
+.hideout-art-shell[data-character-id="sora"] .hideout-progress>small.jexp-label{
+  top:8%!important;
+  width:50%!important;
+  height:34%!important;
+  color:#e4c88f!important;
+  font-family:"Cormorant Garamond","Yu Mincho","Hiragino Mincho ProN",serif!important;
+  font-size:clamp(9px,2.35vw,15px)!important;
+  font-weight:700!important;
+  line-height:1!important;
+  letter-spacing:.04em!important;
+  background:transparent!important;
+}
+.hideout-art-shell[data-character-id="sora"] .hideout-progress>small#menu-exp-label{left:0!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-progress>small.jexp-label{left:50%!important}
+.hideout-art-shell .hideout-progress>strong{
+  top:57%!important;
+  height:25%!important;
+  font-family:"Cormorant Garamond","Yu Mincho","Hiragino Mincho ProN",serif!important;
+}
+.hideout-art-shell .hideout-progress .hideout-exp,
+.hideout-art-shell .hideout-progress .hideout-exp.hideout-jexp{top:57%!important;height:25%!important}
+.hideout-art-shell[data-character-id="sora"] .hideout-progress>strong,
+.hideout-art-shell[data-character-id="sora"] .hideout-progress .hideout-exp{
+  left:8%!important;
+  width:34%!important;
+  top:57%!important;
+  height:24%!important;
+}
+.hideout-art-shell[data-character-id="sora"] .hideout-progress>strong#menu-jexp-text,
+.hideout-art-shell[data-character-id="sora"] .hideout-progress .hideout-exp.hideout-jexp{
+  left:58%!important;
+  width:34%!important;
+}
+.hideout-art-shell .hideout-resources>button{
+  display:block!important;
+  position:absolute!important;
+  z-index:5!important;
+  left:75%!important;
+  top:var(--resource-row-top)!important;
+  width:25%!important;
+  height:var(--resource-row-height)!important;
+  min-height:0!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:#ead0a0!important;
+  pointer-events:auto!important;
+}
+.hideout-art-shell .hideout-resources>button>b{
+  position:absolute;
+  left:8%;right:8%;top:22%;height:32%;
+  display:flex;align-items:center;justify-content:center;
+  color:#ead0a0;font-size:clamp(9px,2.2vw,15px);font-weight:700;letter-spacing:.06em;
+  text-shadow:0 1px 3px #000,0 0 7px #c18d3c66;
+}
+.hideout-art-shell .hideout-resources>button>b{
+  left:0;right:0;top:8%;height:34%;
+  color:#e4c88f;
+  font-family:"Cormorant Garamond","Yu Mincho","Hiragino Mincho ProN",serif;
+  font-size:clamp(9px,2.35vw,15px);
+  font-weight:700;line-height:1;letter-spacing:.04em;
+  text-shadow:0 1px 3px #000,0 0 7px #c18d3c55;
+}
+.hideout-art-shell .hideout-resources>button>small{
+  position:absolute!important;
+  left:8%!important;right:8%!important;top:57%!important;width:auto!important;height:22%!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  color:#c5a879!important;font-size:clamp(6px,1.25vw,9px)!important;letter-spacing:.16em!important;
+}
+.hideout-art-shell .hideout-resources>button>small::before{display:none!important}
+
+/* 京介：金黒の上下分割素材。ライブHP/MPは右上の余白へ寄せ、
+   下部画像の実際の金枠へ各タップ領域を個別に合わせる。 */
+.hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-top-art{left:1.1%!important;width:97.8%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-player{top:2.25%!important;right:3.4%!important;width:31%!important;height:10.6%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-player-portrait{left:-55%!important;width:51%!important;background:none!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-player strong{
+  left:12%!important;width:86%!important;
+  background:linear-gradient(90deg,#100c05e8,#100c0599 72%,transparent)!important;
+  color:#f0d59b!important;
+}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-meter>i{width:64%!important;border-color:#9b7a3f!important;background:#0d0a05!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-meter>span{right:58%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"]>.hideout-kazu-hotspot{left:43%!important;top:33.5%!important;width:29%!important;height:25%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"]>.hideout-fox-hotspot{left:70%!important;top:34.5%!important;width:24%!important;height:23%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-menu [data-menu="battle"]{left:3.1%!important;top:58.9%!important;width:45.4%!important;height:10.9%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-menu [data-menu="food"]{left:49.3%!important;top:58.9%!important;width:44%!important;height:10.9%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-menu [data-menu="workshop"]{left:3.1%!important;top:69.9%!important;width:45.4%!important;height:9.8%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-menu [data-menu="equipment"]{left:49.3%!important;top:69.9%!important;width:44%!important;height:9.8%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-menu [data-menu="archive"]{left:3.1%!important;top:79.9%!important;width:22.5%!important;height:11%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-menu [data-menu="job"]{left:26.8%!important;top:79.9%!important;width:21.5%!important;height:11%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-menu [data-menu="items"]{left:49.3%!important;top:79.9%!important;width:21.5%!important;height:11%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-menu [data-menu="system"]{left:71.1%!important;top:79.9%!important;width:22.3%!important;height:11%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-menu .private-mode{left:3.1%!important;top:91.1%!important;width:90.3%!important;height:7.3%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] #hideout-buff{left:18.2%!important;top:23.05%!important;width:78.5%!important;height:4.5%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] #hideout-buff>strong{color:#f0d59b!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .art-boss{top:30.5%!important;right:3.5%!important;width:35%!important}
+.hideout-art-shell[data-selected-character-id="kyosuke"] .kazu-bubble{left:auto!important;right:3.5%!important;top:30.5%!important;width:35%!important}
+
+/* 静真：白金テーマの上下分割素材。ライブ表示は上部右側の余白へ収め、
+   下部画像の金枠へタップ領域を個別に合わせる。 */
+.hideout-art-shell[data-selected-character-id="shizuma"] .hideout-top-art{left:1.1%!important;width:97.8%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] .hideout-player{top:2.25%!important;right:3.4%!important;width:31%!important;height:10.6%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] .hideout-player-portrait{left:-55%!important;width:51%!important;background:none!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] .hideout-player strong{
+  left:12%!important;width:86%!important;
+  background:linear-gradient(90deg,#0b0b0be8,#0b0b0b99 72%,transparent)!important;
+  color:#f2e4c1!important;
+}
+.hideout-art-shell[data-selected-character-id="shizuma"] .hideout-meter>i{width:64%!important;border-color:#b5a47c!important;background:#090909!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] .hideout-meter>span{right:58%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"]>.hideout-kazu-hotspot{left:45%!important;top:34%!important;width:28%!important;height:23%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"]>.hideout-fox-hotspot{left:69%!important;top:36%!important;width:25%!important;height:22%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] .hideout-menu [data-menu="battle"]{left:2.7%!important;top:59.8%!important;width:45.8%!important;height:11%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] .hideout-menu [data-menu="food"]{left:49.6%!important;top:59.8%!important;width:46%!important;height:11%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] .hideout-menu [data-menu="workshop"]{left:2.7%!important;top:71.1%!important;width:45.8%!important;height:10%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] .hideout-menu [data-menu="equipment"]{left:49.6%!important;top:71.1%!important;width:46%!important;height:10%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] .hideout-menu [data-menu="archive"]{left:2.7%!important;top:81.8%!important;width:23%!important;height:11.1%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] .hideout-menu [data-menu="job"]{left:26.9%!important;top:81.8%!important;width:22%!important;height:11.1%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] .hideout-menu [data-menu="items"]{left:49.7%!important;top:81.8%!important;width:22%!important;height:11.1%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] .hideout-menu [data-menu="system"]{left:72.5%!important;top:81.8%!important;width:23.5%!important;height:11.1%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] .hideout-menu .private-mode{left:2.7%!important;top:92.95%!important;width:93.5%!important;height:6.6%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] #hideout-buff{left:18.2%!important;top:23.05%!important;width:78.5%!important;height:4.5%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] #hideout-buff>strong{color:#f2e4c1!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] .art-boss{top:30.5%!important;right:3.5%!important;width:35%!important}
+.hideout-art-shell[data-selected-character-id="shizuma"] .kazu-bubble{left:auto!important;right:3.5%!important;top:30.5%!important;width:35%!important}
+
+/* 狼牙：赤黒テーマの上下分割素材。ライブ表示は上部右側へ収め、
+   縦長の下部素材に合わせてリンク領域を個別補正する。 */
+.hideout-art-shell[data-selected-character-id="roga"] .hideout-top-art{left:1.1%!important;width:97.8%!important}
+.hideout-art-shell[data-selected-character-id="roga"] .hideout-player{top:2.25%!important;right:3.4%!important;width:31%!important;height:10.6%!important}
+.hideout-art-shell[data-selected-character-id="roga"] .hideout-player-portrait{left:-55%!important;width:51%!important;background:none!important}
+.hideout-art-shell[data-selected-character-id="roga"] .hideout-player strong{
+  left:12%!important;width:86%!important;
+  background:linear-gradient(90deg,#120305e8,#12030599 72%,transparent)!important;
+  color:#f0cf9d!important;
+}
+.hideout-art-shell[data-selected-character-id="roga"] .hideout-meter>i{width:64%!important;border-color:#8c302d!important;background:#100406!important}
+.hideout-art-shell[data-selected-character-id="roga"] .hideout-meter>span{right:58%!important}
+.hideout-art-shell[data-selected-character-id="roga"]>.hideout-kazu-hotspot{left:45%!important;top:33.5%!important;width:27%!important;height:23%!important}
+.hideout-art-shell[data-selected-character-id="roga"]>.hideout-fox-hotspot{left:68.5%!important;top:35.5%!important;width:25%!important;height:22.5%!important}
+.hideout-art-shell[data-selected-character-id="roga"] .hideout-menu [data-menu="battle"]{left:2.7%!important;top:59%!important;width:45.5%!important;height:10.8%!important}
+.hideout-art-shell[data-selected-character-id="roga"] .hideout-menu [data-menu="food"]{left:48.6%!important;top:59%!important;width:47.1%!important;height:10.8%!important}
+.hideout-art-shell[data-selected-character-id="roga"] .hideout-menu [data-menu="workshop"]{left:2.7%!important;top:70.2%!important;width:45.5%!important;height:9.7%!important}
+.hideout-art-shell[data-selected-character-id="roga"] .hideout-menu [data-menu="equipment"]{left:48.6%!important;top:70.2%!important;width:47.1%!important;height:9.7%!important}
+.hideout-art-shell[data-selected-character-id="roga"] .hideout-menu [data-menu="archive"]{left:2.7%!important;top:80.4%!important;width:22.7%!important;height:11.4%!important}
+.hideout-art-shell[data-selected-character-id="roga"] .hideout-menu [data-menu="job"]{left:26.4%!important;top:80.4%!important;width:21.7%!important;height:11.4%!important}
+.hideout-art-shell[data-selected-character-id="roga"] .hideout-menu [data-menu="items"]{left:48.8%!important;top:80.4%!important;width:22.3%!important;height:11.4%!important}
+.hideout-art-shell[data-selected-character-id="roga"] .hideout-menu [data-menu="system"]{left:72%!important;top:80.4%!important;width:23.8%!important;height:11.4%!important}
+.hideout-art-shell[data-selected-character-id="roga"] .hideout-menu .private-mode{left:2.7%!important;top:92.4%!important;width:93.3%!important;height:6.7%!important}
+.hideout-art-shell[data-selected-character-id="roga"] #hideout-buff{left:18.2%!important;top:23.05%!important;width:78.5%!important;height:4.5%!important}
+.hideout-art-shell[data-selected-character-id="roga"] #hideout-buff>strong{color:#efba82!important}
+.hideout-art-shell[data-selected-character-id="roga"] .art-boss{top:30.5%!important;right:3.5%!important;width:35%!important}
+.hideout-art-shell[data-selected-character-id="roga"] .kazu-bubble{left:auto!important;right:3.5%!important;top:30.5%!important;width:35%!important}
 
 @media(max-width:520px){
   .hideout-art-shell>.hideout-selected-character{left:6.5%;top:24%;width:31%;height:24%}
