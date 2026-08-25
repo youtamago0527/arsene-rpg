@@ -1222,3 +1222,178 @@
 }
 #game[data-character-id="sora"] .player-meta strong{font-size:18px;letter-spacing:.055em}
 @media(max-width:393px){#game[data-character-id="sora"] .player-meta strong{font-size:17px}}
+
+/* Enemy nameplate v2: 支給デザインを基準に、通常／ボス／レアを色で即判別する。 */
+#game .enemy-nameplate,
+#game .boss-enemy .enemy-nameplate,
+#game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate{
+  --plate-row:0%;
+  box-sizing:border-box;
+  left:50%;
+  translate:-50% 0;
+  width:clamp(108px,31vw,145px);
+  max-width:145px;
+  height:34px;
+  min-height:34px;
+  padding:3px 9px 3px 35px;
+  display:grid;
+  grid-template-rows:17px 9px;
+  align-content:center;
+  overflow:visible;
+  border:0;
+  clip-path:none;
+  background-color:transparent;
+  background-image:url("../assets/ui/battle/enemy-nameplates-color-v2.png");
+  background-repeat:no-repeat;
+  background-position:center var(--plate-row);
+  background-size:100% 300%;
+  box-shadow:none;
+  filter:drop-shadow(0 2px 3px #000c);
+}
+#game .enemy[data-kind="boss"] .enemy-nameplate{--plate-row:50%}
+#game .enemy[data-kind="rare"] .enemy-nameplate{--plate-row:100%}
+#game .enemy-nameplate::before,
+#game .enemy-nameplate::after{content:none!important}
+#game .enemy-nameplate .enemy-slot-label{
+  position:absolute;
+  z-index:3;
+  left:5px;
+  top:3px;
+  width:27px;
+  height:27px;
+  display:grid;
+  place-items:center;
+  color:#fff;
+  font:800 12px/1 Cinzel,"Times New Roman",serif;
+  letter-spacing:0;
+  text-shadow:0 1px 2px #000,0 0 7px currentColor;
+  pointer-events:none;
+}
+#game .enemy-nameplate>span,
+#game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span{
+  position:relative;
+  z-index:2;
+  grid-row:1;
+  min-width:0;
+  overflow:visible;
+  text-overflow:clip;
+  white-space:nowrap;
+  align-self:center;
+  color:#fff;
+  font-family:"Cormorant Garamond","Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif;
+  font-size:13px;
+  font-weight:700;
+  line-height:1;
+  letter-spacing:0;
+  text-align:center;
+  text-shadow:0 1px 2px #000,0 0 5px #000;
+}
+#game .enemy-nameplate>span.long-name,
+#game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{
+  font-size:11px;
+  letter-spacing:-.055em;
+}
+#game .enemy-nameplate .enemy-statuses{
+  position:relative;
+  z-index:3;
+  grid-row:2;
+  min-width:0;
+  width:100%;
+  height:9px;
+  min-height:9px;
+  margin:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:1px;
+  overflow:visible;
+}
+#game .enemy-nameplate .status-chip{
+  width:9px;
+  min-width:9px;
+  max-width:9px;
+  height:9px;
+  padding:0;
+  font-size:0;
+  line-height:1;
+  border-width:1px;
+}
+#game .enemy.targetable>.enemy-nameplate,
+#game .enemy-nameplate.targetable-nameplate{
+  filter:brightness(1.22) drop-shadow(0 0 6px #74e9ff) drop-shadow(0 2px 3px #000c);
+}
+@media(max-width:393px){
+  #game .enemy-nameplate,
+  #game .boss-enemy .enemy-nameplate,
+  #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate{
+    width:calc(100% - 6px);
+    min-width:0;
+    max-width:120px;
+    padding-right:6px;
+    padding-left:31px;
+  }
+  #game .enemy-nameplate .enemy-slot-label{left:4px;width:24px;font-size:11px}
+  #game .enemy-nameplate>span,
+  #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span{font-size:12px}
+  #game .enemy-nameplate>span.long-name,
+  #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{font-size:11px}
+}
+
+/* 3体編成は戦場の左右余白を同値にして、敵本体・名札・HPを3等分で配置する。 */
+#game .enemies[data-count="3"]{
+  left:8px;
+  right:8px;
+  width:auto;
+  gap:8px;
+  justify-content:space-between;
+}
+#game .enemies[data-count="3"] .enemy{
+  flex:1 1 0;
+  width:calc((100% - 16px)/3);
+  min-width:0;
+}
+
+/* BOSSは名札を高く、立ち絵と専用HPを大きくして一体戦の圧を出す。 */
+#game .boss-enemy .enemy-nameplate{
+  top:-28px;
+  width:min(188px,62vw);
+  max-width:188px;
+  height:38px;
+  min-height:38px;
+  padding-left:41px;
+  grid-template-rows:20px 10px;
+}
+#game .boss-enemy .enemy-nameplate .enemy-slot-label{
+  left:6px;
+  top:4px;
+  width:30px;
+  height:30px;
+  font-size:13px;
+}
+#game .boss-enemy .enemy-visual{
+  inset:18px -10px 42px;
+}
+#game .boss-enemy .noel-sprite{
+  width:min(100vw,440px);
+  height:calc(100% + 48px);
+}
+#game .boss-enemy .enemy-hud{
+  width:min(82vw,340px);
+  max-width:340px;
+  min-height:40px;
+  grid-template-columns:24px minmax(0,1fr);
+  padding:6px 12px 5px;
+  clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);
+}
+#game .boss-enemy .enemy-hud label{font-size:8px;text-align:center}
+#game .boss-enemy .enemy-hud .enemy-hp-meter{height:9px}
+#game .boss-enemy .enemy-hud small{font-size:8px;letter-spacing:.08em}
+
+/* 通常敵は撃破演出後に名札とHPも退場。列幅は残して他の敵を動かさない。 */
+#game .enemy.defeated:not(.boss-enemy) .enemy-nameplate,
+#game .enemy.defeated:not(.boss-enemy) .enemy-hud{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition:opacity .18s ease,visibility 0s linear .18s;
+}
