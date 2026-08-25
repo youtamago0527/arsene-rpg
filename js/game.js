@@ -23,6 +23,9 @@
       if (goldAmount) { const fitGold = () => { const digits = (goldAmount.textContent.match(/\d/g) || []).length; goldAmount.dataset.amountSize = digits >= 9 ? 'tiny' : digits >= 7 ? 'compact' : 'large'; }; this.goldAmountObserver = new MutationObserver(fitGold); this.goldAmountObserver.observe(goldAmount, { childList: true, characterData: true, subtree: true }); fitGold(); }
       $('#log').addEventListener('click', () => this.toggleBattleLog());
       $('#log').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.toggleBattleLog(); } });
+      // iOS/スマホでAUTOを素早く2回押した時、ブラウザのダブルタップ拡大を発生させない。
+      // ピンチズームはページ全体で維持し、戦闘コマンド上のダブルタップだけを操作として扱う。
+      $('#command-panel')?.addEventListener('dblclick', e => e.preventDefault());
       $('#battlefield').addEventListener('click', e => {
         const detailToggle = e.target.closest('[data-status-toggle]'); if (detailToggle) { e.preventDefault(); e.stopPropagation(); this.toggleStatusDetailItem(detailToggle); return; }
         if (e.target.closest('.status-detail-close') || e.target.id === 'battle-status-detail') { e.preventDefault(); this.hideStatusDetail(); return; }
@@ -120,7 +123,7 @@
         const useItem = e.target.closest('[data-use-item]');
         if (useItem) { this.useMenuItem(useItem.dataset.useItem); return; }
         const craft = e.target.closest('[data-craft]');
-        if (craft) { if (!craft.disabled) this.craftItem(craft.dataset.craft); return; }
+        if (craft) { if (!craft.disabled) this.craftItem(craft.dataset.craft, craft.getBoundingClientRect().top); return; }
         const dismantle = e.target.closest('[data-disassemble]');
         if (dismantle) { if (!dismantle.disabled) this.dismantleItem(dismantle.dataset.disassemble); return; }
         const enchant = e.target.closest('[data-enchant]');
@@ -481,12 +484,19 @@
       return document.scrollingElement;
     }
     renderWorkshopKeepingAnchor(attribute, itemId, viewportTop) {
+      const before = [...document.querySelectorAll(`[${attribute}]`)].find(el => el.getAttribute(attribute) === itemId);
+      const beforeScroller = before && this.scrollParentOf(before);
+      const savedScrollTop = beforeScroller?.scrollTop;
       this.renderMenuPanel('workshop');
-      requestAnimationFrame(() => {
+      const restore = () => {
         const after = [...document.querySelectorAll(`[${attribute}]`)].find(el => el.getAttribute(attribute) === itemId);
         const scroller = after && this.scrollParentOf(after);
-        if (scroller && Number.isFinite(viewportTop)) scroller.scrollTop += after.getBoundingClientRect().top - viewportTop;
-      });
+        if (!scroller) return;
+        if (Number.isFinite(savedScrollTop)) scroller.scrollTop = savedScrollTop;
+        if (Number.isFinite(viewportTop)) scroller.scrollTop += after.getBoundingClientRect().top - viewportTop;
+      };
+      // 画像・details・グリッドの再レイアウト後にも同じ位置へ戻す。
+      requestAnimationFrame(() => { restore(); requestAnimationFrame(restore); });
     }
     isPhantomThief(jobId = this.profile.currentJob) { return jobId === 'phantomThief'; }
     phantomStealProgress() {
@@ -541,7 +551,7 @@
         const def = this.equipmentDefinition(id); if (!def) continue;
         // 左手武器の攻撃性能は左手追撃でだけ使用する。右手火力へ二重加算しない。
         if (slot === 'leftHand' && D.weapons[id]) continue;
-        // 強化はその装備自身の戦闘能力にだけ掛かる。弱い装備を強化しても強い装備は追い越せない。
+        // 強化はその装備自身の戦闘値へ掛かる。能力補正と特殊効果は各集計側で同率を掛ける。
         const rate = 1 + this.enchantLevel(id) * (D.enchantTable?.powerRate ?? 0.15);
         for (const k of BattleGame.COMBAT_KEYS) if (typeof def[k] === 'number') out[k] += def[k] * rate;
         if (typeof def.bonuses?.def === 'number') out.defensePower += def.bonuses.def * rate;
@@ -651,7 +661,8 @@
       for (const id of Object.values(equipment || {})) {
         if (!id) continue;
         const e = this.equipmentDefinition(id)?.effects;
-        if (e && typeof e[type] === 'number') sum += e[type];
+        const rate = 1 + this.enchantLevel(id) * (D.enchantTable?.powerRate ?? 0.15);
+        if (e && typeof e[type] === 'number') sum += e[type] * rate;
       }
       return sum;
     }
@@ -1241,8 +1252,15 @@
     expNeeded(level = this.profile.level) { return D.expTable[level] || Math.round(220 * Math.pow(1.48, level - 3)); }
     equipmentDefinition(id) { return D.weapons[id] || D.accessories[id] || D.armors?.[id] || D.equipment?.[id] || null; }
     equipmentBonuses(equipment = this.profile.equipment) {
-      const result = {}; const add = (source, rate = 1) => Object.entries(source?.bonuses || {}).forEach(([k, v]) => result[k] = (result[k] || 0) + v * rate);
-      Object.entries(equipment).forEach(([, id]) => add(this.equipmentDefinition(id), 1)); return result;
+      const result = {}; const add = (source, rate = 1) => Object.entries(source?.bonuses || {}).forEach(([k, v]) => {
+        // 能力値とHP/MPは整数、会心率など1未満の率だけ小数のまま保持する。
+        const scaled = Math.abs(v) < 1 ? v * rate : Math.round(v * rate);
+        result[k] = (result[k] || 0) + scaled;
+      });
+      Object.entries(equipment).forEach(([, id]) => {
+        const rate = 1 + this.enchantLevel(id) * (D.enchantTable?.powerRate ?? 0.15);
+        add(this.equipmentDefinition(id), rate);
+      }); return result;
     }
     isBossDefeated(id) { return !!(this.profile.bossDefeated?.[id] || (id === 'zenacad' && this.profile.flags.zenakadoDefeated)); }
     markBossDefeated(id) { this.profile.bossDefeated ||= {}; this.profile.bossDefeated[id] = true; if (id === 'zenacad') this.profile.flags.zenakadoDefeated = true; }
@@ -1251,7 +1269,7 @@
     equippedSeriesCount(seriesId, equipment = this.profile.equipment) { return Object.values(equipment).filter(id => id && (D.items[id]?.seriesId === seriesId || this.equipmentDefinition(id)?.seriesId === seriesId)).length; }
     activeSetEffects(equipment = this.profile.equipment) { const effects = {}; this.unlockedBossSeries().forEach(series => { const count = this.equippedSeriesCount(series.id, equipment); Object.entries(series.setBonuses || {}).forEach(([needed, bonus]) => { if (count >= Number(needed)) Object.assign(effects, bonus.effect || {}); }); }); return effects; }
     totalStats(equipment = this.profile.equipment) {
-      const total = clone(this.profile.baseStats), bonuses = this.equipmentBonuses(equipment), jobBonuses = this.activeJobBonuses(), jobGrowth = this.jobStatBonuses(); Object.entries(bonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobBonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobGrowth).forEach(([k, v]) => total[k] = (total[k] || 0) + v); const setEffects = this.activeSetEffects(equipment); for (const key of ['str', 'vit', 'mag', 'mnd', 'agi', 'dex', 'luk']) { const pct = setEffects[`${key}Percent`] || 0; if (pct) total[key] = Math.max(total[key] + 1, Math.floor(total[key] * (1 + pct / 100))); } if (setEffects.critBonusFlat) total.critBonus = (total.critBonus || 0) + setEffects.critBonusFlat; if (this.activeMealBuffType() === 'makanai') total.maxHp = Math.ceil(total.maxHp * (1 + (D.foodMenu?.buffs?.makanai?.maxHpRate || .03))); total.critBonus ||= 0; this.applyPassiveStats(total); total.def = total.vit; /* 旧互換：def は体力と同義。装備防御力は defensePowerFor() 側で加算する */ /* 強化は基礎能力ではなく装備自身の戦闘能力を伸ばす（equipmentCombatStats で加算） */ return total;
+      const total = clone(this.profile.baseStats), bonuses = this.equipmentBonuses(equipment), jobBonuses = this.activeJobBonuses(), jobGrowth = this.jobStatBonuses(); Object.entries(bonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobBonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobGrowth).forEach(([k, v]) => total[k] = (total[k] || 0) + v); const setEffects = this.activeSetEffects(equipment); for (const key of ['str', 'vit', 'mag', 'mnd', 'agi', 'dex', 'luk']) { const pct = setEffects[`${key}Percent`] || 0; if (pct) total[key] = Math.max(total[key] + 1, Math.floor(total[key] * (1 + pct / 100))); } if (setEffects.critBonusFlat) total.critBonus = (total.critBonus || 0) + setEffects.critBonusFlat; if (this.activeMealBuffType() === 'makanai') total.maxHp = Math.ceil(total.maxHp * (1 + (D.foodMenu?.buffs?.makanai?.maxHpRate || .03))); total.critBonus ||= 0; this.applyPassiveStats(total); total.def = total.vit; /* 旧互換：def は体力と同義。装備防御力は defensePowerFor() 側で加算する */ /* 強化済みの能力補正は equipmentBonuses()、戦闘値は equipmentCombatStats() で加算する */ return total;
     }
     getDungeon(id = this.currentDungeonId) { return (D.dungeons || []).find(d => d.id === id) || (D.dungeons || [])[0]; }
     isDungeonUnlocked(id) { const d = this.getDungeon(id); if (!d) return false; if (!d.unlockCondition) return true; if (d.unlockCondition === 'dungeon1Clear') return this.isBossDefeated('zenacad'); if (d.unlockCondition === 'dungeon2Clear') return this.isBossDefeated('myrthi'); return false; }
@@ -1913,13 +1931,17 @@
       if (this.autoPickTimer) clearTimeout(this.autoPickTimer);
       this.autoPickTimer = null;
     }
-    endAutoBattle() {
-      // 勝敗・逃走の確定後にAUTOの予約や演出中の操作ロックを残さない。
-      this.autoBattle = false;
-      this.autoBattleSpeedIndex = -1;
+    pauseAutoBattle() {
+      // 戦闘結果中は自動入力だけ止め、倍率設定は次の戦闘へ持ち越す。
       this.autoToggleBusy = false;
       this.cancelAutoPick();
       $('#command-panel')?.classList.remove('turn-locked');
+    }
+    endAutoBattle() {
+      // 敗北・拠点帰還など、連戦を終了する時だけAUTO設定も解除する。
+      this.autoBattle = false;
+      this.autoBattleSpeedIndex = -1;
+      this.pauseAutoBattle();
     }
     scheduleAutoPick() {
       this.cancelAutoPick();
@@ -2742,7 +2764,7 @@
       enemy.hasStolen = true; this.saveProfile(); el?.classList.remove('enemy-attacking'); this.updateHUD(); await this.battleSleep(440);
     }
     async enemyEncounterEscaped() {
-      this.finished = true; this.endAutoBattle(); this.locked = false; $('#phase-label').textContent = 'ESCAPED';
+      this.finished = true; this.pauseAutoBattle(); this.locked = false; $('#phase-label').textContent = 'ESCAPED';
       $('#log').innerHTML = '<p>希少怪異は逃走した。この遭遇は階層踏破数に加算されない。</p>';
       this.panel(this.button('次の戦闘へ', 'NEXT BATTLE', 'next') + this.button('拠点へ戻る', 'HIDEOUT', 'hideout'));
       this.bindActions({ next: () => this.startBattle(), hideout: () => this.showMenu('home') });
@@ -2849,7 +2871,7 @@
     async victory() {
       const quick = !!this.quickResolving;
       this.profile.flags.consecutiveDefeats = 0; this.profile.flags.lastBattleResult = 'victory';
-      this.finished = true; this.endAutoBattle(); this.audio.sfx('victory'); this.flashTitle('VICTORY', 'ALL SHADOWS ELIMINATED'); $('#ren').classList.add('victory'); await this.battleSleep(quick ? 120 : 1100);
+      this.finished = true; this.pauseAutoBattle(); this.audio.sfx('victory'); this.flashTitle('VICTORY', 'ALL SHADOWS ELIMINATED'); $('#ren').classList.add('victory'); await this.battleSleep(quick ? 120 : 1100);
       const reward = { exp: this.battleRewards.exp, gold: this.battleRewards.gold, drops: this.battleRewards.drops }, levels = this.battleRewards.levels;
       const masteryParts = this.battleRewards.masteryResults || [], jobParts = this.battleRewards.jobResults || [];
       const masteryResult = masteryParts.length ? { ...masteryParts[0], gain: masteryParts.reduce((s, r) => s + r.gain, 0), before: masteryParts[0].before, after: masteryParts[masteryParts.length - 1].after, leveled: masteryParts.some(r => r.leveled) } : null;
@@ -2918,7 +2940,7 @@
       if (this.battleMode === 'seripes') { this.flashTitle('DEFEAT', 'SERIPES // REPRISE'); await this.battleSleep(1000); this.showResult('DEFEAT', 'セリペスの反奏を崩せなかった。カズに救助され、HP1で拠点へ帰還した。', 'CHALLENGE FAILED', this.battleSummaryHTML() || '<div class="boss-result-note">報酬・ドロップなし</div>'); return; }
       this.flashTitle('GAME OVER', 'MISSION FAILED'); await this.battleSleep(1000); this.showResult('GAME OVER', 'カズに救助され、HP 1で拠点へ運び込まれた。', 'RETURN TO HIDEOUT', this.battleSummaryHTML());
     }
-    showResult(title, copy, kicker, html) { this.endAutoBattle(); this.locked = false; this.resultContinue = null; $('#result-title').textContent = title; $('#result-copy').textContent = copy; $('#result-kicker').textContent = kicker; $('#rewards').innerHTML = html; const resultMenu = $('#result-menu'); resultMenu.hidden = false; resultMenu.style.display = ''; resultMenu.innerHTML = '拠点へ <span>HIDEOUT</span>'; $('#result').hidden = false; $('#result').style.display = 'grid'; }
+    showResult(title, copy, kicker, html) { this.pauseAutoBattle(); this.locked = false; this.resultContinue = null; $('#result-title').textContent = title; $('#result-copy').textContent = copy; $('#result-kicker').textContent = kicker; $('#rewards').innerHTML = html; const resultMenu = $('#result-menu'); resultMenu.hidden = false; resultMenu.style.display = ''; resultMenu.innerHTML = '拠点へ <span>HIDEOUT</span>'; $('#result').hidden = false; $('#result').style.display = 'grid'; }
     showStagedMilestone(rewardBlock, milestone) { this.showResult('VICTORY', '闇を切り裂き、戦利品を獲得した。', 'BATTLE COMPLETE', rewardBlock); this.resultContinue = () => this.showMilestonePopup(milestone); $('#result-menu').innerHTML = '次へ <span>NEXT</span>'; }
     showMilestonePopup(milestone) {
       if (milestone.type === 'floor') this.showResult('ROUTE OPEN', '次の階層に行けるようになりました', 'SAFE ZONE REACHED', `<div class="milestone-popup"><small>NEXT FLOOR UNLOCKED</small><strong>${milestone.nextFloorName}</strong><span>ここまでの進行度はセーフゾーンに記録されました。</span></div><div class="result-actions"><button data-result-action="next-floor" data-target="${milestone.nextFloorId}">進む<small>NEXT FLOOR</small></button><button data-result-action="continue-floor" data-target="${milestone.currentFloorId}">そのまま戦闘<small>KEEP FIGHTING</small></button><button data-result-action="hideout">拠点へ戻る<small>HIDEOUT</small></button></div>`);
@@ -2927,7 +2949,7 @@
     }
     handleResultAction(action, target) { if (action === 'hideout') { this.showMenu('home'); return; } if (action === 'boss-now') { this.startBossByKey(target); return; } if (action === 'next-floor' || action === 'continue-floor') { this.currentDungeonId = this.floorDungeonId(target) || this.currentDungeonId; this.currentFloorId = target; $('#ren').classList.remove('victory'); this.startBattle(); } }
 
-    showMenu(panel = 'home') { if (this.player) this.persistVitals(); this.closeBattleMenu(); this.cancelAutoPick(); if (panel === 'home' && this.activeMealBuffType()) { this.clearMealBuff(); this.saveProfile(); } const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderHideoutRouteStatus(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
+    showMenu(panel = 'home') { if (this.player) this.persistVitals(); this.closeBattleMenu(); this.endAutoBattle(); if (panel === 'home' && this.activeMealBuffType()) { this.clearMealBuff(); this.saveProfile(); } const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderHideoutRouteStatus(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
     hideoutRouteStatus() {
       const available = (D.dungeons || []).filter(dungeon => this.isDungeonUnlocked(dungeon.id));
       const dungeon = available[available.length - 1] || this.getDungeon('dungeon1');
@@ -3464,12 +3486,12 @@
     }
     craftMaterialAvailable(id) { const equipped = Object.values(this.profile.equipment || {}).filter(eid => eid === id).length; return Math.max(0, (this.profile.inventory[id] || 0) - equipped); }
     canCraft(recipe) { if (!recipe) return false; if (this.profile.gold < (recipe.gold || 0)) return false; return (recipe.materials || []).every(m => this.craftMaterialAvailable(m.itemId) >= m.count); }
-    craftItem(id) {
+    craftItem(id, anchorTop = null) {
       const recipe = D.recipes?.[id]; if (!recipe || !this.canCraft(recipe)) return;
       this.profile.gold -= (recipe.gold || 0); recipe.materials.forEach(m => { this.profile.inventory[m.itemId] = (this.profile.inventory[m.itemId] || 0) - m.count; });
       this.profile.inventory[recipe.resultItemId] = (this.profile.inventory[recipe.resultItemId] || 0) + (recipe.resultCount || 1);
       this.recordEquipmentDiscovery([recipe.resultItemId]);
-      this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('workshop');
+      this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-craft', recipe.id, anchorTop);
     }
     dismantleItem(id) { const item = D.items[id], series = D.bossEquipmentSeries?.[item?.seriesId], output = series?.dismantle, equipped = Object.values(this.profile.equipment).includes(id), spare = (this.profile.inventory[id] || 0) - (equipped ? 1 : 0); if (!item || !series || !output || spare <= 0) return; this.profile.inventory[id]--; this.profile.inventory[output.materialId] = (this.profile.inventory[output.materialId] || 0) + output.count; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('workshop'); }
     renderWorkshop(panel) {
@@ -3499,7 +3521,7 @@
         const nextLevel = level + 1, rate = et.successRates[level], cost = et.goldCosts[level], rateText = `${Math.round(rate * 100)}%`, canAfford = this.profile.gold >= cost;
         const canEnchant = hasSpare && canAfford;
         const spareText = isEquipped ? `所持 ×${invCount}（うち1個装備中） / 予備 ${Math.max(0, invCount - 1)}` : `所持 ×${invCount}`;
-        return `<article class="enchant-card${level > 0 ? ' enhanced' : ''}"><div class="enchant-card-header"><b>${w.name}</b><strong>+${level} → +${nextLevel}</strong></div>${this.enchantGainHTML(w, level)}<div class="enchant-card-body"><span>成功率 <b>${rateText}</b></span><span>費用 <b>${cost} GOLD</b></span><small>${spareText}</small>${!hasSpare ? '<small class="enchant-warn">同じ武器が追加で必要</small>' : ''}${!canAfford ? '<small class="enchant-warn">GOLD不足</small>' : ''}</div><button data-enchant="${w.id}" ${canEnchant ? '' : 'disabled'}>強化する</button></article>`;
+        return `<article class="enchant-card${level > 0 ? ' enhanced' : ''}"><div class="enchant-card-header"><b>${w.name}</b><strong>+${level} → +${nextLevel}</strong></div>${this.enchantGainHTML(w, level)}<div class="enchant-card-body"><span>成功率 <b>${rateText}</b></span><span>費用 <b>${cost} GOLD</b></span><small class="enchant-owned-count">${spareText}</small>${!hasSpare ? '<small class="enchant-warn">同じ武器が追加で必要</small>' : ''}${!canAfford ? '<small class="enchant-warn">GOLD不足</small>' : ''}</div><button data-enchant="${w.id}" ${canEnchant ? '' : 'disabled'}>強化する</button></article>`;
       };
       const groups = (D.weaponTypes || []).map(type => ({ ...type, items: weapons.filter(w => w.weaponType === type.id) })).filter(group => group.items.length);
       if (!groups.some(group => group.id === this.enhanceWeaponType)) this.enhanceWeaponType = groups[0]?.id;
@@ -3516,9 +3538,12 @@
         '魔防': Number(item?.magicDefensePower || 0)
       };
       const format = value => { const rounded = Math.round(value * 10) / 10; return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1); };
-      const rows = Object.entries(values).filter(([, base]) => base !== 0).map(([label, base]) => {
+      const statNames = { maxHp: 'HP', maxMp: 'MP', str: 'STR', vit: 'VIT', mag: 'MAG', mnd: 'MND', agi: 'AGI', dex: 'DEX', luk: 'LUK', critBonus: '会心' };
+      const effectNames = { physicalDamagePercent: '物理与ダメ', magicDamagePercent: '魔法与ダメ', criticalRateBonus: '会心率', fireDamagePercent: '炎与ダメ', healingPowerPercent: '回復量', magicDamageReductionPercent: '魔法軽減', physicalDamageReductionPercent: '物理軽減', resonanceGainPercent: '共鳴量' };
+      const entries = [...Object.entries(values).filter(([, base]) => base !== 0).map(([label, base]) => [label, base, false]), ...Object.entries(item?.bonuses || {}).filter(([key, base]) => key !== 'def' && Number(base)).map(([key, base]) => [statNames[key] || key.toUpperCase(), Number(base), key === 'critBonus']), ...Object.entries(item?.effects || {}).filter(([, base]) => Number(base)).map(([key, base]) => [effectNames[key] || key, Number(base), true])];
+      const rows = entries.map(([label, base, percent]) => {
         const current = base * currentRate, next = base * nextRate, gain = next - current;
-        return `<div><span>${label}</span><b>${format(current)}<i>→</i>${format(next)}</b><em>+${format(gain)}</em></div>`;
+        return `<div><span>${label}</span><b>${format(percent ? current * 100 : current)}${percent ? '%' : ''}<i>→</i>${format(percent ? next * 100 : next)}${percent ? '%' : ''}</b><em>+${format(percent ? gain * 100 : gain)}${percent ? '%' : ''}</em></div>`;
       }).join('');
       return `<section class="enchant-next-stats"><small>NEXT +1</small>${rows || '<p>直接戦闘値の上昇なし</p>'}</section>`;
     }
@@ -3813,7 +3838,8 @@
         const nextLevel = level + 1, rate = et.successRates[level], cost = et.goldCosts[level], rateText = `${Math.round(rate * 100)}%`, canAfford = this.profile.gold >= cost;
         const canEnchant = hasSpare && canAfford;
         const spareText = isEquipped ? `所持 ×${invCount}（うち1個装備中） / 予備 ${Math.max(0, invCount - 1)}` : `所持 ×${invCount}`;
-        return `<article class="enchant-card${level > 0 ? ' enhanced' : ''}"><div class="enchant-card-header"><b>${item.name}</b><strong>+${level} → +${nextLevel}</strong></div>${this.enchantGainHTML(item, level)}<div class="enchant-card-body"><span>成功率 <b>${rateText}</b></span><span>費用 <b>${cost} GOLD</b></span><small>${spareText}</small>${!hasSpare ? '<small class="enchant-warn">同じ防具が追加で必要</small>' : ''}${!canAfford ? '<small class="enchant-warn">GOLD不足</small>' : ''}</div><button data-armor-enchant="${id}" ${canEnchant ? '' : 'disabled'}>強化する</button></article>`;
+        const stats = this.equipmentDefinition(id) || item;
+        return `<article class="enchant-card${level > 0 ? ' enhanced' : ''}"><div class="enchant-card-header"><b>${item.name}</b><strong>+${level} → +${nextLevel}</strong></div>${this.enchantGainHTML(stats, level)}<div class="enchant-card-body"><span>成功率 <b>${rateText}</b></span><span>費用 <b>${cost} GOLD</b></span><small class="enchant-owned-count">${spareText}</small>${!hasSpare ? '<small class="enchant-warn">同じ防具が追加で必要</small>' : ''}${!canAfford ? '<small class="enchant-warn">GOLD不足</small>' : ''}</div><button data-armor-enchant="${id}" ${canEnchant ? '' : 'disabled'}>強化する</button></article>`;
       };
       const groups = (D.workshop?.armorTabs || []).map(type => ({ ...type, items: armors.filter(item => item.slot === type.id) })).filter(group => group.items.length);
       if (!groups.some(group => group.id === this.enhanceArmorFilter)) this.enhanceArmorFilter = groups[0]?.id;
@@ -3843,14 +3869,17 @@
     }
     bonusText(id) {
       const def = this.equipmentDefinition(id) || {}, enchLv = this.enchantLevel(id);
+      const rate = 1 + enchLv * (D.enchantTable?.powerRate ?? .15);
+      const format = value => { const rounded = Math.round(value * 10) / 10; return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1); };
       // 戦闘能力は日本語表示。内部キーは画面へ出さない。
       const combatLabels = { attackPower: '攻撃力', defensePower: '防御力', magicAttackPower: '魔法攻撃力', magicDefensePower: '魔法防御力' };
       const effectLabels = { physicalDamagePercent: '物理ダメージ', magicDamagePercent: '魔法ダメージ', criticalRateBonus: '会心率', fireDamagePercent: '炎属性ダメージ', healingPowerPercent: '回復量', magicDamageReductionPercent: '被魔法ダメージ', physicalDamageReductionPercent: '被物理ダメージ', resonanceGainPercent: '共鳴獲得量' };
-      const combatRows = Object.entries(combatLabels).filter(([k]) => def[k]).map(([k, label]) => `${label} +${def[k]}`);
-      const effectRows = Object.entries(def.effects || {}).map(([k, v]) => { const label = effectLabels[k] || k; const sign = k.endsWith('DamageReductionPercent') ? '-' : '+'; return `${label} ${sign}${Math.round(Math.abs(v) * 100)}%`; });
+      const combatRows = Object.entries(combatLabels).filter(([k]) => def[k]).map(([k, label]) => `${label} +${format(def[k] * rate)}`);
+      if (def.bonuses?.def) combatRows.push(`防御力 +${format(def.bonuses.def * rate)}`);
+      const effectRows = Object.entries(def.effects || {}).map(([k, v]) => { const label = effectLabels[k] || k; const sign = k.endsWith('DamageReductionPercent') ? '-' : '+'; return `${label} ${sign}${format(Math.abs(v) * rate * 100)}%`; });
       const bonuses = def.bonuses || {}, rows = Object.entries(bonuses).filter(([k]) => k !== 'def');
       const enchStr = enchLv > 0 ? ` [+${enchLv}]` : '';
-      const all = [...combatRows, ...rows.map(([key, value]) => key === 'critBonus' ? `会心率 ${value >= 0 ? '+' : ''}${Math.round(value * 100)}%` : `${statLabels[key] || key.toUpperCase()} ${value >= 0 ? '+' : ''}${value}`), ...effectRows];
+      const all = [...combatRows, ...rows.map(([key, value]) => key === 'critBonus' ? `会心率 ${value >= 0 ? '+' : ''}${format(value * rate * 100)}%` : `${statLabels[key] || key.toUpperCase()} ${value >= 0 ? '+' : ''}${format(value * rate)}`), ...effectRows];
       return all.length ? all.join(' / ') + enchStr : '補正なし' + enchStr;
     }
     equipmentCombatComparison(equipment = this.profile.equipment) {

@@ -1054,6 +1054,15 @@
 #game .command-panel.turn-locked>button[data-action="autoBattle"]{animation:autoInterruptPulse 1.15s ease-in-out infinite}
 @keyframes autoInterruptPulse{50%{filter:brightness(1.34);box-shadow:0 0 12px #e5bb55aa}}
 
+/* AUTOの倍率切替を連続タップしても、スマホ側のダブルタップ拡大へ渡さない。 */
+#game,
+#game .command-panel,
+#game .command-panel button{
+  touch-action:manipulation;
+  -webkit-user-select:none;
+  user-select:none;
+}
+
 /* 支給されたTURN / WAVEフレーム。敵名列より先に終わる小型表示。 */
 .battle-topbar .turn-info{
   width:64px;
