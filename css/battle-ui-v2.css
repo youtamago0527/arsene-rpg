@@ -1355,7 +1355,8 @@
 
 /* BOSSは名札を高く、立ち絵と専用HPを大きくして一体戦の圧を出す。 */
 #game .boss-enemy .enemy-nameplate{
-  top:-28px;
+  /* 所持Gの直下に独立配置し、ボスの顔・頭部には重ねない。 */
+  top:-82px;
   width:min(188px,62vw);
   max-width:188px;
   height:38px;
@@ -1364,20 +1365,29 @@
   grid-template-rows:20px 10px;
 }
 #game .boss-enemy .enemy-nameplate .enemy-slot-label{
-  left:6px;
-  top:4px;
-  width:30px;
+  left:10px;
+  top:3px;
+  width:34px;
   height:30px;
   font-size:13px;
 }
+#game .boss-enemy .enemy-nameplate>span{
+  position:absolute;
+  inset:7px 0 auto;
+  width:100%;
+  padding:0 34px;
+  text-align:center;
+}
 #game .boss-enemy .enemy-visual{
-  inset:18px -10px 42px;
+  inset:24px -24px 27px;
 }
 #game .boss-enemy .noel-sprite{
-  width:min(100vw,440px);
-  height:calc(100% + 48px);
+  width:min(110vw,480px);
+  height:calc(100% + 82px);
+  translate:0 30px;
 }
 #game .boss-enemy .enemy-hud{
+  bottom:-11px;
   width:min(82vw,340px);
   max-width:340px;
   min-height:40px;
@@ -1388,6 +1398,7 @@
 #game .boss-enemy .enemy-hud label{font-size:8px;text-align:center}
 #game .boss-enemy .enemy-hud .enemy-hp-meter{height:9px}
 #game .boss-enemy .enemy-hud small{font-size:8px;letter-spacing:.08em}
+#game.has-boss-enemy .battle-gold-display{display:none}
 
 /* 通常敵は撃破演出後に名札とHPも退場。列幅は残して他の敵を動かさない。 */
 #game .enemy.defeated:not(.boss-enemy) .enemy-nameplate,
