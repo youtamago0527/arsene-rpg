@@ -160,7 +160,11 @@
   };
   P.isRenderImport = function (panel) {
     if (!this.isPhantomThief()) {
-      panel.innerHTML = `<button class="panel-home" data-lenny="otherworld">戻る</button><small>ENTRY DENIED</small><h2>侵入不可</h2><div class="is-warning"><p>無限奏廊へ侵入できるのはPHANTOM THIEFのみです。</p></div>`; return;
+      const current=D().jobs[this.profile.currentJob]?.name||this.profile.currentJob;
+      const unlocked=this.isJobUnlocked?.('phantomThief');
+      panel.innerHTML = `<button class="panel-home" data-lenny="otherworld">戻る</button><small>JOB CHANGE REQUIRED</small><h2>無限奏廊 侵入確認</h2>
+        <div class="is-warning"><p>無限奏廊へ侵入できるのは<br><b>PHANTOM THIEF</b>のみです。</p><div class="ow-job-swap"><span>${esc(current)}</span><i>▶</i><b>PHANTOM THIEF</b></div></div>
+        ${unlocked?'<div class="is-actions"><button class="is-primary" data-is-job-change-import>PHANTOM THIEFに切り替えて侵入準備へ</button><button data-lenny="otherworld">戻る</button></div>':'<div class="is-warning"><p>PHANTOM THIEFがまだ解放されていません。</p></div>'}`; return;
     }
     const rows = this.isImportable();
     panel.innerHTML = `<button class="panel-home" data-is-action="warning">警告へ戻る</button><small>LOADOUT</small><h2>持ち込み選択</h2><p>選んだ物はRUN専用バッグへ移され、死亡時にロストします。装備もバッグ1枠を使用します。</p>
@@ -426,6 +430,14 @@
   };
 
   document.addEventListener('click',e=>{if(e.target.closest('[data-is-action="resume"]'))window.arseneGame?.isPlayExploreMusic?.();},true);
+  document.addEventListener('click',e=>{
+    const button=e.target.closest('[data-is-job-change-import]'),g=window.arseneGame;
+    if(!button||!g)return;
+    e.preventDefault();e.stopImmediatePropagation();
+    if(!g.isJobUnlocked?.('phantomThief')){g.renderMenuPanel('infinite-score-import');return;}
+    g.changeJob('phantomThief');
+    g.renderMenuPanel('infinite-score-import');
+  },true);
   document.addEventListener('click',e=>{const a=e.target.closest('[data-is-action="explore-log"]'),g=window.arseneGame;if(!a||!g)return;e.preventDefault();e.stopImmediatePropagation();g.isExploreLogExpanded=!g.isExploreLogExpanded;g.isRenderExplore($('#menu-panel'));});
   document.addEventListener('click',e=>{const g=window.arseneGame;if(!g)return;const a=e.target.closest('[data-is-action]');if(a){e.preventDefault();const act=a.dataset.isAction,p=$('#menu-panel');if(act==='warning')g.renderMenuPanel('infinite-score-warning');else if(act==='import')g.renderMenuPanel('infinite-score-import');else if(act==='begin'||act==='begin-empty'){const ids=[];if(act==='begin')for(const input of document.querySelectorAll('[data-is-import]'))for(let n=0;n<Math.max(0,Number(input.value)||0);n++)ids.push(input.dataset.isImport);g.isBegin(ids);}else if(act==='resume'||act==='explore'){g.isExploreOverlayMode=null;g.renderMenuPanel('infinite-score');}else if(act==='map')g.renderMenuPanel('infinite-score-map');else if(act==='route-advance'){g.isExploreOverlayMode='advance';g.isRun().pendingChoices=null;g.isRenderExplore(p);}else if(act==='route-examine'){g.isExploreOverlayMode='examine';g.isRun().pendingChoices=null;g.isRenderExplore(p);}else if(act==='route-close'){g.isExploreOverlayMode=null;g.isRenderExplore(p);}else if(act==='explore-menu'){g.isExploreMenuOpen=!g.isExploreMenuOpen;g.isRenderExplore(p);}else if(act==='explore-menu-close'){g.isExploreMenuOpen=false;g.isRenderExplore(p);}else if(act==='return-notice-close'){g.isRenderExplore(p);}else if(act==='return-locked'){window.arseneStartFlow?.toast('RETURNを入手すると帰還できます');}else if(act==='map-back')g.isMapBack();else if(act==='map-remap'){g.isRun().floorMap=null;g.isCreateFloorMap();g.isExploreOverlayMode=null;g.isRenderExplore(p);}else if(act==='bag')g.renderMenuPanel('infinite-score-bag');else if(act==='equipment')g.renderMenuPanel('infinite-score-equipment');else if(act==='debug')g.renderMenuPanel('infinite-score-debug');else if(act==='choices')g.renderMenuPanel('infinite-score-choices');else if(act==='battle')g.isStartBattle(false);else if(act==='descend'){g.isDescend();g.renderMenuPanel('infinite-score');}else if(act==='after-battle')g.isAfterBattle();else if(act==='return-check'){if(confirm('現在のLOOT BAGを持って帰還しますか？（RETURNが必要）')){const x=g.isRun()?.lootBag.find(x=>x.itemId==='infiniteReturn');if(x)g.isUseBagItem(x.uid);else alert('RETURNを持っていません。');}}else if(act==='generate'){g.isAddLoot(g.isGenerateGear());g.isRenderDebug(p);}else if(act==='death-test'){if(confirm('死亡処理を実行し、RUN内の全アイテムをロストしますか？')){g.battleMode='infiniteScore';g.defeat();}}else if(act==='debug-reset'){g.profile.infiniteScoreDebug={};g.saveProfile();g.isRenderDebug(p);}else if(act==='retry-loot'){const r=g.isRun();if(g.isBagUsed()<g.isBagLimit()){const x=r.pendingLoot;r.pendingLoot=null;g.isAddLoot(x);document.getElementById('is-modal')?.remove();g.isRenderBag(p);}}else if(act==='discard-loot'){g.isRun().pendingLoot=null;g.saveProfile();document.getElementById('is-modal')?.remove();}return;}
     const menuClose=e.target.closest('[data-is-explore-menu-close]');if(menuClose){g.isExploreMenuOpen=false;g.isRenderExplore($('#menu-panel'));return;}const audioToggle=e.target.closest('.is-explore-menu [data-battle-audio-toggle]');if(audioToggle){const channel=audioToggle.dataset.battleAudioToggle,current=g.audio.levels[channel]||0;if(current>0){g.battleAudioRestore[channel]=current;g.audio.setVolume(channel,0);}else g.audio.setVolume(channel,Math.round(100*(g.battleAudioRestore[channel]||{bgm:.42,sfx:.72,voice:.70}[channel])));g.isRenderExplore($('#menu-panel'));return;}
