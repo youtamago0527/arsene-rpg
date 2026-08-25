@@ -412,6 +412,7 @@
     name=String(name||'');
     const panel=$('#menu-panel');
     if(panel&&name.startsWith('infinite-score')){
+      panel.dataset.panel=name;
       if(panel.parentNode!==document.body)document.body.appendChild(panel);
       panel.hidden=false;panel.style.display='block';panel.classList.add('panel-tall');panel.scrollTop=0;
       if(name==='infinite-score-warning')this.isRenderWarning(panel);
