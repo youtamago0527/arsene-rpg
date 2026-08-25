@@ -9,7 +9,7 @@
 
   class BattleGame {
     constructor() {
-      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.autoToggleBusy = false; this.autoPickTimer = null; this.simpleBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.enhanceWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.enhanceArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
+      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.autoToggleBusy = false; this.autoPickTimer = null; this.simpleBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.enhanceWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.enhanceArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false; this.lastBattleAction = null; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
       // 旧セーブ・新規プロファイルの両方で楽器学を必ず初期化する。
       this.profile.weaponMastery.instrument ||= { level: 1, exp: 0 };
       this.currentDungeonId = 'dungeon1';
@@ -1534,7 +1534,41 @@
       if (this.locked || this.finished || this.autoBattle || !this.enemies[index]?.alive) return;
       this.executeRound(this.basicAttackSkill().id, index);
     */
-    renderEnemies() { this.noteEnemiesSeen(); const enemyLayer = $('#enemies'), hasBoss = this.enemies.some(e => e.kind === 'boss'); enemyLayer.classList.toggle('boss-party', this.battleMode !== 'slime'); $('#game')?.classList.toggle('has-boss-enemy', hasBoss); enemyLayer.dataset.count = String(Math.min(3, Math.max(1, this.enemies.length))); enemyLayer.innerHTML = this.enemies.map((e, i) => { const statuses = `<button type="button" class="status-strip enemy-statuses" aria-label="敵の状態と解析情報" onclick="event.preventDefault();event.stopPropagation();window.arseneGame?.openEnemyStatus(${i})"></button>`; const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : '', displayName = String(e.name || '').trim(), accessibleName = `${displayName}${e.label || ''}`, nameLength = [...displayName].length, nameClass = nameLength > 10 ? 'long-name' : '', visual = e.kind === 'boss' ? `<div class="slime-shadow boss-shadow"></div><div class="noel-sprite${e.spriteClass ? ' ' + e.spriteClass : ''}"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div>` : `<div class="slime-shadow"></div><div class="slime"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div>`; return `<div role="button" tabindex="0" class="enemy ${e.kind === 'boss' ? 'boss-enemy' + bossClass : `enemy-${e.id}`} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" data-kind="${e.kind || 'normal'}" data-size="${e.kind === 'boss' ? 'boss' : e.kind === 'rare' ? 'large' : 'normal'}" aria-label="${accessibleName}"><div class="enemy-nameplate"><b class="enemy-slot-label" aria-hidden="true">${String.fromCharCode(65 + i)}</b><span class="${nameClass}">${displayName}</span>${statuses}</div><div class="enemy-visual">${visual}</div><div class="enemy-hud${e.kind === 'boss' ? ' boss-hud' : ''}"><label>HP</label><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>${e.hp.toLocaleString('ja-JP')} / ${e.stats.maxHp.toLocaleString('ja-JP')}</small></div></div>`; }).join(''); }
+    renderEnemies() {
+      this.noteEnemiesSeen();
+      const enemyLayer = $('#enemies'), hasBoss = this.enemies.some(e => e.kind === 'boss');
+      enemyLayer.classList.toggle('boss-party', this.battleMode !== 'slime');
+      $('#game')?.classList.toggle('has-boss-enemy', hasBoss);
+      enemyLayer.dataset.count = String(Math.min(3, Math.max(1, this.enemies.length)));
+      enemyLayer.innerHTML = this.enemies.map((e, i) => {
+        const statuses = '<button type="button" class="status-strip enemy-statuses" aria-label="敵の状態と解析情報"></button>';
+        const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : '';
+        const displayName = String(e.name || '').trim(), accessibleName = `${displayName}${e.label || ''}`;
+        const nameClass = [...displayName].length > 10 ? 'long-name' : '';
+        const visual = e.kind === 'boss'
+          ? `<div class="slime-shadow boss-shadow"></div><div class="noel-sprite${e.spriteClass ? ' ' + e.spriteClass : ''}"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div>`
+          : `<div class="slime-shadow"></div><div class="slime"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div>`;
+        return `<div role="button" tabindex="0" class="enemy ${e.kind === 'boss' ? 'boss-enemy' + bossClass : `enemy-${e.id}`} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" data-kind="${e.kind || 'normal'}" data-size="${e.kind === 'boss' ? 'boss' : e.kind === 'rare' ? 'large' : 'normal'}" aria-label="${accessibleName}を攻撃"><div class="enemy-nameplate"><b class="enemy-slot-label" aria-hidden="true">${String.fromCharCode(65 + i)}</b><span class="${nameClass}">${displayName}</span>${statuses}</div><div class="enemy-visual">${visual}</div><div class="enemy-hud${e.kind === 'boss' ? ' boss-hud' : ''}"><label>HP</label><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>${e.hp.toLocaleString('ja-JP')} / ${e.stats.maxHp.toLocaleString('ja-JP')}</small></div></div>`;
+      }).join('');
+      this.enemies.forEach((enemy, index) => this.bindEnemyTap(enemy, index));
+    }
+    bindEnemyTap(enemy, index) {
+      const el = document.getElementById(enemy.uid); if (!el || !enemy.alive) return;
+      const plate = $('.enemy-nameplate', el);
+      const attack = event => { event?.preventDefault(); this.attackEnemyFromField(index); };
+      const inspect = event => { event?.preventDefault(); event?.stopPropagation(); this.openEnemyStatus(index); };
+      el.onclick = attack;
+      el.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') attack(event); };
+      if (plate) {
+        plate.setAttribute('role', 'button'); plate.setAttribute('tabindex', '0'); plate.setAttribute('aria-label', `${enemy.name}${enemy.label || ''}の状態を確認`);
+        plate.onclick = inspect;
+        plate.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') inspect(event); };
+      }
+    }
+    attackEnemyFromField(index) {
+      if (this.locked || this.finished || this.autoBattle || !this.enemies[index]?.alive) return;
+      this.executeRound(this.basicAttackSkill().id, index);
+    }
     chromaKeyImage(url, key = 'black') {
       this.battleSpriteChromaCache ||= new Map();
       const cacheKey = `${key}:${url}`;
@@ -1713,7 +1747,7 @@
         strip.innerHTML = chips.join(''); strip.dataset.statusOwner = `${e.name}${e.label || ''}`; strip.dataset.enemyUid = e.uid; strip.tabIndex = 0; strip.setAttribute('role', 'button'); strip.title = 'タップで敵の状態と解析情報を確認'; strip.onclick = event => { event.preventDefault(); event.stopPropagation(); this.showStatusGroup(strip.dataset.statusOwner, strip); };
       });
     }
-    resetBattleLog() { this.clearQuickResultPopup(); this.battleLogHistory = []; this.battleEvents = []; this.battleLogExpanded = false; $('#log')?.classList.remove('expanded'); }
+    resetBattleLog() { this.clearQuickResultPopup(); this.battleLogHistory = []; this.battleEvents = []; this.battleLogExpanded = false; this.lastBattleAction = null; $('#log')?.classList.remove('expanded'); }
     setLog(text) { if (!text) return; this.battleLogHistory ||= []; this.battleLogHistory.push(text); if (this.battleLogHistory.length > 100) this.battleLogHistory.shift(); this.renderBattleLog(); }
     renderBattleLog() { const log = $('#log'); if (!log) return; const rows = this.battleLogExpanded ? this.battleLogHistory : this.battleLogHistory.slice(-5); log.innerHTML = `<small>COMBAT LOG // ${this.battleLogExpanded ? 'TAP TO CLOSE' : 'TAP FOR HISTORY'}</small><div class="battle-log-lines">${rows.map(t => `<p>${t}</p>`).join('')}</div>`; log.scrollTop = this.battleLogExpanded ? log.scrollHeight : 0; }
     toggleBattleLog() { this.battleLogExpanded = !this.battleLogExpanded; $('#log')?.classList.toggle('expanded', this.battleLogExpanded); this.renderBattleLog(); }
@@ -1725,8 +1759,19 @@
       popup.querySelector('button').addEventListener('click', () => this.clearQuickResultPopup()); field.appendChild(popup);
     }
     flashTitle(main, sub = '') { const a = $('#announcer'); a.innerHTML = `<strong>${main}</strong><span>${sub}</span>`; a.classList.remove('show'); void a.offsetWidth; a.classList.add('show'); }
-    battleSleep(ms) { const speed = this.simpleBattle ? 2.5 : this.autoBattle ? 1.5 : 1; return sleep(Math.max(40, Math.floor(ms / speed))); }
-    updateBattleAssistButtons() { const simple = $('[data-action="simpleBattle"]'), auto = $('[data-action="autoBattle"]'); if (simple) { simple.classList.toggle('active', this.simpleBattle); simple.setAttribute('aria-pressed', String(this.simpleBattle)); } if (auto) { auto.classList.toggle('active', this.autoBattle); auto.setAttribute('aria-pressed', String(this.autoBattle)); } }
+    autoBattleSpeedMultiplier() { return clamp(Number(this.profile?.autoBattleSpeed || D.settings.autoBattleSpeed || 1.5), 1, 3); }
+    battleSleep(ms) { const speed = this.simpleBattle ? 2.5 : this.autoBattle ? this.autoBattleSpeedMultiplier() : 1; return sleep(Math.max(40, Math.floor(ms / speed))); }
+    updateBattleAssistButtons() {
+      const simple = $('[data-action="simpleBattle"]'), auto = $('[data-action="autoBattle"]'), indicator = $('#auto-speed-indicator');
+      if (simple) { simple.classList.toggle('active', this.simpleBattle); simple.setAttribute('aria-pressed', String(this.simpleBattle)); }
+      if (auto) { auto.classList.toggle('active', this.autoBattle); auto.setAttribute('aria-pressed', String(this.autoBattle)); }
+      if (indicator) {
+        const speed = this.autoBattleSpeedMultiplier();
+        indicator.classList.toggle('active', this.autoBattle);
+        indicator.querySelector('strong').textContent = `×${Number.isInteger(speed) ? speed : speed.toFixed(1)}`;
+        indicator.setAttribute('aria-label', `オート戦闘速度 ${speed}倍`);
+      }
+    }
     keepAutoControlVisible() {
       if (!this.autoBattle) { this.panel(''); return; }
       this.showMainCommands();
@@ -1882,7 +1927,6 @@
       this.autoBattle = !this.autoBattle;
       this.cancelAutoPick();
       this.showMainCommands();
-      if (this.locked) $('#command-panel')?.classList.add('turn-locked');
       setTimeout(() => { this.autoToggleBusy = false; }, 180);
     }
     showMainCommands() {
@@ -1910,11 +1954,14 @@
         + this.button('スキル', skills.length ? 'SKILL ▶' : '未習得', 'skills', !skills.length, 'skill')
         + this.button('防御', 'GUARD // 50%', 'guard', false, 'guard')
         + this.button('アイテム', 'ITEM', 'item', false, 'item')
-        + this.button('にげる', 'ESCAPE', 'escape', false, 'escape')
+        + this.button('再行動', 'REPEAT', 'repeat', false, 'repeat')
         + this.button('一掃', 'SWEEP', 'quick', false, 'simple')
         + this.button('AUTO', this.autoBattle ? 'AUTO // ON' : 'AUTO // OFF', 'autoBattle', false, 'auto');
       this.panel(html, 'main');
-      this.bindActions({ attack: () => this.chooseTarget(basic.id), weaponArts: () => this.showWeaponArts(), skills: () => this.showCombinedSkills(), guard: () => this.guardAction(), item: () => this.showBattleItems(), escape: () => this.tryEscape(), quick: () => this.quickResolveBattle(), autoBattle: () => this.toggleAutoBattle() }); this.updateBattleAssistButtons();
+      // AUTOを演出中にOFFへ切り替えた場合、旧パネルのturn-lockedがDOMに残ることがある。
+      // 現在の戦闘ロック状態と必ず同期し、ターン終了後に通常コマンドを再び操作可能にする。
+      $('#command-panel')?.classList.toggle('turn-locked', !!this.locked);
+      this.bindActions({ attack: () => this.chooseTarget(basic.id), weaponArts: () => this.showWeaponArts(), skills: () => this.showCombinedSkills(), guard: () => this.guardAction(), item: () => this.showBattleItems(), repeat: () => this.repeatLastBattleAction(), quick: () => this.quickResolveBattle(), autoBattle: () => this.toggleAutoBattle() }); this.updateBattleAssistButtons();
       this.scheduleAutoPick();
     }
     autoPickAction() { if (!this.autoBattle || this.locked || this.finished) return; const maxHp = this.player.stats.maxHp, maxMp = this.player.stats.maxMp, hpPct = this.player.hp / maxHp; if (hpPct < 0.4 && (this.profile.inventory.potion || 0) > 0) { this.useConsumable('potion'); return; } if (this.player.mp < maxMp * 0.2 && (this.profile.inventory.manaPotion || 0) > 0) { this.useConsumable('manaPotion'); return; } const aliveEnemies = this.enemies.filter(e => e.alive); const skills = this.availableSkills().filter(s => this.canPaySkillCosts(s) && this.cooldownRemaining(s) === 0); const weapon = this.equippedWeapon(); const atkScore = weapon?.power || 1; let best = { type: 'attack', score: atkScore }; for (const s of skills) { let score = 0; if (s.kind === 'support') { if (s.effect?.type === 'hpRecover') score = hpPct < 0.75 ? (1 - hpPct) * 200 : 0; else if (s.effect?.type === 'mpRecover') score = this.player.mp < maxMp * 0.5 ? 45 : 0; else if (s.effect?.type === 'regenerate') score = hpPct < 0.8 && !(this.player.buffs.regenerate > 0) ? 38 : 0; else if (s.effect?.type === 'hpToMp') score = this.player.mp < maxMp * .45 && hpPct > .55 ? 48 : 0; } else if (s.kind === 'hybrid') { score = (s.strScale + s.magScale) * 12; } else { const multi = s.target === 'all' ? Math.min(aliveEnemies.length, 3) * 0.7 : 1; score = (s.power || 1) * (s.hits || 1) * multi; } if (score > best.score) best = { type: 'skill', skill: s, score }; } if (best.type === 'skill') { const s = best.skill; if (s.target === 'all' || s.target === 'self') { this.executeRound(s.id, -1); } else { this.executeRound(s.id, this.enemies.findIndex(e => e.alive)); } } else { this.executeRound('attack', this.enemies.findIndex(e => e.alive)); } }
@@ -2040,7 +2087,7 @@
       const skill = D.skills[skillId];
       if (skill?.target === 'all' || skill?.target === 'self') { this.executeRound(skillId, -1); return; }
       $('#phase-label').textContent = 'SELECT TARGET';
-      this.setLog('敵本体、または上部のA・B・Cをタップして攻撃対象を選択');
+      this.setLog('敵本体、または下部のA・B・Cをタップして攻撃対象を選択。名前タップで状態確認');
       this.enemies.forEach((e, i) => {
         const el = document.getElementById(e.uid);
         if (!e.alive || !el) return;
@@ -2050,12 +2097,10 @@
         el.onclick = selectTarget;
         el.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') selectTarget(event); };
         if (plate) {
-          plate.classList.add('targetable-nameplate');
-          plate.setAttribute('role', 'button');
-          plate.setAttribute('tabindex', '0');
-          plate.setAttribute('aria-label', `${e.name}${e.label || ''}を攻撃`);
-          plate.onclick = selectTarget;
-          plate.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') selectTarget(event); };
+          const inspect = event => { event?.preventDefault(); event?.stopPropagation(); this.openEnemyStatus(i); };
+          plate.setAttribute('role', 'button'); plate.setAttribute('tabindex', '0'); plate.setAttribute('aria-label', `${e.name}${e.label || ''}の状態を確認`);
+          plate.onclick = inspect;
+          plate.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') inspect(event); };
         }
       });
       const targetButtons = Array.from({ length: 3 }, (_, i) => {
@@ -2070,21 +2115,17 @@
       this.bindActions(targetActions);
     }
     clearTargets() {
-      this.enemies.forEach(e => {
+      this.enemies.forEach((e, i) => {
         const el = document.getElementById(e.uid);
         if (!el) return;
         const plate = $('.enemy-nameplate', el);
         el.classList.remove('targetable');
-        el.onclick = null;
-        el.onkeydown = null;
+        el.onclick = null; el.onkeydown = null;
         if (plate) {
           plate.classList.remove('targetable-nameplate');
-          plate.removeAttribute('role');
-          plate.removeAttribute('tabindex');
-          plate.removeAttribute('aria-label');
-          plate.onclick = null;
-          plate.onkeydown = null;
+          plate.onclick = null; plate.onkeydown = null;
         }
+        this.bindEnemyTap(e, i);
       });
     }
 
@@ -2094,6 +2135,7 @@
       let skill = D.skills[skillId]; const aoe = skill?.target === 'all' || skill?.randomTarget, self = skill?.target === 'self';
       if (skillId === 'resonanceBreak' && (!this.resonanceEnabled() || !(this.player?.resonance > 0))) return;
       if (this.locked || !skill || this.cooldownRemaining(skill) > 0 || !this.canPaySkillCosts(skill) || !this.skillEquipmentReady(skill) || (!self && (aoe ? !this.enemies.some(e => e.alive) : !this.enemies[targetIndex]?.alive))) return;
+      this.lastBattleAction = { type: 'skill', skillId, targetIndex };
       if (skillId === 'resonanceBreak') { const stored = this.player.resonance; skill = { ...skill, resonanceStored: stored, power: this.resonanceMultiplier(stored) }; this.player.resonance = 0; this.flashTitle('RESONANCE BREAK', `${stored.toFixed(1)}% // ×${skill.power}`); }
       this.locked = true; this.clearTargets(); this.keepAutoControlVisible(); $('#phase-label').textContent = 'ACTION'; await this.beginPlayerTurn(); const setEffects = this.activeSetEffects(), freeMp = skill.kind === 'magical' && skill.mp > 0 && Math.random() < (setEffects.freeMagicMpChance || 0); if (!freeMp) this.player.mp -= this.skillMpCost(skill); else this.flashTitle('MAESTRO', 'MP COST 0'); if (skill.cooldown) this.player.cooldowns[skill.id] = this.turn + skill.cooldown; this.persistVitals(); this.updateHUD();
       const actors = [{ type: 'player', speed: this.playerCombatStats().agi + roll(0, 4) + (skill.speedBonus || 0), act: () => this.playerActionWithSpark(skill, targetIndex) }]; this.enemies.filter(e => e.alive).forEach(e => actors.push({ type: 'enemy', enemy: e, speed: e.stats.spd + roll(0, 4), act: () => this.enemyAttack(e) })); actors.sort((a, b) => b.speed - a.speed);
@@ -2631,9 +2673,10 @@
     queueGrowthBubble(title, detail = '') { this.growthBubbleQueue = (this.growthBubbleQueue || Promise.resolve()).then(() => this.showGrowthBubble(title, detail)); return this.growthBubbleQueue; }
     async showGrowthBubble(title, detail = '') { const ren = $('#ren'), field = $('#battlefield'); if (!ren || !field) return; const rr = ren.getBoundingClientRect(), fr = field.getBoundingClientRect(), bubble = document.createElement('div'); bubble.className = 'growth-bubble'; bubble.innerHTML = `<b>${title}</b>${detail ? `<span>${detail}</span>` : ''}`; bubble.style.left = `${rr.left - fr.left + rr.width * .52}px`; bubble.style.top = `${Math.max(92, rr.top - fr.top + 12)}px`; $('#float-layer').appendChild(bubble); this.audio.sfx('heal'); await this.battleSleep(1250); bubble.remove(); }
     announceRareDrop(item) { const layer = $('#rare-drop-layer'); if (!layer) return; this.audio.sfx('rareDrop'); const b = document.createElement('div'); b.className = `rare-drop-banner rarity-${item.rarity}`; b.innerHTML = `<small>${item.rarity === 'legendary' ? 'LEGENDARY DROP' : 'EPIC DROP'}</small><b>${item.name}</b>`; layer.appendChild(b); requestAnimationFrame(() => b.classList.add('show')); setTimeout(() => { b.classList.remove('show'); setTimeout(() => b.remove(), 420); }, 2400); }
-    async useConsumable(id) { const item = D.items[id], amount = item?.effect?.hp || item?.effect?.mp || 0, key = item?.effect?.hp ? 'hp' : 'mp', maxKey = key === 'hp' ? 'maxHp' : 'maxMp'; if (!item || !(this.profile.inventory[id] > 0)) { this.setLog(`${item?.name || 'アイテム'}を持っていない。`); return; } if (this.player[key] >= this.player.stats[maxKey]) { this.setLog(`${key.toUpperCase()}は満タンだ。`); return; } this.locked = true; this.keepAutoControlVisible(); await this.beginPlayerTurn(); const heal = Math.min(amount, this.player.stats[maxKey] - this.player[key]); this.profile.inventory[id]--; this.player[key] += heal; this.persistVitals(); this.audio.sfx('heal'); this.setLog(`${item.name}を使った。${key.toUpperCase()}が${heal}回復！`); this.floating($('#ren'), `+${heal}`, 'heal'); this.updateHUD(); await this.battleSleep(650); await this.enemyOnlyTurn(); }
+    async useConsumable(id) { const item = D.items[id], amount = item?.effect?.hp || item?.effect?.mp || 0, key = item?.effect?.hp ? 'hp' : 'mp', maxKey = key === 'hp' ? 'maxHp' : 'maxMp'; if (!item || !(this.profile.inventory[id] > 0)) { this.setLog(`${item?.name || 'アイテム'}を持っていない。`); return; } if (this.player[key] >= this.player.stats[maxKey]) { this.setLog(`${key.toUpperCase()}は満タンだ。`); return; } this.lastBattleAction = { type: 'item', itemId: id }; this.locked = true; this.keepAutoControlVisible(); await this.beginPlayerTurn(); const heal = Math.min(amount, this.player.stats[maxKey] - this.player[key]); this.profile.inventory[id]--; this.player[key] += heal; this.persistVitals(); this.audio.sfx('heal'); this.setLog(`${item.name}を使った。${key.toUpperCase()}が${heal}回復！`); this.floating($('#ren'), `+${heal}`, 'heal'); this.updateHUD(); await this.battleSleep(650); await this.enemyOnlyTurn(); }
     async guardAction() {
       if (this.locked || this.finished) return;
+      this.lastBattleAction = { type: 'guard' };
       this.locked = true; this.clearTargets(); this.keepAutoControlVisible(); $('#phase-label').textContent = 'GUARD';
       await this.beginPlayerTurn();
       const reduction = D.combatBalance?.guardReduction ?? .50;
@@ -2641,6 +2684,19 @@
       this.audio.sfx('ui'); this.flashTitle('GUARD', `DAMAGE -${Math.round(reduction * 100)}%`);
       this.floating($('#ren'), 'GUARD', 'heal'); this.setLog(`防御態勢！ このラウンドに受けるダメージを${Math.round(reduction * 100)}%軽減する。`);
       this.updateHUD(); await this.battleSleep(420); await this.enemyOnlyTurn();
+    }
+    repeatLastBattleAction() {
+      if (this.locked || this.finished) return;
+      const last = this.lastBattleAction;
+      if (!last) { this.setLog('まだ再行動できる履歴がない。'); return; }
+      if (last.type === 'guard') { this.guardAction(); return; }
+      if (last.type === 'item') { this.useConsumable(last.itemId); return; }
+      const skill = D.skills[last.skillId];
+      if (!skill || this.cooldownRemaining(skill) > 0 || !this.canPaySkillCosts(skill) || !this.skillEquipmentReady(skill)) { this.setLog('直前の行動は現在の状態では再実行できない。'); return; }
+      const noTarget = skill.target === 'all' || skill.target === 'self' || skill.randomTarget;
+      const targetIndex = noTarget ? -1 : (this.enemies[last.targetIndex]?.alive ? last.targetIndex : this.enemies.findIndex(enemy => enemy.alive));
+      if (!noTarget && targetIndex < 0) { this.setLog('再行動の対象がいない。'); return; }
+      this.executeRound(last.skillId, targetIndex);
     }
     async tryEscape() { if (this.battleMode === 'debugOverpower') { const damage = this.enemies[0]?.debugDamageTaken || 0, turns = this.turn; this.finished = true; this.restoreDebugBattle(); this.audio.sfx('escape'); this.showResult('TEST ABORTED', '強敵検証を中断し、開始前のセーブ状態へ戻した。', 'GUARDIAN TRIAL', `<div class="boss-result-note">生存 ${turns} ACTION　/　総与ダメージ ${Math.round(damage).toLocaleString('ja-JP')}</div>`); return; } this.locked = true; this.keepAutoControlVisible(); await this.beginPlayerTurn(); const live = this.enemies.filter(e => e.alive), avg = live.reduce((s, e) => s + e.stats.spd, 0) / live.length, chance = clamp(.45 + (this.player.stats.agi - avg) * .025, .35, .9); this.setLog('逃走経路を探している……'); await this.battleSleep(600); if (Math.random() < chance) { this.finished = true; this.persistVitals(); this.audio.sfx('escape'); this.flashTitle('ESCAPED', '戦線を離脱'); await this.battleSleep(700); this.showResult('ESCAPED', '怪異との戦闘から離脱し、拠点へ帰還した。', 'RETURN TO HIDEOUT', this.battleSummaryHTML()); } else { this.setLog('逃げられない！'); await this.battleSleep(450); await this.enemyOnlyTurn(); } }
     async enemyOnlyTurn() { for (const e of this.enemies.filter(e => e.alive)) { await this.enemyAttack(e); if (this.player.hp <= 0) { await this.defeat(); return; } if (!this.enemies.some(x => x.alive)) { if (this.enemies.every(x => x.escaped)) await this.enemyEncounterEscaped(); else await this.victory(); return; } await this.battleSleep(300); } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands(); }

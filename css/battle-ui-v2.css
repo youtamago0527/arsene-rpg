@@ -12,6 +12,23 @@
 .battle-topbar .turn-info small{margin-top:2px;font:700 8px Cinzel;color:#d9d3dc;letter-spacing:.08em}
 .battle-menu-button{pointer-events:auto;min-width:88px;padding:10px 13px;border:1px solid #a78c62;background:#07080df2;color:#eee;font:700 11px Cinzel;letter-spacing:.14em;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);box-shadow:inset 0 0 0 2px #17141c,0 5px 18px #000c}
 .battle-menu-button i{display:inline-block;width:13px;height:9px;margin-right:6px;border-block:1px solid currentColor;position:relative}.battle-menu-button i::after{content:"";position:absolute;inset:3px 0 auto;border-top:1px solid currentColor}
+.battle-menu-stack{display:grid;justify-items:stretch;gap:2px;pointer-events:none}
+.battle-menu-stack .battle-menu-button{pointer-events:auto}
+.auto-speed-indicator{
+  min-width:88px;
+  display:flex;
+  align-items:baseline;
+  justify-content:flex-end;
+  gap:4px;
+  padding:2px 7px 1px;
+  color:#c9b88f;
+  background:linear-gradient(90deg,transparent,#05060bd9 30%);
+  opacity:.72;
+  text-shadow:0 1px 3px #000,0 0 6px #000;
+}
+.auto-speed-indicator small{font:700 6px/1 "Cormorant Garamond",Cinzel,serif;letter-spacing:.08em}
+.auto-speed-indicator strong{font:italic 700 14px/1 "Cormorant Garamond",Cinzel,serif;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.auto-speed-indicator.active{color:#ffdc75;opacity:1;text-shadow:0 0 7px #e7aa35,0 1px 3px #000}
 .battle-menu-popover{pointer-events:auto;position:absolute;right:0;top:46px;width:min(252px,calc(100vw - 24px));padding:10px;background:linear-gradient(150deg,#080913fa,#02030afa);border:1px solid #8a724e;box-shadow:inset 0 0 0 2px #181522,0 14px 34px #000;display:grid;gap:8px;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}.battle-menu-popover[hidden]{display:none}
 .battle-menu-header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #443554;padding:0 0 7px}.battle-menu-header small{font:700 9px Cinzel;letter-spacing:.2em;color:#c5a0ff}.battle-menu-header button{width:28px;height:26px;padding:0!important;border-color:#67445c!important;background:#0a0910!important;color:#e9dfea;font-size:16px!important;box-shadow:inset 0 0 8px #4a173333}
 .battle-audio-row{display:grid;grid-template-columns:42px minmax(0,1fr) 34px 39px;align-items:center;gap:5px;min-height:32px}.battle-audio-row>span{color:#e7e2eb;font:800 9px Cinzel;letter-spacing:.08em}.battle-audio-row input{width:100%;height:18px;margin:0;accent-color:#9b56dc}.battle-audio-row output{color:#bfc9dc;font:700 8px Cinzel;text-align:right}.battle-audio-row button{min-width:39px;padding:5px 3px!important;border:1px solid #397c9d!important;background:#081b28!important;color:#75ddff!important;font:800 8px Cinzel!important}.battle-audio-row button.off{border-color:#473c4b!important;background:#0a0910!important;color:#77717d!important}
@@ -1257,7 +1274,7 @@
 #game .enemy-nameplate .enemy-slot-label{
   position:absolute;
   z-index:3;
-  left:5px;
+  left:7px;
   top:3px;
   width:27px;
   height:27px;
@@ -1332,11 +1349,11 @@
     padding-right:6px;
     padding-left:31px;
   }
-  #game .enemy-nameplate .enemy-slot-label{left:4px;width:24px;font-size:11px}
+  #game .enemy-nameplate .enemy-slot-label{left:6px;width:24px;font-size:11px}
   #game .enemy-nameplate>span,
-  #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span{font-size:12px}
+  #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span{font-size:10px}
   #game .enemy-nameplate>span.long-name,
-  #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{font-size:11px}
+  #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{font-size:8.5px}
 }
 
 /* 3体編成は戦場の左右余白を同値にして、敵本体・名札・HPを3等分で配置する。 */
@@ -1351,6 +1368,16 @@
   flex:1 1 0;
   width:calc((100% - 16px)/3);
   min-width:0;
+}
+#game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span{font-size:10px}
+#game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{font-size:8.5px;letter-spacing:-.06em}
+#game .enemy:not(.boss-enemy) .enemy-nameplate>span{
+  position:absolute;
+  inset:6px 0 auto;
+  width:100%;
+  padding:0 20px;
+  text-align:center;
+  transform:translate(-2px,-1px);
 }
 
 /* BOSSは名札を高く、立ち絵と専用HPを大きくして一体戦の圧を出す。 */
@@ -1401,6 +1428,7 @@
 #game.has-boss-enemy .battle-gold-display{display:none}
 
 /* 通常敵は撃破演出後に名札とHPも退場。列幅は残して他の敵を動かさない。 */
+#game .enemy:not(.boss-enemy){translate:0 -6px}
 #game .enemy.defeated:not(.boss-enemy) .enemy-nameplate,
 #game .enemy.defeated:not(.boss-enemy) .enemy-hud{
   opacity:0;
@@ -1408,3 +1436,107 @@
   pointer-events:none;
   transition:opacity .18s ease,visibility 0s linear .18s;
 }
+
+/* v0.1.43: LOG/STATUSを一体化。比較後に戻しやすいよう、このブロックへ集約する。 */
+#game .player-ui-stack{
+  position:absolute;
+  z-index:6;
+  right:0;
+  bottom:0;
+  width:59%;
+  max-width:254px;
+  display:flex;
+  flex-direction:column;
+  gap:0;
+}
+#game .player-ui-stack .player-card{
+  position:relative;
+  inset:auto;
+  order:1;
+  width:100%;
+  max-width:none;
+}
+#game .player-ui-stack .battle-log{
+  position:relative;
+  order:0;
+  align-self:flex-end;
+  width:70%;
+  min-height:58px;
+  max-height:58px;
+  margin:0 0 -1px;
+  padding:11px 9px 5px;
+  border:0;
+  box-shadow:none;
+  background:#020309eb;
+}
+#game .player-ui-stack .battle-log::before{display:none}
+#game .player-ui-stack .battle-log>small{top:-4px;left:0}
+#game .player-ui-stack .battle-log-lines{max-height:35px;overflow:hidden}
+#game .player-ui-stack .battle-log p{font-size:7.5px;line-height:1.25}
+#game .player-ui-stack .battle-log.expanded{
+  position:fixed;
+  z-index:80;
+  inset:auto;
+  left:50%;
+  top:50%;
+  width:min(calc(100vw - 24px),406px);
+  height:min(72svh,620px);
+  min-height:320px;
+  max-width:406px;
+  max-height:72svh;
+  margin:0;
+  padding:38px 18px 24px;
+  overflow:auto;
+  transform:translate(-50%,-50%);
+  background:#020713f7;
+  border:1px solid #4bcfff;
+  box-shadow:0 0 0 5px #020713,0 0 0 100vmax #000b,0 0 34px #168fff77;
+  backdrop-filter:blur(12px);
+}
+#game .player-ui-stack:has(.battle-log.expanded){z-index:100}
+#game .battlefield:has(.battle-log.expanded){z-index:200}
+#game .battlefield:has(.battle-status-detail.show){z-index:190}
+#game .battle-status-detail{
+  position:fixed;
+  z-index:90;
+  inset:auto;
+  left:50%;
+  top:50%;
+  width:min(calc(100vw - 24px),406px);
+  height:min(86svh,680px);
+  min-height:420px;
+  max-width:406px;
+  max-height:86svh;
+  transform:translate(-50%,-50%) scale(.97);
+  box-shadow:0 0 0 5px #020713,0 0 0 100vmax #000b,0 0 34px #168fff77;
+}
+#game .battle-status-detail.show{transform:translate(-50%,-50%) scale(1)}
+#game .player-ui-stack .battle-log.expanded .battle-log-lines{max-height:none;overflow:visible}
+#game .player-ui-stack .battle-log.expanded p{font-size:12px}
+
+/* 空いた下端へ半身を少し下げる。コマンド絵は元画像比率(約1.17)へ寄せ、縦に潰さない。 */
+#game .ren{bottom:calc(var(--battle-character-bottom,-48px) + 2px)}
+#game .battle-console{border-top:0;padding-top:0}
+#game .command-panel[data-layout="main"]>button:nth-child(-n+4){min-height:76px;height:76px}
+#game .command-panel[data-layout="main"]>button:nth-child(n+5),
+#game .command-panel[data-layout="main"]>button:nth-last-child(-n+2){min-height:35px;height:35px}
+@media(max-width:393px){
+  #game .player-ui-stack{right:0;width:59%}
+  #game .ren{bottom:calc(var(--battle-character-bottom,-42px) + 4px)}
+  #game .command-panel[data-layout="main"]>button:nth-child(-n+4){min-height:74px;height:74px}
+  #game .command-panel[data-layout="main"]>button:nth-child(n+5),
+  #game .command-panel[data-layout="main"]>button:nth-last-child(-n+2){min-height:34px;height:34px}
+}
+@media(max-height:720px){
+  #game .command-panel[data-layout="main"]>button:nth-child(-n+4){min-height:68px;height:68px}
+}
+
+/* 逃走はMENU帰還へ統合。6枠目は将来の「再行動」画像が来るまで黒く伏せる。 */
+#game .command-panel[data-layout="main"]>button[data-action="repeat"]{
+  background:#010207!important;
+  background-image:none!important;
+  border-color:#080910!important;
+  box-shadow:none!important;
+}
+#game .command-panel[data-layout="main"]>button[data-action="repeat"]::before{display:none!important}
+#game .command-panel[data-layout="main"]>button[data-action="repeat"]>*{opacity:0!important}
