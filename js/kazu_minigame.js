@@ -87,7 +87,11 @@
         this.tapCount += 1;
         if (this.tapCount >= 3) {
           this.tapCount = 0;
-          this.open();
+          // 3回タップの飛び先はカズの隠しメニュー。音ゲーはそのメニューの
+          // 「遊びに付き合え」から開く。メニューが無い時だけ直接開く。
+          const secret = window.phantomSecret;
+          if (secret?.open) secret.open();
+          else this.open();
           return;
         }
         this.tapTimer = setTimeout(() => { this.tapCount = 0; }, 1800);
