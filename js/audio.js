@@ -150,6 +150,11 @@
         case 'playerHit': this.tone(105,.24,'sawtooth',.18,.6); this.noise(.16,.12,0,250); break;
         case 'dark': this.tone(120,.42,'sine',.13,3.2); this.tone(62,.45,'sawtooth',.08,1.8); break;
         case 'heal': chord([440,554,659,880]); break;
+        // メニューの決定音。回復音（ヒール.mp3）をUI全般へ流用していたため、
+        // 装備やJOB変更のたびに回復音が鳴っていた。短い上昇2音で置き換える。
+        case 'confirm': this.tone(660,.07,'triangle',.075,1.1); this.tone(990,.09,'triangle',.06,1,.045); break;
+        // 戦闘中の自己強化。回復ではないので回復音とは分ける。
+        case 'buff': this.tone(392,.14,'triangle',.09,1.6); this.tone(587,.16,'sine',.07,1.3,.05); break;
         case 'passiveProc': chord([523,784,1047],.06); this.tone(1568,.34,'sine',.06,1,.12); break;
         case 'defeat': this.tone(280,.6,'triangle',.16,.18); this.noise(.45,.1,.08,180); break;
         case 'victory': chord([523,659,784,1047],.12); break;

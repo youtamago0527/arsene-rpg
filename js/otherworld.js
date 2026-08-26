@@ -367,7 +367,7 @@
     this.profile.baseStats[stat] = (this.profile.baseStats[stat] || 0) + 1;
     this.profile.arcanaGains ||= {};
     this.profile.arcanaGains[stat] = (this.profile.arcanaGains[stat] || 0) + 1;
-    this.saveProfile(); this.audio.sfx('heal');
+    this.saveProfile(); this.audio.sfx('confirm');
     return { stat, label: STAT_LABEL[stat] || stat, name: item.name };
   };
 

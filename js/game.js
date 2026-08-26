@@ -856,7 +856,7 @@
       while (this.profile[key].length < max) this.profile[key].push(null);
       if (skillId) this.profile[key] = this.profile[key].map(v => v === skillId ? null : v);
       this.profile[key][idx] = skillId || null; this.sanitizeLeftHandEquipment();
-      this.saveProfile(); this.audio.sfx('heal'); if (this.jobUI) this.jobUI.modal = null; this.renderMenuPanel('job');
+      this.saveProfile(); this.audio.sfx('confirm'); if (this.jobUI) this.jobUI.modal = null; this.renderMenuPanel('job');
     }
     // ジョブLvアップ時：ジョブ別の獲得量を記録（PHANTOM THIEFへ常時50%反映するためにも使用）
     applyJobLevelGrowth(jobId, levels = 1) {
@@ -1001,7 +1001,7 @@
       this.profile.jobRebirths[jobId] = this.rebirthCount(jobId) + 1;
       // Lv1習得PASSIVEは、転生直後のLv1到達時点で強化される。
       const reinforcedPassives = this.reinforceJobPassives(jobId, 1);
-      this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('job');
+      this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('job');
       return { ok: true, count: this.rebirthCount(jobId), retention, reinforcedPassives };
     }
     // D2クリア報酬：双刃士を解放。初回のみ輪廻のアルカナ×1。
@@ -1329,7 +1329,7 @@
     resonanceMultiplier(value = this.player?.resonance || 0) { return (D.guardianBalance?.resonanceTiers || []).find(t => value >= t.min)?.multiplier || 0; }
     jobLearnedActiveSkills(jobId) { const job = D.jobs[jobId]; if (!this.isPlayerContentVisible(job)) return []; const list = Object.entries(job.skillUnlocks || {}).filter(([lv, id]) => this.jobAbilityLearned(jobId, id, lv)).map(([, id]) => D.skills[id]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE'); const sig = D.skills[job.signatureSkillId]; if (this.isPlayerContentVisible(sig) && sig.type !== 'PASSIVE' && this.jobAbilityLearned(jobId, sig.id, sig.unlockJobLevel || 1) && !list.some(s => s.id === sig.id)) list.unshift(sig); return list; }
     masteredActions() { return (this.profile.jobMastered || []).map(id => D.skills[D.jobs[id]?.signatureSkillId]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE'); }
-    setPhantomAction(idx, skillId) { const max = this.actionSlotCount(); this.profile.ptActionSlots ||= new Array(max).fill(null); while (this.profile.ptActionSlots.length < max) this.profile.ptActionSlots.push(null); if (skillId) this.profile.ptActionSlots = this.profile.ptActionSlots.map(v => v === skillId ? null : v); this.profile.ptActionSlots[idx] = skillId || null; this.saveProfile(); this.audio.sfx('heal'); if (this.jobUI) this.jobUI.modal = null; this.renderMenuPanel('job'); }
+    setPhantomAction(idx, skillId) { const max = this.actionSlotCount(); this.profile.ptActionSlots ||= new Array(max).fill(null); while (this.profile.ptActionSlots.length < max) this.profile.ptActionSlots.push(null); if (skillId) this.profile.ptActionSlots = this.profile.ptActionSlots.map(v => v === skillId ? null : v); this.profile.ptActionSlots[idx] = skillId || null; this.saveProfile(); this.audio.sfx('confirm'); if (this.jobUI) this.jobUI.modal = null; this.renderMenuPanel('job'); }
     skillEquipmentReady(skill) { const required = skill?.requiresWeaponSubtype; return !required || this.equippedWeapon()?.weaponSubtype === required; }
     allLearnedPassives() { const ids = [...(this.profile.learnedJobSkills || []), ...(this.profile.learnedCharacterSkills || [])]; return [...new Set(ids)].map(id => D.skills[id]).filter(s => this.isPlayerContentVisible(s) && s.type === 'PASSIVE'); }
     setPassiveSlot(idx, skillId) { this.setEquippedPassive(idx, skillId); }
@@ -2364,7 +2364,7 @@
       ren.classList.add('sparking');
       this.audio.sfx('critical'); this.setLog(`💡 閃いた！ 《${skill.name}》`);
       await this.battleSleep(260);
-      this.audio.sfx('heal');
+      this.audio.sfx('rareDrop');
       await this.battleSleep(1150);
       flash.remove(); cut.remove(); ren.classList.remove('sparking');
     }
@@ -2469,9 +2469,9 @@
         else { const gained = Math.min(Math.max(1, Math.ceil(this.player.stats.maxMp * (effect.mpRecoverRate || 0))), room); this.player.hp -= hpCost; this.player.mp += gained; this.recordSkillUse(skill); this.audio.sfx('dark'); this.floating(ren, `HP -${hpCost}`, 'debuff'); await this.battleSleep(180); this.audio.sfx('heal'); this.floating(ren, `MP +${gained}`, 'heal'); this.setLog(`生命力${hpCost}を魔力へ転換。MPが${gained}回復！（この戦闘では使用済）`); }
       }
       if (effect.type === 'selfMagicCharge') { this.player.buffs.magicCharge = true; this.audio.sfx('magic'); this.floating(ren, 'MAGIC CHARGE', 'heal'); this.setLog('魔力装填！ 次の物理攻撃に魔力が乗る。'); }
-      if (effect.type === 'selfAtkCharge') { this.player.buffs.atkCharge = { rate: effect.rate }; this.audio.sfx('heal'); this.floating(ren, `ATK +${Math.round(effect.rate * 100)}%`, 'heal'); this.setLog('ちからため！ 次の物理攻撃の威力が上がる。'); }
-      if (effect.type === 'selfDefUp') { this.player.buffs.defUp = { rate: effect.rate, until: this.turn + effect.turns }; this.audio.sfx('heal'); this.floating(ren, `DEF +${Math.round(effect.rate * 100)}%`, 'heal'); this.setLog(`雄叫びでDEFが${Math.round(effect.rate * 100)}%上昇！ ${effect.turns}ターン持続。`); }
-      if (effect.type === 'fortress') { this.player.buffs.fortressUntil = this.turn; this.player.buffs.fortressReduction = effect.reduction ?? D.guardianBalance?.fortressReduction ?? .30; this.audio.sfx('heal'); this.floating(ren, 'FORTRESS', 'heal'); this.setLog('フォートレス！ このターンの被ダメージを30%軽減する。'); }
+      if (effect.type === 'selfAtkCharge') { this.player.buffs.atkCharge = { rate: effect.rate }; this.audio.sfx('buff'); this.floating(ren, `ATK +${Math.round(effect.rate * 100)}%`, 'heal'); this.setLog('ちからため！ 次の物理攻撃の威力が上がる。'); }
+      if (effect.type === 'selfDefUp') { this.player.buffs.defUp = { rate: effect.rate, until: this.turn + effect.turns }; this.audio.sfx('buff'); this.floating(ren, `DEF +${Math.round(effect.rate * 100)}%`, 'heal'); this.setLog(`雄叫びでDEFが${Math.round(effect.rate * 100)}%上昇！ ${effect.turns}ターン持続。`); }
+      if (effect.type === 'fortress') { this.player.buffs.fortressUntil = this.turn; this.player.buffs.fortressReduction = effect.reduction ?? D.guardianBalance?.fortressReduction ?? .30; this.audio.sfx('buff'); this.floating(ren, 'FORTRESS', 'heal'); this.setLog('フォートレス！ このターンの被ダメージを30%軽減する。'); }
       this.persistVitals(); this.updateHUD(); await this.battleSleep(350); ren.classList.remove('casting');
     }
     // ══ 左手の追撃 ═══════════════════════════════════════════
@@ -2601,7 +2601,7 @@
         this.profile.shopPurchases ||= {};
         this.profile.shopPurchases[id] = this.shopPurchaseCount(id) + 1;
       }
-      this.saveProfile(); this.audio.sfx('heal');
+      this.saveProfile(); this.audio.sfx('confirm');
       this.renderMenuSummary(); this.renderMenuPanel('food');
     }
     // まかないのテスト枠。料理バフや通常の携行食上限とは分離して扱う。
@@ -2611,7 +2611,7 @@
       if (!listing || !item || this.profile.gold < listing.price) { this.audio.sfx('ui'); return; }
       this.profile.gold -= listing.price;
       this.profile.inventory[id] = (this.profile.inventory[id] || 0) + 1;
-      this.saveProfile(); this.audio.sfx('heal');
+      this.saveProfile(); this.audio.sfx('confirm');
       this.renderMenuSummary(); this.renderMenuPanel('food');
       this.renderKazuBubble('転生の試し用や。好きなだけ鍛え直して、力の伸びを見ていき。');
     }
@@ -2848,7 +2848,7 @@
     }
     floating(el, value, type) { if (!el) return; const r = el.getBoundingClientRect(), field = $('#battlefield').getBoundingClientRect(), f = document.createElement('b'); f.className = `float-number ${type}`; f.textContent = type === 'critical' ? `CRITICAL! ${value}` : value; f.style.left = `${r.left - field.left + r.width / 2}px`; f.style.top = `${r.top - field.top + r.height * .25}px`; $('#float-layer').appendChild(f); setTimeout(() => f.remove(), 1100); }
     queueGrowthBubble(title, detail = '') { this.growthBubbleQueue = (this.growthBubbleQueue || Promise.resolve()).then(() => this.showGrowthBubble(title, detail)); return this.growthBubbleQueue; }
-    async showGrowthBubble(title, detail = '') { const ren = $('#ren'), field = $('#battlefield'); if (!ren || !field) return; const rr = ren.getBoundingClientRect(), fr = field.getBoundingClientRect(), bubble = document.createElement('div'); bubble.className = 'growth-bubble'; bubble.innerHTML = `<b>${title}</b>${detail ? `<span>${detail}</span>` : ''}`; bubble.style.left = `${rr.left - fr.left + rr.width * .52}px`; bubble.style.top = `${Math.max(92, rr.top - fr.top + 12)}px`; $('#float-layer').appendChild(bubble); this.audio.sfx('heal'); await this.battleSleep(1250); bubble.remove(); }
+    async showGrowthBubble(title, detail = '') { const ren = $('#ren'), field = $('#battlefield'); if (!ren || !field) return; const rr = ren.getBoundingClientRect(), fr = field.getBoundingClientRect(), bubble = document.createElement('div'); bubble.className = 'growth-bubble'; bubble.innerHTML = `<b>${title}</b>${detail ? `<span>${detail}</span>` : ''}`; bubble.style.left = `${rr.left - fr.left + rr.width * .52}px`; bubble.style.top = `${Math.max(92, rr.top - fr.top + 12)}px`; $('#float-layer').appendChild(bubble); this.audio.sfx('confirm'); await this.battleSleep(1250); bubble.remove(); }
     announceRareDrop(item) { const layer = $('#rare-drop-layer'); if (!layer) return; this.audio.sfx('rareDrop'); const b = document.createElement('div'); b.className = `rare-drop-banner rarity-${item.rarity}`; b.innerHTML = `<small>${item.rarity === 'legendary' ? 'LEGENDARY DROP' : 'EPIC DROP'}</small><b>${item.name}</b>`; layer.appendChild(b); requestAnimationFrame(() => b.classList.add('show')); setTimeout(() => { b.classList.remove('show'); setTimeout(() => b.remove(), 420); }, 2400); }
     async useConsumable(id) { const item = D.items[id], amount = item?.effect?.hp || item?.effect?.mp || 0, key = item?.effect?.hp ? 'hp' : 'mp', maxKey = key === 'hp' ? 'maxHp' : 'maxMp'; if (!item || !(this.profile.inventory[id] > 0)) { this.setLog(`${item?.name || 'アイテム'}を持っていない。`); return; } if (this.player[key] >= this.player.stats[maxKey]) { this.setLog(`${key.toUpperCase()}は満タンだ。`); return; } this.lastBattleAction = { type: 'item', itemId: id }; this.locked = true; this.keepAutoControlVisible(); await this.beginPlayerTurn(); const heal = Math.min(amount, this.player.stats[maxKey] - this.player[key]); this.profile.inventory[id]--; this.player[key] += heal; this.persistVitals(); this.audio.sfx('heal'); this.setLog(`${item.name}を使った。${key.toUpperCase()}が${heal}回復！`); this.floating($('#ren'), `+${heal}`, 'heal'); this.updateHUD(); await this.battleSleep(650); await this.enemyOnlyTurn(); }
     async guardAction() {
@@ -3529,7 +3529,7 @@
       this.profile.currentVitals = { hp: Math.min(vitals.hp, after.maxHp), mp: Math.min(vitals.mp, after.maxMp) };
       if (this.player) { this.player.stats = after; this.player.hp = Math.min(this.player.hp, after.maxHp); this.player.mp = Math.min(this.player.mp, after.maxMp); }
       this.saveProfile();
-      if (render) { this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('job'); }
+      if (render) { this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('job'); }
       return true;
     }
     changeJob(id) { return this.switchJobState(id, true); }
@@ -3701,9 +3701,9 @@
       this.profile.gold -= (recipe.gold || 0); recipe.materials.forEach(m => { this.profile.inventory[m.itemId] = (this.profile.inventory[m.itemId] || 0) - m.count; });
       this.profile.inventory[recipe.resultItemId] = (this.profile.inventory[recipe.resultItemId] || 0) + (recipe.resultCount || 1);
       this.recordEquipmentDiscovery([recipe.resultItemId]);
-      this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-craft', recipe.id, anchorTop);
+      this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-craft', recipe.id, anchorTop);
     }
-    dismantleItem(id, anchorTop = null) { const item = D.items[id], series = D.bossEquipmentSeries?.[item?.seriesId], output = series?.dismantle, equipped = Object.values(this.profile.equipment).includes(id), spare = (this.profile.inventory[id] || 0) - (equipped ? 1 : 0); if (!item || !series || !output || spare <= 0) return; this.profile.inventory[id]--; this.profile.inventory[output.materialId] = (this.profile.inventory[output.materialId] || 0) + output.count; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-disassemble', id, anchorTop); }
+    dismantleItem(id, anchorTop = null) { const item = D.items[id], series = D.bossEquipmentSeries?.[item?.seriesId], output = series?.dismantle, equipped = Object.values(this.profile.equipment).includes(id), spare = (this.profile.inventory[id] || 0) - (equipped ? 1 : 0); if (!item || !series || !output || spare <= 0) return; this.profile.inventory[id]--; this.profile.inventory[output.materialId] = (this.profile.inventory[output.materialId] || 0) + output.count; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-disassemble', id, anchorTop); }
     renderWorkshop(panel) {
       if ((this.profile.newlyUnlockedRecipes || []).length) { this.profile.newlyUnlockedRecipes = []; this.saveProfile(); }
       if (!this.profile.flags.noelFirstEncounterCleared) { panel.innerHTML = '<button class="panel-home" data-menu="home">拠点へ戻る</button><small>PHANTOM WORKSHOP</small><h2>工房</h2><div class="workshop-unlock"><b>LOCKED</b><strong>まだ工房は利用できません</strong><span>通常戦を3回制し、永遠の裁定者ノエルと遭遇すると解放されます。</span></div>'; return; }
@@ -3764,7 +3764,7 @@
         if (isWeapon) delete this.profile.weaponEnchants[itemId];
         else delete this.profile.armorEnchants[itemId];
         equippedSlots.forEach(slot => { this.profile.equipment[slot] = itemId; });
-        this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary();
+        this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary();
         this.renderWorkshopKeepingAnchor(isWeapon ? 'data-enchant' : 'data-armor-enchant', itemId, anchorTop);
         window.arseneStartFlow?.toast?.(`${itemName}を強化値+0で復元した`);
       };
@@ -3788,7 +3788,7 @@
       const success = Math.random() < et.successRates[level];
       if (success) {
         this.profile.weaponEnchants[weaponId] = level + 1;
-        this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-enchant', weaponId, anchorTop);
+        this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-enchant', weaponId, anchorTop);
       } else {
         delete this.profile.weaponEnchants[weaponId];
         this.profile.inventory[weaponId] = Math.max(0, (this.profile.inventory[weaponId] || 0) - 1);
@@ -4090,7 +4090,7 @@
       const success = Math.random() < et.successRates[level];
       if (success) {
         this.profile.armorEnchants[itemId] = level + 1;
-        this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-armor-enchant', itemId, anchorTop);
+        this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-armor-enchant', itemId, anchorTop);
       } else {
         delete this.profile.armorEnchants[itemId];
         this.profile.inventory[itemId] = Math.max(0, (this.profile.inventory[itemId] || 0) - 1);
@@ -4252,10 +4252,10 @@
       return parts.length ? parts.join('') : '<i class="same">変化なし</i>';
     }
     previewEquipment(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; this.selectedEquipmentId = id; this.renderMenuPanel('equipment'); }
-    equipItem(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; const slot = (this.equipSlot && this.candidatesForSlot(this.equipSlot).includes(id)) ? this.equipSlot : item.slot; if (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) return; if (slot === 'rightHand' && (this.isOffHandOnlyWeapon(id) || !this.canEquipRightHand(id))) return; this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
+    equipItem(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; const slot = (this.equipSlot && this.candidatesForSlot(this.equipSlot).includes(id)) ? this.equipSlot : item.slot; if (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) return; if (slot === 'rightHand' && (this.isOffHandOnlyWeapon(id) || !this.canEquipRightHand(id))) return; this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
     unequipSlot(slotId) { if (!slotId || !(slotId in this.profile.equipment)) return; this.profile.equipment[slotId] = slotId === 'rightHand' ? 'mageStaff' : null; this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('ui'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
-    equipFromInventory(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || !(this.profile.inventory[id] > 0)) return; const slot = this.isOffHandOnlyWeapon(id) ? 'leftHand' : D.weapons[id] ? 'rightHand' : item.slot; if (!slot || (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) || (slot === 'rightHand' && !this.canEquipRightHand(id))) return; this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('items'); }
-    equipLeftHandWeapon(id) { if (!(this.profile.inventory[id] > 0) || !this.isLeftHandItemAllowed(id)) return; this.profile.equipment.leftHand = id; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
+    equipFromInventory(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || !(this.profile.inventory[id] > 0)) return; const slot = this.isOffHandOnlyWeapon(id) ? 'leftHand' : D.weapons[id] ? 'rightHand' : item.slot; if (!slot || (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) || (slot === 'rightHand' && !this.canEquipRightHand(id))) return; this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('items'); }
+    equipLeftHandWeapon(id) { if (!(this.profile.inventory[id] > 0) || !this.isLeftHandItemAllowed(id)) return; this.profile.equipment.leftHand = id; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
 
     kazuDialogueCondition(key) {
       const f = this.profile.flags, workshopUnlocked = !!f.noelFirstEncounterCleared;
