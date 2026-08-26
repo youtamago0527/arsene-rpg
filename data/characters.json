@@ -31,14 +31,13 @@
     "battleSpritesByWeaponType": {
       "default": {
         "src": "assets/playable-characters/ren/battle/ren-fixed-v1.png",
-        "backgroundSize": "auto 134%",
+        "backgroundSize": "auto 220%",
         "backgroundPosition": "52% 0%",
         "left": "-42px",
         "bottom": "-52px",
         "width": "280px",
         "height": "278px",
-        "blendMode": "normal",
-        "chromaKey": "checkerLight"
+        "blendMode": "normal"
       }
     },
     "voice": null,
@@ -194,7 +193,19 @@
     "selectPortrait": "assets/ui/character-select/shizuma-face-v1.webp",
     "portraitMode": "cutout",
     "imageFocus": "50% 20%",
-    "battleSprite": null,
+    "battleSprite": "assets/playable-characters/shizuma/battle/shizuma-fixed-v1.png",
+    "battleSpritesByWeaponType": {
+      "default": {
+        "src": "assets/playable-characters/shizuma/battle/shizuma-fixed-v1.png",
+        "backgroundSize": "auto 174%",
+        "backgroundPosition": "52% 0%",
+        "left": "-42px",
+        "bottom": "-52px",
+        "width": "280px",
+        "height": "278px",
+        "blendMode": "normal"
+      }
+    },
     "voice": null,
     "skills": ["quickSlash"],
     "theme": {

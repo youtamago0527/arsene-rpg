@@ -1564,11 +1564,14 @@
   #game .command-panel[data-layout="main"]>button:nth-child(-n+4){min-height:68px;height:68px}
 }
 
-/* 逃走はMENU帰還へ統合。6枠目は将来の「再行動」画像が来るまで黒く伏せる。 */
+/* 逃走はMENU帰還へ統合。6枠目は直前の行動を繰り返す「再行動」。 */
 #game .command-panel[data-layout="main"]>button[data-action="repeat"]{
-  background:#010207!important;
-  background-image:none!important;
-  border-color:#080910!important;
+  background-color:#010207!important;
+  background-image:url("../assets/ui/battle/lower-ui-v2/command-repeat-v1.png")!important;
+  background-position:center!important;
+  background-size:100% 100%!important;
+  background-repeat:no-repeat!important;
+  border-color:transparent!important;
   box-shadow:none!important;
 }
 #game .command-panel[data-layout="main"]>button[data-action="repeat"]::before{display:none!important}
