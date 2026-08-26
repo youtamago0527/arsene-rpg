@@ -23,6 +23,7 @@
       const g=game(); if(!g)return;
       const d={...(defs[type]||defs.auto2),...extra};
       const modal=document.createElement('div'); modal.className='q-offer-modal'; modal.innerHTML=`<div class="q-offer-card" role="dialog" aria-label="Q offer"><button class="q-offer-close" data-q-close aria-label="閉じる">×</button><div class="q-offer-q">Q</div><small class="q-offer-kicker">Q'S OFFER</small><h2>${d.title}</h2><p>${d.copy}</p><div class="q-offer-ad"><span>広告を再生しています</span><b data-q-countdown>3</b></div><button class="q-offer-watch" data-q-watch>報酬を受け取る<span>WATCH MOCK AD</span></button></div>`;
+      if(type==='protect') modal.classList.add('q-offer-defeat');
       document.body.appendChild(modal); let n=3; const count=modal.querySelector('[data-q-countdown]'); const timer=setInterval(()=>{n--; if(count)count.textContent=n; if(n<=0){clearInterval(timer); modal.querySelector('[data-q-watch]').disabled=false; modal.querySelector('[data-q-watch]').textContent='報酬を受け取る';}},1000); modal.querySelector('[data-q-watch]').disabled=true;
       modal.addEventListener('click',e=>{if(e.target.closest('[data-q-close]')){clearInterval(timer);modal.remove();} if(e.target.closest('[data-q-watch]')&&!e.target.closest('[data-q-watch]').disabled){clearInterval(timer);api.grant(type);modal.remove();}});
     },
