@@ -125,7 +125,7 @@
         const craft = e.target.closest('[data-craft]');
         if (craft) { if (!craft.disabled) this.craftItem(craft.dataset.craft, craft.getBoundingClientRect().top); return; }
         const dismantle = e.target.closest('[data-disassemble]');
-        if (dismantle) { if (!dismantle.disabled) this.dismantleItem(dismantle.dataset.disassemble); return; }
+        if (dismantle) { if (!dismantle.disabled) this.dismantleItem(dismantle.dataset.disassemble, dismantle.getBoundingClientRect().top); return; }
         const enchant = e.target.closest('[data-enchant]');
         if (enchant) { if (!enchant.disabled) this.enchantWeapon(enchant.dataset.enchant, enchant.getBoundingClientRect().top); return; }
         const armorEnchant = e.target.closest('[data-armor-enchant]');
@@ -514,10 +514,11 @@
       this.renderMenuPanel('workshop');
       const restore = () => {
         const after = [...document.querySelectorAll(`[${attribute}]`)].find(el => el.getAttribute(attribute) === itemId);
-        const scroller = after && this.scrollParentOf(after);
+        // 分解などで対象のカードごと消えることがある。その場合もスクロール量だけは戻す。
+        const scroller = (after && this.scrollParentOf(after)) || this.scrollParentOf($('#menu-panel'));
         if (!scroller) return;
         if (Number.isFinite(savedScrollTop)) scroller.scrollTop = savedScrollTop;
-        if (Number.isFinite(viewportTop)) scroller.scrollTop += after.getBoundingClientRect().top - viewportTop;
+        if (after && Number.isFinite(viewportTop)) scroller.scrollTop += after.getBoundingClientRect().top - viewportTop;
       };
       // 画像・details・グリッドの再レイアウト後にも同じ位置へ戻す。
       requestAnimationFrame(() => { restore(); requestAnimationFrame(restore); });
@@ -3586,7 +3587,7 @@
       this.recordEquipmentDiscovery([recipe.resultItemId]);
       this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-craft', recipe.id, anchorTop);
     }
-    dismantleItem(id) { const item = D.items[id], series = D.bossEquipmentSeries?.[item?.seriesId], output = series?.dismantle, equipped = Object.values(this.profile.equipment).includes(id), spare = (this.profile.inventory[id] || 0) - (equipped ? 1 : 0); if (!item || !series || !output || spare <= 0) return; this.profile.inventory[id]--; this.profile.inventory[output.materialId] = (this.profile.inventory[output.materialId] || 0) + output.count; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('workshop'); }
+    dismantleItem(id, anchorTop = null) { const item = D.items[id], series = D.bossEquipmentSeries?.[item?.seriesId], output = series?.dismantle, equipped = Object.values(this.profile.equipment).includes(id), spare = (this.profile.inventory[id] || 0) - (equipped ? 1 : 0); if (!item || !series || !output || spare <= 0) return; this.profile.inventory[id]--; this.profile.inventory[output.materialId] = (this.profile.inventory[output.materialId] || 0) + output.count; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-disassemble', id, anchorTop); }
     renderWorkshop(panel) {
       if ((this.profile.newlyUnlockedRecipes || []).length) { this.profile.newlyUnlockedRecipes = []; this.saveProfile(); }
       if (!this.profile.flags.noelFirstEncounterCleared) { panel.innerHTML = '<button class="panel-home" data-menu="home">拠点へ戻る</button><small>PHANTOM WORKSHOP</small><h2>工房</h2><div class="workshop-unlock"><b>LOCKED</b><strong>まだ工房は利用できません</strong><span>通常戦を3回制し、永遠の裁定者ノエルと遭遇すると解放されます。</span></div>'; return; }
