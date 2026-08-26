@@ -82,13 +82,18 @@
     encounterProgression: [{ minWins: 0, count: [2, 3], pool }]
   });
   const d3bg = ['assets/bg/dungeon3/d3f3-ruined-chapel.webp', 'assets/bg/dungeon3/d3f4-innermost-throne.webp'];
+  const d4bg = [
+    'assets/bg/dungeon4/d4f1-crimson-path.png',
+    'assets/bg/dungeon4/d4f2-crimson-ruins.png',
+    'assets/bg/dungeon4/d4f3-crimson-throne.png'
+  ];
   D.dungeons.push({
-    id: 'dungeon4', name: '断月の楼閣', nameEn: 'STACCATO MOON KEEP', background: d3bg[0], thumbnail: d3bg[0], recommendedLevel: 28,
+    id: 'dungeon4', name: '断月の楼閣', nameEn: 'STACCATO MOON KEEP', background: d4bg[0], thumbnail: d4bg[0], recommendedLevel: 28,
     description: '瞬断の奏刃が支配する月楼。命中・速度・耐久の穴を装備更新で埋めて進む。', unlockCondition: 'dungeon3Clear', bossId: 'astact', midBossId: 'd4MidBoss', midBossAfterFloor: 2,
     floors: [
-      floor('d4f1', '残月の回廊', '1F WANING GALLERY', 6, d3bg[0], ['flashSteel'], { hp: 1, atk: 1, mag: 1, def: 1, mnd: 1, spd: 1, rewards: 1 }, [{ id: 'flashHound', weight: 4 }, { id: 'mapleOni', weight: 2 }, { id: 'lanternMask', weight: 2 }, { id: 'toriiFox', weight: 2 }, { id: 'moonEdgeKnight', weight: 2 }]),
-      floor('d4f2', '瞬鋼の武廊', '2F FLASH STEEL HALL', 7, d3bg[0], ['flashSteel', 'moonEdgeOre'], { hp: 1.12, atk: 1.08, mag: 1.05, def: 1.08, mnd: 1.08, spd: 1.06, rewards: 1.12 }, [{ id: 'flashHound', weight: 3 }, { id: 'mapleOni', weight: 3 }, { id: 'lanternMask', weight: 2 }, { id: 'toriiFox', weight: 2 }, { id: 'moonEdgeKnight', weight: 4 }]),
-      floor('d4f3', '断刻の天守', '3F SEVERED KEEP', 8, d3bg[1], ['flashSteel', 'moonEdgeOre'], { hp: 1.24, atk: 1.14, mag: 1.10, def: 1.14, mnd: 1.14, spd: 1.10, rewards: 1.24 }, [{ id: 'flashHound', weight: 2 }, { id: 'mapleOni', weight: 3 }, { id: 'lanternMask', weight: 2 }, { id: 'toriiFox', weight: 3 }, { id: 'moonEdgeKnight', weight: 5 }])
+      floor('d4f1', '残月の回廊', '1F WANING GALLERY', 6, d4bg[0], ['flashSteel'], { hp: 1, atk: 1, mag: 1, def: 1, mnd: 1, spd: 1, rewards: 1 }, [{ id: 'flashHound', weight: 4 }, { id: 'mapleOni', weight: 2 }, { id: 'lanternMask', weight: 2 }, { id: 'toriiFox', weight: 2 }, { id: 'moonEdgeKnight', weight: 2 }]),
+      floor('d4f2', '瞬鋼の武廊', '2F FLASH STEEL HALL', 7, d4bg[1], ['flashSteel', 'moonEdgeOre'], { hp: 1.12, atk: 1.08, mag: 1.05, def: 1.08, mnd: 1.08, spd: 1.06, rewards: 1.12 }, [{ id: 'flashHound', weight: 3 }, { id: 'mapleOni', weight: 3 }, { id: 'lanternMask', weight: 2 }, { id: 'toriiFox', weight: 2 }, { id: 'moonEdgeKnight', weight: 4 }]),
+      floor('d4f3', '断刻の天守', '3F SEVERED KEEP', 8, d4bg[2], ['flashSteel', 'moonEdgeOre'], { hp: 1.24, atk: 1.14, mag: 1.10, def: 1.14, mnd: 1.14, spd: 1.10, rewards: 1.24 }, [{ id: 'flashHound', weight: 2 }, { id: 'mapleOni', weight: 3 }, { id: 'lanternMask', weight: 2 }, { id: 'toriiFox', weight: 3 }, { id: 'moonEdgeKnight', weight: 5 }])
     ]
   });
   D.dungeons.push({

@@ -451,6 +451,23 @@
       this.currentDungeonId = 'dungeon3';
       this.currentFloorId = null;
     }
+    prepareLocalD4Scenario() {
+      // D3クリア直後からD4の全導線を安全に確認するlocalhost専用データ。
+      this.prepareLocalD3RouteScenario('final-ready');
+      this.localScenario.id = 'd4-ready';
+      this.profile.bossDefeated.seripes = true;
+      this.profile.bossDefeated.d4MidBoss = false;
+      this.profile.bossDefeated.astact = false;
+      this.profile.flags.dungeon3Clear = true;
+      this.profile.flags.dungeon4Clear = false;
+      this.profile.flags.dungeon4BattleWins = 0;
+      const floors = this.floorsOf('dungeon4') || [];
+      this.profile.flags.floorWins ||= {};
+      floors.forEach(floor => { this.profile.flags.floorWins[floor.id] = 0; });
+      this.dungeonSelectId = 'dungeon4';
+      this.currentDungeonId = 'dungeon4';
+      this.currentFloorId = null;
+    }
     saveTransferMetaKey() { return window.arseneStartFlow?.metaKey || 'arsene-rpg-start-flow-v01'; }
     encodeSaveTransferCode() { const save = localStorage.getItem(D.settings.saveKey), meta = localStorage.getItem(this.saveTransferMetaKey()), payload = { app: 'arsene-rpg', v: 1, exportedAt: new Date().toISOString(), save: save ? JSON.parse(save) : this.profile, meta: meta ? JSON.parse(meta) : null }; return btoa(unescape(encodeURIComponent(JSON.stringify(payload)))); }
     decodeSaveTransferCode(code) { try { const payload = JSON.parse(decodeURIComponent(escape(atob(String(code || '').trim())))); if (!payload || typeof payload !== 'object' || !payload.save) return null; return payload; } catch { return null; } }
@@ -1423,7 +1440,10 @@
       const bossStats = this.applyBossOverdriveStats ? this.applyBossOverdriveStats(bossId, baseBossStats) : baseBossStats;
       this.enemies = [{ ...template, uid: `${template.id}-boss`, label: '', stats: bossStats, hp: bossStats.maxHp, alive: true, bindResistance: template.bindResistance ?? .35, bindTurns: 0 }];
       this.turn = 1; this.locked = false; this.finished = false; this.resetBattleLog(); this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [] }; $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyDungeonBackground();
-      this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); this.setLog(this.battleMode === 'noel' ? '忘却の最奥――永遠の裁定者ノエルが姿を現した……。' : '静寂のホールに、独奏卿ゼナカドの旋律が響く……！'); this.flashTitle('BOSS ENCOUNTER', (template.nameEn || template.name || progress.bossName).toUpperCase()); this.showMainCommands();
+      const bossArrival = this.battleMode === 'noel'
+        ? '忘却の最奥――永遠の裁定者ノエルが姿を現した……。'
+        : `${template.title ? `${template.title} ` : ''}${template.name}が立ちはだかった……！`;
+      this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); this.setLog(bossArrival); this.flashTitle('BOSS ENCOUNTER', (template.nameEn || template.name || progress.bossName).toUpperCase()); this.showMainCommands();
     }
     startDebugGuardianTrial() {
       const template = D.enemies.debugOverpowerEnemy;
