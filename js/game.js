@@ -222,7 +222,7 @@
     }
 
     freshProfile() {
-      const p = D.player; return { version: 19, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), shopPurchases: {}, musicScores: {}, bossDefeated: { zenacad: false, myrthi: false, versicrell: false, seripes: false }, currentJob: 'mage', lastNormalJob: 'mage', otherWorldReturnJob: null, jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, guardian: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, unlockedJobs: ['mage'], initialJob: 'mage', jobGrowthGained: {}, phantomGrowthRecords: {}, jobRebirths: {}, jobMastered: [], growthFraction: {}, learnedPassives: [], passiveEnhancements: {}, passiveEnhancedAtRebirth: {}, equippedPassives: [null], ptActionSlots: [null, null], ptPassiveSlots: [null, null], weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 }, shield: { level: 1, exp: 0 } }, learnedWeaponSkills: [], seenEnemies: [], equipmentArchive: [], collectionRewards: {}, playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0, instrument: 0, shield: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0 }, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, taiwanMazesobaUnlocked: false, taiwanMazesobaNew: false, foodSecretMenuUnlocked: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, floorWins: {}, dungeon3BattleWins: 0, dungeon3NewSeen: false, guardianUnlocked: false, shieldUnlocked: false, lastBattleResult: null, consecutiveDefeats: 0, owRestoreJobPending: false }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
+      const p = D.player; return { version: 19, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), shopPurchases: {}, musicScores: {}, bossDefeated: { zenacad: false, myrthi: false, versicrell: false, seripes: false, presto: false, astact: false }, currentJob: 'mage', lastNormalJob: 'mage', otherWorldReturnJob: null, jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, guardian: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, unlockedJobs: ['mage'], initialJob: 'mage', jobGrowthGained: {}, phantomGrowthRecords: {}, jobRebirths: {}, jobMastered: [], growthFraction: {}, learnedPassives: [], passiveEnhancements: {}, passiveEnhancedAtRebirth: {}, equippedPassives: [null], ptActionSlots: [null, null], ptPassiveSlots: [null, null], weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 }, shield: { level: 1, exp: 0 } }, learnedWeaponSkills: [], seenEnemies: [], equipmentArchive: [], collectionRewards: {}, playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0, instrument: 0, shield: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0 }, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, taiwanMazesobaUnlocked: false, taiwanMazesobaNew: false, foodSecretMenuUnlocked: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, floorWins: {}, dungeon3BattleWins: 0, dungeon3NewSeen: false, dungeon4BattleWins: 0, dungeon4NewSeen: false, guardianUnlocked: false, shieldUnlocked: false, lastBattleResult: null, consecutiveDefeats: 0, owRestoreJobPending: false }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
     }
     loadProfile() {
       try {
@@ -1338,7 +1338,7 @@
       const total = clone(this.profile.baseStats), bonuses = this.equipmentBonuses(equipment), jobBonuses = this.activeJobBonuses(), jobGrowth = this.jobStatBonuses(); Object.entries(bonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobBonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobGrowth).forEach(([k, v]) => total[k] = (total[k] || 0) + v); const setEffects = this.activeSetEffects(equipment); for (const key of ['str', 'vit', 'mag', 'mnd', 'agi', 'dex', 'luk']) { const pct = setEffects[`${key}Percent`] || 0; if (pct) total[key] = Math.max(total[key] + 1, Math.floor(total[key] * (1 + pct / 100))); } if (setEffects.critBonusFlat) total.critBonus = (total.critBonus || 0) + setEffects.critBonusFlat; if (this.activeMealBuffType() === 'makanai') total.maxHp = Math.ceil(total.maxHp * (1 + (D.foodMenu?.buffs?.makanai?.maxHpRate || .03))); total.critBonus ||= 0; this.applyPassiveStats(total); total.def = total.vit; /* 旧互換：def は体力と同義。装備防御力は defensePowerFor() 側で加算する */ /* 強化済みの能力補正は equipmentBonuses()、戦闘値は equipmentCombatStats() で加算する */ return total;
     }
     getDungeon(id = this.currentDungeonId) { return (D.dungeons || []).find(d => d.id === id) || (D.dungeons || [])[0]; }
-    isDungeonUnlocked(id) { const d = this.getDungeon(id); if (!d) return false; if (!d.unlockCondition) return true; if (d.unlockCondition === 'dungeon1Clear') return this.isBossDefeated('zenacad'); if (d.unlockCondition === 'dungeon2Clear') return this.isBossDefeated('myrthi'); return false; }
+    isDungeonUnlocked(id) { const d = this.getDungeon(id); if (!d) return false; if (!d.unlockCondition) return true; if (d.unlockCondition === 'dungeon1Clear') return this.isBossDefeated('zenacad'); if (d.unlockCondition === 'dungeon2Clear') return this.isBossDefeated('myrthi'); if (d.unlockCondition === 'dungeon3Clear') return this.isBossDefeated('seripes'); return false; }
     applyDungeonBackground() { const dungeon = this.getDungeon(), floor = this.activeFloor(this.currentDungeonId); const bg = floor?.background || dungeon?.background || 'assets/bg/dungeon-battle-01.png'; const bf = $('#battlefield'); bf.dataset.dungeon = this.currentDungeonId; bf.dataset.floor = floor?.id || ''; bf.style.backgroundImage = `linear-gradient(#0207134a,#0208171f 58%,#02040b5c),url("${bg}")`; bf.style.backgroundSize = 'auto,cover'; bf.style.backgroundPosition = 'center,center bottom'; bf.style.backgroundRepeat = 'no-repeat,no-repeat'; }
     // 武道家が素手のときは拳を握る（JOB特性《無手の型》）。他JOBは従来どおり杖にフォールバック。
     isBareHanded(hand = 'rightHand') { return !D.weapons[this.profile.equipment?.[hand]]; }
@@ -2758,6 +2758,8 @@
       if (outcome.hit) await this.tryCounter(enemy);
     }
     async bossAttack(enemy) {
+      const custom = BattleGame.bossAttackHandlers?.[enemy.id];
+      if (custom) { await custom.call(this, enemy); return; }
       if (enemy.id === 'myrthi') { await this.bossAttackMyrthi(enemy); return; }
       if (enemy.id === 'versicrell') { await this.bossAttackVersicrell(enemy); return; }
       if (enemy.id === 'seripes') { await this.bossAttackSeripes(enemy); return; }
@@ -2972,7 +2974,7 @@
       if (this.battleMode === 'slime') {
         const firstClear = !this.isDungeonFirstClearComplete(this.currentDungeonId), floor = this.activeFloor(this.currentDungeonId), beforeWins = floor ? this.floorWins(floor.id) : this.progressState().wins;
         if (floor) this.recordFloorWin(floor.id);
-        if (this.currentDungeonId === 'dungeon3') { this.profile.flags.dungeon3BattleWins = (this.profile.flags.dungeon3BattleWins || 0) + 1; } else if (this.currentDungeonId === 'dungeon2') { this.profile.flags.dungeon2BattleWins = (this.profile.flags.dungeon2BattleWins || 0) + 1; } else { if (this.profile.flags.noelFirstEncounterCleared) this.profile.flags.postNoelBattleWins = (this.profile.flags.postNoelBattleWins || 0) + 1; else this.profile.flags.preNoelBattleWins = (this.profile.flags.preNoelBattleWins || 0) + 1; this.profile.flags.normalBattleWins = (this.profile.flags.normalBattleWins || 0) + 1; }
+        const winsFlag = this.getDungeon(this.currentDungeonId)?.winsFlag; if (winsFlag) { this.profile.flags[winsFlag] = (this.profile.flags[winsFlag] || 0) + 1; } else if (this.currentDungeonId === 'dungeon3') { this.profile.flags.dungeon3BattleWins = (this.profile.flags.dungeon3BattleWins || 0) + 1; } else if (this.currentDungeonId === 'dungeon2') { this.profile.flags.dungeon2BattleWins = (this.profile.flags.dungeon2BattleWins || 0) + 1; } else { if (this.profile.flags.noelFirstEncounterCleared) this.profile.flags.postNoelBattleWins = (this.profile.flags.postNoelBattleWins || 0) + 1; else this.profile.flags.preNoelBattleWins = (this.profile.flags.preNoelBattleWins || 0) + 1; this.profile.flags.normalBattleWins = (this.profile.flags.normalBattleWins || 0) + 1; }
         if (firstClear && floor && beforeWins < (floor.winsToClear ?? 33) && this.isFloorCleared(floor.id)) {
           const midBoss = this.dungeonMidBossEntry(this.currentDungeonId), boss = this.dungeonBossEntry(this.currentDungeonId), floors = this.floorsOf(this.currentDungeonId) || [], index = floors.findIndex(f => f.id === floor.id), next = floors.slice(index + 1).find(f => this.isFloorUnlocked(f.id));
           if (midBoss && !midBoss.cleared) milestone = { type: 'boss', key: midBoss.key, name: midBoss.name, title: midBoss.title };
@@ -2984,6 +2986,8 @@
         }
         this.saveProfile();
       }
+      const customVictory = BattleGame.bossVictoryHandlers?.[this.battleMode];
+      if (customVictory) { customVictory.call(this, rewardBlock); return; }
       if (this.battleMode === 'zenakado') { const firstClear = !this.isBossDefeated('zenacad'), firstScore = !this.profile.flags.zenakadoScoreClaimed; this.markBossDefeated('zenacad'); this.profile.flags.zenakadoDefeated = false; this.profile.flags.postNoelBattleWins = 0; this.profile.flags.temporaryBossCompleted = true; this.noteBossRematchSnapshot('zenakado'); const stageOne = this.grantStageOneReward(); if (firstScore) { this.profile.musicScores.cadenzaLoot = true; this.profile.flags.zenakadoScoreClaimed = true; } this.saveProfile(); const keyItems = stageOne ? [...(stageOne.keyItems || []), stageOne.weapon].filter(Boolean) : []; const unlocks = stageOne ? [...(stageOne.jobs || []).map(job => `NEW JOB　${job.name}`), stageOne.weaponType ? `NEW WEAPON MASTERY　${stageOne.weaponType.name}` : ''].filter(Boolean) : []; this.showBossRewardSequence({ title: 'VICTORY', copy: '独奏卿ゼナカドを打ち倒した。', kicker: 'BOSS CLEARED', html: rewardBlock }, [firstScore && { title: 'SCORE GET', copy: '盗んだ旋律は、プライベートモードで演奏できる。', kicker: 'PHANTOM SCORE', html: this.scoreGetHTML('cadenzaLoot') }, firstClear && { title: 'KEY ITEM GET', copy: 'ゼナカドから奪った3つの力が、新たな可能性を開く。', kicker: 'STOLEN REWARDS', html: this.bossKeyRewardHTML(keyItems, unlocks) }, firstClear && { title: 'JOB TUTORIAL', copy: '解放されたJOBの戦い方を確認する。', kicker: 'MAGIC KNIGHT', html: this.jobUnlockTutorialHTML('magicKnight') }, firstClear && { title: 'PHANTOM STEAL', copy: '奪った力を解析し、工房の製法へ変換した。', kicker: 'NEW RECIPES STOLEN', html: this.bossSeriesUnlockHTML('zenacad', ' JOB SYSTEM も解放された。') }]); return; }
       if (this.battleMode === 'myrthi') { const firstClear = !this.isBossDefeated('myrthi'), firstScore = !this.profile.musicScores?.rhythm, myrthiReward = this.grantMyrthiFirstReward(); this.markBossDefeated('myrthi'); this.profile.flags.dungeon2BattleWins = (this.profile.flags.dungeon2BattleWins || 0) + 1; this.profile.flags.dungeon2Clear = true; this.profile.musicScores ||= {}; if (firstScore) this.profile.musicScores.rhythm = true; this.noteBossRematchSnapshot('myrthi'); this.saveProfile(); const keyItems = myrthiReward ? [myrthiReward.item, myrthiReward.extraItem].filter(Boolean) : []; const unlocks = myrthiReward?.job ? [`NEW JOB　${myrthiReward.job.name}`, 'REBIRTH UNLOCKED'] : []; this.showBossRewardSequence({ title: 'VICTORY', copy: '黒紅の双刃戦姫ミルティを打ち倒した。', kicker: 'BOSS CLEARED', html: rewardBlock }, [firstScore && { title: 'SCORE GET', copy: '盗んだ旋律は、プライベートモードで演奏できる。', kicker: 'PHANTOM SCORE', html: this.scoreGetHTML('rhythm') }, firstClear && { title: 'KEY ITEM GET', copy: '双刃士の力と、輪廻への鍵を盗み出した。', kicker: 'STOLEN REWARDS', html: this.bossKeyRewardHTML(keyItems, unlocks) }, firstClear && { title: 'JOB TUTORIAL', copy: '解放されたJOBの戦い方を確認する。', kicker: 'DUAL BLADE', html: this.jobUnlockTutorialHTML('dualBlade') }, firstClear && { title: 'PHANTOM STEAL', copy: '奪った戦姫の力を、工房の製法へ変換した。', kicker: 'NEW RECIPES STOLEN', html: this.bossSeriesUnlockHTML('myrthi') }]); return; }
       if (this.battleMode === 'versicrell') { const firstClear = !this.isBossDefeated('versicrell'); this.markBossDefeated('versicrell'); this.saveProfile(); const note = firstClear ? '<div class="boss-recipe-unlock"><small>MID BOSS CLEARED</small><b>SILVER CIRCLE BROKEN</b><strong>D3後半ルート解放</strong><span>ヴェルシクレルの銀環を突破した。崩界の深廊をさらに進める。</span></div>' : ''; this.showResult('VICTORY', '《銀環異奏体》ヴェルシクレルを撃破した！', 'SILVER CIRCLE // COMPLETE', `${rewardBlock}${note}`); return; }
@@ -3056,6 +3060,9 @@
         targetId = 'myrthi'; defeatedId = 'myrthi';
       } else if (dungeon?.id === 'dungeon3') {
         targetId = this.isBossDefeated('versicrell') ? 'seripes' : 'versicrell';
+        defeatedId = targetId;
+      } else if (dungeon?.bossKey) {
+        targetId = (dungeon.midBossKey && !this.isBossDefeated(dungeon.midBossKey)) ? dungeon.midBossKey : dungeon.bossKey;
         defeatedId = targetId;
       }
       const encountered = this.hasMetEnemy(targetId)
@@ -3248,21 +3255,23 @@
       const available = (D.dungeons || []).filter(d => this.isDungeonUnlocked(d.id));
       const showNewD2 = this.isDungeonUnlocked('dungeon2') && !this.profile.flags.dungeon2NewSeen;
       const showNewD3 = this.isDungeonUnlocked('dungeon3') && !this.profile.flags.dungeon3NewSeen;
+      const showNewD4 = this.isDungeonUnlocked('dungeon4') && !this.profile.flags.dungeon4NewSeen;
+      if (showNewD4) { this.profile.flags.dungeon4NewSeen = true; this.saveProfile(); }
       if (showNewD2) { this.profile.flags.dungeon2NewSeen = true; this.saveProfile(); }
       if (showNewD3) { this.profile.flags.dungeon3NewSeen = true; this.saveProfile(); }
       if (!available.some(d => d.id === this.dungeonSelectId)) this.dungeonSelectId = available.at(-1)?.id || 'dungeon1';
       const d = available.find(entry => entry.id === this.dungeonSelectId) || available[0];
       if (!d) { panel.innerHTML = '<button class="panel-home" data-menu="home">拠点へ戻る</button><p>潜入可能なダンジョンがありません。</p>'; return; }
-      const isNew = (d.id === 'dungeon2' && showNewD2) || (d.id === 'dungeon3' && showNewD3);
-      const progress = d.id === 'dungeon1' ? (() => { const p = this.progressState(); return p.phase === 'complete' ? 'AREA BOSS CLEARED' : `BATTLE ${Math.min(p.wins, p.goal)} / ${p.goal}`; })() : d.id === 'dungeon2' ? (this.isBossDefeated('myrthi') ? 'AREA BOSS CLEARED' : (() => { const p = this.dungeon2FloorProgress(); return p.total ? `FLOOR ${p.floors} / ${p.total}　BATTLE ${p.done} / ${p.goal}` : `BATTLE ${p.done} / ${p.goal}`; })()) : (this.isBossDefeated('seripes') ? 'AREA BOSS CLEARED' : (() => { const p = this.dungeonFloorProgress('dungeon3'); return `FLOOR ${p.floors} / ${p.total}　BATTLE ${p.done} / ${p.goal}`; })());
-      const tabs = available.map((entry, index) => `<button data-dungeon-tab="${entry.id}" class="${entry.id === d.id ? 'active' : ''}"><small>D${index + 1}</small><b>${entry.name}</b>${((entry.id === 'dungeon2' && showNewD2) || (entry.id === 'dungeon3' && showNewD3)) ? '<i>NEW</i>' : ''}</button>`).join('');
-      const floors = d.floors || [], midBoss = this.dungeonMidBossEntry(d.id), midGate = d.id === 'dungeon3' && midBoss && !midBoss.cleared;
+      const isNew = (d.id === 'dungeon2' && showNewD2) || (d.id === 'dungeon3' && showNewD3) || (d.id === 'dungeon4' && showNewD4);
+      const progress = d.id === 'dungeon1' ? (() => { const p = this.progressState(); return p.phase === 'complete' ? 'AREA BOSS CLEARED' : `BATTLE ${Math.min(p.wins, p.goal)} / ${p.goal}`; })() : d.id === 'dungeon2' ? (this.isBossDefeated('myrthi') ? 'AREA BOSS CLEARED' : (() => { const p = this.dungeon2FloorProgress(); return p.total ? `FLOOR ${p.floors} / ${p.total}　BATTLE ${p.done} / ${p.goal}` : `BATTLE ${p.done} / ${p.goal}`; })()) : (this.isDungeonFirstClearComplete(d.id) ? 'AREA BOSS CLEARED' : (() => { const p = this.dungeonFloorProgress(d.id); return `FLOOR ${p.floors} / ${p.total}　BATTLE ${p.done} / ${p.goal}`; })());
+      const tabs = available.map((entry, index) => `<button data-dungeon-tab="${entry.id}" class="${entry.id === d.id ? 'active' : ''}"><small>D${index + 1}</small><b>${entry.name}</b>${((entry.id === 'dungeon2' && showNewD2) || (entry.id === 'dungeon3' && showNewD3) || (entry.id === 'dungeon4' && showNewD4)) ? '<i>NEW</i>' : ''}</button>`).join('');
+      const floors = d.floors || [], midBoss = this.dungeonMidBossEntry(d.id), midGate = !(d.floors || []).length && midBoss && !midBoss.cleared;
       const floorNodes = floors.length ? floors.map((floor, index) => {
         const wins = this.floorWins(floor.id), goal = floor.winsToClear ?? 33, unlocked = this.isFloorUnlocked(floor.id), cleared = this.isFloorCleared(floor.id), pct = Math.min(100, 100 * wins / goal);
         const cls = cleared ? 'cleared' : unlocked ? 'open' : 'locked';
         const danger = floor.enemyScale?.hp > 1 ? `<mark>ENEMY ×${floor.enemyScale.hp.toFixed(2)}</mark>` : '';
         const safe = unlocked && !cleared ? this.checkpointState(d.id, floor.id) : null;
-        return `<div class="dungeon-tree-node ${cls}">${index ? '<i class="tree-line"></i>' : ''}<button data-enter-floor="${floor.id}" ${unlocked ? '' : 'disabled'}><span>${index + 1}F</span><div><small>${floor.nameEn || 'FLOOR'} ${unlocked ? danger : ''}</small><b>${unlocked ? floor.name : '???'}</b><em>${unlocked ? (floor.description || '') : (d.id === 'dungeon3' && index >= (d.midBossAfterFloor || 99) && !this.isBossDefeated('versicrell') ? '中ボスを撃破すると解放' : '前の階を踏破すると解放')}</em><u><i style="width:${pct}%"></i></u><strong>${cleared ? 'CLEARED' : unlocked ? `BATTLE ${Math.min(wins, goal)} / ${goal}` : 'LOCKED'}</strong>${safe ? `<small class="floor-safe">次のセーフゾーンまであと${safe.remaining}戦</small>` : ''}</div></button></div>`;
+        return `<div class="dungeon-tree-node ${cls}">${index ? '<i class="tree-line"></i>' : ''}<button data-enter-floor="${floor.id}" ${unlocked ? '' : 'disabled'}><span>${index + 1}F</span><div><small>${floor.nameEn || 'FLOOR'} ${unlocked ? danger : ''}</small><b>${unlocked ? floor.name : '???'}</b><em>${unlocked ? (floor.description || '') : (index >= (d.midBossAfterFloor || 99) && midBoss && !midBoss.cleared ? '中ボスを撃破すると解放' : '前の階を踏破すると解放')}</em><u><i style="width:${pct}%"></i></u><strong>${cleared ? 'CLEARED' : unlocked ? `BATTLE ${Math.min(wins, goal)} / ${goal}` : 'LOCKED'}</strong>${safe ? `<small class="floor-safe">次のセーフゾーンまであと${safe.remaining}戦</small>` : ''}</div></button></div>`;
       }) : [];
       const dungeonSafe = !floors.length ? this.checkpointState(d.id, null) : null;
       const floorTree = floors.length ? '' : `<div class="dungeon-tree-node ${midGate ? 'locked' : 'open'}"><button ${midGate ? 'disabled' : `data-enter-dungeon="${d.id}"`}><span>IN</span><div><small>ENTRY POINT</small><b>${midGate ? '銀環に進路を阻まれている' : '潜入開始'}</b><em>${midGate ? '中ボスを撃破するとD3後半へ進める' : (d.description || '怪異の気配を追って潜入する。')}</em><strong>${midGate ? 'MID BOSS REQUIRED' : progress}</strong>${dungeonSafe ? `<small class="floor-safe">次のセーフゾーンまであと${dungeonSafe.remaining}戦</small>` : ''}</div></button></div>`;
@@ -3335,7 +3344,8 @@
       const dungeonId = this.floorDungeonId(floorId), dungeon = this.getDungeon(dungeonId), floors = this.floorsOf(dungeonId) || [];
       const i = floors.findIndex(f => f.id === floorId);
       if (i <= 0) return i === 0;
-      if (dungeonId === 'dungeon3' && i >= (dungeon?.midBossAfterFloor || floors.length) && !this.isBossDefeated('versicrell')) return false;
+      const midKey = dungeon?.midBossKey || (dungeonId === 'dungeon3' ? 'versicrell' : null);
+      if (midKey && i >= (dungeon?.midBossAfterFloor || floors.length) && !this.isBossDefeated(midKey)) return false;
       return this.isFloorCleared(floors[i - 1].id);
     }
     floorDungeonId(floorId) { for (const d of D.dungeons || []) if ((d.floors || []).some(f => f.id === floorId)) return d.id; return null; }
@@ -3348,7 +3358,7 @@
       return fs.find(f => this.isFloorUnlocked(f.id) && !this.isFloorCleared(f.id)) || fs.filter(f => this.isFloorUnlocked(f.id)).pop() || fs[0];
     }
     recordFloorWin(floorId) { if (!floorId) return; this.profile.flags.floorWins ||= {}; this.profile.flags.floorWins[floorId] = this.floorWins(floorId) + 1; }
-    isDungeonFirstClearComplete(dungeonId = this.currentDungeonId) { if (dungeonId === 'dungeon1') return this.isBossDefeated('zenacad'); if (dungeonId === 'dungeon2') return this.isBossDefeated('myrthi'); if (dungeonId === 'dungeon3') return this.isBossDefeated('seripes'); return false; }
+    isDungeonFirstClearComplete(dungeonId = this.currentDungeonId) { if (dungeonId === 'dungeon1') return this.isBossDefeated('zenacad'); if (dungeonId === 'dungeon2') return this.isBossDefeated('myrthi'); if (dungeonId === 'dungeon3') return this.isBossDefeated('seripes'); const key = this.getDungeon(dungeonId)?.bossKey; return key ? this.isBossDefeated(key) : false; }
     checkpointState(dungeonId = this.currentDungeonId, floorId = this.currentFloorId) {
       if (this.isDungeonFirstClearComplete(dungeonId)) return null;
       let wins, goal;
@@ -3368,7 +3378,7 @@
       else { const progress = this.progressState(), key = progress.phase === 'noel' ? 'preNoelBattleWins' : 'postNoelBattleWins'; this.profile.flags[key] = after; }
       return before === after ? null : { before, after, lost: before - after, nextBattle: after + 1 };
     }
-    rematchCounter(key) { if (key === 'seripes') return this.profile.flags.dungeon3BattleWins || 0; if (key === 'myrthi') return this.profile.flags.dungeon2BattleWins || 0; if (key === 'zenakado') return this.profile.flags.postNoelBattleWins || 0; return 0; }
+    rematchCounter(key) { const owner = (D.dungeons || []).find(d => d.bossKey === key); if (owner?.winsFlag) return this.profile.flags[owner.winsFlag] || 0; if (key === 'seripes') return this.profile.flags.dungeon3BattleWins || 0; if (key === 'myrthi') return this.profile.flags.dungeon2BattleWins || 0; if (key === 'zenakado') return this.profile.flags.postNoelBattleWins || 0; return 0; }
     rematchProgress(key) { const need = D.settings?.bossRematchWins ?? 5, snap = this.profile.bossRematchAt?.[key] ?? 0, done = Math.max(0, this.rematchCounter(key) - snap); return { done: Math.min(done, need), need, ready: done >= need }; }
     noteBossRematchSnapshot(key) { this.profile.bossRematchAt ||= {}; this.profile.bossRematchAt[key] = this.rematchCounter(key); }
     dungeonBossEntry(dungeonId) {
@@ -3387,6 +3397,13 @@
         if (!this.isBossDefeated('zenacad')) return null;
         return make('zenakado', 'zenakado', 'ゼナカド', 'ZENAKADO', '独奏卿', true);
       }
+      const dungeon = this.getDungeon(dungeonId), key = dungeon?.bossKey;
+      if (key) {
+        const cleared = this.isBossDefeated(key), midKey = dungeon.midBossKey;
+        if ((midKey && !this.isBossDefeated(midKey)) || (!cleared && !this.allFloorsCleared(dungeonId))) return null;
+        const e = D.enemies[key]; if (!e) return null;
+        return make(key, key, e.name, e.enName || key.toUpperCase(), e.title || '', cleared);
+      }
       return null;
     }
     // 初回踏破済みの周回中だけ、勝利リザルトから再戦可能な最終ボスへ直接進める。
@@ -3397,11 +3414,13 @@
       return boss?.cleared && boss.rematch?.ready ? boss : null;
     }
     dungeonMidBossEntry(dungeonId) {
-      if (dungeonId !== 'dungeon3') return null;
-      const dungeon = this.getDungeon('dungeon3'), floors = this.floorsOf('dungeon3') || [], gate = dungeon?.midBossAfterFloor || Math.ceil(floors.length / 2);
-      const cleared = this.isBossDefeated('versicrell'), ready = floors.slice(0, gate).every(floor => this.isFloorCleared(floor.id));
+      const key = dungeonId === 'dungeon3' ? 'versicrell' : this.getDungeon(dungeonId)?.midBossKey;
+      if (!key) return null;
+      const dungeon = this.getDungeon(dungeonId), floors = this.floorsOf(dungeonId) || [], gate = dungeon?.midBossAfterFloor || Math.ceil(floors.length / 2);
+      const cleared = this.isBossDefeated(key), ready = floors.slice(0, gate).every(floor => this.isFloorCleared(floor.id));
       if (!cleared && !ready) return null;
-      const e = D.enemies.versicrell; return { key: 'versicrell', name: e.name, enName: 'VERSICRELL', title: e.title, sprite: e.sprite, cleared };
+      const e = D.enemies[key]; if (!e) return null;
+      return { key, name: e.name, enName: key === 'versicrell' ? 'VERSICRELL' : (e.midBossEnName || e.enName || key.toUpperCase()), title: e.title, sprite: e.sprite, cleared };
     }
     startBossByKey(key) {
       const defeatedId = key === 'zenakado' ? 'zenacad' : key;
@@ -3411,6 +3430,8 @@
       if (key === 'versicrell') { if (this.isBossDefeated('versicrell')) return; this.currentDungeonId = 'dungeon3'; this.startVersicrellBoss(); return; }
       if (key === 'seripes') { this.currentDungeonId = 'dungeon3'; this.startSeripesBoss(); return; }
       if (key === 'zenakado') { this.currentDungeonId = 'dungeon1'; this.startBossEncounter('zenakado', 'zenakado'); return; }
+      const custom = BattleGame.bossStartHandlers?.[key];
+      if (custom) { custom.call(this); return; }
       this.startBossEncounter();
     }
     switchJobState(id, render = false) {
