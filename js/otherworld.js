@@ -256,7 +256,8 @@
   };
   P.owInterference = function () {
     this.owRefreshDaily();
-    const max = this.profile.flags.owInterferenceMax ?? (this.owCfg().interferenceMax ?? 2);
+    const baseMax = this.profile.flags.owInterferenceMax ?? (this.owCfg().interferenceMax ?? 2);
+    const max = baseMax + Number(window.arseneQOffer?.bonus?.('otherworld') || 0);
     return { left: Math.max(0, max - (this.profile.flags.owUsedToday || 0)), max };
   };
   P.owSettleEntry = function (outcome = 'complete') {
@@ -574,6 +575,7 @@
       <small>OTHER WORLD</small><h2>異世界</h2>
       <div class="ow-power"><span>異界干渉力</span><b>${inf.left} / ${inf.max}</b>
         <i>${Array.from({ length: inf.max }, (_, k) => `<em class="${k < inf.left ? 'on' : ''}"></em>`).join('')}</i></div>
+      ${window.arseneQOffer?.otherworldHTML?.() || ''}
       <div class="ow-today"><small>本日の異世界（${dayNames[new Date().getDay()]}曜）</small>
         <b>${esc(item?.name || a?.name || '—')}</b>
         <span>${esc(item?.description || '')}</span></div>

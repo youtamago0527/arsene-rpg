@@ -1037,7 +1037,7 @@
       if (this.systemTab === 'sound') {
         const v = this.audio.getVolumes();
         const row = (id, label, note, badge = '') => `<label class="volume-row"><span><b>${label}</b><small>${note}</small></span><input type="range" min="0" max="100" step="1" value="${v[id]}" data-volume="${id}" aria-label="${label}音量"><output data-volume-value="${id}">${v[id]}%</output>${badge ? `<em>${badge}</em>` : ''}</label>`;
-        body = `<section class="sound-settings"><header><b>サウンド音量</b><span>変更はこの端末へ自動保存されます</span></header>${row('bgm', 'BGM', '戦闘・拠点・ボス戦の音楽')}${row('sfx', '効果音', '攻撃・被弾・決定音')}${row('voice', 'VOICE', '戦闘ボイス用の予約設定', 'COMING SOON')}</section>${window.arseneQOffer?.normalHTML?.() || ''}`;
+        body = `<section class="sound-settings"><header><b>サウンド音量</b><span>変更はこの端末へ自動保存されます</span></header>${row('bgm', 'BGM', '戦闘・拠点・ボス戦の音楽')}${row('sfx', '効果音', '攻撃・被弾・決定音')}${row('voice', 'VOICE', '戦闘ボイス用の予約設定', 'COMING SOON')}</section>`;
       } else if (this.systemTab === 'help') {
         body = this.helpSectionHTML();
       } else if (this.systemTab === 'debug') {
@@ -1057,7 +1057,7 @@
       const err = this.debugPwError ? `<p class="debug-pw-err">パスワードが違います</p>` : '';
       return `<section class="sound-settings"><header><b>デバッグルーム</b><span>モンスター・装備・技・バランス値をこの場で調整できます</span></header>
         ${unlocked
-          ? `<p class="save-transfer-note">認証済みです。</p><div class="system-actions"><button data-debug-open>デバッグルームを開く<span>OPEN DEBUG ROOM</span></button><button data-debug-lock>ロックする<span>LOCK</span></button></div>${window.arseneQOffer?.debugHTML?.() || ''}`
+          ? `<p class="save-transfer-note">認証済みです。</p><div class="system-actions"><button data-debug-open>デバッグルームを開く<span>OPEN DEBUG ROOM</span></button><button data-debug-lock>ロックする<span>LOCK</span></button></div>`
           : `<p class="save-transfer-note">パスワードを入力してください。</p><div class="debug-pw-row"><input type="password" inputmode="numeric" autocomplete="off" data-debug-pw placeholder="パスワード"><button data-debug-enter>入る</button></div>${err}`}
         <p class="save-transfer-note">変更はこの端末に保存され、次回起動時にも適用されます。「書き出し」で差分を取り出せます。</p></section>`;
     }
@@ -1890,7 +1890,9 @@
     flashTitle(main, sub = '') { const a = $('#announcer'); a.innerHTML = `<strong>${main}</strong><span>${sub}</span>`; a.classList.remove('show'); void a.offsetWidth; a.classList.add('show'); }
     autoBattleSpeedSteps() {
       const configured = Array.isArray(D.settings.autoBattleSpeedSteps) ? D.settings.autoBattleSpeedSteps : [D.settings.autoBattleSpeed || 1.5];
-      const steps = configured.map(Number).filter(speed => Number.isFinite(speed) && speed >= 1 && speed <= 3);
+      // ×1.5は標準。×2以上は戦闘MENUのQオファーが発動している間だけ解放する。
+      const offerMax = window.arseneQOffer?.isActive?.('auto2') ? 2 : 1.5;
+      const steps = configured.map(Number).filter(speed => Number.isFinite(speed) && speed >= 1 && speed <= offerMax);
       return steps.length ? steps : [1.5];
     }
     autoBattleSpeedMultiplier() {
@@ -1927,7 +1929,8 @@
         return `<div class="battle-audio-row"><span>${labels[channel]}</span><input type="range" min="0" max="100" value="${value}" data-battle-volume="${channel}" aria-label="${labels[channel]}音量"><output data-battle-volume-value="${channel}">${value}%</output><button type="button" class="${on ? '' : 'off'}" data-battle-audio-toggle="${channel}" aria-pressed="${on}">${on ? 'ON' : 'OFF'}</button></div>`;
       }).join('');
       const testReturn = D.settings.battleMenuTestReturn ? '<button type="button" class="test-return" data-go-menu>拠点へ戻る<small>TEST ONLY</small></button>' : '';
-      pop.innerHTML = `<div class="battle-menu-header"><small>SOUND SETTINGS</small><button type="button" data-battle-menu-close aria-label="設定を閉じる">×</button></div>${rows}<div class="battle-menu-actions"><button type="button" data-battle-menu-close>戦闘へ戻る</button>${testReturn}</div>`;
+      const support = window.arseneQOffer?.battleHTML?.() || '';
+      pop.innerHTML = `<div class="battle-menu-header"><small>BATTLE MENU</small><button type="button" data-battle-menu-close aria-label="設定を閉じる">×</button></div>${support}${rows}<div class="battle-menu-actions"><button type="button" data-battle-menu-close>戦闘へ戻る</button>${testReturn}</div>`;
     }
     panel(html, layout = 'sub') {
       const panel = $('#command-panel'), drawer = $('#command-drawer');
@@ -2107,7 +2110,7 @@
         + this.button('防御', 'GUARD // 50%', 'guard', false, 'guard')
         + this.button('アイテム', 'ITEM', 'item', false, 'item')
         + this.button('再行動', 'REPEAT', 'repeat', false, 'repeat')
-        + this.button('一掃', 'SWEEP', 'quick', false, 'simple')
+        + this.button('一掃', this.battleMode !== 'slime' ? 'BOSS不可' : window.arseneQOffer?.isActive?.('sweep') ? 'SWEEP' : 'LOCKED', 'quick', this.battleMode !== 'slime' || !window.arseneQOffer?.isActive?.('sweep'), 'simple')
         + this.button('AUTO', this.autoBattle ? `AUTO // ×${this.autoBattleSpeedMultiplier()}` : 'AUTO // OFF', 'autoBattle', false, 'auto');
       this.panel(html, 'main');
       // AUTOを演出中にOFFへ切り替えた場合、旧パネルのturn-lockedがDOMに残ることがある。
@@ -2118,7 +2121,8 @@
     }
     autoPickAction() { if (!this.autoBattle || this.locked || this.finished) return; const basic = this.basicAttackSkill(); const maxHp = this.player.stats.maxHp, maxMp = this.player.stats.maxMp, hpPct = this.player.hp / maxHp; if (hpPct < 0.4 && (this.profile.inventory.potion || 0) > 0) { this.useConsumable('potion'); return; } if (this.player.mp < maxMp * 0.2 && (this.profile.inventory.manaPotion || 0) > 0) { this.useConsumable('manaPotion'); return; } const aliveEnemies = this.enemies.filter(e => e.alive); const skills = this.availableSkills().filter(s => this.canPaySkillCosts(s) && this.cooldownRemaining(s) === 0); const weapon = this.equippedWeapon(); const atkScore = weapon?.power || 1; let best = { type: 'attack', score: atkScore }; for (const s of skills) { let score = 0; if (s.kind === 'support') { if (s.effect?.type === 'hpRecover') score = hpPct < 0.75 ? (1 - hpPct) * 200 : 0; else if (s.effect?.type === 'mpRecover') score = this.player.mp < maxMp * 0.5 ? 45 : 0; else if (s.effect?.type === 'regenerate') score = hpPct < 0.8 && !(this.player.buffs.regenerate > 0) ? 38 : 0; else if (s.effect?.type === 'hpToMp') score = this.player.mp < maxMp * .45 && hpPct > .55 ? 48 : 0; } else if (s.kind === 'hybrid') { score = (s.strScale + s.magScale) * 12; } else { const multi = s.target === 'all' ? Math.min(aliveEnemies.length, 3) * 0.7 : 1; score = (s.power || 1) * (s.hits || 1) * multi; } if (score > best.score) best = { type: 'skill', skill: s, score }; } if (best.type === 'skill') { const s = best.skill; if (s.target === 'all' || s.target === 'self') { this.executeRound(s.id, -1); } else { this.executeRound(s.id, this.enemies.findIndex(e => e.alive)); } } else { this.executeRound('attack', this.enemies.findIndex(e => e.alive)); } }
     async quickResolveBattle() {
-      if (this.locked || this.finished || this.battleMode === 'debugOverpower') return;
+      if (this.locked || this.finished || this.battleMode !== 'slime') return;
+      if (!window.arseneQOffer?.isActive?.('sweep')) { window.arseneStartFlow?.toast?.('戦闘MENUから「一掃」を解放できます'); return; }
       this.locked = true; this.quickResolving = true; this.autoBattle = false; this.autoBattleSpeedIndex = -1; this.cancelAutoPick(); this.panel(''); $('#phase-label').textContent = 'QUICK';
       const enemies = this.enemies.filter(enemy => enemy.alive), stats = this.playerCombatStats(), pDef = this.defensePowerFor('physical', stats), mDef = this.defensePowerFor('magical', stats);
       const basic = this.basicAttackSkill(), learned = [basic, ...this.availableSkills()].filter((skill, index, list) => skill && list.findIndex(s => s.id === skill.id) === index);
@@ -3000,6 +3004,29 @@
         $('#result-menu').innerHTML = '次へ <span>NEXT</span>';
       }
     }
+    bossMaterialDropRows(enemy) {
+      return (enemy?.dropTable || []).filter(row => D.items?.[row.itemId]?.category === 'material');
+    }
+    offerRepeatBossMaterialDrop(enemy, firstClear) {
+      if (firstClear || !enemy || !window.arseneQOffer?.canUse?.('bossDrop')) return false;
+      const rows = this.bossMaterialDropRows(enemy); if (!rows.length) return false;
+      setTimeout(() => window.arseneQOffer.show('bossDrop', {
+        title: `${enemy.name} 素材追跡`,
+        copy: '広告を見て、このボスの素材だけをもう一度追加抽選する。装備品は対象外。',
+        onGrant: () => {
+          const drops = {};
+          rows.forEach(row => { if (Math.random() < clamp(Number(row.chance) || 0, 0, 1)) drops[row.itemId] = (drops[row.itemId] || 0) + 1; });
+          const entries = Object.entries(drops);
+          if (!entries.length) { window.arseneStartFlow?.toast?.('追加抽選：素材は見つからなかった'); return; }
+          this.applyRewards({ exp: 0, gold: 0, drops });
+          entries.forEach(([id, n]) => { this.battleRewards.drops[id] = (this.battleRewards.drops[id] || 0) + n; });
+          const names = entries.map(([id, n]) => `${D.items[id]?.name || id} ×${n}`).join(' / ');
+          document.querySelector('#rewards')?.insertAdjacentHTML('beforeend', `<div class="boss-result-note"><b>Q'S OFFER // BOSS MATERIAL</b><br>${names}</div>`);
+          window.arseneStartFlow?.toast?.(`追加素材：${names}`);
+        }
+      }), 450);
+      return true;
+    }
     async victory() {
       const quick = !!this.quickResolving;
       this.profile.flags.consecutiveDefeats = 0; this.profile.flags.lastBattleResult = 'victory';
@@ -3024,6 +3051,10 @@
       this.saveProfile(); this.persistVitals(); this.updateHUD();
       const rewardBlock = `${this.battleRewards.quickReport || ''}${this.rewardHTML(reward, levels)}${this.growthResultHTML(masteryResult, vitalResult, sparks)}${this.jobResultHTML(jobResult)}${newRecipeHTML}`;
       if (this.activeBossOverdrive?.level && this.handleBossOverdriveVictory?.(rewardBlock)) return;
+      // 初回クリア演出を邪魔せず、通常の再戦勝利時だけボス素材の追加抽選を提案する。
+      if (['myrthi', 'seripes', 'astact', 'ostina'].includes(this.battleMode) && this.isBossDefeated(this.battleMode)) {
+        this.offerRepeatBossMaterialDrop(D.enemies[this.battleMode], false);
+      }
       let milestone = null;
       if (this.battleMode === 'slime') {
         const firstClear = !this.isDungeonFirstClearComplete(this.currentDungeonId), floor = this.activeFloor(this.currentDungeonId), beforeWins = floor ? this.floorWins(floor.id) : this.progressState().wins;
@@ -3040,11 +3071,11 @@
         }
         this.saveProfile();
       }
-      if (this.battleMode === 'zenakado') { const firstClear = !this.isBossDefeated('zenacad'), firstScore = !this.profile.flags.zenakadoScoreClaimed; this.markBossDefeated('zenacad'); this.profile.flags.zenakadoDefeated = false; this.profile.flags.postNoelBattleWins = 0; this.profile.flags.temporaryBossCompleted = true; this.noteBossRematchSnapshot('zenakado'); const stageOne = this.grantStageOneReward(); if (firstScore) { this.profile.musicScores.cadenzaLoot = true; this.profile.flags.zenakadoScoreClaimed = true; } this.saveProfile(); const keyItems = stageOne ? [...(stageOne.keyItems || []), stageOne.weapon].filter(Boolean) : []; const unlocks = stageOne ? [...(stageOne.jobs || []).map(job => `NEW JOB　${job.name}`), stageOne.weaponType ? `NEW WEAPON MASTERY　${stageOne.weaponType.name}` : ''].filter(Boolean) : []; this.showBossRewardSequence({ title: 'VICTORY', copy: '独奏卿ゼナカドを打ち倒した。', kicker: 'BOSS CLEARED', html: rewardBlock }, [firstScore && { title: 'SCORE GET', copy: '盗んだ旋律は、プライベートモードで演奏できる。', kicker: 'PHANTOM SCORE', html: this.scoreGetHTML('cadenzaLoot') }, firstClear && { title: 'KEY ITEM GET', copy: 'ゼナカドから奪った3つの力が、新たな可能性を開く。', kicker: 'STOLEN REWARDS', html: this.bossKeyRewardHTML(keyItems, unlocks) }, firstClear && { title: 'JOB TUTORIAL', copy: '解放されたJOBの戦い方を確認する。', kicker: 'MAGIC KNIGHT', html: this.jobUnlockTutorialHTML('magicKnight') }, firstClear && { title: 'PHANTOM STEAL', copy: '奪った力を解析し、工房の製法へ変換した。', kicker: 'NEW RECIPES STOLEN', html: this.bossSeriesUnlockHTML('zenacad', ' JOB SYSTEM も解放された。') }]); return; }
+      if (this.battleMode === 'zenakado') { const firstClear = !this.isBossDefeated('zenacad'), firstScore = !this.profile.flags.zenakadoScoreClaimed; this.markBossDefeated('zenacad'); this.profile.flags.zenakadoDefeated = false; this.profile.flags.postNoelBattleWins = 0; this.profile.flags.temporaryBossCompleted = true; this.noteBossRematchSnapshot('zenakado'); const stageOne = this.grantStageOneReward(); if (firstScore) { this.profile.musicScores.cadenzaLoot = true; this.profile.flags.zenakadoScoreClaimed = true; } this.saveProfile(); const keyItems = stageOne ? [...(stageOne.keyItems || []), stageOne.weapon].filter(Boolean) : []; const unlocks = stageOne ? [...(stageOne.jobs || []).map(job => `NEW JOB　${job.name}`), stageOne.weaponType ? `NEW WEAPON MASTERY　${stageOne.weaponType.name}` : ''].filter(Boolean) : []; this.showBossRewardSequence({ title: 'VICTORY', copy: '独奏卿ゼナカドを打ち倒した。', kicker: 'BOSS CLEARED', html: rewardBlock }, [firstScore && { title: 'SCORE GET', copy: '盗んだ旋律は、プライベートモードで演奏できる。', kicker: 'PHANTOM SCORE', html: this.scoreGetHTML('cadenzaLoot') }, firstClear && { title: 'KEY ITEM GET', copy: 'ゼナカドから奪った3つの力が、新たな可能性を開く。', kicker: 'STOLEN REWARDS', html: this.bossKeyRewardHTML(keyItems, unlocks) }, firstClear && { title: 'JOB TUTORIAL', copy: '解放されたJOBの戦い方を確認する。', kicker: 'MAGIC KNIGHT', html: this.jobUnlockTutorialHTML('magicKnight') }, firstClear && { title: 'PHANTOM STEAL', copy: '奪った力を解析し、工房の製法へ変換した。', kicker: 'NEW RECIPES STOLEN', html: this.bossSeriesUnlockHTML('zenacad', ' JOB SYSTEM も解放された。') }]); this.offerRepeatBossMaterialDrop(D.enemies.zenakado, firstClear); return; }
       if (this.battleMode === 'myrthi') { const firstClear = !this.isBossDefeated('myrthi'), firstScore = !this.profile.musicScores?.rhythm, myrthiReward = this.grantMyrthiFirstReward(); this.markBossDefeated('myrthi'); this.profile.flags.dungeon2BattleWins = (this.profile.flags.dungeon2BattleWins || 0) + 1; this.profile.flags.dungeon2Clear = true; this.profile.musicScores ||= {}; if (firstScore) this.profile.musicScores.rhythm = true; this.noteBossRematchSnapshot('myrthi'); this.saveProfile(); const keyItems = myrthiReward ? [myrthiReward.item, myrthiReward.extraItem].filter(Boolean) : []; const unlocks = myrthiReward?.job ? [`NEW JOB　${myrthiReward.job.name}`, 'REBIRTH UNLOCKED'] : []; this.showBossRewardSequence({ title: 'VICTORY', copy: '黒紅の双刃戦姫ミルティを打ち倒した。', kicker: 'BOSS CLEARED', html: rewardBlock }, [firstScore && { title: 'SCORE GET', copy: '盗んだ旋律は、プライベートモードで演奏できる。', kicker: 'PHANTOM SCORE', html: this.scoreGetHTML('rhythm') }, firstClear && { title: 'KEY ITEM GET', copy: '双刃士の力と、輪廻への鍵を盗み出した。', kicker: 'STOLEN REWARDS', html: this.bossKeyRewardHTML(keyItems, unlocks) }, firstClear && { title: 'JOB TUTORIAL', copy: '解放されたJOBの戦い方を確認する。', kicker: 'DUAL BLADE', html: this.jobUnlockTutorialHTML('dualBlade') }, firstClear && { title: 'PHANTOM STEAL', copy: '奪った戦姫の力を、工房の製法へ変換した。', kicker: 'NEW RECIPES STOLEN', html: this.bossSeriesUnlockHTML('myrthi') }]); return; }
-      if (this.battleMode === 'versicrell') { const firstClear = !this.isBossDefeated('versicrell'); this.markBossDefeated('versicrell'); this.saveProfile(); const note = firstClear ? '<div class="boss-recipe-unlock"><small>MID BOSS CLEARED</small><b>SILVER CIRCLE BROKEN</b><strong>D3後半ルート解放</strong><span>ヴェルシクレルの銀環を突破した。崩界の深廊をさらに進める。</span></div>' : ''; this.showResult('VICTORY', '《銀環異奏体》ヴェルシクレルを撃破した！', 'SILVER CIRCLE // COMPLETE', `${rewardBlock}${note}`); return; }
+      if (this.battleMode === 'versicrell') { const firstClear = !this.isBossDefeated('versicrell'); this.markBossDefeated('versicrell'); this.saveProfile(); const note = firstClear ? '<div class="boss-recipe-unlock"><small>MID BOSS CLEARED</small><b>SILVER CIRCLE BROKEN</b><strong>D3後半ルート解放</strong><span>ヴェルシクレルの銀環を突破した。崩界の深廊をさらに進める。</span></div>' : ''; this.showResult('VICTORY', '《銀環異奏体》ヴェルシクレルを撃破した！', 'SILVER CIRCLE // COMPLETE', `${rewardBlock}${note}`); this.offerRepeatBossMaterialDrop(D.enemies.versicrell, firstClear); return; }
       if (this.battleMode === 'seripes') { const firstClear = !this.isBossDefeated('seripes'), firstScore = !this.profile.musicScores?.reprise, unlocked = this.grantSeripesFirstReward(); this.markBossDefeated('seripes'); this.profile.musicScores ||= {}; if (firstScore) this.profile.musicScores.reprise = true; this.noteBossRematchSnapshot('seripes'); this.saveProfile(); const keyItems = firstClear ? [D.items.guardianProof, D.items.guardianAegis] : []; const unlocks = firstClear ? ['NEW JOB　守護士', 'NEW WEAPON MASTERY　盾学'] : []; this.flashTitle('REPRISE...', 'THE AEGIS SHATTERS'); this.showBossRewardSequence({ title: 'VICTORY', copy: '不落の反奏騎士セリペスの盾が白い光となって砕けた。', kicker: 'THIRD MAESTRI DEFEATED', html: rewardBlock }, [firstScore && { title: 'SCORE GET', copy: '盗んだ旋律は、プライベートモードで演奏できる。', kicker: 'PHANTOM SCORE', html: this.scoreGetHTML('reprise') }, firstClear && { title: 'KEY ITEM GET', copy: '守護士の証と反奏の白盾を盗み出した。', kicker: 'STOLEN REWARDS', html: this.bossKeyRewardHTML(keyItems, unlocks) }, firstClear && { title: 'JOB TUTORIAL', copy: '解放されたJOBの戦い方を確認する。', kicker: 'GUARDIAN', html: this.jobUnlockTutorialHTML('guardian') }, firstClear && { title: 'PHANTOM STEAL', copy: '奪った守護者の力を、工房の製法へ変換した。', kicker: 'NEW RECIPES STOLEN', html: this.bossSeriesUnlockHTML('seripes', ' 守護士・戦士向けの装備が製作可能。') }]); return; }
-      if (['d4MidBoss', 'd5MidBoss'].includes(this.battleMode)) { const e = D.enemies[this.battleMode], firstClear = !this.isBossDefeated(this.battleMode); this.markBossDefeated(this.battleMode); this.saveProfile(); const note = firstClear ? `<div class="boss-recipe-unlock"><small>MID BOSS CLEARED</small><b>ROUTE OPEN</b><strong>${e.name} 撃破</strong><span>封鎖された後半ルートが解放された。</span></div>` : ''; this.showResult('VICTORY', `${e.name}を撃破した！`, 'MID BOSS // COMPLETE', `${rewardBlock}${note}`); return; }
+      if (['d4MidBoss', 'd5MidBoss'].includes(this.battleMode)) { const e = D.enemies[this.battleMode], firstClear = !this.isBossDefeated(this.battleMode); this.markBossDefeated(this.battleMode); this.saveProfile(); const note = firstClear ? `<div class="boss-recipe-unlock"><small>MID BOSS CLEARED</small><b>ROUTE OPEN</b><strong>${e.name} 撃破</strong><span>封鎖された後半ルートが解放された。</span></div>` : ''; this.showResult('VICTORY', `${e.name}を撃破した！`, 'MID BOSS // COMPLETE', `${rewardBlock}${note}`); this.offerRepeatBossMaterialDrop(e, firstClear); return; }
       if (['astact', 'ostina'].includes(this.battleMode)) { const bossId = this.battleMode, isD4 = bossId === 'astact', dungeonId = isD4 ? 'dungeon4' : 'dungeon5', jobId = isD4 ? 'ronin' : 'hunter', proofId = isD4 ? 'roninProof' : 'hunterProof', scoreId = isD4 ? 'staccato' : 'ostinato', firstClear = !this.isBossDefeated(bossId), firstScore = !this.profile.musicScores?.[scoreId]; this.markBossDefeated(bossId); this.profile.flags[`${dungeonId}Clear`] = true; this.profile.musicScores ||= {}; if (firstScore) this.profile.musicScores[scoreId] = true; if (firstClear) { this.profile.inventory[proofId] = Math.max(1, this.profile.inventory[proofId] || 0); this.profile.unlockedJobs = [...new Set([...(this.profile.unlockedJobs || []), jobId])]; this.profile.jobs[jobId] ||= { level: 1, exp: 0 }; if (!isD4) { this.profile.weaponMastery.bow ||= { level: 1, exp: 0 }; this.profile.inventory.d5HunterBow = Math.max(1, this.profile.inventory.d5HunterBow || 0); } } this.noteBossRematchSnapshot(bossId); this.saveProfile(); const e = D.enemies[bossId], keyItems = firstClear ? [D.items[proofId], !isD4 && D.items.d5HunterBow].filter(Boolean) : [], unlocks = firstClear ? [`NEW JOB　${D.jobs[jobId]?.name || jobId}`, !isD4 ? 'NEW WEAPON MASTERY　弓学' : '刀技は剣武器学を共有'] : []; this.showBossRewardSequence({ title: 'VICTORY', copy: `${e.title || ''}${e.name}を打ち倒した。`, kicker: isD4 ? 'FOURTH MAESTRI DEFEATED' : 'FIFTH MAESTRI DEFEATED', html: rewardBlock }, [firstScore && { title: 'SCORE GET', copy: '盗んだ旋律は、プライベートモードで演奏できる。', kicker: 'PHANTOM SCORE', html: this.scoreGetHTML(scoreId) }, firstClear && { title: 'KEY ITEM GET', copy: '新たなJOBへ至る証を盗み出した。', kicker: 'STOLEN REWARDS', html: this.bossKeyRewardHTML(keyItems, unlocks) }, firstClear && { title: 'JOB TUTORIAL', copy: '解放されたJOBの戦い方を確認する。', kicker: (D.jobs[jobId]?.nameEn || jobId).toUpperCase(), html: this.jobUnlockTutorialHTML(jobId) }]); return; }
       if (milestone) this.showStagedMilestone(rewardBlock, milestone);
       else await this.showBattleClear(reward, levels, jobResult, { mastery: masteryResult, vitals: vitalResult, sparks });
@@ -3080,7 +3111,7 @@
       this.flashTitle('GAME OVER', 'MISSION FAILED'); this.showGameOverOrRevive('戦闘不能になった。カズに救助され、HP1で拠点へ運び込まれた。', 'RETURN TO HIDEOUT', this.battleSummaryHTML() || '');
     }
     showDefeatWithRevive(copy, kicker = 'CHALLENGE FAILED') { this.showGameOverOrRevive(copy, kicker, this.battleSummaryHTML() || '<div class="boss-result-note">報酬・ドロップなし</div>'); }
-    showGameOverOrRevive(copy, kicker, html) { const showGameOver = () => this.showResult('GAME OVER', copy, kicker, html); if (!this.showReviveOfferIfAvailable(showGameOver)) showGameOver(); }
+    showGameOverOrRevive(copy, kicker, html) { const showGameOver = () => { this.clearBossOverdriveChallenge?.(); this.showResult('GAME OVER', copy, kicker, html); }; if (!this.showReviveOfferIfAvailable(showGameOver)) showGameOver(); }
     showReviveOfferIfAvailable(onDecline) { const offer = window.arseneQOffer; if (!offer?.canUse?.('revive')) return false; return offer.show('revive', { onGrant: () => this.reviveAfterAdNoise(), onClose: onDecline }); }
     reviveAfterAdNoise() { return this.reviveAfterDefeat(); }
     reviveAfterDefeat() { const maxHp = this.player?.stats?.maxHp || this.totalStats().maxHp; this.finished = false; this.locked = false; this.player.hp = Math.max(1, Math.ceil(maxHp * .5)); this.persistVitals(); const result = $('#result'); result.hidden = true; result.style.display = 'none'; $('#ren').classList.remove('down'); $('#ren').classList.add('idle'); const dungeon = this.getDungeon(this.currentDungeonId); this.audio.playTrack(dungeon?.music || this.battleMusic); this.updateHUD(); this.setLog(`${this.playerName()}はHP50%で立ち上がった！`); this.flashTitle('REVIVE', 'PHANTOM RISES AGAIN'); this.showMainCommands(); }
@@ -3192,7 +3223,7 @@
       const hdr = `<div class="job-hdr"><div class="job-hdr-l"><small>JOB & ABILITY</small><b>${this.playerName()}</b><span>武器学 ${this.weaponTypeName(this.equippedWeaponType())} Lv.${this.masteryOf(this.equippedWeaponType()).level}</span></div><div class="job-hdr-r"><small>現在のJOB</small><strong>${curJob.name} Lv.${this.profile.jobs?.[currentId]?.level || 1}</strong></div></div>`;
       let body;
       if (ui.tab === 'job') { body = ui.detailId ? this.jobDetailHtml(ui.detailId, unlocked, currentId) : this.jobListHtml(unlocked, currentId); }
-      else if (ui.tab === 'title' && this.titlePanelHtml) { body = this.titlePanelHtml(); }
+      else if (ui.tab === 'title' && this.titlePanelHtml) { this.titlePanelSource = 'job'; body = this.titlePanelHtml(); }
       else { body = this.abilitySetHtml(currentId); }
       let modal = '';
       if (ui.modal === 'skillDetail') modal = this.skillModalHtml(ui.skillDetailId);
@@ -3726,11 +3757,31 @@
       }).join('');
       return `<section class="enchant-next-stats"><small>NEXT +1</small>${rows || '<p>直接戦闘値の上昇なし</p>'}</section>`;
     }
+    offerDestroyedEquipmentRestore({ itemId, itemName, kind, equippedSlots = [], anchorTop = null }) {
+      const isWeapon = kind === 'weapon';
+      const restore = () => {
+        this.profile.inventory[itemId] = (this.profile.inventory[itemId] || 0) + 1;
+        if (isWeapon) delete this.profile.weaponEnchants[itemId];
+        else delete this.profile.armorEnchants[itemId];
+        equippedSlots.forEach(slot => { this.profile.equipment[slot] = itemId; });
+        this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary();
+        this.renderWorkshopKeepingAnchor(isWeapon ? 'data-enchant' : 'data-armor-enchant', itemId, anchorTop);
+        window.arseneStartFlow?.toast?.(`${itemName}を強化値+0で復元した`);
+      };
+      const shown = window.arseneQOffer?.show?.('protect', {
+        title: '保護のアルカナ',
+        copy: `粉砕された${itemName}を、強化値+0で復元する。`,
+        onGrant: restore,
+        onClose: () => window.arseneStartFlow?.toast?.(`${itemName}は失われたままです`)
+      });
+      if (!shown) alert(`${isWeapon ? '武器' : '防具'}強化FAILED！\n${itemName}は粉砕された……`);
+    }
     enchantWeapon(weaponId, anchorTop = null) {
       const w = D.weapons[weaponId]; if (!w) return;
       const enchants = this.profile.weaponEnchants || {}, level = enchants[weaponId] || 0, et = D.enchantTable;
       if (level >= et.maxLevel) return;
-      const isEquipped = this.profile.equipment.rightHand === weaponId, invCount = this.profile.inventory[weaponId] || 0, hasSpare = invCount >= 2, cost = et.goldCosts[level];
+      const equippedSlots = Object.keys(this.profile.equipment).filter(slot => this.profile.equipment[slot] === weaponId);
+      const isEquipped = equippedSlots.length > 0, invCount = this.profile.inventory[weaponId] || 0, hasSpare = invCount >= 2, cost = et.goldCosts[level];
       if (!hasSpare || this.profile.gold < cost) return;
       this.profile.gold -= cost;
       this.profile.inventory[weaponId] = (this.profile.inventory[weaponId] || 0) - 1;
@@ -3739,17 +3790,11 @@
         this.profile.weaponEnchants[weaponId] = level + 1;
         this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-enchant', weaponId, anchorTop);
       } else {
-        if (window.arseneQOffer?.consumeEnhancementProtection?.(this)) {
-          this.profile.weaponEnchants[weaponId] = level;
-          this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-enchant', weaponId, anchorTop);
-          alert(`武器強化FAILED！\n保護のアルカナが発動し、${w.name}は守られた。`);
-          return;
-        }
         delete this.profile.weaponEnchants[weaponId];
         this.profile.inventory[weaponId] = Math.max(0, (this.profile.inventory[weaponId] || 0) - 1);
         if (!(this.profile.inventory[weaponId] > 0)) { if (this.profile.equipment.rightHand === weaponId) this.profile.equipment.rightHand = 'mageStaff'; if (this.profile.equipment.leftHand === weaponId) this.profile.equipment.leftHand = null; }
         this.saveProfile(); this.audio.sfx('defeat'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-enchant', weaponId, anchorTop);
-        alert(`武器強化FAILED！\n${w.name}は粉砕された……`);
+        this.offerDestroyedEquipmentRestore({ itemId: weaponId, itemName: w.name, kind: 'weapon', equippedSlots, anchorTop });
       }
     }
     // ══ 図鑑（モンスター）══════════════════════════════════════
@@ -4037,7 +4082,8 @@
       const item = D.items[itemId]; if (!item) return;
       const enchants = this.profile.armorEnchants || {}, level = enchants[itemId] || 0, et = D.enchantTable;
       if (level >= et.maxLevel) return;
-      const isEquipped = Object.values(this.profile.equipment).includes(itemId), invCount = this.profile.inventory[itemId] || 0, hasSpare = invCount >= 2, cost = et.goldCosts[level];
+      const equippedSlots = Object.keys(this.profile.equipment).filter(slot => this.profile.equipment[slot] === itemId);
+      const isEquipped = equippedSlots.length > 0, invCount = this.profile.inventory[itemId] || 0, hasSpare = invCount >= 2, cost = et.goldCosts[level];
       if (!hasSpare || this.profile.gold < cost) return;
       this.profile.gold -= cost;
       this.profile.inventory[itemId] = (this.profile.inventory[itemId] || 0) - 1;
@@ -4046,17 +4092,11 @@
         this.profile.armorEnchants[itemId] = level + 1;
         this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-armor-enchant', itemId, anchorTop);
       } else {
-        if (window.arseneQOffer?.consumeEnhancementProtection?.(this)) {
-          this.profile.armorEnchants[itemId] = level;
-          this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-armor-enchant', itemId, anchorTop);
-          alert(`防具強化FAILED！\n保護のアルカナが発動し、${item.name}は守られた。`);
-          return;
-        }
         delete this.profile.armorEnchants[itemId];
         this.profile.inventory[itemId] = Math.max(0, (this.profile.inventory[itemId] || 0) - 1);
         if (!(this.profile.inventory[itemId] > 0)) Object.keys(this.profile.equipment).forEach(slot => { if (this.profile.equipment[slot] === itemId) this.profile.equipment[slot] = null; });
         this.saveProfile(); this.audio.sfx('defeat'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-armor-enchant', itemId, anchorTop);
-        alert(`防具強化FAILED！\n${item.name}は粉砕された……`);
+        this.offerDestroyedEquipmentRestore({ itemId, itemName: item.name, kind: 'armor', equippedSlots, anchorTop });
       }
     }
     bonusText(id) {
@@ -4105,6 +4145,7 @@
       const t = this.equipTab || 'equip';
       // 1行に収まる短いラベルにして、内容を階層で分ける（長い1枚ページをやめる）
       const tabs = [['equip', '装備'], ['status', '能力値'], ['mastery', '武器学'], ['arts', '武器技'], ['score', '楽曲']];
+      if (this.profile.titleSystem?.unlocked) tabs.push(['title', '称号']);
       return `<div class="eq-tabs2">${tabs.map(([id, name]) => `<button data-equip-tab="${id}" class="${t === id ? 'active' : ''}">${name}</button>`).join('')}</div>`;
     }
     // ══ 武器技タブ ══════════════════════════════════════════════
@@ -4159,6 +4200,7 @@
       if (this.equipTab === 'mastery') { this.renderMasteryPanel(panel); return; }
       if (this.equipTab === 'arts') { this.renderWeaponArtsPanel(panel); return; }
       if (this.equipTab === 'score') { panel.innerHTML = `<small>MUSIC SCORE</small><h2>楽曲</h2>${this.equipTabsHtml()}<div class="score-note"><b>今後プライベートモードで使用します</b><span>入手した楽曲は、実装予定のプライベートモードで演奏できるようになります。</span></div>${this.musicScoreSectionHTML()}`; return; }
+      if (this.equipTab === 'title' && this.titlePanelHtml) { this.titlePanelSource = 'equipment'; panel.innerHTML = `<small>BOSS TITLE</small><h2>称号装備</h2>${this.equipTabsHtml()}${this.titlePanelHtml()}`; return; }
       const slots = D.equipmentSlots || [], owned = Object.entries(this.profile.inventory).filter(([id, n]) => n > 0 && this.isPlayerContentVisible(D.items[id]) && D.items[id]?.category === 'equipment');
       if (this.selectedEquipmentId && !(this.profile.inventory[this.selectedEquipmentId] > 0)) this.selectedEquipmentId = null;
       const isDualBlade = this.dualWieldEnabled(), canUseLeft = this.profile.currentJob === 'warrior' || this.hasPassiveType('dualWield');

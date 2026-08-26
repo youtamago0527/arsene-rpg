@@ -172,7 +172,8 @@
       const id = collectionEquip.dataset.collectionTitleEquip;
       if (game.profile.titleSystem.acquiredCollection.includes(id)) game.profile.titleSystem.equipped.collection = id;
     } else if (collectionUnequip) game.profile.titleSystem.equipped.collection = null;
-    game.audio?.sfx('ui'); game.saveProfile(); game.renderMenuPanel('job');
+    game.audio?.sfx('ui'); game.saveProfile();
+    game.renderMenuPanel(game.titlePanelSource === 'equipment' ? 'equipment' : 'job');
   });
 
   proto.showOverdriveModal = function (bossId) {
@@ -265,7 +266,27 @@
     if (typeof this.playNoiseSequence === 'function') this.playNoiseSequence([{ sys: 'NOISE...' }, { who: 'Q', text: 'その力、肩書きだけで終わらせないでよ。' }], { onClose: show });
     else show();
   };
-  proto.handleBossOverdriveVictory = function (rewardBlock) { this.finishBossOverdriveVictory(rewardBlock); return true; };
+  proto.clearBossOverdriveChallenge = function () {
+    this.pendingBossOverdrive = null;
+    this.activeBossOverdrive = null;
+  };
+
+  proto.isCurrentBossOverdriveBattle = function () {
+    const active = this.activeBossOverdrive;
+    if (!active?.level || this.battleMode !== active.bossId) return false;
+    return (this.enemies || []).some(enemy => enemy?.id === active.bossId);
+  };
+
+  proto.handleBossOverdriveVictory = function (rewardBlock) {
+    // 敗北後に挑戦情報が残っても、対象ボス本人の戦闘以外を
+    // OVERDRIVEクリアとして処理しない。
+    if (!this.isCurrentBossOverdriveBattle()) {
+      this.clearBossOverdriveChallenge();
+      return false;
+    }
+    this.finishBossOverdriveVictory(rewardBlock);
+    return true;
+  };
 
   const originalHelpUnlocked = proto.helpUnlocked;
   if (originalHelpUnlocked) proto.helpUnlocked = function (key) {

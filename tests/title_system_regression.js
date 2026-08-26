@@ -100,6 +100,8 @@ game.pendingBossOverdrive = { key: 'zenakado', level: 1 };
 assert.deepEqual(game.applyBossOverdriveStats('zenakado', { maxHp: 100, atk: 20, kind: 'boss' }), { maxHp: 200, atk: 40, kind: 'boss' });
 game.battleMode = 'slime';
 assert.deepEqual(game.rollDrops({ dropTable: [{ itemId: 'overdrive-drop', chance: 1 }] }), [['normal-drop', 1]], '敗北後もOVERDRIVE倍率を別の通常戦へ持ち越さない');
+assert.equal(game.handleBossOverdriveVictory('<div>normal reward</div>'), false, '敗北後の雑魚勝利をOVERDRIVE撃破として扱わない');
+assert.equal(game.activeBossOverdrive, null, '別戦闘へ残ったOVERDRIVE挑戦状態を破棄する');
 game.bossOverdriveProgress('zenakado').od2Unlocked = true;
 game.pendingBossOverdrive = { key: 'zenakado', level: 2 };
 assert.deepEqual(game.applyBossOverdriveStats('zenakado', { maxHp: 100, atk: 20 }), { maxHp: 400, atk: 80 });
