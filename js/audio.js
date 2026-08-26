@@ -10,7 +10,7 @@
     clawHit:     { url: '音楽系/効果音/爪通常.mp3',    gain: 1.10, offset: .100, maxDur: .9 },
     // ファイアボールは「飛んでいる最中」の音なので、着弾ではなく発射のタイミングで鳴らす
     fireFlight:  { url: '音楽系/効果音/杖通常.mp3',    gain: .36, offset: .010, maxDur: .60 },
-    noteHit:     { url: '音楽系/効果音/楽器通常.mp3',  gain: 1.15, offset: .002, maxDur: 1.4 },
+    noteHit:     { url: '音楽系/効果音/楽器通常.mp3',  gain: .88, offset: .002, maxDur: 1.4 },
     heal:        { url: '音楽系/効果音/ヒール.mp3',    gain: .95, offset: .002, maxDur: 1.95 },
     escape:      { url: '音楽系/効果音/逃げる.mp3',    gain: .68, offset: .028, maxDur: 1.2 },
     passiveProc: { url: '音楽系/効果音/パッシブ発動音.mp3', gain: .78, offset: .018, maxDur: 1.9 }
