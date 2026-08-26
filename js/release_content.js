@@ -51,7 +51,7 @@
   // 役割は意図的にばらしてある。物理一辺倒でも魔法一辺倒でも、
   // どこかの階で必ず止まるようにするため：
   //   鏡断の衛士   … 物理防御225。魔法でしか割れない
-  //   断律の詠み手 … 精神168。魔法が通りにくい
+  //   断律の詠み手 … 精神225。魔法が通りにくく、即死も効かない
   //   刹那の処刑人 … 単発高火力。防御コマンドと回復が要る
   //   葬送のメトロノーム … 回復と魔法障壁。撃破順を強制する
   // ════════════════════════════════════════════════════════════
@@ -72,7 +72,7 @@
       roleDescription: '物理防御が極端に高い。魔法か貫通でしか崩せない。',
       element: '鏡', weaknesses: ['魔', '雷'], resistances: ['物理', '斬', '打'],
       sprite: sprite('fortressGolem'), battleScale: 1.3, sparkLevel: 43,
-      stats: { maxHp: 1900, atk: 112, def: 225, mag: 30, mnd: 60, spd: 16 },
+      stats: { maxHp: 1900, atk: 112, def: 225, mag: 30, mnd: 65, spd: 16 },
       exp: 330, gold: { min: 170, max: 265 },
       drops: [['instantSteel', .48], ['severanceShard', .30], ['zanshinCore', .12]],
       ai: [{ id: 'fortressCrash', name: '鏡面圧砕', kind: 'physical', weight: .70 }, { id: 'attack', name: '盾殴り', kind: 'physical', weight: .30 }]
@@ -82,7 +82,7 @@
       roleDescription: '精神が極端に高く、魔法がほとんど通らない。物理で落とす。',
       element: '音', weaknesses: ['斬'], resistances: ['魔', '音'],
       sprite: sprite('arcaneChanter'), battleScale: 1.05, sparkLevel: 44,
-      stats: { maxHp: 1400, atk: 60, def: 90, mag: 140, mnd: 168, spd: 26 },
+      stats: { maxHp: 1400, atk: 60, def: 90, mag: 140, mnd: 225, spd: 26 },
       exp: 345, gold: { min: 175, max: 275 },
       drops: [['severedEcho', .40], ['afterimageSilk', .28], ['severanceShard', .22]],
       ai: [{ id: 'soulBolt', name: '断律詠唱', kind: 'magic', weight: .68 }, { id: 'shadowBolt', name: '刻む高音', kind: 'magic', weight: .32 }]
@@ -92,7 +92,7 @@
       roleDescription: '回復と魔法障壁で戦線を保つ。先に落とさないと決着しない。',
       element: '闇', weaknesses: ['打'], resistances: ['闇'],
       sprite: sprite('voidAlchemist'), battleScale: 1.0, sparkLevel: 45,
-      stats: { maxHp: 1500, atk: 70, def: 110, mag: 104, mnd: 150, spd: 24 },
+      stats: { maxHp: 1500, atk: 70, def: 110, mag: 104, mnd: 225, spd: 24 },
       exp: 360, gold: { min: 185, max: 290 },
       drops: [['zanshinCore', .40], ['severedEcho', .30], ['instantSteel', .20]],
       ai: [
@@ -116,7 +116,7 @@
       roleDescription: '高HPと魔力を併せ持つ。長期戦ではMPが先に尽きる。',
       element: '聖', weaknesses: ['闇'], resistances: ['光', '音'],
       sprite: sprite('voidOrchestra'), battleScale: 1.15, sparkLevel: 47,
-      stats: { maxHp: 2200, atk: 82, def: 120, mag: 128, mnd: 120, spd: 20 },
+      stats: { maxHp: 2200, atk: 82, def: 120, mag: 128, mnd: 185, spd: 20 },
       exp: 400, gold: { min: 200, max: 320 },
       drops: [['severedEcho', .44], ['zanshinCore', .26], ['afterimageSilk', .22]],
       ai: [{ id: 'soulBolt', name: '断たれた聖歌', kind: 'magic', weight: .62 }, { id: 'attack', name: '聖句の打擲', kind: 'physical', weight: .38 }]
@@ -146,7 +146,7 @@
       role: 'TREASURE', roleDescription: '低確率で現れる逃走型。倒せば素材とGOLDが跳ね上がる。',
       element: '断律', weaknesses: ['斬', '打', '魔'], resistances: [],
       sprite: sprite('gildedHoarder'), battleScale: 1.0, sparkLevel: 52,
-      stats: { maxHp: 900, atk: 96, def: 130, mag: 60, mnd: 130, spd: 56, agi: 60, dex: 52 },
+      stats: { maxHp: 900, atk: 96, def: 130, mag: 60, mnd: 185, spd: 56, agi: 60, dex: 52 },
       exp: 900, gold: { min: 900, max: 1500 },
       drops: [['edgeOfTheInstant', .85], ['zanshinCore', .70], ['severedEcho', .70], ['afterimageSilk', .70]],
       ai: [{ id: 'flee', name: '断ち逃げ', kind: 'flee', weight: .55 }, { id: 'attack', name: '牽制', kind: 'physical', weight: .45 }]
@@ -223,7 +223,9 @@
     background: bg(bgNo), thumbnail: bg(bgNo), description, materials: materialIds,
     enemyScale: scale, encounterProgression: pools
   });
-  const sc = (n, rewards) => ({ hp: n, atk: n, mag: n, def: n, mnd: n, spd: Math.min(n, 1 + (n - 1) * .45), rewards });
+  // MNDは即死耐性と魔法防御を兼ねる。他と同率で伸ばすと敵ごとの役割分担が階層で崩れるため、
+  // SPDと同じく伸びを抑える。HP・攻撃・物理防御だけが素直に伸びる。
+  const sc = (n, rewards) => ({ hp: n, atk: n, mag: n, def: n, mnd: 1 + (n - 1) * .45, spd: Math.min(n, 1 + (n - 1) * .45), rewards });
   const P = (...pairs) => pairs.map(([id, weight]) => ({ id, weight }));
 
   D.dungeons.push({

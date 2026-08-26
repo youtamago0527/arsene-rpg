@@ -2292,7 +2292,11 @@
       const fortissimo = this.turn <= (enemy.fortissimoUntil || 0) ? (enemy.fortissimoRate || 0) : 0;
       const criticalPierce = critical ? .50 : 0;
       const effectiveDef = neutral ? 0 : enemyDefStat * (1 + buffRate + fortissimo) * (1 - defDown) * (1 - (skill.ignoreDef || 0)) * (1 - criticalPierce);
-      let value = skill.kind === 'hybrid' ? (s.str || 0) * skill.strScale + (s.mag || 0) * skill.magScale - effectiveDef : attackPower * power + (s.agi || 0) * (skill.agiScale || 0) - effectiveDef;
+      // 敵→プレイヤーと同じ比率型で減衰させる。引き算型では敵のDEF/MNDが威力を超えた時点で
+      // 与ダメージが1に張り付き、耐性ではなく無効になっていた。
+      const offenseK = balance.playerOffense?.defenseK ?? 60;
+      const rawValue = skill.kind === 'hybrid' ? (s.str || 0) * skill.strScale + (s.mag || 0) * skill.magScale : attackPower * power + (s.agi || 0) * (skill.agiScale || 0);
+      let value = rawValue * (offenseK / (offenseK + Math.max(0, effectiveDef)));
       // ちからためは物理攻撃にのみ乗る（杖の通常攻撃は damageType:'magical' なので対象外）
       const isPhysical = skill.kind === 'physical' || (skill.kind === 'weapon' && skill.damageType !== 'magical');
       const charge = isPhysical ? (this.player.buffs?.atkCharge?.rate || 0) : 0;

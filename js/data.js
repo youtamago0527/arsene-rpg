@@ -233,6 +233,11 @@ window.ARSENE_DATA = {
     // 防御が上がるほど緩やかに減衰する比率型へ統一している。
     enemyPhysical: { attackScale: .70, defenseK: 40 },
     enemyMagic: { attackScale: .78, defenseK: 40 },
+    // プレイヤー→敵も同じ比率型へそろえる。
+    // 引き算型のままだと、敵のDEF/MNDが威力を超えた瞬間に与ダメージが1で固定され、
+    // 「効きにくい敵」ではなく「何をしても無効な敵」になっていた。
+    // K を大きくするほど敵の防御が効きにくくなる。
+    playerOffense: { defenseK: 60 },
     enemyVariance: { min: -1, max: 2 }
   },
   normalEncounters: [
