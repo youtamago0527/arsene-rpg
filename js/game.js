@@ -1419,7 +1419,8 @@
       if (!bossId || (!forceBossId && !progress.ready)) { this.showMenu('home'); return; }
       this.battleMode = phase; const stats = this.totalStats(), template = D.enemies[bossId]; if (!template) { this.showMenu('home'); return; } this.playBossMusic(bossId);
       const vitals = this.storedVitals(stats); this.player = this.freshBattlePlayer(stats, vitals.hp, vitals.mp);
-      const bossStats = template.dynamicScale ? { maxHp: stats.maxHp * template.dynamicScale, atk: Math.max(stats.str, stats.mag) * template.dynamicScale, def: stats.def * template.dynamicScale, mag: stats.mag * template.dynamicScale, mnd: stats.mnd * template.dynamicScale, spd: stats.agi * template.dynamicScale } : { ...template.stats };
+      const baseBossStats = template.dynamicScale ? { maxHp: stats.maxHp * template.dynamicScale, atk: Math.max(stats.str, stats.mag) * template.dynamicScale, def: stats.def * template.dynamicScale, mag: stats.mag * template.dynamicScale, mnd: stats.mnd * template.dynamicScale, spd: stats.agi * template.dynamicScale } : { ...template.stats };
+      const bossStats = this.applyBossOverdriveStats ? this.applyBossOverdriveStats(bossId, baseBossStats) : baseBossStats;
       this.enemies = [{ ...template, uid: `${template.id}-boss`, label: '', stats: bossStats, hp: bossStats.maxHp, alive: true, bindResistance: template.bindResistance ?? .35, bindTurns: 0 }];
       this.turn = 1; this.locked = false; this.finished = false; this.resetBattleLog(); this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [] }; $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyDungeonBackground();
       this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); this.setLog(this.battleMode === 'noel' ? '忘却の最奥――永遠の裁定者ノエルが姿を現した……。' : '静寂のホールに、独奏卿ゼナカドの旋律が響く……！'); this.flashTitle('BOSS ENCOUNTER', (template.nameEn || template.name || progress.bossName).toUpperCase()); this.showMainCommands();
@@ -1447,7 +1448,7 @@
       this.battleMode = 'myrthi'; const stats = this.totalStats(), template = D.enemies.myrthi;
       this.playBossMusic('myrthi');
       const vitals = this.storedVitals(stats); this.player = this.freshBattlePlayer(stats, vitals.hp, vitals.mp);
-      const bossStats = { ...template.stats };
+      const bossStats = this.applyBossOverdriveStats ? this.applyBossOverdriveStats('myrthi', { ...template.stats }) : { ...template.stats };
       const boss = { ...template, uid: 'myrthi-boss', label: '', stats: bossStats, hp: bossStats.maxHp, alive: true, beat: 0, accelerandoActivated: false, bindResistance: template.bindResistance ?? .35, bindTurns: 0 };
       this.enemies = [boss];
       this.turn = 1; this.locked = false; this.finished = false; this.resetBattleLog(); this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [] };
@@ -1468,7 +1469,7 @@
       this.battleMode = 'seripes'; const stats = this.totalStats(), template = D.enemies.seripes, vitals = this.storedVitals(stats);
       this.playBossMusic('seripes');
       this.player = this.freshBattlePlayer(stats, vitals.hp, vitals.mp);
-      const bossStats = { ...template.stats };
+      const bossStats = this.applyBossOverdriveStats ? this.applyBossOverdriveStats('seripes', { ...template.stats }) : { ...template.stats };
       this.enemies = [{ ...template, uid: 'seripes-boss', label: '', stats: bossStats, hp: bossStats.maxHp, alive: true, phase2: false, finalPhase: false, repriseStance: null, pendingReprise: null, recentDamageTypes: [], bindResistance: template.bindResistance ?? .45, bindTurns: 0 }];
       this.turn = 1; this.locked = false; this.finished = false; this.resetBattleLog(); this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [] };
       $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyDungeonBackground();
@@ -2993,6 +2994,10 @@
       const masteryParts = this.battleRewards.masteryResults || [], jobParts = this.battleRewards.jobResults || [];
       const masteryResult = masteryParts.length ? { ...masteryParts[0], gain: masteryParts.reduce((s, r) => s + r.gain, 0), before: masteryParts[0].before, after: masteryParts[masteryParts.length - 1].after, leveled: masteryParts.some(r => r.leveled) } : null;
       const jobResult = jobParts.length ? { ...jobParts[0], exp: jobParts.reduce((s, r) => s + r.exp, 0), from: jobParts[0].from, to: jobParts[jobParts.length - 1].to, learned: [...new Set(jobParts.flatMap(r => r.learned || []))] } : null;
+      if (jobResult) {
+        const titleParts = jobParts.map(r => r.titleGain).filter(Boolean);
+        if (titleParts.length) jobResult.titleGain = { ...titleParts[0], amount: titleParts.reduce((sum, row) => sum + (Number(row.amount) || 0), 0) };
+      }
       const newRecipeHTML = (this.battleRewards.newRecipes || []).map(rid => { const r = D.recipes[rid], item = D.items[r?.resultItemId]; return r && item ? `<div class="new-recipe-unlock"><small>NEW RECIPE</small><b>${item.name}</b><span>${item.nameEn || ''}</span><em>工房で製作可能になった</em></div>` : ''; }).join('');
       // HP/MPは戦闘終了時判定。武器学EXPは行動時、JOB EXPは撃破時に加算済み。
       const vitalResult = this.rollVitalGrowth();
@@ -3004,6 +3009,7 @@
       const sparks = this.battleSparks || []; this.battleSparks = [];
       this.saveProfile(); this.persistVitals(); this.updateHUD();
       const rewardBlock = `${this.battleRewards.quickReport || ''}${this.rewardHTML(reward, levels)}${this.growthResultHTML(masteryResult, vitalResult, sparks)}${this.jobResultHTML(jobResult)}${newRecipeHTML}`;
+      if (this.activeBossOverdrive?.level && this.handleBossOverdriveVictory?.(rewardBlock)) return;
       let milestone = null;
       if (this.battleMode === 'slime') {
         const firstClear = !this.isDungeonFirstClearComplete(this.currentDungeonId), floor = this.activeFloor(this.currentDungeonId), beforeWins = floor ? this.floorWins(floor.id) : this.progressState().wins;
@@ -3062,7 +3068,7 @@
     showDefeatWithRevive(copy, kicker = 'CHALLENGE FAILED') { this.showGameOverOrRevive(copy, kicker, this.battleSummaryHTML() || '<div class="boss-result-note">報酬・ドロップなし</div>'); }
     showGameOverOrRevive(copy, kicker, html) { const showGameOver = () => this.showResult('GAME OVER', copy, kicker, html); if (!this.showReviveOfferIfAvailable(showGameOver)) showGameOver(); }
     showReviveOfferIfAvailable(onDecline) { const offer = window.arseneQOffer; if (!offer?.canUse?.('revive')) return false; return offer.show('revive', { onGrant: () => this.reviveAfterAdNoise(), onClose: onDecline }); }
-    reviveAfterAdNoise() { const revive = () => this.reviveAfterDefeat(); if (typeof this.playNoiseSequence !== 'function') return revive(); return this.playNoiseSequence([{ sys: 'NOISE...' }, { who: 'Q', text: 'まだやれるだろ' }], { onClose: revive }); }
+    reviveAfterAdNoise() { return this.reviveAfterDefeat(); }
     reviveAfterDefeat() { const maxHp = this.player?.stats?.maxHp || this.totalStats().maxHp; this.finished = false; this.locked = false; this.player.hp = Math.max(1, Math.ceil(maxHp * .5)); this.persistVitals(); const result = $('#result'); result.hidden = true; result.style.display = 'none'; $('#ren').classList.remove('down'); $('#ren').classList.add('idle'); const dungeon = this.getDungeon(this.currentDungeonId); this.audio.playTrack(dungeon?.music || this.battleMusic); this.updateHUD(); this.setLog(`${this.playerName()}はHP50%で立ち上がった！`); this.flashTitle('REVIVE', 'PHANTOM RISES AGAIN'); this.showMainCommands(); }
     showResult(title, copy, kicker, html) { this.pauseAutoBattle(); this.locked = false; this.resultContinue = null; $('#result-title').textContent = title; $('#result-copy').textContent = copy; $('#result-kicker').textContent = kicker; $('#rewards').innerHTML = html; const resultMenu = $('#result-menu'); resultMenu.hidden = false; resultMenu.style.display = ''; resultMenu.innerHTML = '拠点へ <span>HIDEOUT</span>'; $('#result').hidden = false; $('#result').style.display = 'grid'; }
     showStagedMilestone(rewardBlock, milestone) { this.showResult('VICTORY', '闇を切り裂き、戦利品を獲得した。', 'BATTLE COMPLETE', rewardBlock); this.resultContinue = () => this.showMilestonePopup(milestone); $('#result-menu').innerHTML = '次へ <span>NEXT</span>'; }
@@ -3166,11 +3172,13 @@
       this.syncSkillUnlocks();
       if (!this.jobUI) this.jobUI = { tab: 'job', detailId: null, modal: null, passiveSlotIdx: null, passiveFilter: 'all' };
       const ui = this.jobUI, unlocked = this.jobSystemUnlocked(), currentId = this.profile.currentJob, curJob = D.jobs[currentId];
-      const tabBar = `<div class="job-tabs"><button class="job-tab${ui.tab === 'job' ? ' active' : ''}" data-job-tab="job">JOB</button><button class="job-tab${ui.tab === 'abilitySet' ? ' active' : ''}" data-job-tab="abilitySet">ABILITY SET</button></div>`;
+      const titleTab = this.profile.titleSystem?.unlocked ? `<button class="job-tab${ui.tab === 'title' ? ' active' : ''}" data-job-tab="title">TITLE</button>` : '';
+      const tabBar = `<div class="job-tabs"><button class="job-tab${ui.tab === 'job' ? ' active' : ''}" data-job-tab="job">JOB</button><button class="job-tab${ui.tab === 'abilitySet' ? ' active' : ''}" data-job-tab="abilitySet">ABILITY SET</button>${titleTab}</div>`;
       // キャラクターLvは廃止済み。現在のJOBとそのLvを出す。
       const hdr = `<div class="job-hdr"><div class="job-hdr-l"><small>JOB & ABILITY</small><b>${this.playerName()}</b><span>武器学 ${this.weaponTypeName(this.equippedWeaponType())} Lv.${this.masteryOf(this.equippedWeaponType()).level}</span></div><div class="job-hdr-r"><small>現在のJOB</small><strong>${curJob.name} Lv.${this.profile.jobs?.[currentId]?.level || 1}</strong></div></div>`;
       let body;
       if (ui.tab === 'job') { body = ui.detailId ? this.jobDetailHtml(ui.detailId, unlocked, currentId) : this.jobListHtml(unlocked, currentId); }
+      else if (ui.tab === 'title' && this.titlePanelHtml) { body = this.titlePanelHtml(); }
       else { body = this.abilitySetHtml(currentId); }
       let modal = '';
       if (ui.modal === 'skillDetail') modal = this.skillModalHtml(ui.skillDetailId);
