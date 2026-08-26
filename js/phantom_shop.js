@@ -2,7 +2,7 @@
 // カズの隠しメニュー（拠点でカズを3回タップ）と裏ショップ
 //
 // 隠しメニューは拠点の上へ重ねるだけで、画面遷移はしない。
-// 「買い物」は全画面の裏ショップへ、「遊び」は既存の音ゲーへ繋ぐ。
+// 「買い物」は全画面の裏ショップへ、「遊び」は選曲画面を挟んで既存の音ゲーへ繋ぐ。
 //
 // 音ゲー側（kazu_minigame.js）の3回タップは、直接ゲームを開くのをやめて
 // このメニューを開くように差し替えてある。
@@ -59,6 +59,24 @@
     }
   ];
 
+  // 音ゲーの選曲。01は既存の《零時侵蝕》。
+  // BPMと長さは音源をデコードして実測した値（自己相関＋オンセットのグリッド適合で170を採用）。
+  // 02以降は音源がまだ無いので LOCKED 表示のみで、押しても始まらない。
+  const TRACKS = [
+    {
+      id: 'reijishinshoku', no: '01', title: '零時侵蝕', bpm: 170, length: '4:37',
+      genre: 'OPENING THEME', diff: 'HARD', level: '08', accent: '#fb7185', playable: true
+    },
+    {
+      id: 'neon-labyrinth', no: '02', title: 'Neon Labyrinth', bpm: 172, length: '—',
+      genre: 'CYBER TRANCE', diff: 'EXPERT', level: '12', accent: '#c084fc', playable: false
+    },
+    {
+      id: 'phantom-overdrive', no: '03', title: 'PHANTOM OVERDRIVE', bpm: 200, length: '—',
+      genre: 'HARDCORE', diff: 'PHANTOM', level: '15', accent: '#22d3ee', playable: false
+    }
+  ];
+
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const tint = (hex, alpha) => `${hex}${alpha}`;
 
@@ -66,6 +84,7 @@
     constructor() {
       this.popup = null;
       this.shop = null;
+      this.arcade = null;
       this.toasts = null;
       this.build();
     }
@@ -89,7 +108,7 @@
               <span>🛍️ 買い物をしたい（裏ショップへ）</span><i>▶</i>
             </button>
             <button type="button" class="pm-btn pm-btn-rose pm-cut-sm" data-pm="play">
-              <span>🎲 遊びに付き合え（隠し勝負）</span><i>▶</i>
+              <span>🎲 遊びに付き合え（音ゲーへ）</span><i>▶</i>
             </button>
             <button type="button" class="pm-btn-quiet" data-pm="close-popup">見なかったことにする</button>
           </div>
@@ -112,11 +131,28 @@
         </header>
         <div class="pm-shop-list">${ITEMS.map(item => this.itemHTML(item)).join('')}</div>`;
 
+      // ── 選曲画面 ──
+      const arcade = document.createElement('div');
+      arcade.className = 'phantom-arcade';
+      arcade.id = 'phantom-arcade';
+      arcade.hidden = true;
+      arcade.innerHTML = `
+        <header class="pm-arcade-head">
+          <div class="pm-arcade-kicker pm-cut-sm">Entering Arcade Mode...</div>
+          <div class="pm-shop-bar">
+            <button type="button" class="pm-shop-back pm-cut-sm" data-pm="back">◀ BACK</button>
+            <h2 class="pm-arcade-title">PHANTOM<span>BEAT</span></h2>
+            <span style="width:52px"></span>
+          </div>
+        </header>
+        <div class="pm-track-list">${TRACKS.map(t => this.trackHTML(t)).join('')}</div>
+        <footer class="pm-arcade-foot">CREDITS: 01 / INSERT COIN</footer>`;
+
       const toasts = document.createElement('div');
       toasts.className = 'pm-toasts';
 
-      document.body.append(popup, shop, toasts);
-      this.popup = popup; this.shop = shop; this.toasts = toasts;
+      document.body.append(popup, shop, arcade, toasts);
+      this.popup = popup; this.shop = shop; this.arcade = arcade; this.toasts = toasts;
 
       const onClick = event => {
         const button = event.target.closest('[data-pm]');
@@ -129,16 +165,18 @@
         else if (action === 'play') this.play();
         else if (action === 'toggle') this.toggleItem(button.closest('.pm-item'));
         else if (action === 'buy') this.toast(button.dataset.name, button.dataset.action);
+        else if (action === 'track') this.playTrack(button.dataset.track);
       };
       popup.addEventListener('click', onClick);
       shop.addEventListener('click', onClick);
+      arcade.addEventListener('click', onClick);
 
       // 隠しメニューは背景（拠点）をタップしても閉じる。
       popup.addEventListener('click', event => { if (event.target === popup) this.close(); });
 
       document.addEventListener('keydown', event => {
         if (event.key !== 'Escape') return;
-        if (!this.shop.hidden) this.backToPopup();
+        if (!this.shop.hidden || !this.arcade.hidden) this.backToPopup();
         else if (!this.popup.hidden) this.close();
       });
     }
@@ -169,6 +207,26 @@
         : `<article class="pm-item pm-cut" data-id="${item.id}">${head}${body}</article>`;
     }
 
+    trackHTML(track) {
+      const score = track.playable ? this.highScore() : null;
+      return `
+        <button type="button" class="pm-track pm-cut${track.playable ? '' : ' locked'}"
+                data-pm="track" data-track="${track.id}" ${track.playable ? '' : 'disabled'}>
+          <span class="pm-track-no" style="color:${track.accent};background:${tint(track.accent, '26')};border:1px solid ${tint(track.accent, '80')}">${esc(track.no)}</span>
+          <span class="pm-track-main">
+            <small>BPM ${track.bpm} / ${esc(track.genre)}${track.length !== '—' ? ` / ${track.length}` : ''}</small>
+            <b>${esc(track.title)}</b>
+            <span class="pm-track-diff" style="color:${track.accent};border:1px solid ${track.accent};background:${tint(track.accent, '1a')}">${esc(track.diff)} ${esc(track.level)}</span>
+          </span>
+          <span class="pm-track-score">${track.playable
+            ? `HIGH SCORE<b style="color:${track.accent}">${score.toLocaleString()}</b>`
+            : `<em>LOCKED</em><b style="color:${track.accent}">COMING SOON</b>`}</span>
+        </button>`;
+    }
+
+    // 音ゲー側が保存しているハイスコアをそのまま出す。
+    highScore() { return Number(window.arseneGame?.profile?.flags?.kazuRhythmHighScore || 0); }
+
     toggleItem(item) { if (item) item.classList.toggle('open'); }
 
     // ── 開閉 ──
@@ -180,6 +238,7 @@
     close() {
       this.popup.hidden = true;
       this.shop.hidden = true;
+      this.arcade.hidden = true;
     }
     openShop() {
       this.popup.hidden = true;
@@ -189,16 +248,33 @@
     }
     backToPopup() {
       this.shop.hidden = true;
+      this.arcade.hidden = true;
       this.popup.hidden = false;
       window.arseneGame?.audio?.sfx?.('ui');
     }
 
-    // 「遊びに付き合え」→ 既に用意してある音ゲーをそのまま開く。
+    // 「遊びに付き合え」→ 選曲画面へ。実際の起動は曲を選んでから。
     play() {
+      this.popup.hidden = true;
+      this.arcade.hidden = false;
+      this.arcade.querySelector('.pm-track-list').scrollTop = 0;
+      this.refreshScores();
+      window.arseneGame?.audio?.sfx?.('ui');
+    }
+
+    // 選曲画面を開くたびにハイスコアを引き直す。
+    refreshScores() {
+      const el = this.arcade.querySelector('.pm-track[data-track="reijishinshoku"] .pm-track-score b');
+      if (el) el.textContent = this.highScore().toLocaleString();
+    }
+
+    playTrack(id) {
+      const track = TRACKS.find(t => t.id === id);
+      if (!track?.playable) return;
       this.close();
       const rhythm = window.kazuRhythmGame;
       if (rhythm?.open) rhythm.open();
-      else this.toast('音ゲー', '読み込みに失敗しました');
+      else this.toast(track.title, '読み込みに失敗しました');
     }
 
     toast(name, action) {
