@@ -200,6 +200,7 @@ window.ARSENE_DATA = {
   // ══════════════════════════════════════════════════════════════
   maestroBalance: {
     procChance: 0.50,      // 通常時の発動率
+    nocturneChance: 0.30, // ノクターン専用。耐久JOBとの組み合わせを考慮
     ensembleChance: 0.75,  // アンサンブル中の発動率
     ensembleTurns: 3,      // アンサンブルの持続ターン
     buffTurns: 2,          // フォルテ／クレッシェンドの持続ターン（転生強化で3を想定）
@@ -844,7 +845,7 @@ window.ARSENE_DATA = {
     p_solo:      { id: 'p_solo',      name: 'ソロ',         nameEn: 'SOLO',      type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'doubleAct', requiresWeaponType: 'instrument' }, effectText: '楽器装備時のみ。自ターン開始時に抽選で2ターン2回行動', description: '独奏に入る。楽器を手にしているときだけ、一定確率で一度に二度動けるようになる。' },
     p_forte:     { id: 'p_forte',     name: 'フォルテ',     nameEn: 'FORTE',     type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'atkUp',  rate: .10 }, effectText: '自ターン開始時に抽選。攻撃力+10%／専用技が解放', description: '強奏が刃に乗る。自分のターン開始時、一定確率で攻撃力が上がり、専用技が使えるようになる。' },
     p_crescendo: { id: 'p_crescendo', name: 'クレッシェンド', nameEn: 'CRESCENDO', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'matkUp', rate: .10 }, effectText: '自ターン開始時に抽選。魔法攻撃力+10%', description: '高まりゆく旋律が魔を押し上げる。自分のターン開始時、一定確率で魔法攻撃力が上がる。' },
-    p_nocturne:  { id: 'p_nocturne',  name: 'ノクターン',   nameEn: 'NOCTURNE',  type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'regen' }, effectText: '自ターン開始時に抽選。3ターン自然回復', description: '夜想曲が傷を癒やす。自分のターン開始時、一定確率で継続回復を得る。' },
+    p_nocturne:  { id: 'p_nocturne',  name: 'ノクターン',   nameEn: 'NOCTURNE',  type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'regen' }, effectText: '自ターン開始時30%で発動。3ターン自然回復', description: '夜想曲が傷を癒やす。自分のターン開始時、30%の確率で3ターンの継続回復を得る。' },
     magicCharge: { id: 'magicCharge', name: '魔力装填', nameEn: 'MAGIC CHARGE', source: 'job', jobId: 'magicKnight', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 4, cooldown: 3, powerText: '次の物理攻撃に MAG×0.5 を追加', effect: { type: 'selfMagicCharge' }, effectText: '次に使う物理攻撃・武器技へ魔力依存の追加ダメージ／CT3', description: '刃に魔力を装填する。次の物理攻撃へ魔力分のダメージを上乗せする。' },
 
     // ══ 閃き技（対応する攻撃の使用中に閃く）═══════════════════
