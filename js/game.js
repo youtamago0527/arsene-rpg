@@ -55,7 +55,7 @@
       $('#battle-menu-popover')?.addEventListener('change', e => { const slider = e.target.closest('[data-battle-volume]'); if (slider?.dataset.battleVolume === 'sfx' && Number(slider.value) > 0) this.audio.sfx('ui'); });
       document.addEventListener('click', e => { const resultAction = e.target.closest('[data-result-action]'); if (resultAction) { e.preventDefault(); this.handleResultAction(resultAction.dataset.resultAction, resultAction.dataset.target); return; } if (e.target.closest('[data-go-menu], #result-menu')) { e.preventDefault(); if (e.target.closest('#result-menu') && this.resultContinue) { const next = this.resultContinue; this.resultContinue = null; next(); } else this.showMenu('home'); } });
       $('#result-menu').addEventListener('pointerup', e => { e.preventDefault(); });
-      $('#menu-screen').addEventListener('click', async e => { const b = e.target.closest('[data-menu]'); if (!b || b.disabled) return; await this.audio.unlock(); this.audio.sfx('ui'); if (b.dataset.menu === 'battle') { this.renderMenuPanel('dungeon-select'); } else if (b.dataset.menu === 'boss') { if (this.isMyrthiUnlocked() && !this.isBossDefeated('myrthi')) { this.currentDungeonId = 'dungeon2'; this.startMyrthiBoss(); } else this.startBossEncounter(); } else { if (b.dataset.menu === 'equipment') this.equipTab = b.hasAttribute('data-open-status') ? 'status' : 'equip'; this.renderMenuPanel(b.dataset.menu); } });
+      $('#menu-screen').addEventListener('click', async e => { const b = e.target.closest('[data-menu]'); if (!b || b.disabled) return; await this.audio.unlock(); this.audio.sfx('ui'); if (b.dataset.menu === 'battle') { this.renderMenuPanel('dungeon-select'); } else if (b.dataset.menu === 'boss') { this.restoreNormalDungeonJob(); if (this.isMyrthiUnlocked() && !this.isBossDefeated('myrthi')) { this.currentDungeonId = 'dungeon2'; this.startMyrthiBoss(); } else this.startBossEncounter(); } else { if (b.dataset.menu === 'equipment') this.equipTab = b.hasAttribute('data-open-status') ? 'status' : 'equip'; this.renderMenuPanel(b.dataset.menu); } });
       $('#menu-panel').addEventListener('click', async e => {
         const avatarOpen = e.target.closest('[data-battle-avatar-open]');
         if (avatarOpen) { this.battlePortraitEditorOpen = true; this.audio.sfx('ui'); this.renderMenuPanel('equipment'); return; }
@@ -64,14 +64,14 @@
         const avatarReset = e.target.closest('[data-battle-avatar-reset]');
         if (avatarReset) { this.profile.customBattlePortrait = null; this.profile.customBattlePortraitMeta = null; this.profile.customStatusPortrait = null; this.saveProfile(); this.applyEquipmentVisual(); this.audio.sfx('ui'); this.battlePortraitEditorOpen = true; this.renderMenuPanel('equipment'); window.arseneStartFlow?.toast('戦闘画像をデフォルトに戻しました'); return; }
         const enterDungeon = e.target.closest('[data-enter-dungeon]');
-        if (enterDungeon) { this.currentDungeonId = enterDungeon.dataset.enterDungeon; this.currentFloorId = null; const dungeonCfg = this.getDungeon(this.currentDungeonId); await this.audio.playTrack(dungeonCfg?.music || this.battleMusic); this.startBattle(); return; }
+        if (enterDungeon) { this.restoreNormalDungeonJob(); this.currentDungeonId = enterDungeon.dataset.enterDungeon; this.currentFloorId = null; const dungeonCfg = this.getDungeon(this.currentDungeonId); await this.audio.playTrack(dungeonCfg?.music || this.battleMusic); this.startBattle(); return; }
         const dungeonTab = e.target.closest('[data-dungeon-tab]');
         if (dungeonTab) { this.dungeonSelectId = dungeonTab.dataset.dungeonTab; this.audio.sfx('ui'); this.renderMenuPanel('dungeon-select'); return; }
         // 階層のあるダンジョンは階層選択ページを挟む
         const openFloors = e.target.closest('[data-open-floors]');
         if (openFloors) { this.floorSelectDungeonId = openFloors.dataset.openFloors; this.audio.sfx('ui'); this.renderMenuPanel('floor-select'); return; }
         const enterFloor = e.target.closest('[data-enter-floor]');
-        if (enterFloor) { if (enterFloor.disabled) return; const fid = enterFloor.dataset.enterFloor; this.currentDungeonId = this.floorDungeonId(fid); this.currentFloorId = fid; const cfg = this.getDungeon(this.currentDungeonId); await this.audio.playTrack(cfg?.music || this.battleMusic); this.startBattle(); return; }
+        if (enterFloor) { if (enterFloor.disabled) return; this.restoreNormalDungeonJob(); const fid = enterFloor.dataset.enterFloor; this.currentDungeonId = this.floorDungeonId(fid); this.currentFloorId = fid; const cfg = this.getDungeon(this.currentDungeonId); await this.audio.playTrack(cfg?.music || this.battleMusic); this.startBattle(); return; }
         const slotPick = e.target.closest('[data-equip-slot-pick]');
         if (slotPick) { if (slotPick.disabled) return; const s = slotPick.dataset.equipSlotPick; this.equipSlot = this.equipSlot === s ? null : s; this.selectedEquipmentId = null; this.audio.sfx('ui'); this.renderMenuPanel('equipment'); return; }
         const slotClose = e.target.closest('[data-equip-slot-close]');
@@ -222,12 +222,12 @@
     }
 
     freshProfile() {
-      const p = D.player; return { version: 16, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), musicScores: {}, bossDefeated: { zenacad: false, myrthi: false, versicrell: false, seripes: false }, currentJob: 'mage', jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, guardian: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, unlockedJobs: ['mage'], initialJob: 'mage', jobGrowthGained: {}, jobRebirths: {}, jobMastered: [], growthFraction: {}, learnedPassives: [], equippedPassives: [null], ptActionSlots: [null, null], ptPassiveSlots: [null, null], weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 }, shield: { level: 1, exp: 0 } }, learnedWeaponSkills: [], seenEnemies: [], equipmentArchive: [], collectionRewards: {}, playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0, instrument: 0, shield: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0 }, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, taiwanMazesobaUnlocked: false, taiwanMazesobaNew: false, foodSecretMenuUnlocked: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, floorWins: {}, dungeon3BattleWins: 0, dungeon3NewSeen: false, guardianUnlocked: false, shieldUnlocked: false, lastBattleResult: null, consecutiveDefeats: 0 }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
+      const p = D.player; return { version: 19, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), shopPurchases: {}, musicScores: {}, bossDefeated: { zenacad: false, myrthi: false, versicrell: false, seripes: false }, currentJob: 'mage', lastNormalJob: 'mage', otherWorldReturnJob: null, jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, guardian: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, unlockedJobs: ['mage'], initialJob: 'mage', jobGrowthGained: {}, phantomGrowthRecords: {}, jobRebirths: {}, jobMastered: [], growthFraction: {}, learnedPassives: [], passiveEnhancements: {}, passiveEnhancedAtRebirth: {}, equippedPassives: [null], ptActionSlots: [null, null], ptPassiveSlots: [null, null], weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 }, shield: { level: 1, exp: 0 } }, learnedWeaponSkills: [], seenEnemies: [], equipmentArchive: [], collectionRewards: {}, playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0, instrument: 0, shield: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0 }, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, taiwanMazesobaUnlocked: false, taiwanMazesobaNew: false, foodSecretMenuUnlocked: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, floorWins: {}, dungeon3BattleWins: 0, dungeon3NewSeen: false, guardianUnlocked: false, shieldUnlocked: false, lastBattleResult: null, consecutiveDefeats: 0, owRestoreJobPending: false }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
     }
     loadProfile() {
       try {
         const saved = JSON.parse(localStorage.getItem(D.settings.saveKey)); if (!saved) return this.freshProfile();
-        const base = this.freshProfile(), jobs = clone(base.jobs); Object.keys(jobs).forEach(id => jobs[id] = { ...jobs[id], ...(saved.jobs?.[id] || {}) }); const profile = { ...base, ...saved, baseStats: { ...base.baseStats, ...saved.baseStats }, currentVitals: { ...base.currentVitals, ...saved.currentVitals }, equipment: { ...base.equipment, ...saved.equipment }, inventory: { ...base.inventory, ...saved.inventory }, musicScores: { ...base.musicScores, ...saved.musicScores }, bossDefeated: { ...base.bossDefeated, ...saved.bossDefeated }, jobs, learnedJobSkills: Array.isArray(saved.learnedJobSkills) ? saved.learnedJobSkills : [], learnedCharacterSkills: Array.isArray(saved.learnedCharacterSkills) ? saved.learnedCharacterSkills : [], activeSkills: Array.isArray(saved.activeSkills) ? saved.activeSkills.slice(0, 4) : base.activeSkills, flags: { ...base.flags, ...saved.flags }, armorEnchants: { ...(saved.armorEnchants || {}) }, bossRematchAt: { ...(saved.bossRematchAt || {}) }, preferredWeaponType: saved.preferredWeaponType || null, unlockedJobs: Array.isArray(saved.unlockedJobs) ? saved.unlockedJobs : [saved.currentJob || 'mage'], initialJob: saved.initialJob || saved.currentJob || 'mage', jobGrowthGained: { ...(saved.jobGrowthGained || {}) }, jobRebirths: { ...(saved.jobRebirths || {}) }, jobMastered: Array.isArray(saved.jobMastered) ? saved.jobMastered : [], growthFraction: { ...(saved.growthFraction || {}) }, learnedPassives: Array.isArray(saved.learnedPassives) ? saved.learnedPassives : [], equippedPassives: Array.isArray(saved.equippedPassives) ? saved.equippedPassives : [null], ptActionSlots: Array.isArray(saved.ptActionSlots) ? saved.ptActionSlots : [null, null], ptPassiveSlots: Array.isArray(saved.ptPassiveSlots) ? saved.ptPassiveSlots : [null, null], weaponMastery: { ...base.weaponMastery, ...(saved.weaponMastery || {}) }, learnedWeaponSkills: Array.isArray(saved.learnedWeaponSkills) ? saved.learnedWeaponSkills : [], equipmentArchive: Array.isArray(saved.equipmentArchive) ? saved.equipmentArchive : [], collectionRewards: { ...(saved.collectionRewards || {}) }, playtest: { ...base.playtest, ...(saved.playtest || {}), weaponUse: { ...base.playtest.weaponUse, ...(saved.playtest?.weaponUse || {}) } }, kazuSeenOnce: Array.isArray(saved.kazuSeenOnce) ? saved.kazuSeenOnce : [], discoveredMaterials: Array.isArray(saved.discoveredMaterials) ? saved.discoveredMaterials : [], unlockedRecipes: Array.isArray(saved.unlockedRecipes) ? saved.unlockedRecipes : [], newlyUnlockedRecipes: Array.isArray(saved.newlyUnlockedRecipes) ? saved.newlyUnlockedRecipes : [] };
+        const base = this.freshProfile(), jobs = clone(base.jobs); Object.keys(jobs).forEach(id => jobs[id] = { ...jobs[id], ...(saved.jobs?.[id] || {}) }); const profile = { ...base, ...saved, baseStats: { ...base.baseStats, ...saved.baseStats }, currentVitals: { ...base.currentVitals, ...saved.currentVitals }, equipment: { ...base.equipment, ...saved.equipment }, inventory: { ...base.inventory, ...saved.inventory }, shopPurchases: { ...(saved.shopPurchases || {}) }, musicScores: { ...base.musicScores, ...saved.musicScores }, bossDefeated: { ...base.bossDefeated, ...saved.bossDefeated }, jobs, learnedJobSkills: Array.isArray(saved.learnedJobSkills) ? saved.learnedJobSkills : [], learnedCharacterSkills: Array.isArray(saved.learnedCharacterSkills) ? saved.learnedCharacterSkills : [], activeSkills: Array.isArray(saved.activeSkills) ? saved.activeSkills.slice(0, 4) : base.activeSkills, flags: { ...base.flags, ...saved.flags }, armorEnchants: { ...(saved.armorEnchants || {}) }, bossRematchAt: { ...(saved.bossRematchAt || {}) }, preferredWeaponType: saved.preferredWeaponType || null, unlockedJobs: Array.isArray(saved.unlockedJobs) ? saved.unlockedJobs : [saved.currentJob || 'mage'], initialJob: saved.initialJob || saved.currentJob || 'mage', lastNormalJob: saved.lastNormalJob || (saved.currentJob !== 'phantomThief' ? saved.currentJob : null) || saved.initialJob || 'mage', otherWorldReturnJob: saved.otherWorldReturnJob || null, jobGrowthGained: { ...(saved.jobGrowthGained || {}) }, phantomGrowthRecords: clone(saved.phantomGrowthRecords || {}), jobRebirths: { ...(saved.jobRebirths || {}) }, jobMastered: Array.isArray(saved.jobMastered) ? saved.jobMastered : [], growthFraction: { ...(saved.growthFraction || {}) }, learnedPassives: Array.isArray(saved.learnedPassives) ? saved.learnedPassives : [], passiveEnhancements: { ...(saved.passiveEnhancements || {}) }, passiveEnhancedAtRebirth: { ...(saved.passiveEnhancedAtRebirth || {}) }, equippedPassives: Array.isArray(saved.equippedPassives) ? saved.equippedPassives : [null], ptActionSlots: Array.isArray(saved.ptActionSlots) ? saved.ptActionSlots : [null, null], ptPassiveSlots: Array.isArray(saved.ptPassiveSlots) ? saved.ptPassiveSlots : [null, null], weaponMastery: { ...base.weaponMastery, ...(saved.weaponMastery || {}) }, learnedWeaponSkills: Array.isArray(saved.learnedWeaponSkills) ? saved.learnedWeaponSkills : [], equipmentArchive: Array.isArray(saved.equipmentArchive) ? saved.equipmentArchive : [], collectionRewards: { ...(saved.collectionRewards || {}) }, playtest: { ...base.playtest, ...(saved.playtest || {}), weaponUse: { ...base.playtest.weaponUse, ...(saved.playtest?.weaponUse || {}) } }, kazuSeenOnce: Array.isArray(saved.kazuSeenOnce) ? saved.kazuSeenOnce : [], discoveredMaterials: Array.isArray(saved.discoveredMaterials) ? saved.discoveredMaterials : [], unlockedRecipes: Array.isArray(saved.unlockedRecipes) ? saved.unlockedRecipes : [], newlyUnlockedRecipes: Array.isArray(saved.newlyUnlockedRecipes) ? saved.newlyUnlockedRecipes : [] };
         // 旧版で異なるIDで保存された塩ラーメンを、現在の戦闘用アイテムIDへ統合する。
         // これで既に購入済みの分が「持っていない」扱いになることを防ぐ。
         const legacyConsumableIds = {
@@ -237,6 +237,16 @@
         Object.entries(legacyConsumableIds).forEach(([legacyId, currentId]) => {
           const amount = Math.max(0, Number(profile.inventory[legacyId]) || 0);
           if (amount > 0) { profile.inventory[currentId] = (profile.inventory[currentId] || 0) + amount; delete profile.inventory[legacyId]; }
+        });
+        // 旧セーブには購入履歴がないため、現在所持している店売り品を購入済み数として引き継ぐ。
+        // 更新後は消費しても shopPurchases は減らず、購入上限は復活しない。
+        (D.shopItems || []).forEach(id => {
+          const item = D.items[id], limit = Math.max(0, Number(item?.purchaseLimit) || 0);
+          if (!limit) return;
+          const savedCount = Number(saved.shopPurchases?.[id]);
+          profile.shopPurchases[id] = Number.isFinite(savedCount)
+            ? Math.min(limit, Math.max(0, Math.floor(savedCount)))
+            : Math.min(limit, Math.max(0, Math.floor(Number(profile.inventory[id]) || 0)));
         });
         if ((saved.version || 0) < 3 || !saved.currentVitals) { const bonuses = {}; Object.values(profile.equipment).forEach(id => Object.entries((D.weapons[id] || D.accessories[id] || D.armors?.[id] || D.equipment?.[id])?.bonuses || {}).forEach(([key, value]) => bonuses[key] = (bonuses[key] || 0) + value)); profile.currentVitals = { hp: profile.baseStats.maxHp + (bonuses.maxHp || 0), mp: profile.baseStats.maxMp + (bonuses.maxMp || 0) }; }
         if ((saved.version || 0) < 4) { const oldWins = Math.max(0, Number(saved.flags?.normalBattleWins) || 0), oldNoel = !!saved.flags?.noelFirstEncounterCleared; profile.flags.preNoelBattleWins = Number.isFinite(saved.flags?.preNoelBattleWins) ? saved.flags.preNoelBattleWins : (oldNoel ? D.battleProgression.noelEncounterWins : Math.min(oldWins, D.battleProgression.noelEncounterWins)); profile.flags.postNoelBattleWins = Number.isFinite(saved.flags?.postNoelBattleWins) ? saved.flags.postNoelBattleWins : (oldNoel ? oldWins : 0); profile.flags.zenakadoDefeated = false; profile.flags.zenakadoScoreClaimed = false; profile.flags.temporaryBossCompleted = false; }
@@ -338,9 +348,23 @@
         if (!profile.collectionRewards || typeof profile.collectionRewards !== 'object') profile.collectionRewards = {};
         const knownEquipment = [...Object.entries(profile.inventory || {}).filter(([id, n]) => n > 0 && D.items[id]?.category === 'equipment' && !D.items[id]?.devOnly && !D.items[id]?.futureOnly).map(([id]) => id), ...Object.values(profile.equipment || {}).filter(id => D.items[id]?.category === 'equipment' && !D.items[id]?.devOnly && !D.items[id]?.futureOnly)];
         profile.equipmentArchive = [...new Set([...profile.equipmentArchive, ...knownEquipment])];
+        // v18：旧版ですでに転生強化されていたPASSIVEは、現状の強さをそのまま移行する。
+        // 次の転生からは「再び習得Lvへ到達した時」にだけ1段階強化される。
+        if (!saved.passiveEnhancements || !saved.passiveEnhancedAtRebirth) {
+          for (const skill of Object.values(D.skills || {})) {
+            if (skill?.type !== 'PASSIVE' || !skill.jobId) continue;
+            const count = Number(profile.jobRebirths?.[skill.jobId]) || 0;
+            profile.passiveEnhancements[skill.id] = count;
+            profile.passiveEnhancedAtRebirth[skill.id] = count;
+          }
+        }
+        // 旧セーブでMASTER済みのJOBは、現在記録されている成長を盗奪済み最高値として保護する。
+        if (!saved.phantomGrowthRecords) {
+          for (const id of profile.jobMastered || []) profile.phantomGrowthRecords[id] = { ...(profile.jobGrowthGained?.[id] || {}) };
+        }
         // v16：武器学を行動EXP＋無制限Lv、閃きをRank/敵Spark Lv方式へ移行。
         // 旧Lv/EXP/習得技はそのまま保持し、破壊的な再計算は行わない。
-        profile.version = 16;
+        profile.version = 19;
         return profile;
       } catch { return this.freshProfile(); }
     }
@@ -679,14 +703,14 @@
     }
     // パッシブのステータス系効果を totalStats へ反映する
     // ══ パッシブの転生成長 ════════════════════════════════════
-    // パッシブはそのJOBを転生させるたびに強くなる。
-    //   実効値 = rate + 転生回数 × step   （step 未指定なら rate の40%）
+    // パッシブは転生後、もう一度そのパッシブの習得Lvへ到達した時に強くなる。
+    //   実効値 = rate + 強化段階 × step   （step 未指定なら rate の40%）
     //   max があればそこで頭打ち。MP割引のように青天井にできない効果へ付ける。
     // これで「後から強いJOBが出ても、育てた既存JOBが腐らない」形にする。
     passiveRate(passive, key = 'rate') {
       const e = passive?.passiveEffect; if (!e) return 0;
       const base = e[key] || 0; if (!base) return 0;
-      const n = this.rebirthCount(passive.jobId || this.profile.currentJob);
+      const n = this.passiveEnhancementRank(passive.id);
       if (key === 'rate' && e.rebirthTable) {
         const keys = Object.keys(e.rebirthTable).map(Number).filter(level => level <= n).sort((a, b) => b - a);
         return keys.length ? Number(e.rebirthTable[keys[0]]) : base;
@@ -742,7 +766,7 @@
     comboDanceDamageRate() { const e = this.activePassiveByType('comboDance')?.passiveEffect; return e ? this.comboDanceStacks() * (e.damagePerStack || 0) : 0; }
     comboMaxBoost() { return this.comboDanceStacks() >= this.comboDanceMax() ? this.activePassiveByType('comboMaxBoost')?.passiveEffect || null : null; }
     playerCombatStats() { const stats = { ...(this.player?.stats || this.totalStats()) }, boost = this.comboMaxBoost(); if (boost?.agiRate) stats.agi = Math.round((stats.agi || 0) * (1 + boost.agiRate)); return stats; }
-    dualWieldRate() { const p = this.activePassiveByType('dualWield'); if (!p) return 0; const table = p.passiveEffect?.rebirthTable || {}, n = this.rebirthCount(p.jobId || 'dualBlade'), keys = Object.keys(table).map(Number).filter(x => x <= n).sort((a, b) => b - a); return keys.length ? Number(table[keys[0]]) : (p.passiveEffect?.rate || 0); }
+    dualWieldRate() { const p = this.activePassiveByType('dualWield'); return p ? this.passiveRate(p) : 0; }
     // ══ JOB特性 ═══════════════════════════════════════════════
     // パッシブと違い「そのJOBに就いていること自体」で得る効果。
     // 他JOBへ持ち出せない＝PHANTOM THIEFも盗めない。
@@ -829,9 +853,14 @@
     // 通常JOB      … 今就いているJOBで育てた分だけ乗る（転職すると乗り換わる）
     // PHANTOM THIEF … 全JOBで育てた分を合算し、各能力50%だけ引き継ぐ
     phantomGrowthSources() {
-      const gained = this.profile.jobGrowthGained || {}, sources = {};
+      const gained = this.profile.jobGrowthGained || {}, records = this.profile.phantomGrowthRecords || {}, sources = {};
       const futureJobs = new Set(D.futureJobIds || []);
-      for (const [id, table] of Object.entries(gained)) if (!futureJobs.has(id)) sources[id] = { ...(table || {}) };
+      for (const id of new Set([...Object.keys(gained), ...Object.keys(records)])) {
+        if (futureJobs.has(id)) continue;
+        sources[id] = {};
+        for (const key of new Set([...Object.keys(gained[id] || {}), ...Object.keys(records[id] || {})]))
+          sources[id][key] = Math.max(Number(gained[id]?.[key]) || 0, Number(records[id]?.[key]) || 0);
+      }
       // 双刃士など旧growthテーブル方式のJOBはjobGrowthGainedへ記録されない。
       // 現在JOB Lvまでの実補正を継承元へ足し、旧セーブでも50%を確実に反映する。
       for (const id of this.gb().phantomLegacyGrowthJobs || []) {
@@ -853,6 +882,23 @@
         return out;
       }
       for (const [k, v] of Object.entries(gained[jobId] || {})) if (v) out[k] = v;
+      return out;
+    }
+    passiveEnhancementRank(skillId) { return Math.max(0, Number(this.profile.passiveEnhancements?.[skillId]) || 0); }
+    // 転生後に再び習得Lvへ到達したパッシブを、その転生回数ぶんだけ強化する。
+    reinforceJobPassives(jobId, level) {
+      const job = D.jobs[jobId]; if (!job) return [];
+      this.profile.passiveEnhancements ||= {}; this.profile.passiveEnhancedAtRebirth ||= {};
+      const rebirths = this.rebirthCount(jobId), out = [];
+      Object.entries(job.passiveUnlocks || {}).forEach(([lv, id]) => {
+        if (Number(lv) > level || !D.skills[id]) return;
+        const last = Math.max(0, Number(this.profile.passiveEnhancedAtRebirth[id]) || 0);
+        if (rebirths <= last) return;
+        const gain = rebirths - last;
+        this.profile.passiveEnhancements[id] = this.passiveEnhancementRank(id) + gain;
+        this.profile.passiveEnhancedAtRebirth[id] = rebirths;
+        if (D.skills[id].passiveEffect?.rate || D.skills[id].passiveEffect?.rebirthTable) out.push({ skill: D.skills[id], rank: this.passiveEnhancementRank(id) });
+      });
       return out;
     }
     // ジョブLvアップ時：到達Lvのパッシブを永久習得
@@ -889,10 +935,15 @@
     // ══ 転生（輪廻のアルカナ）══════════════════════════════════
     rebirthCount(jobId) { return (this.profile.jobRebirths || {})[jobId] || 0; }
     // 転生1回につき成長+10%。過去に得た永久成長値へは遡って掛からない（複利禁止）。
-    rebirthGrowthMultiplier(jobId) { return 1 + this.rebirthCount(jobId) * 0.10; }
+    rebirthGrowthMultiplier(jobId) { return 1 + this.rebirthCount(jobId) * (this.gb().rebirthGrowthPerCycle ?? 0.10); }
     arcanaCount() { return this.profile.inventory.rebirthArcana || 0; }
     isJobMastered(jobId) { return (this.profile.jobMastered || []).includes(jobId); }
     markJobMastered(jobId) { this.profile.jobMastered ||= []; if (!this.profile.jobMastered.includes(jobId)) this.profile.jobMastered.push(jobId); }
+    recordPhantomGrowth(jobId) {
+      this.profile.phantomGrowthRecords ||= {};
+      const record = this.profile.phantomGrowthRecords[jobId] ||= {}, growth = this.profile.jobGrowthGained?.[jobId] || {};
+      for (const [key, value] of Object.entries(growth)) record[key] = Math.max(Number(record[key]) || 0, Number(value) || 0);
+    }
     rebirthUnlocked() { return !!this.profile.flags.rebirthUnlocked; }
     canRebirth(jobId) {
       const lv = this.profile.jobs?.[jobId]?.level || 1, cap = D.jobLevelCap || 20;
@@ -901,16 +952,27 @@
       if (this.arcanaCount() < 1) return { ok: false, reason: '《輪廻のアルカナ》が必要です' };
       return { ok: true };
     }
-    // JOB Lv/EXPだけを初期化。永久成長値・パッシブ・武器学・MASTER履歴は保持する
+    // JOB Lv/EXPを初期化し、Lvアップで得た能力の20%だけを次の周回へ残す。
+    // 習得済みスキル・パッシブ・武器学・MASTER履歴は保持する。
     doRebirth(jobId) {
       const check = this.canRebirth(jobId); if (!check.ok) return check;
       this.profile.inventory.rebirthArcana = Math.max(0, this.arcanaCount() - 1);
       this.markJobMastered(jobId);
+      // 転生で通常JOBの保持能力を20%へ圧縮する前に、PHANTOM THIEFが盗んだ最高値を保存する。
+      this.recordPhantomGrowth(jobId);
+      const retention = Math.max(0, Math.min(1, this.gb().rebirthStatRetentionRate ?? .20));
+      const growth = this.profile.jobGrowthGained?.[jobId] || {};
+      for (const [key, value] of Object.entries(growth)) growth[key] = key === 'critBonus'
+        ? Number((Number(value || 0) * retention).toFixed(4))
+        : Math.floor(Number(value || 0) * retention);
+      if (this.profile.growthFraction) this.profile.growthFraction[jobId] = {};
       this.profile.jobs[jobId] = { level: 1, exp: 0 };
       this.profile.jobRebirths ||= {};
       this.profile.jobRebirths[jobId] = this.rebirthCount(jobId) + 1;
+      // Lv1習得PASSIVEは、転生直後のLv1到達時点で強化される。
+      const reinforcedPassives = this.reinforceJobPassives(jobId, 1);
       this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('job');
-      return { ok: true, count: this.rebirthCount(jobId) };
+      return { ok: true, count: this.rebirthCount(jobId), retention, reinforcedPassives };
     }
     // D2クリア報酬：双刃士を解放。初回のみ輪廻のアルカナ×1。
     grantMyrthiFirstReward() {
@@ -1004,7 +1066,7 @@
       const n = this.rebirthCount(jobId), check = this.canRebirth(jobId);
       const stars = n > 0 ? `<em class="rb-stars">${'★'.repeat(Math.min(n, 10))}${n > 10 ? ` ×${n}` : ''}</em>` : '';
       const mult = Math.round(this.rebirthGrowthMultiplier(jobId) * 100);
-      return `<div class="rebirth-box"><div class="rb-head"><small>REBIRTH</small><b>転生</b>${stars}</div><div class="rb-info"><span>転生回数</span><b>${n}</b><span>次回成長</span><b>${mult}%</b><span>所持アルカナ</span><b>${this.arcanaCount()}</b></div><button class="rb-btn" data-job-rebirth="${jobId}" ${check.ok ? '' : 'disabled'}>${check.ok ? '転生する' : check.reason}<span>${check.ok ? 'REBIRTH' : 'LOCKED'}</span></button></div>`;
+      return `<div class="rebirth-box"><div class="rb-head"><small>REBIRTH</small><b>転生</b>${stars}</div><div class="rb-info"><span>転生回数</span><b>${n}</b><span>次回成長</span><b>${mult}%</b><span>所持アルカナ</span><b>${this.arcanaCount()}</b></div><p class="rb-note">Lvアップで得た能力の20%を残してLv.1から再育成。習得済みPASSIVEは残り、再び習得Lvへ到達すると効果が少し強化されます。</p><button class="rb-btn" data-job-rebirth="${jobId}" ${check.ok ? '' : 'disabled'}>${check.ok ? '転生する' : check.reason}<span>${check.ok ? 'REBIRTH' : 'LOCKED'}</span></button></div>`;
     }
     specialItemHTML(reward) {
       if (!reward) return '';
@@ -2461,13 +2523,16 @@
     // カズのまかない代。全JOB共通で所持GOLDの30%。
     // ══ カズの売り物 ══════════════════════════════════════════
     // 価格は固定。所持金比だと「金を使い切ってから買う」が最適解になり、
-    // 所持0で0円になる抜け道もできるため。周回で押し切られるのは所持上限で防ぐ。
+    // 所持0で0円になる抜け道もできるため。周回で押し切られるのは累計購入上限で防ぐ。
     // 僧侶は料金操作ではなく、戦闘報酬GOLDと継戦回復を強みとする。
     shopStock() { return (D.shopItems || []).map(id => D.items[id]).filter(Boolean); }
     shopMaxStack(item) { return item?.maxStack ?? 9; }
+    shopPurchaseLimit(item) { const n = Number(item?.purchaseLimit); return Number.isFinite(n) && n >= 0 ? Math.floor(n) : Infinity; }
+    shopPurchaseCount(id) { return Math.max(0, Math.floor(Number(this.profile.shopPurchases?.[id]) || 0)); }
     canBuyItem(id) {
       const item = D.items[id]; if (!item?.price) return false;
       if (this.profile.gold < item.price) return false;
+      if (this.shopPurchaseCount(id) >= this.shopPurchaseLimit(item)) return false;
       return (this.profile.inventory[id] || 0) < this.shopMaxStack(item);
     }
     buyItem(id) {
@@ -2475,6 +2540,10 @@
       if (!this.canBuyItem(id)) { this.audio.sfx('ui'); return; }
       this.profile.gold -= item.price;
       this.profile.inventory[id] = (this.profile.inventory[id] || 0) + 1;
+      if (Number.isFinite(this.shopPurchaseLimit(item))) {
+        this.profile.shopPurchases ||= {};
+        this.profile.shopPurchases[id] = this.shopPurchaseCount(id) + 1;
+      }
       this.saveProfile(); this.audio.sfx('heal');
       this.renderMenuSummary(); this.renderMenuPanel('food');
     }
@@ -2826,8 +2895,8 @@
       this.saveProfile(); return levels;
     }
     isRecipeUnlocked(recipe) { if (!this.isPlayerContentVisible(recipe)) return false; if (!recipe.materialUnlockId) return true; return (this.profile.unlockedRecipes || []).includes(recipe.id); }
-    grantJobExp(amount) { const jobId = this.profile.currentJob, job = D.jobs[jobId], progress = this.profile.jobs[jobId], from = progress.level, learnedBefore = new Set(this.profile.learnedJobSkills || []); const raw = Math.max(0, amount) / 4 + (progress.expCarry || 0), gained = Math.floor(raw); progress.expCarry = raw - gained; progress.exp += gained; while (progress.level < D.jobLevelCap) { const need = this.jobExpNeeded(progress.level); if (!need || progress.exp < need) break; progress.exp -= need; progress.level++; } if (progress.level >= D.jobLevelCap) { progress.exp = 0; progress.expCarry = 0; this.markJobMastered(jobId); } const gainedLevels = progress.level - from; const statGain = gainedLevels > 0 ? this.applyJobLevelGrowth(jobId, gainedLevels) : null; const newPassives = gainedLevels > 0 ? this.grantJobPassives(jobId, progress.level) : []; this.syncSkillUnlocks(); this.checkAdvancedJobUnlocks(); const learned = (this.profile.learnedJobSkills || []).filter(id => !learnedBefore.has(id)); this.saveProfile(); return { jobId, jobName: job.name, jobNameEn: job.nameEn, exp: gained, from, to: progress.level, learned, statGain, newPassives }; }
-    jobResultHTML(result) { if (!result) return ''; return `<div class="job-result"><small>JOB EXPERIENCE</small><strong>${result.jobName}</strong><span>JEXP <b>+${result.exp}</b></span>${result.to > result.from ? `<h3>JOB LEVEL UP!　Lv.${result.from} → Lv.${result.to}</h3>` : ''}${result.learned.length ? `<div>${result.learned.map(id => `<b>NEW SKILL　${D.skills[id].name}</b>`).join('')}</div>` : ''}</div>`; }
+    grantJobExp(amount) { const jobId = this.profile.currentJob, job = D.jobs[jobId], progress = this.profile.jobs[jobId], from = progress.level, learnedBefore = new Set(this.profile.learnedJobSkills || []); const raw = Math.max(0, amount) / 4 + (progress.expCarry || 0), gained = Math.floor(raw); progress.expCarry = raw - gained; progress.exp += gained; while (progress.level < D.jobLevelCap) { const need = this.jobExpNeeded(progress.level); if (!need || progress.exp < need) break; progress.exp -= need; progress.level++; } if (progress.level >= D.jobLevelCap) { progress.exp = 0; progress.expCarry = 0; this.markJobMastered(jobId); } const gainedLevels = progress.level - from; const statGain = gainedLevels > 0 ? this.applyJobLevelGrowth(jobId, gainedLevels) : null; if (progress.level >= D.jobLevelCap) this.recordPhantomGrowth(jobId); const newPassives = gainedLevels > 0 ? this.grantJobPassives(jobId, progress.level) : []; const reinforcedPassives = gainedLevels > 0 ? this.reinforceJobPassives(jobId, progress.level) : []; this.syncSkillUnlocks(); this.checkAdvancedJobUnlocks(); const learned = (this.profile.learnedJobSkills || []).filter(id => !learnedBefore.has(id)); this.saveProfile(); return { jobId, jobName: job.name, jobNameEn: job.nameEn, exp: gained, from, to: progress.level, learned, statGain, newPassives, reinforcedPassives }; }
+    jobResultHTML(result) { if (!result) return ''; return `<div class="job-result"><small>JOB EXPERIENCE</small><strong>${result.jobName}</strong><span>JEXP <b>+${result.exp}</b></span>${result.to > result.from ? `<h3>JOB LEVEL UP!　Lv.${result.from} → Lv.${result.to}</h3>` : ''}${result.learned.length ? `<div>${result.learned.map(id => `<b>NEW SKILL　${D.skills[id].name}</b>`).join('')}</div>` : ''}${result.reinforcedPassives?.length ? `<div>${result.reinforcedPassives.map(row => `<b>PASSIVE UP　${row.skill.name}　段階${row.rank}</b>`).join('')}</div>` : ''}</div>`; }
     rewardHTML(reward, levels) {
       const drops = Object.entries(reward.drops); let html = `<div class="reward-summary"><span>EXP <b>+${reward.exp}</b></span><span>GOLD <b>+${reward.gold}</b></span></div>`;
       html += `<div class="drop-list"><h3>DROPS</h3>${drops.length ? drops.map(([id,n]) => { const i=D.items[id]; return `<p class="rarity-${i.rarity}">${i.name}<b>×${n}</b></p>`; }).join('') : '<p>ドロップなし</p>'}</div>`;
@@ -2949,7 +3018,7 @@
     }
     handleResultAction(action, target) { if (action === 'hideout') { this.showMenu('home'); return; } if (action === 'boss-now') { this.startBossByKey(target); return; } if (action === 'next-floor' || action === 'continue-floor') { this.currentDungeonId = this.floorDungeonId(target) || this.currentDungeonId; this.currentFloorId = target; $('#ren').classList.remove('victory'); this.startBattle(); } }
 
-    showMenu(panel = 'home') { if (this.player) this.persistVitals(); this.closeBattleMenu(); this.endAutoBattle(); if (panel === 'home' && this.activeMealBuffType()) { this.clearMealBuff(); this.saveProfile(); } const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderHideoutRouteStatus(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
+    showMenu(panel = 'home') { if (this.player) this.persistVitals(); if (panel === 'home' && this.profile.flags?.owRestoreJobPending) this.restoreNormalDungeonJob(true); this.closeBattleMenu(); this.endAutoBattle(); if (panel === 'home' && this.activeMealBuffType()) { this.clearMealBuff(); this.saveProfile(); } const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderHideoutRouteStatus(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
     hideoutRouteStatus() {
       const available = (D.dungeons || []).filter(dungeon => this.isDungeonUnlocked(dungeon.id));
       const dungeon = available[available.length - 1] || this.getDungeon('dungeon1');
@@ -2997,9 +3066,9 @@
       if (name === 'equipment') this.renderEquipmentPanel(panel);
       if (name === 'workshop') this.renderWorkshop(panel);
       if (name === 'food') { const activeMeal = this.activeMealBuff(), makanai = D.foodMenu?.buffs?.makanai, sapporo = D.foodMenu?.buffs?.sapporoMiso, taiwan = D.foodMenu?.buffs?.taiwanMazesoba, price = this.mealPriceFor('makanai'), activeNote = activeMeal ? `<p class="meal-active-note">現在の効果：<b>${activeMeal.name}</b><span>別の麺を食べると、現在の効果は上書きになります。</span></p>` : '', sapporoUnlocked = this.isMealUnlocked('sapporoMiso'), sapporoPoor = this.profile.gold < this.mealPriceFor('sapporoMiso'), sapporoCard = sapporoUnlocked ? `<section class="food-special"><header><b>NEW MENU</b><span>ZENACAD CLEAR</span></header><div><strong>${sapporo.name}</strong><em>次の潜入中、獲得GOLD +10%</em><small>${sapporo.description}</small><button class="eat-food" data-eat-food="sapporoMiso" ${sapporoPoor ? 'disabled' : ''}>${sapporoPoor ? 'GOLD不足' : `${sapporo.price} GOLD で食べる`}</button></div></section>` : '', taiwanUnlocked = this.isMealUnlocked('taiwanMazesoba'), taiwanPoor = this.profile.gold < this.mealPriceFor('taiwanMazesoba'), taiwanNew = !!this.profile.flags.taiwanMazesobaNew, taiwanCard = taiwanUnlocked ? `<section class="food-special ${taiwanNew ? 'food-spark-new' : ''}"><header><b>${taiwanNew ? 'KAZU’S SPARK' : 'SPECIAL MENU'}</b><span>${taiwanNew ? 'NEW RECIPE' : 'EXPERIENCE BOOST'}</span></header><div><strong>${taiwan.name}</strong><em>次の潜入中、獲得EXP +10%</em><small>${taiwan.description}</small><button class="eat-food" data-eat-food="taiwanMazesoba" ${taiwanPoor ? 'disabled' : ''}>${taiwanPoor ? 'GOLD不足' : `${taiwan.price} GOLD で食べる`}</button></div></section>` : '', coming = (D.foodMenu?.comingSoon || []).map(item => `<article class="food-coming-card" aria-disabled="true"><i aria-hidden="true"></i><b>${item.name}</b><span>COMING SOON</span></article>`).join('');
-        // 売り物。固定価格・所持上限つき。僧侶の割引はまかない専用でここには効かない。
-        const shop = this.shopStock().map(it => { const have = this.profile.inventory[it.id] || 0, max = this.shopMaxStack(it), isFull = have >= max, poor = this.profile.gold < it.price; const eff = it.effect?.hp ? `HP +${it.effect.hp}` : it.effect?.mp ? `MP +${it.effect.mp}` : ''; return `<article class="shop-card"><div class="shop-info"><b>${it.name}</b><em>${eff}</em><small>${it.description}</small></div><div class="shop-buy"><span class="shop-price">${it.price} G</span><span class="shop-have">所持 ${have} / ${max}</span><button data-buy-item="${it.id}" ${isFull || poor ? 'disabled' : ''}>${isFull ? '上限' : poor ? 'GOLD不足' : '買う'}</button></div></article>`; }).join('');
-        panel.innerHTML = `<small>KAZU'S SPECIAL</small><h2>カズのまかない</h2>${activeNote}<div class="food-panel"><div class="food-bowl" aria-hidden="true"></div><div class="food-copy"><strong>${makanai.name}</strong><span>${makanai.description}</span><em>料金：所持GOLDの30％　<b>${price.toLocaleString('ja-JP')} GOLD</b></em><button class="eat-food" data-eat-food="makanai">まかないを食べる</button></div></div>${sapporoCard}${taiwanCard}<section class="food-shop"><header><b>持ち帰り</b><span>TAKEOUT</span></header><p class="shop-note">ダンジョンへ持ち込める携行食。所持できる数には限りがある。</p><div class="shop-grid">${shop}</div></section><section class="food-coming"><header><b>NEXT MENU</b><span>COMING SOON</span></header><div>${coming}</div></section>`;
+        // 売り物。所持数とは別に、セーブへ累計購入数を保持する。食べても在庫は復活しない。
+        const shop = this.shopStock().map(it => { const have = this.profile.inventory[it.id] || 0, max = this.shopMaxStack(it), bought = this.shopPurchaseCount(it.id), limit = this.shopPurchaseLimit(it), soldOut = bought >= limit, isFull = have >= max, poor = this.profile.gold < it.price; const eff = it.effect?.hp ? `HP +${it.effect.hp}` : it.effect?.mp ? `MP +${it.effect.mp}` : ''; return `<article class="shop-card${soldOut ? ' sold-out' : ''}"><div class="shop-info"><b>${it.name}</b><em>${eff}</em><small>${it.description}</small></div><div class="shop-buy"><span class="shop-price">${it.price} G</span><span class="shop-have">所持 ${have} / ${max}</span><span class="shop-have">購入 ${bought} / ${Number.isFinite(limit) ? limit : '∞'}</span><button data-buy-item="${it.id}" ${soldOut || isFull || poor ? 'disabled' : ''}>${soldOut ? '売り切れ' : isFull ? '所持上限' : poor ? 'GOLD不足' : '買う'}</button></div></article>`; }).join('');
+        panel.innerHTML = `<small>KAZU'S SPECIAL</small><h2>カズのまかない</h2>${activeNote}<div class="food-panel"><div class="food-bowl" aria-hidden="true"></div><div class="food-copy"><strong>${makanai.name}</strong><span>${makanai.description}</span><em>料金：所持GOLDの30％　<b>${price.toLocaleString('ja-JP')} GOLD</b></em><button class="eat-food" data-eat-food="makanai">まかないを食べる</button></div></div>${sapporoCard}${taiwanCard}<section class="food-shop"><header><b>持ち帰り</b><span>TAKEOUT</span></header><p class="shop-note">各商品は累計5個まで。使っても購入枠は戻らず、5個購入すると売り切れになります。</p><div class="shop-grid">${shop}</div></section><section class="food-coming"><header><b>NEXT MENU</b><span>COMING SOON</span></header><div>${coming}</div></section>`;
         const rebirthTests = (D.foodMenu?.testItems || []).map(entry => {
           const item = D.items[entry.id], have = this.profile.inventory[entry.id] || 0, poor = this.profile.gold < entry.price;
           if (!item) return '';
@@ -3061,7 +3130,7 @@
       const adv = [...new Set([...(D.advancedJobIds || []), 'dualBlade'])].filter(id => this.isJobUnlocked(id));
       const special = ['phantomThief'].filter(id => this.isJobUnlocked(id));
       // 解放判定は profile.unlockedJobs が唯一の情報源。初期ジョブを固定しない。
-      const card = id => { const j = D.jobs[id]; if (!j) return ''; const p = this.profile.jobs[id] || { level: 1 }, isAdv = adv.includes(id), avail = isAdv ? this.isAdvancedJobUnlocked(id) : this.isJobUnlocked(id), isCur = id === currentId; return `<button class="jcard${isCur ? ' cur' : ''}${avail ? '' : ' locked'}" data-job-detail="${id}"><div class="jcard-name">${j.name}</div><div class="jcard-lv">${avail ? `Lv.${p.level}` : 'LOCKED'}</div>${isCur ? '<em class="jcard-cur">●</em>' : ''}</button>`; };
+      const card = id => { const j = D.jobs[id]; if (!j) return ''; const p = this.profile.jobs[id] || { level: 1 }, isAdv = adv.includes(id), avail = isAdv ? this.isAdvancedJobUnlocked(id) : this.isJobUnlocked(id), isCur = id === currentId; return `<button class="jcard${isCur ? ' cur' : ''}${avail ? '' : ' locked'}" data-job-detail="${id}"><div class="jcard-name">${j.name}</div><div class="jcard-lv">${avail ? `Lv.${p.level}` : 'LOCKED'}</div></button>`; };
       // ダンジョン名はデータから引く。名前を変えても文言が追従する。
       const d1Name = this.getDungeon('dungeon1')?.name || 'ダンジョン1';
       const notice = this.isJobUnlocked('magicKnight') ? '' : `<p class="job-lock-notice">《${d1Name}》をクリアして《魔奏士の証》を入手すると、残りの基本JOBと魔奏士が解放されます。</p>`;
@@ -3325,17 +3394,38 @@
     startBossByKey(key) {
       const defeatedId = key === 'zenakado' ? 'zenacad' : key;
       if (this.isBossDefeated(defeatedId) && !this.rematchProgress(key).ready) return;
+      this.restoreNormalDungeonJob();
       if (key === 'myrthi') { this.currentDungeonId = 'dungeon2'; this.startMyrthiBoss(); return; }
       if (key === 'versicrell') { if (this.isBossDefeated('versicrell')) return; this.currentDungeonId = 'dungeon3'; this.startVersicrellBoss(); return; }
       if (key === 'seripes') { this.currentDungeonId = 'dungeon3'; this.startSeripesBoss(); return; }
       if (key === 'zenakado') { this.currentDungeonId = 'dungeon1'; this.startBossEncounter('zenakado', 'zenakado'); return; }
       this.startBossEncounter();
     }
-    changeJob(id) {
+    switchJobState(id, render = false) {
       const isAdv = (D.advancedJobIds || []).includes(id);
-      if (!D.jobs[id] || id === this.profile.currentJob) return;
-      if (isAdv && !this.isAdvancedJobUnlocked(id)) return;
-      if (!isAdv && !this.isJobUnlocked(id)) return; const before = this.totalStats(), vitals = this.storedVitals(before); this.profile.currentJob = id; this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); const after = this.totalStats(); this.profile.currentVitals = { hp: Math.min(vitals.hp, after.maxHp), mp: Math.min(vitals.mp, after.maxMp) }; if (this.player) { this.player.stats = after; this.player.hp = Math.min(this.player.hp, after.maxHp); this.player.mp = Math.min(this.player.mp, after.maxMp); } this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('job');
+      if (!D.jobs[id] || id === this.profile.currentJob) return false;
+      if (isAdv && !this.isAdvancedJobUnlocked(id)) return false;
+      if (!isAdv && !this.isJobUnlocked(id)) return false;
+      const before = this.totalStats(), vitals = this.storedVitals(before); this.profile.currentJob = id;
+      if (id !== 'phantomThief') this.profile.lastNormalJob = id;
+      this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); const after = this.totalStats();
+      this.profile.currentVitals = { hp: Math.min(vitals.hp, after.maxHp), mp: Math.min(vitals.mp, after.maxMp) };
+      if (this.player) { this.player.stats = after; this.player.hp = Math.min(this.player.hp, after.maxHp); this.player.mp = Math.min(this.player.mp, after.maxMp); }
+      this.saveProfile();
+      if (render) { this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('job'); }
+      return true;
+    }
+    changeJob(id) { return this.switchJobState(id, true); }
+    restoreNormalDungeonJob(force = false) {
+      if (this.profile.currentJob !== 'phantomThief' && !force) return false;
+      const target = [this.profile.otherWorldReturnJob, this.profile.lastNormalJob, this.profile.initialJob, 'mage']
+        .find(id => id && id !== 'phantomThief' && D.jobs[id] && this.isJobUnlocked(id));
+      if (!target) return false;
+      const changed = this.switchJobState(target, false);
+      this.profile.otherWorldReturnJob = null;
+      this.profile.flags ||= {}; this.profile.flags.owRestoreJobPending = false;
+      this.saveProfile();
+      return changed;
     }
     toggleActiveSkill(id) {
       const learned = new Set(this.learnedActiveSkillIds()); if (!learned.has(id)) return; const active = [...(this.profile.activeSkills || [])], index = active.indexOf(id); if (index >= 0) active.splice(index, 1); else { if (active.length >= 4) return; active.push(id); } this.profile.activeSkills = active; this.saveProfile(); this.audio.sfx('ui'); this.renderMenuPanel('job');
@@ -3378,7 +3468,10 @@
             : '腹、満たしとき。装備のためにも踏ん張りや、ほんま。';
       setTimeout(() => this.renderKazuBubble(line), 0);
     }
-    useMenuItem(id) { const item = D.items[id], stats = this.totalStats(), vitals = this.storedVitals(stats), key = item?.effect?.hp ? 'hp' : item?.effect?.mp ? 'mp' : null, maxKey = key === 'hp' ? 'maxHp' : 'maxMp'; if (!key || !(this.profile.inventory[id] > 0) || vitals[key] >= stats[maxKey]) return; vitals[key] = Math.min(stats[maxKey], vitals[key] + item.effect[key]); this.profile.inventory[id]--; this.profile.currentVitals = vitals; this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('items'); }
+    useMenuItem() {
+      // 回復アイテムは戦闘内のアイテムコマンド専用。拠点回復による低階層周回を防ぐ。
+      this.audio.sfx('ui');
+    }
     // ══ 工房ナビゲーション ════════════════════════════════════
     // 第1階層＝製作／強化／分解／素材（4つなので横スクロールが起きない）
     // 第2階層＝製作なら武器・防具・ボス装備、強化なら武器・防具
@@ -3817,13 +3910,14 @@
       const list = owned.filter(([id]) => { const it = D.items[id]; if (!it) return false; const w = D.weapons[id]; if (this.itemTab === 'consumable') return it.category === 'consumable'; if (this.itemTab === 'weapon') return !!w && w.weaponType === sub; return it.category === 'equipment' && !w && it.slot === sub; });
       const rows = list.map(([id, n]) => {
         const it = D.items[id], w = D.weapons[id];
-        // アルカナ（arcanaStat）は回復アイテムではないが「使う」で恒久強化するので常に押せる
-        if (this.itemTab === 'consumable') { const usable = it.effect?.hp || it.effect?.mp || it.arcanaStat, full = it.arcanaStat ? false : (it.effect?.hp ? vitals.hp >= stats.maxHp : it.effect?.mp ? vitals.mp >= stats.maxMp : true); return `<div class="item-row rarity-${it.rarity}"><div><b>${it.name}</b><small>${it.description}</small></div><strong>×${n}</strong>${usable ? `<button ${it.arcanaStat ? `data-use-arcana="${id}"` : `data-use-item="${id}"`} ${full ? 'disabled' : ''}>${full ? '満タン' : '使う'}</button>` : ''}</div>`; }
+        // アルカナは恒久強化用なので拠点で使用可。HP/MP回復アイテムは戦闘内だけで使える。
+        if (this.itemTab === 'consumable') { const recover = it.effect?.hp || it.effect?.mp; return `<div class="item-row rarity-${it.rarity}"><div><b>${it.name}</b><small>${it.description}</small></div><strong>×${n}</strong>${it.arcanaStat ? `<button data-use-arcana="${id}">使う</button>` : recover ? '<button disabled>戦闘中のみ</button>' : ''}</div>`; }
         const equipped = Object.values(this.profile.equipment).includes(id), slot = w ? 'rightHand' : it.slot;
         return `<div class="item-row rarity-${it.rarity}${equipped ? ' item-equipped' : ''}"><div><b>${it.name}${this.enchantSuffix(id)}${equipped ? '<mark class="eq-badge">装備中</mark>' : ''}</b><small>${this.bonusText(id)}</small></div><strong>×${n}</strong><button data-equip-item="${id}" data-equip-slot="${slot}" ${equipped ? 'disabled' : ''}>${equipped ? '装備中' : '装備'}</button></div>`;
       }).join('');
       const emptyMsg = this.itemTab === 'consumable' ? '消費アイテムなし' : this.itemTab === 'weapon' ? 'この種類の武器なし' : 'この部位の防具なし';
-      panel.innerHTML = `<small>INVENTORY</small><h2>アイテム</h2><div class="inventory-screen"><div class="inventory-vitals"><b>HP ${vitals.hp} / ${stats.maxHp}</b><b>MP ${vitals.mp} / ${stats.maxMp}</b></div><div class="item-tabs">${mainTabs}</div><div class="inventory-subtab-area">${subTabs}</div><div class="inventory-list">${rows || `<p class="item-empty">${emptyMsg}</p>`}</div></div>`;
+      const useNote = this.itemTab === 'consumable' ? '<p class="inventory-use-note">拠点では回復アイテムを使用できません。戦闘中の「アイテム」から使用してください。</p>' : '';
+      panel.innerHTML = `<small>INVENTORY</small><h2>アイテム</h2><div class="inventory-screen"><div class="inventory-vitals"><b>HP ${vitals.hp} / ${stats.maxHp}</b><b>MP ${vitals.mp} / ${stats.maxMp}</b></div><div class="item-tabs">${mainTabs}</div><div class="inventory-subtab-area">${subTabs}</div><div class="inventory-list">${useNote}${rows || `<p class="item-empty">${emptyMsg}</p>`}</div></div>`;
     }
     armorEnchantContent() {
       const et = D.enchantTable, enchants = this.profile.armorEnchants || {};

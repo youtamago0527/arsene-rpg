@@ -148,6 +148,10 @@ window.ARSENE_DATA = {
     // パッシブは転生1回ごとに「基本値 × この割合」ずつ強くなる。
     // 個別に rebirthStep / max を書けばそちらが優先される。
     passiveRebirthStepRate: 0.4,
+    // 転生時、直前までにそのJOBのLvアップで得た能力のうち残す割合。
+    rebirthStatRetentionRate: 0.20,
+    // 転生1回につき、次のLvアップで得られるJOB成長量を10%増やす。
+    rebirthGrowthPerCycle: 0.10,
     // キャラクター固有特性 "small" が何倍になるか（characters.json 側は記号のみ保持）
     traitBonusScale: { small: { weaponExp: 1.2, spark: 1.5, mpGrowth: 1.3, heal: 1.3, critical: 0.03 } },
 
@@ -1035,8 +1039,8 @@ window.ARSENE_DATA = {
     // カズが仕入れているカップ麺。GOLDで買えて、所持品からも戦闘中からも使える。
     // 価格は固定。所持金比にすると「金を使い切ってから買う」が最適解になり、
     // 所持0なら0円で買えてしまうため。周回対策は価格ではなく所持上限で行う。
-    cupRamenMiso: { id: 'cupRamenMiso', name: 'カップラーメン味噌', nameEn: 'CUP RAMEN MISO', category: 'consumable', rarity: 'common', price: 70, maxStack: 5, effect: { hp: 45 }, description: 'カズが箱で仕入れている味噌味。湯を注いで3分、HPが45回復する。' },
-    cupRamenShio: { id: 'cupRamenShio', name: 'カップラーメン塩', nameEn: 'CUP RAMEN SHIO', category: 'consumable', rarity: 'common', price: 90, maxStack: 5, effect: { mp: 30 }, description: 'あっさり塩味。飲み干すと頭が冴え、MPが30回復する。' },
+    cupRamenMiso: { id: 'cupRamenMiso', name: 'カップラーメン味噌', nameEn: 'CUP RAMEN MISO', category: 'consumable', rarity: 'common', price: 70, maxStack: 5, purchaseLimit: 5, effect: { hp: 45 }, description: 'カズが箱で仕入れている味噌味。湯を注いで3分、HPが45回復する。' },
+    cupRamenShio: { id: 'cupRamenShio', name: 'カップラーメン塩', nameEn: 'CUP RAMEN SHIO', category: 'consumable', rarity: 'common', price: 90, maxStack: 5, purchaseLimit: 5, effect: { mp: 30 }, description: 'あっさり塩味。飲み干すと頭が冴え、MPが30回復する。' },
     manaPotion: { id: 'manaPotion', name: '魔力回復薬', category: 'consumable', rarity: 'common', description: 'MPを20回復する。', effect: { mp: 20 } },
     mageStaff: { id: 'mageStaff', name: '魔導士の杖', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '青い魔力を導く魔導士の基本杖。' },
     phantomSword: { id: 'phantomSword', name: '青影の剣', category: 'equipment', slot: 'rightHand', rarity: 'common', description: '青い残光を引く怪盗の細身剣。' },
@@ -1412,7 +1416,7 @@ window.ARSENE_DATA = {
       id: 'zenakado', name: 'ゼナカド', enName: 'ZENAKADO — THE SOLOIST', kind: 'boss', encounter: 1,
       title: '独奏卿', element: '闇', weaknesses: ['光', '火'],
       sprite: 'assets/enemy-characters/zenakado/battle-idle-v3.png',
-      stats: { maxHp: 320, atk: 14, def: 8, mag: 13, mnd: 8, dex: 12, agi: 12, spd: 12 },
+      stats: { maxHp: 640, atk: 28, def: 16, mag: 26, mnd: 16, dex: 24, agi: 24, spd: 24 },
       exp: 150, gold: { min: 100, max: 150 },
       dropTable: [
         { itemId: 'cadenza_fragment', chance: 1.0 }, { itemId: 'zenacad_core', chance: .45 },
@@ -1871,7 +1875,7 @@ window.ARSENE_DATA = {
       title: '《銀環奏士》', role: 'MID BOSS / DEFENSE RHYTHM', roleDescription: '物理・魔法防御を楽章ごとに切り替える。BREAKを見極めて攻める。',
       element: '音 / 銀環', weaknesses: ['BREAK'], resistances: ['音'],
       sprite: 'assets/enemy-characters/versicrell/versicrell-form1-v1.png', spriteClass: 'versicrell-sprite versicrell-form1',
-      stats: { maxHp: 1500, atk: 45, def: 42, mag: 48, mnd: 38, dex: 54, agi: 22, spd: 22 },
+      stats: { maxHp: 3000, atk: 90, def: 84, mag: 96, mnd: 76, dex: 108, agi: 44, spd: 44 },
       exp: 360, gold: { min: 210, max: 300 },
       dropTable: [{ itemId: 'voidEssence', chance: .50 }, { itemId: 'phantomCore', chance: .60 }, { itemId: 'parentGiftGuitar', chance: .006 }],
       music: '音楽系/ダンジョン/ヴェルシクレルのテーマ1.mp3',
@@ -1879,7 +1883,7 @@ window.ARSENE_DATA = {
       form2: {
         name: '《銀環異奏体》ヴェルシクレル', title: 'GUITAR AXE // FALSE CADENCE',
         sprite: 'assets/enemy-characters/versicrell/versicrell-form2-v1.png', spriteClass: 'versicrell-sprite versicrell-form2',
-        stats: { maxHp: 2200, atk: 62, def: 50, mag: 58, mnd: 46, dex: 66, agi: 28, spd: 27 }
+        stats: { maxHp: 4400, atk: 124, def: 100, mag: 116, mnd: 92, dex: 132, agi: 56, spd: 54 }
       },
       specialAttacks: {
         noiseChord: { id: 'noiseChord', name: 'ノイズコード', kind: 'magic', debuffChance: .25 },
@@ -1896,7 +1900,7 @@ window.ARSENE_DATA = {
       title: '第三奏卿《不落の反奏騎士》', role: 'BOSS / DEFENSE & REPRISE', roleDescription: '超耐久・防御・反奏型。攻撃タイプを切り替えて攻略する。',
       element: '聖 / 反奏', weaknesses: ['無属性'], resistances: ['物理', '魔'],
       sprite: 'assets/enemy-characters/seripes/seripes-battle-cutout.png', spriteClass: 'seripes-sprite',
-      stats: { maxHp: 7600, atk: 72, def: 106, mag: 68, mnd: 94, dex: 52, agi: 30, spd: 30 },
+      stats: { maxHp: 15200, atk: 144, def: 212, mag: 136, mnd: 188, dex: 104, agi: 60, spd: 60 },
       exp: 1200, gold: { min: 780, max: 1040 }, dropTable: [{ itemId: 'voidEssence', chance: 1.0 }, { itemId: 'phantomCore', chance: .75 }, { itemId: 'darkIron', chance: .90 }],
       specialAttacks: {
         repriseBlade: { id: 'repriseBlade', name: 'リプライズ・ブレイド', kind: 'physical', accuracyModifier: 0.05 },
@@ -1917,7 +1921,7 @@ window.ARSENE_DATA = {
       id: 'myrthi', name: 'ミルティ', enName: 'MYRTHI', kind: 'boss', encounter: 1,
       title: '黒紅の双刃戦姫', element: '物理', weaknesses: ['魔法'],
       sprite: 'assets/enemy-characters/myrthi/battle-idle-v1.jpg', spriteClass: 'myrthi-sprite',
-      stats: { maxHp: 880, atk: 50, def: 25, mag: 30, mnd: 26, dex: 30, agi: 26, spd: 26 },
+      stats: { maxHp: 1760, atk: 100, def: 50, mag: 60, mnd: 52, dex: 60, agi: 52, spd: 52 },
       exp: 200, gold: { min: 150, max: 200 },
       dropTable: [
         { itemId: 'myrthi_fragment', chance: 1.0 },

@@ -36,6 +36,9 @@
     if (f.owBattleCheckpoint === undefined) f.owBattleCheckpoint = null;
     if (f.owResumePending == null) f.owResumePending = false;
     if (f.owInterferenceRefundNotice == null) f.owInterferenceRefundNotice = false;
+    if (f.owRestoreJobPending == null) f.owRestoreJobPending = false;
+    p.lastNormalJob ||= p.currentJob !== 'phantomThief' ? p.currentJob : (p.initialJob || 'mage');
+    if (p.otherWorldReturnJob === undefined) p.otherWorldReturnJob = null;
     // 異世界実装前にゼナカドを撃破した旧セーブを自動移行する。
     if (p.bossDefeated?.zenacad || f.magicKnightProofObtained || f.zenakadoScoreClaimed) {
       f.phantomThiefUnlocked = true;
@@ -81,7 +84,8 @@
       phantomThiefUnlocked: false, otherWorldUnlocked: false, phantomTutorialViewed: false, phantomMascotGuided: false,
       otherWorldNewSeen: false, pendingPhantomNoise: false,
       owInterferenceMax: D().otherWorld?.interferenceMax ?? 2, owUsedToday: 0, owLastDate: '',
-      owEntryInProgress: null, owBattleCheckpoint: null, owResumePending: false, owInterferenceRefundNotice: false
+      owEntryInProgress: null, owBattleCheckpoint: null, owResumePending: false, owInterferenceRefundNotice: false,
+      owRestoreJobPending: false
     });
     p.jobs ||= {};
     for (const id of Object.keys(D().jobs || {})) p.jobs[id] ||= { level: 1, exp: 0 };
@@ -229,6 +233,12 @@
   // 曜日と異界干渉力
   // ════════════════════════════════════════════════════════════
   P.owCfg = function () { return D().otherWorld || {}; };
+  // 選択した曜日ダンジョンの設定を共通設定へ重ねる。旧セーブのdungeonIdも共通設定へ安全に戻す。
+  P.owRunCfg = function (dungeonId = this.owRun?.dungeonId) {
+    const base = this.owCfg();
+    const selected = (base.dungeons || []).find(d => d.id === dungeonId);
+    return selected ? { ...base, ...selected, dungeons: base.dungeons } : base;
+  };
   P.owDateKey = function () { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
   P.owTodayArcana = function () {
     const day = new Date().getDay();
@@ -255,6 +265,7 @@
     f.owBattleCheckpoint = null;
     f.owResumePending = false;
     f.owLastEntryOutcome = outcome;
+    f.owRestoreJobPending = true;
     this.saveProfile();
   };
   P.owSaveCheckpoint = function (stage = 'battle') {
@@ -568,7 +579,8 @@
         <span>${esc(item?.description || '')}</span></div>
       <div class="ow-info">
         <div><span>1周の戦闘数</span><b>${cfg.battlesPerRun ?? 10} 戦</b></div>
-        <div><span>BOSS撃破報酬</span><b>本日のアルカナ ×${cfg.bossArcanaCount ?? 1}（確定）</b></div>
+        <div><span>難易度</span><b>初級 ／ 中級</b></div>
+        <div><span>中級報酬</span><b>アイテム数 ×2 ／ BOSS ×2確定</b></div>
         <div><span>雑魚ドロップ</span><b>${((cfg.zakoArcanaRate ?? 0.01) * 100).toFixed(1)}%</b></div>
         <div><span>経験値・GOLD</span><b>なし</b></div>
       </div>
@@ -587,10 +599,13 @@
   };
 
   P.renderOwDungeonSelect = function (panel) {
-    const cfg = this.owCfg(), inf = this.owInterference(), arcana = this.owTodayArcana();
-    const cards = this.owDungeonChoices().map(d => `<button class="ow-dungeon-card active" data-lenny="enter" data-ow-dungeon="${esc(d.id)}">
+    const inf = this.owInterference(), arcana = this.owTodayArcana();
+    const cards = this.owDungeonChoices().map(d => {
+      const cfg = this.owRunCfg(d.id), reward = cfg.bossArcanaCount ?? 1, mult = cfg.itemRewardMultiplier ?? 1;
+      return `<button class="ow-dungeon-card active" data-lenny="enter" data-ow-dungeon="${esc(d.id)}">
       <i class="ow-dungeon-thumb" style="background-image:url('${esc(d.background || this.owTodayBackground())}')"></i><div><small>${esc(d.nameEn || 'OTHER WORLD')}</small><strong>${esc(d.name)}</strong>
-      <span>${esc(d.description || '')}</span><em>${cfg.battlesPerRun ?? 10} BATTLES ／ ${esc(arcana?.name || '本日のアルカナ')}</em></div></button>`).join('');
+      <span>${esc(d.description || '')}</span><em>${cfg.battlesPerRun ?? 10} BATTLES ／ ${esc(arcana?.name || '本日のアルカナ')} ×${reward}確定${mult > 1 ? ` ／ ITEM ×${mult}` : ''}</em></div></button>`;
+    }).join('');
     panel.innerHTML = `<button class="panel-home" data-menu="lenny">レニーへ戻る</button>
       <small>RIFT DESTINATION</small><h2>異世界ダンジョン選択</h2>
       <div class="ow-power"><span>異界干渉力</span><b>${inf.left} / ${inf.max}</b></div>
@@ -618,7 +633,7 @@
   };
 
   P.owSelectDungeon = function (dungeonId = null) {
-    if (this.isPhantomThief()) { this.owEnter(dungeonId); return; }
+    if (this.isPhantomThief()) { this.profile.otherWorldReturnJob ||= this.profile.lastNormalJob || this.profile.initialJob || 'mage'; this.saveProfile(); this.owEnter(dungeonId); return; }
     this.pendingOwDungeonId = dungeonId || this.owDungeonChoices()[0]?.id || null;
     this.renderMenuPanel('otherworld-job-confirm');
   };
@@ -640,7 +655,12 @@
   P.confirmOwJobChange = function () {
     const dungeonId = this.pendingOwDungeonId;
     if (!this.isJobUnlocked('phantomThief')) { this.renderMenuPanel('otherworld-select'); return; }
-    this.changeJob('phantomThief');
+    if (!this.isPhantomThief()) {
+      this.profile.otherWorldReturnJob = this.profile.currentJob;
+      this.profile.lastNormalJob = this.profile.currentJob;
+      this.profile.flags.owRestoreJobPending = false;
+    }
+    this.switchJobState('phantomThief', false);
     this.pendingOwDungeonId = null;
     this.owEnter(dungeonId);
   };
@@ -664,13 +684,17 @@
     if (!this.isPhantomThief()) { this.owSelectDungeon(dungeonId); return; }
     const inf = this.owInterference();
     if (inf.left <= 0) return;
-    const cfg = this.owCfg();
     const selected = this.owDungeonChoices().find(d => d.id === dungeonId) || this.owDungeonChoices()[0];
+    const cfg = this.owRunCfg(selected?.id);
     this.profile.flags.owUsedToday = (this.profile.flags.owUsedToday || 0) + 1;
     this.profile.flags.owEntryInProgress = { date: this.owDateKey(), dungeonId: selected?.id || cfg.id, startedAt: Date.now() };
     this.profile.flags.owInterferenceRefundNotice = false;
     this.saveProfile();
-    this.owRun = { dungeonId: selected?.id || cfg.id, background: selected?.background || this.owTodayBackground(), battle: 1, total: cfg.battlesPerRun ?? 10, arcana: 0, rebirth: 0, gold: 0, mats: {} };
+    this.owRun = {
+      dungeonId: selected?.id || cfg.id, difficulty: cfg.difficulty || 'beginner',
+      background: selected?.background || this.owTodayBackground(), battle: 1, total: cfg.battlesPerRun ?? 10,
+      arcana: 0, rebirth: 0, gold: 0, mats: {}
+    };
     this.owSaveCheckpoint('transition');
     await this.audio.playTrack(this.otherWorldMusic || this.bossMusic);
     await this.playOwTransition();
@@ -680,7 +704,7 @@
   P.owIsBossBattle = function () { return this.owRun && this.owRun.battle >= this.owRun.total; };
 
   P.startOwBattle = function () {
-    const cfg = this.owCfg(), run = this.owRun;
+    const run = this.owRun, cfg = this.owRunCfg(run?.dungeonId);
     const stats = this.totalStats(), vitals = this.storedVitals(stats);
     this.player = { stats, hp: vitals.hp, mp: vitals.mp, inventory: this.profile.inventory, buffs: {}, cooldowns: {} };
     if (this.owIsBossBattle()) {
@@ -728,7 +752,7 @@
     this.flashTitle('CLEAR', '異界の歪みを払った');
     $('#ren').classList.add('victory');
     await this.battleSleep(900);
-    const cfg = this.owCfg(), run = this.owRun, todayId = this.owTodayArcana()?.id;
+    const run = this.owRun, cfg = this.owRunCfg(run?.dungeonId), todayId = this.owTodayArcana()?.id;
     const got = [];
     if (this.battleMode === 'owBoss') {
       const n = cfg.bossArcanaCount ?? 1;
@@ -742,7 +766,8 @@
     }
     // 雑魚：1体ごとに低確率で本日のアルカナ
     let n = 0;
-    for (const e of this.enemies) if (Math.random() < (cfg.zakoArcanaRate ?? 0.01)) n++;
+    const dropCount = Math.max(1, Number(cfg.arcanaDropCount) || 1);
+    for (const e of this.enemies) if (Math.random() < (cfg.zakoArcanaRate ?? 0.01)) n += dropCount;
     if (n && todayId) { this.giveArcana(todayId, n); run.arcana += n; got.push(`${D().items[todayId].name} ×${n}`); }
     this.persistVitals(); this.updateHUD();
     this.owShowStep(got);
@@ -787,7 +812,7 @@
   };
 
   P.owRollChests = function () {
-    const table = this.owCfg().chestTable || [];
+    const table = this.owRunCfg().chestTable || [];
     const total = table.reduce((s, t) => s + t.weight, 0);
     return [0, 1, 2].map(() => {
       let r = Math.random() * total;
@@ -798,14 +823,16 @@
 
   P.owOpenChest = function (idx) {
     const t = (this.owChestPicks || [])[idx]; if (!t) return;
-    const run = this.owRun, lines = [];
+    const run = this.owRun, cfg = this.owRunCfg(run?.dungeonId), lines = [];
+    const itemMultiplier = Math.max(1, Number(cfg.itemRewardMultiplier) || 1);
     if (t.kind === 'gold') {
       const g = roll(t.min, t.max); this.profile.gold += g; run.gold += g; lines.push(`GOLD +${g}`);
     } else if (t.kind === 'arcana') {
       const id = this.owTodayArcana()?.id;
-      if (id) { this.giveArcana(id, t.count); run.arcana += t.count; lines.push(`${D().items[id].name} ×${t.count}`); }
+      const n = Math.max(1, Number(t.count) || 1) * itemMultiplier;
+      if (id) { this.giveArcana(id, n); run.arcana += n; lines.push(`${D().items[id].name} ×${n}`); }
     } else {
-      const n = roll(t.min, t.max);
+      const n = roll(t.min, t.max) * itemMultiplier;
       this.profile.inventory[t.itemId] = (this.profile.inventory[t.itemId] || 0) + n;
       run.mats[t.itemId] = (run.mats[t.itemId] || 0) + n;
       lines.push(`${D().items[t.itemId]?.name || t.itemId} ×${n}`);
