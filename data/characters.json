@@ -27,77 +27,19 @@
     "selectPortrait": "assets/ui/character-select/ren-face-v1.webp",
     "portraitMode": "cutout",
     "imageFocus": "50% 20%",
-    "battleSprite": "assets/playable-characters/ren/battle/ren-back-idle-v1.png",
+    "battleSprite": "assets/playable-characters/ren/battle/ren-fixed-v1.png",
     "battleSpritesByWeaponType": {
       "default": {
-        "src": "assets/playable-characters/ren/battle/ren-back-idle-v1.png",
-        "backgroundSize": "auto 178%",
-        "backgroundPosition": "center 12%",
-        "left": "-20px",
-        "bottom": "-52px"
-      },
-      "sword": null,
-      "staff": {
-        "src": "assets/playable-characters/ren/battle/ren-staff-v2.png",
-        "backgroundSize": "auto 158%",
+        "src": "assets/playable-characters/ren/battle/ren-fixed-v1.png",
+        "backgroundSize": "auto 134%",
         "backgroundPosition": "52% 0%",
-        "left": "-38px",
-        "bottom": "-50px",
-        "width": "258px",
+        "left": "-42px",
+        "bottom": "-52px",
+        "width": "280px",
         "height": "278px",
         "blendMode": "normal",
-        "chromaKey": "black"
-      },
-      "martial": {
-        "src": "assets/playable-characters/ren/battle/ren-martial-v2.png",
-        "backgroundSize": "auto 154%",
-        "backgroundPosition": "54% 0%",
-        "left": "-40px",
-        "bottom": "-50px",
-        "width": "264px",
-        "height": "278px",
-        "blendMode": "normal",
-        "chromaKey": "black"
-      },
-      "instrument": {
-        "src": "assets/playable-characters/ren/battle/ren-recorder-v2.png",
-        "backgroundSize": "auto 156%",
-        "backgroundPosition": "52% 0%",
-        "left": "-40px",
-        "bottom": "-50px",
-        "width": "264px",
-        "height": "278px",
-        "blendMode": "normal",
-        "chromaKey": "black"
-      },
-      "recorder": {
-        "src": "assets/playable-characters/ren/battle/ren-recorder-v2.png",
-        "backgroundSize": "auto 156%",
-        "backgroundPosition": "52% 0%",
-        "left": "-40px",
-        "bottom": "-50px",
-        "width": "264px",
-        "height": "278px",
-        "blendMode": "normal",
-        "chromaKey": "black"
-      },
-      "guitar": {
-        "src": "assets/playable-characters/ren/battle/ren-guitar-v2.png",
-        "backgroundSize": "auto 156%",
-        "backgroundPosition": "53% 0%",
-        "left": "-40px",
-        "bottom": "-50px",
-        "width": "264px",
-        "height": "278px",
-        "blendMode": "normal",
-        "chromaKey": "black"
-      },
-      "shield": null,
-      "bow": null,
-      "spear": null,
-      "greatsword": null,
-      "dagger": null,
-      "gun": null
+        "chromaKey": "checkerLight"
+      }
     },
     "voice": null,
     "skills": ["quickSlash"],
@@ -141,7 +83,19 @@
     "selectPortrait": "assets/ui/character-select/roga-face-v1.webp",
     "portraitMode": "cutout",
     "imageFocus": "50% 20%",
-    "battleSprite": null,
+    "battleSprite": "assets/playable-characters/roga/battle/roga-fixed-v1.png",
+    "battleSpritesByWeaponType": {
+      "default": {
+        "src": "assets/playable-characters/roga/battle/roga-fixed-v1.png",
+        "backgroundSize": "auto 134%",
+        "backgroundPosition": "52% 0%",
+        "left": "-42px",
+        "bottom": "-52px",
+        "width": "280px",
+        "height": "278px",
+        "blendMode": "normal"
+      }
+    },
     "voice": null,
     "skills": ["quickSlash"],
     "theme": {
@@ -185,7 +139,19 @@
     "selectPortrait": "assets/ui/character-select/sho-face-v1.webp",
     "portraitMode": "cutout",
     "imageFocus": "50% 20%",
-    "battleSprite": null,
+    "battleSprite": "assets/playable-characters/sho/battle/sho-fixed-v1.png",
+    "battleSpritesByWeaponType": {
+      "default": {
+        "src": "assets/playable-characters/sho/battle/sho-fixed-v1.png",
+        "backgroundSize": "auto 134%",
+        "backgroundPosition": "52% 0%",
+        "left": "-42px",
+        "bottom": "-52px",
+        "width": "280px",
+        "height": "278px",
+        "blendMode": "normal"
+      }
+    },
     "voice": null,
     "skills": ["quickSlash"],
     "theme": {

@@ -1661,7 +1661,11 @@
             const context = canvas.getContext('2d', { willReadFrequently: true }); context.drawImage(image, 0, 0);
             const frame = context.getImageData(0, 0, canvas.width, canvas.height), pixels = frame.data, width = canvas.width, height = canvas.height, total = width * height;
             const seen = new Uint8Array(total), queue = new Int32Array(total); let head = 0, tail = 0;
-            const matches = index => { const i = index * 4, r = pixels[i], g = pixels[i + 1], b = pixels[i + 2]; return key === 'white' ? Math.min(r, g, b) >= 238 : Math.max(r, g, b) <= 18; };
+            const matches = index => {
+              const i = index * 4, r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+              if (key === 'checkerLight') return Math.min(r, g, b) >= 225 && Math.max(r, g, b) - Math.min(r, g, b) <= 14;
+              return key === 'white' ? Math.min(r, g, b) >= 238 : Math.max(r, g, b) <= 18;
+            };
             const add = index => { if (index < 0 || index >= total || seen[index] || !matches(index)) return; seen[index] = 1; queue[tail++] = index; };
             for (let x = 0; x < width; x++) { add(x); add((height - 1) * width + x); }
             for (let y = 1; y < height - 1; y++) { add(y * width); add(y * width + width - 1); }
@@ -1680,7 +1684,11 @@
       const character = this.selectedCharacterData(), sprites = character?.battleSpritesByWeaponType || {};
       const fallbackSprite = sprites.default || character?.battleSprite || character?.image || '';
       const spriteKey = w.battlePose || w.weaponSubtype || w.weaponType;
-      const spriteEntry = sprites[spriteKey] || sprites[w.weaponType] || fallbackSprite;
+      // 通常キャラクターは武器を問わず固定立ち絵を使う。
+      // 将来、キャラ側で明示した場合だけ武器別差し替えを再開できる。
+      const spriteEntry = character?.useWeaponSpecificBattleSprites
+        ? (sprites[spriteKey] || sprites[w.weaponType] || fallbackSprite)
+        : fallbackSprite;
       const customSprite = this.profile?.customBattlePortrait;
       const spriteConfig = customSprite ? {
         src: customSprite,

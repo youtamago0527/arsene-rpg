@@ -19,7 +19,7 @@
   const CFG = () => Object.assign({
     procChance: 0.50, ensembleChance: 0.75, ensembleTurns: 3,
     buffTurns: 2, buffRate: 0.10, maxStacks: 3,
-    nocturneTurns: 3, nocturneHealRate: 0.08, soloTurns: 2
+    nocturneChance: 0.30, nocturneTurns: 3, nocturneHealRate: 0.08, soloTurns: 2
   }, D().maestroBalance || {});
 
   // ── バフの入れ物 ──────────────────────────────────────────
@@ -76,7 +76,11 @@
       // ソロ（2回行動）は影響が大きいので専用の発動率を持てる。
       // アンサンブル中は同じ比率で底上げする。
       let myChance = chance;
-      if (kind === 'doubleAct' && cfg.soloChance != null) {
+      if (kind === 'regen' && cfg.nocturneChance != null) {
+        myChance = this.isEnsembleActive()
+          ? Math.min(1, cfg.nocturneChance * (cfg.ensembleChance / cfg.procChance))
+          : cfg.nocturneChance;
+      } else if (kind === 'doubleAct' && cfg.soloChance != null) {
         myChance = this.isEnsembleActive()
           ? Math.min(1, cfg.soloChance * (cfg.ensembleChance / cfg.procChance))
           : cfg.soloChance;
@@ -85,7 +89,8 @@
       let label;
       if (kind === 'regen') {
         // ノクターン：既存のリジェネ枠を使う（重ねがけせず上書き）
-        this.player.buffs.regenerate = Math.max(this.player.buffs.regenerate || 0, cfg.nocturneTurns);
+        // endPlayerTurnで発動ターン分が1減るため、表示どおり3回回復できるよう+1する。
+        this.player.buffs.regenerate = Math.max(this.player.buffs.regenerate || 0, cfg.nocturneTurns + 1);
         label = `${cfg.nocturneTurns}ターン 自然回復`;
       } else if (kind === 'doubleAct') {
         // ソロ：重ねがけせず、鳴り直すたびに持続を上書きする
@@ -132,11 +137,15 @@
       if (need && this.equippedWeaponType() !== need) continue;
       const kind = p.passiveEffect.buff;
       let myChance = chance;
-      if (kind === 'doubleAct' && cfg.soloChance != null) {
+      if (kind === 'regen' && cfg.nocturneChance != null) {
+        myChance = this.isEnsembleActive()
+          ? Math.min(1, cfg.nocturneChance * (cfg.ensembleChance / cfg.procChance))
+          : cfg.nocturneChance;
+      } else if (kind === 'doubleAct' && cfg.soloChance != null) {
         myChance = this.isEnsembleActive() ? Math.min(1, cfg.soloChance * (cfg.ensembleChance / cfg.procChance)) : cfg.soloChance;
       }
       if (Math.random() >= myChance) continue;
-      if (kind === 'regen') this.player.buffs.regenerate = Math.max(this.player.buffs.regenerate || 0, cfg.nocturneTurns);
+      if (kind === 'regen') this.player.buffs.regenerate = Math.max(this.player.buffs.regenerate || 0, cfg.nocturneTurns + 1);
       else if (kind === 'doubleAct') { if (!this.isDoubleActActive()) this.player.buffs.doubleActUntil = this.turn + Math.max(1, cfg.soloTurns) - 1; }
       else this.addSongStack(kind);
     }
