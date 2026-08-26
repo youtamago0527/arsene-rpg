@@ -125,3 +125,10 @@
   .fx-swing-shield .ren-sprite,.fx-swing-staff .ren-sprite,.fx-swing-instrument .ren-sprite{animation:none}
   .fx-ember,.fx-crit-ray{display:none}
 }
+
+/* 属性の弱点を突いたHit。耐性による減衰は無いので、有利な時だけ光る。 */
+.float-number.weak { color: #ffe066; text-shadow: 0 0 10px #ffb703, 0 0 22px #ff8800 }
+.float-number.weak-label {
+  color: #ffd43b; font-size: 12px; letter-spacing: .12em; font-weight: 800;
+  text-shadow: 0 0 10px #ff8800;
+}
