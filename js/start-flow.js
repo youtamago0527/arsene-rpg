@@ -28,7 +28,7 @@
       try {
         [this.prologue, this.characters] = await Promise.all([
           fetch('data/prologue.json').then(response => response.json()),
-          fetch('data/characters.json?v=0.4.11').then(response => response.json())
+          fetch('data/characters.json?v=0.4.13').then(response => response.json())
         ]);
       } catch (error) {
         console.error('Start flow data could not be loaded.', error);

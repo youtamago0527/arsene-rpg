@@ -86,7 +86,7 @@
     "battleSpritesByWeaponType": {
       "default": {
         "src": "assets/playable-characters/roga/battle/roga-fixed-v1.png",
-        "backgroundSize": "auto 134%",
+        "backgroundSize": "auto 184%",
         "backgroundPosition": "52% 0%",
         "left": "-42px",
         "bottom": "-52px",
@@ -142,9 +142,9 @@
     "battleSpritesByWeaponType": {
       "default": {
         "src": "assets/playable-characters/sho/battle/sho-fixed-v1.png",
-        "backgroundSize": "auto 134%",
+        "backgroundSize": "auto 184%",
         "backgroundPosition": "52% 0%",
-        "left": "-42px",
+        "left": "-50px",
         "bottom": "-52px",
         "width": "280px",
         "height": "278px",
@@ -323,9 +323,9 @@
     "battleSpritesByWeaponType": {
       "default": {
         "src": "assets/playable-characters/kyosuke/battle/kyosuke-fixed-v1.png",
-        "backgroundSize": "auto 134%",
-        "backgroundPosition": "52% 0%",
-        "left": "-42px",
+        "backgroundSize": "auto 292%",
+        "backgroundPosition": "52% -86px",
+        "left": "-50px",
         "bottom": "-52px",
         "width": "280px",
         "height": "278px",
