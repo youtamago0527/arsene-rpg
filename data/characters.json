@@ -319,7 +319,19 @@
     "selectPortrait": "assets/ui/character-select/kyosuke-face-v1.webp",
     "portraitMode": "cutout",
     "imageFocus": "50% 18%",
-    "battleSprite": null,
+    "battleSprite": "assets/playable-characters/kyosuke/battle/kyosuke-fixed-v1.png",
+    "battleSpritesByWeaponType": {
+      "default": {
+        "src": "assets/playable-characters/kyosuke/battle/kyosuke-fixed-v1.png",
+        "backgroundSize": "auto 134%",
+        "backgroundPosition": "52% 0%",
+        "left": "-42px",
+        "bottom": "-52px",
+        "width": "280px",
+        "height": "278px",
+        "blendMode": "normal"
+      }
+    },
     "voice": null,
     "skills": ["quickSlash"],
     "theme": {
