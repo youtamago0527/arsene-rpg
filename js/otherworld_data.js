@@ -67,7 +67,7 @@
   // ── 異世界モンスター ────────────────────────────────────────
   // ダンジョン1の怪異が異界の干渉で歪んだ姿。見た目は色違い（spriteFilter）。
   // EXP・GOLDは一切出さない。代わりに低確率でその日のアルカナを落とす。
-  const OW_SPRITE = 'assets/enemy-characters/dungeon1/sheet.png';
+  const OW_SPRITE = 'assets/enemy-characters/shadow-slime/battle-idle.png';
   const ow = (id, srcId, name, stats, filter) => ({
     id, name, enName: 'DISTORTED', dungeonId: 'otherWorld', otherWorld: true,
     element: '虚', weaknesses: ['光'], resistances: ['闇'],
@@ -145,7 +145,7 @@
   D.otherWorld = {
     id: 'otherWorld', name: '異世界', nameEn: 'OTHER WORLD',
     description: 'レニーフォックスが繋いだ、もうひとつの世界。ここで得られるのは経験ではなくアルカナだけだ。',
-    background: 'assets/bg/dungeon-battle-03.png',
+    background: 'assets/bg/dungeon-battle-02.png',
     battlesPerRun: 10,              // BOSSを含めた1周の戦闘数
     interferenceMax: 2,             // 異界干渉力の最大値（1日あたりの侵入回数）
     zakoArcanaRate: 0.01,           // 雑魚1体あたりのアルカナドロップ率

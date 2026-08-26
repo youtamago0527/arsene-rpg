@@ -244,7 +244,7 @@
     const day = new Date().getDay();
     return (D().arcana?.weekly || []).find(a => a.day === day) || (D().arcana?.weekly || [])[0];
   };
-  P.owTodayBackground = function () { return this.owTodayArcana()?.background || this.owCfg().background || 'assets/bg/dungeon-battle-03.png'; };
+  P.owTodayBackground = function () { return this.owTodayArcana()?.background || this.owCfg().background || 'assets/bg/dungeon-battle-02.png'; };
   // 日付が変わっていれば干渉力を回復させる
   P.owRefreshDaily = function () {
     const key = this.owDateKey();
