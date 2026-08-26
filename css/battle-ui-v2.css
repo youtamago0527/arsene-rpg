@@ -901,6 +901,11 @@
 #game .boss-enemy .enemy-nameplate{left:50%;translate:-50%;width:min(210px,70vw);max-width:210px}
 #game .enemy-visual{inset:49px 0 31px}
 
+/* D3 and later supplied art: render as a real transparent image so every
+   monster body remains visible regardless of legacy .slime background rules. */
+#game .enemy-art-image{position:absolute;left:50%;bottom:0;width:100%;height:100%;transform:translateX(-50%);object-fit:contain;object-position:center bottom;pointer-events:none;filter:drop-shadow(0 0 7px #65cfff) drop-shadow(0 0 17px #5522a0)}
+#game .boss-enemy .enemy-art-image{width:100%;height:100%;object-position:center bottom}
+
 /* 個別武器画像。白背景素材はJSで外周連結部分だけ透過してから表示する。 */
 #game .command-panel i.command-icon-image,#game .command-drawer i.command-icon-image{
   display:block;position:relative;inset:auto!important;width:40px;height:31px;margin:0 auto 3px;
