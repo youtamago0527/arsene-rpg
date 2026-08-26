@@ -23,7 +23,6 @@
       mage: 'meditation',            // 精神集中
       priest: 'heal',                // ヒール
       magicKnight: 'ensemble',       // アンサンブル
-      arcaneMaestro: 'resonantSpell',
       dualBlade: 'battleDance'
     }
   };

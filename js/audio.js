@@ -10,7 +10,10 @@
     clawHit:     { url: '音楽系/効果音/爪通常.mp3',    gain: 1.10, offset: .100, maxDur: .9 },
     // ファイアボールは「飛んでいる最中」の音なので、着弾ではなく発射のタイミングで鳴らす
     fireFlight:  { url: '音楽系/効果音/杖通常.mp3',    gain: .36, offset: .010, maxDur: .60 },
-    noteHit:     { url: '音楽系/効果音/楽器通常.mp3',  gain: 1.15, offset: .002, maxDur: 1.4 }
+    noteHit:     { url: '音楽系/効果音/楽器通常.mp3',  gain: 1.15, offset: .002, maxDur: 1.4 },
+    heal:        { url: '音楽系/効果音/ヒール.mp3',    gain: .95, offset: .002, maxDur: 1.95 },
+    escape:      { url: '音楽系/効果音/逃げる.mp3',    gain: .68, offset: .028, maxDur: 1.2 },
+    passiveProc: { url: '音楽系/効果音/パッシブ発動音.mp3', gain: .78, offset: .018, maxDur: 1.9 }
     // クリティカルは専用の録音が無いので、下の合成音をそのまま使う
   };
   // 武器種 → 効果音名。左手の追撃など、武器種から直接鳴らしたい場所で使う
@@ -147,6 +150,7 @@
         case 'playerHit': this.tone(105,.24,'sawtooth',.18,.6); this.noise(.16,.12,0,250); break;
         case 'dark': this.tone(120,.42,'sine',.13,3.2); this.tone(62,.45,'sawtooth',.08,1.8); break;
         case 'heal': chord([440,554,659,880]); break;
+        case 'passiveProc': chord([523,784,1047],.06); this.tone(1568,.34,'sine',.06,1,.12); break;
         case 'defeat': this.tone(280,.6,'triangle',.16,.18); this.noise(.45,.1,.08,180); break;
         case 'victory': chord([523,659,784,1047],.12); break;
         case 'escape': this.tone(760,.3,'sine',.12,2); break;

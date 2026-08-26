@@ -104,7 +104,7 @@
       }
       this.flashTitle(p.name, label);
       this.setLog(`《${p.name}》が響いた！ ${label}`);
-      this.audio?.sfx?.('heal');
+      this.audio?.sfx?.('passiveProc');
       await this.battleSleep(260);
     }
     this.updateHUD();

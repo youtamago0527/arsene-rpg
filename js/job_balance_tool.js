@@ -40,8 +40,8 @@
   const rngFrom = seed => { let s = (Number(seed) || 1) >>> 0; return () => ((s = Math.imul(1664525, s) + 1013904223 >>> 0) / 4294967296); };
 
   function activeJobIds() {
-    const audited = window.ARSENE_JOB_AUDIT?.activeJobIds?.() || Object.keys(D.jobs || {}).filter(id => id !== 'arcaneMaestro');
-    return [...new Set([...audited, ...(D.futureJobIds || [])])].filter(id => D.jobs?.[id] && id !== 'arcaneMaestro');
+    const audited = window.ARSENE_JOB_AUDIT?.activeJobIds?.() || Object.keys(D.jobs || {});
+    return [...new Set([...audited, ...(D.futureJobIds || [])])].filter(id => D.jobs?.[id]);
   }
 
   function jobGrowth(id) {
