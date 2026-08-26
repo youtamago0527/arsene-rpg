@@ -292,6 +292,12 @@
         delete profile.jobs.arcaneMaestro;
         profile.unlockedJobs = (profile.unlockedJobs || []).filter(id => id !== 'arcaneMaestro');
         if (profile.currentJob === 'arcaneMaestro') profile.currentJob = profile.initialJob || 'mage';
+        // 僧侶の攻撃・大回復技は廃止。僧侶は回復とGOLD稼ぎに専念する支援職とし、
+        // 戦闘力は武器の性能側へ寄せる。既存セーブに残っていれば取り除く。
+        const removedPriestSkills = ['holyLight', 'regenerate', 'greatHeal', 'divineSmite'];
+        profile.learnedJobSkills = (profile.learnedJobSkills || []).filter(id => !removedPriestSkills.includes(id));
+        profile.activeSkills = (profile.activeSkills || []).filter(id => !removedPriestSkills.includes(id));
+        profile.ptActionSlots = (profile.ptActionSlots || [null, null]).map(id => removedPriestSkills.includes(id) ? null : id);
         if (!profile.jobs.dualBlade) profile.jobs.dualBlade = { level: 1, exp: 0 };
         if (!profile.jobs.guardian) profile.jobs.guardian = { level: 1, exp: 0 };
         if (profile.bossDefeated.myrthi == null) profile.bossDefeated.myrthi = false;
