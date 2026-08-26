@@ -1628,11 +1628,15 @@
         const statuses = '<button type="button" class="status-strip enemy-statuses" aria-label="敵の状態と解析情報"></button>';
         const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : '';
         const displayName = String(e.name || '').trim(), accessibleName = `${displayName}${e.label || ''}`;
-        const nameClass = [...displayName].length > 10 ? 'long-name' : '';
+        const nameLength = [...displayName].length;
+        const nameParts = displayName.split('・');
+        const splitName = e.kind !== 'boss' && nameLength >= 9 && nameParts.length > 1;
+        const nameClass = [nameLength > 10 ? 'long-name' : '', splitName ? 'split-name' : ''].filter(Boolean).join(' ');
+        const displayNameHtml = splitName ? `${nameParts.shift()}・<small>${nameParts.join('・')}</small>` : displayName;
         const visual = e.kind === 'boss'
           ? `<div class="slime-shadow boss-shadow"></div><div class="noel-sprite${e.spriteClass ? ' ' + e.spriteClass : ''}"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div>`
           : `<div class="slime-shadow"></div><div class="slime"${e.sprite ? ` style="background-image:url('${e.sprite}')"` : ''}></div>`;
-        return `<div role="button" tabindex="0" class="enemy ${e.kind === 'boss' ? 'boss-enemy' + bossClass : `enemy-${e.id}`} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" data-kind="${e.kind || 'normal'}" data-size="${e.kind === 'boss' ? 'boss' : e.kind === 'rare' ? 'large' : 'normal'}" aria-label="${accessibleName}を攻撃"><div class="enemy-nameplate"><b class="enemy-slot-label" aria-hidden="true">${String.fromCharCode(65 + i)}</b><span class="${nameClass}">${displayName}</span>${statuses}</div><div class="enemy-visual">${visual}</div><div class="enemy-hud${e.kind === 'boss' ? ' boss-hud' : ''}"><label>HP</label><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>${e.hp.toLocaleString('ja-JP')} / ${e.stats.maxHp.toLocaleString('ja-JP')}</small></div></div>`;
+        return `<div role="button" tabindex="0" class="enemy ${e.kind === 'boss' ? 'boss-enemy' + bossClass : `enemy-${e.id}`} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" data-kind="${e.kind || 'normal'}" data-size="${e.kind === 'boss' ? 'boss' : e.kind === 'rare' ? 'large' : 'normal'}" aria-label="${accessibleName}を攻撃"><div class="enemy-nameplate"><b class="enemy-slot-label" aria-hidden="true">${String.fromCharCode(65 + i)}</b><span class="${nameClass}">${displayNameHtml}</span>${statuses}</div><div class="enemy-visual">${visual}</div><div class="enemy-hud${e.kind === 'boss' ? ' boss-hud' : ''}"><label>HP</label><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>${e.hp.toLocaleString('ja-JP')} / ${e.stats.maxHp.toLocaleString('ja-JP')}</small></div></div>`;
       }).join('');
       this.enemies.forEach((enemy, index) => this.bindEnemyTap(enemy, index));
     }

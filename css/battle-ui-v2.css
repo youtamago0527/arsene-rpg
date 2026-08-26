@@ -189,14 +189,10 @@
 #game .command-panel[data-layout="main"]>button[data-action="simpleBattle"]{background-image:url("../assets/ui/battle/lower-ui-v2/command-simple-v2.png")!important}
 #game .command-panel[data-layout="main"]>button[data-action="autoBattle"]{background-image:url("../assets/ui/battle/lower-ui-v2/command-auto-v2.png")!important}
 
-/* 固定絵のボタンは画像内ラベルを使用。アイテム数とON/OFFだけライブ表示する。 */
+/* 固定絵のボタンは画像内ラベルを使用。ON/OFFだけライブ表示する。 */
 #game .command-panel[data-layout="main"]>button:not([data-action="weaponArts"])>i,
 #game .command-panel[data-layout="main"]>button:not([data-action="weaponArts"])>strong,
-#game .command-panel[data-layout="main"]>button:not([data-action="weaponArts"]):not([data-action="item"])>span{opacity:0}
-#game .command-panel[data-layout="main"]>button[data-action="item"]>span{
-  position:absolute;z-index:3;right:4px;top:3px;width:auto;padding:2px 3px;margin:0;color:#8dffd8;
-  background:#02110ddd;border:1px solid #2b8d70;font:800 5px/1 Cinzel;opacity:1;
-}
+#game .command-panel[data-layout="main"]>button:not([data-action="weaponArts"])>span{opacity:0}
 #game .command-panel[data-layout="main"]>button[data-action="simpleBattle"]::after,
 #game .command-panel[data-layout="main"]>button[data-action="autoBattle"]::after{
   content:"OFF";position:absolute;z-index:3;right:3px;top:3px;padding:2px 3px;color:#817d87;
@@ -287,7 +283,8 @@
     radial-gradient(circle at 50% 22%,color-mix(in srgb,var(--character-glow) 32%,transparent),transparent 43%);
 }
 
-.battle-topbar{inset:max(10px,env(safe-area-inset-top)) 10px auto}
+.battle-topbar{inset:max(6px,env(safe-area-inset-top)) 8px auto}
+.battle-topbar{transform:translateY(-3px)}
 .battle-topbar .turn-info,
 .battle-menu-button,
 #game .enemy-nameplate,
@@ -1098,7 +1095,7 @@
   position:absolute;
   z-index:2;
   left:50%;
-  top:4px;
+  top:6px;
   translate:-50% 0;
   box-sizing:border-box;
   width:min(124px,31vw);
@@ -1391,26 +1388,63 @@
 
 /* 3体編成は戦場の左右余白を同値にして、敵本体・名札・HPを3等分で配置する。 */
 #game .enemies[data-count="3"]{
-  left:8px;
-  right:8px;
+  left:4px;
+  right:4px;
   width:auto;
-  gap:8px;
+  gap:4px;
   justify-content:space-between;
 }
 #game .enemies[data-count="3"] .enemy{
   flex:1 1 0;
-  width:calc((100% - 16px)/3);
+  width:calc((100% - 8px)/3);
   min-width:0;
 }
 #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span{font-size:10px}
 #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{font-size:8.5px;letter-spacing:-.06em}
 #game .enemy:not(.boss-enemy) .enemy-nameplate>span{
   position:absolute;
-  inset:6px 0 auto;
-  width:100%;
-  padding:0 20px;
+  inset:5px 5px auto 31px;
+  width:auto;
+  padding:0;
   text-align:center;
-  transform:translate(-2px,-1px);
+  transform:none;
+}
+
+/* 長い固有名は中黒を自然な改行位置にする。短い名前は従来どおり中央1段。 */
+#game .enemy:not(.boss-enemy) .enemy-nameplate{
+  width:100%;
+  max-width:130px;
+  height:38px;
+  min-height:38px;
+  grid-template-rows:23px 9px;
+}
+#game .enemy:not(.boss-enemy) .enemy-nameplate>span.split-name{
+  inset:3px 5px auto 31px;
+  min-height:20px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+  font-size:8.5px!important;
+  line-height:1.02;
+  letter-spacing:0;
+  white-space:nowrap;
+}
+#game .enemy:not(.boss-enemy) .enemy-nameplate>span.split-name small{
+  display:block!important;
+  color:inherit;
+  font:inherit;
+  line-height:1.02;
+  letter-spacing:inherit;
+  white-space:nowrap;
+}
+#game .enemy:not(.boss-enemy) .enemy-nameplate .enemy-statuses{
+  position:absolute;
+  left:31px;
+  right:5px;
+  bottom:2px;
+  width:auto;
 }
 
 /* BOSSは名札を高く、立ち絵と専用HPを大きくして一体戦の圧を出す。 */
