@@ -1037,7 +1037,7 @@
       if (this.systemTab === 'sound') {
         const v = this.audio.getVolumes();
         const row = (id, label, note, badge = '') => `<label class="volume-row"><span><b>${label}</b><small>${note}</small></span><input type="range" min="0" max="100" step="1" value="${v[id]}" data-volume="${id}" aria-label="${label}音量"><output data-volume-value="${id}">${v[id]}%</output>${badge ? `<em>${badge}</em>` : ''}</label>`;
-        body = `<section class="sound-settings"><header><b>サウンド音量</b><span>変更はこの端末へ自動保存されます</span></header>${row('bgm', 'BGM', '戦闘・拠点・ボス戦の音楽')}${row('sfx', '効果音', '攻撃・被弾・決定音')}${row('voice', 'VOICE', '戦闘ボイス用の予約設定', 'COMING SOON')}</section>`;
+        body = `<section class="sound-settings"><header><b>サウンド音量</b><span>変更はこの端末へ自動保存されます</span></header>${row('bgm', 'BGM', '戦闘・拠点・ボス戦の音楽')}${row('sfx', '効果音', '攻撃・被弾・決定音')}${row('voice', 'VOICE', '戦闘ボイス用の予約設定', 'COMING SOON')}</section>${window.arseneQOffer?.normalHTML?.() || ''}`;
       } else if (this.systemTab === 'help') {
         body = this.helpSectionHTML();
       } else if (this.systemTab === 'debug') {

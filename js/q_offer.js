@@ -30,8 +30,9 @@
     consumeEnhancementProtection(g){const s=state(g);if((s.enhancementProtection||0)<=0)return false;s.enhancementProtection--;save(g);return true;},
     indicator(){const g=game();if(!g)return;const s=state(g);let el=document.getElementById('q-offer-indicator');if(!el){el=document.createElement('div');el.id='q-offer-indicator';document.body.appendChild(el);}const rows=[];if(active(s,'auto2ExpiresAt'))rows.push('AUTO ×2');if(active(s,'sweepExpiresAt'))rows.push('一掃');if(s.enhancementProtection)rows.push(`保護 ${s.enhancementProtection}`);if(s.bossDropBonus)rows.push(`BOSS +${s.bossDropBonus}`);el.textContent=rows.join('　');el.hidden=!rows.length;},
     debugHTML(){return `<section class="q-offer-debug"><header><b>Q'S OFFER // DEBUG</b><span>Mock provider・日次上限2回</span></header><div class="q-offer-debug-grid">${Object.entries(defs).map(([k,d])=>`<button data-q-debug="${k}">${d.title}<small>${d.label}</small></button>`).join('')}</div></section>`;}
+    ,normalHTML(){return `<section class="q-offer-debug q-offer-normal"><header><b>Q'S OFFER</b><span>3秒で受け取り・日次上限あり</span></header><div class="q-offer-debug-grid">${Object.entries(defs).map(([k,d])=>`<button data-q-offer="${k}">${d.title}<small>${d.label}</small></button>`).join('')}</div></section>`;}
   };
   window.arseneQOffer=api;
-  document.addEventListener('click',e=>{const b=e.target.closest('[data-q-debug]');if(b){api.show(b.dataset.qDebug);}});
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-q-debug],[data-q-offer]');if(b){api.show(b.dataset.qDebug||b.dataset.qOffer);}});
   window.addEventListener('load',()=>api.indicator());
 })();
