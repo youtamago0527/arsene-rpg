@@ -1057,7 +1057,7 @@
       const err = this.debugPwError ? `<p class="debug-pw-err">パスワードが違います</p>` : '';
       return `<section class="sound-settings"><header><b>デバッグルーム</b><span>モンスター・装備・技・バランス値をこの場で調整できます</span></header>
         ${unlocked
-          ? `<p class="save-transfer-note">認証済みです。</p><div class="system-actions"><button data-debug-open>デバッグルームを開く<span>OPEN DEBUG ROOM</span></button><button data-debug-lock>ロックする<span>LOCK</span></button></div>`
+          ? `<p class="save-transfer-note">認証済みです。</p><div class="system-actions"><button data-debug-open>デバッグルームを開く<span>OPEN DEBUG ROOM</span></button><button data-debug-lock>ロックする<span>LOCK</span></button></div>${window.arseneQOffer?.debugHTML?.() || ''}`
           : `<p class="save-transfer-note">パスワードを入力してください。</p><div class="debug-pw-row"><input type="password" inputmode="numeric" autocomplete="off" data-debug-pw placeholder="パスワード"><button data-debug-enter>入る</button></div>${err}`}
         <p class="save-transfer-note">変更はこの端末に保存され、次回起動時にも適用されます。「書き出し」で差分を取り出せます。</p></section>`;
     }
@@ -3706,6 +3706,12 @@
         this.profile.weaponEnchants[weaponId] = level + 1;
         this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-enchant', weaponId, anchorTop);
       } else {
+        if (window.arseneQOffer?.consumeEnhancementProtection?.(this)) {
+          this.profile.weaponEnchants[weaponId] = level;
+          this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-enchant', weaponId, anchorTop);
+          alert(`武器強化FAILED！\n保護のアルカナが発動し、${w.name}は守られた。`);
+          return;
+        }
         delete this.profile.weaponEnchants[weaponId];
         this.profile.inventory[weaponId] = Math.max(0, (this.profile.inventory[weaponId] || 0) - 1);
         if (!(this.profile.inventory[weaponId] > 0)) { if (this.profile.equipment.rightHand === weaponId) this.profile.equipment.rightHand = 'mageStaff'; if (this.profile.equipment.leftHand === weaponId) this.profile.equipment.leftHand = null; }
@@ -4007,6 +4013,12 @@
         this.profile.armorEnchants[itemId] = level + 1;
         this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-armor-enchant', itemId, anchorTop);
       } else {
+        if (window.arseneQOffer?.consumeEnhancementProtection?.(this)) {
+          this.profile.armorEnchants[itemId] = level;
+          this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-armor-enchant', itemId, anchorTop);
+          alert(`防具強化FAILED！\n保護のアルカナが発動し、${item.name}は守られた。`);
+          return;
+        }
         delete this.profile.armorEnchants[itemId];
         this.profile.inventory[itemId] = Math.max(0, (this.profile.inventory[itemId] || 0) - 1);
         if (!(this.profile.inventory[itemId] > 0)) Object.keys(this.profile.equipment).forEach(slot => { if (this.profile.equipment[slot] === itemId) this.profile.equipment[slot] = null; });
