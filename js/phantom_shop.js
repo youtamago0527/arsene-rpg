@@ -14,47 +14,59 @@
   // 押すとトーストが出るだけ（元HTMLと同じ挙動）。
   const ITEMS = [
     {
-      id: 'makanai-boost', no: '01', kicker: 'TOP RECOMMEND', name: 'まかないブースト',
-      priceLabel: '広告(白)', accent: '#ffffff', featured: true,
-      description: '短い広告（白統一）視聴で即座に本日の特大リワードと限定バフを獲得します。',
-      stats: [['■ スタミナ', '全回復'], ['■ 獲得GOLD', '+50%']],
-      cta: '広告を見て発動する', action: '広告視聴',
+      id: 'time-complete-pass', no: '01', kicker: 'TOP RECOMMEND', name: '怪盗の時短パス COMPLETE',
+      priceLabel: '¥1,500', accent: '#ffffff', featured: true,
+      description: '広告スキップ・AUTO×3・一掃をまとめて永久解放。発動条件や1日の利用回数、勝敗計算と報酬量は変わりません。',
+      stats: [['■ 広告スキップ', '永久'], ['■ AUTO SPEED', '×3.0 常設'], ['■ 一掃', '通常Dで常設']],
+      cta: '¥1,500 で全部解放', action: '購入',
       ctaStyle: 'background:linear-gradient(90deg,#f1f5f9,#fff,#e2e8f0);color:#020617;border:1px solid #fff;box-shadow:0 0 15px #ffffff80'
     },
     {
-      id: 'vip-pass', no: '02', kicker: 'VIP PASS', name: '怪盗の極意 (VIP)',
-      priceLabel: '¥600', accent: '#fcd34d',
-      cta: '¥600 で購入する', action: '購入',
+      id: 'ad-skip-license', no: '02', kicker: 'MOST POPULAR', name: '広告スキップライセンス',
+      priceLabel: '¥900', accent: '#fcd34d',
+      description: '任意広告を再生せず、同じリワードを受け取れます。復活・装備保護・素材追加などの発動条件と回数制限はそのままです。',
+      stats: [['■ 広告の再生時間', '0秒'], ['■ リワード内容', '変更なし'], ['■ 回数制限', '変更なし']],
+      cta: '¥900 で永久解放', action: '購入',
       ctaStyle: 'background:linear-gradient(90deg,#fcd34d,#fbbf24,#fb923c);color:#020617'
     },
     {
-      id: 'dimension-keys', no: '03', kicker: 'LIMITED', name: '異次元の鍵セット',
-      priceLabel: '¥480', accent: '#c084fc',
-      cta: '¥480 で購入する', action: '購入',
+      id: 'ad-skip-tickets', no: '03', kicker: 'LIGHT PLAN', name: '広告スキップチケット ×10',
+      priceLabel: '¥160', accent: '#c084fc',
+      description: '好きな任意広告を10回だけ省略できるお試し版。チケットが無くなっても、通常の広告視聴は引き続き利用できます。',
+      stats: [['■ スキップ回数', '10回'], ['■ リワード内容', '変更なし'], ['■ 有効期限', 'なし']],
+      cta: '¥160 で10回分購入', action: '購入',
       ctaStyle: 'background:#9333ea;color:#fff'
     },
     {
-      id: 'smuggled-gadget', no: '04', kicker: 'BLACK MARKET', name: '密輸品ガジェット',
-      priceLabel: '???', accent: '#fb7185',
-      cta: '不穏な取引を実行', action: '調達',
-      ctaStyle: 'background:linear-gradient(90deg,#fb7185,#ef4444,#e11d48);color:#020617'
+      id: 'auto3-license', no: '04', kicker: 'BATTLE SPEED', name: 'AUTO×3 常設ライセンス',
+      priceLabel: '¥480', accent: '#22d3ee',
+      description: '有料版限定のAUTO×3をいつでも使用できます。AUTO×2は従来どおり広告視聴で利用可能。行動順・ダメージ・敵の強さ・報酬は変化しません。',
+      stats: [['■ 最大AUTO速度', '×3.0'], ['■ AUTO×2', '広告で利用可'], ['■ 戦闘性能', '変更なし']],
+      cta: '¥480 で永久解放', action: '購入',
+      ctaStyle: 'background:linear-gradient(90deg,#22d3ee,#38bdf8,#3b82f6);color:#020617'
     },
     {
-      id: 'phantom-reserve', no: '05', kicker: 'RESERVE', name: 'ファントムリザーブ',
-      priceLabel: '広告(白)', accent: '#6ee7b7',
-      cta: '広告を見て物資受領', action: '広告視聴',
+      id: 'sweep-license', no: '05', kicker: 'LAP SUPPORT', name: '一掃 常設ライセンス',
+      priceLabel: '¥480', accent: '#6ee7b7',
+      description: '通常ダンジョンの一掃を広告なしで使用できます。対象範囲・勝敗計算・獲得報酬は通常の一掃と同じです。',
+      stats: [['■ 通常D一掃', '常設'], ['■ ボス・異世界', '対象外'], ['■ 獲得報酬', '変更なし']],
+      cta: '¥480 で永久解放', action: '購入',
       ctaStyle: 'background:linear-gradient(90deg,#6ee7b7,#2dd4bf,#22d3ee);color:#020617'
     },
     {
-      id: 'shadow-exchange', no: '06', kicker: 'EXCHANGE', name: 'シャドウエクスチェンジ',
-      priceLabel: '変換', accent: '#67e8f9',
-      cta: '変換レートを確認', action: '変換',
+      id: 'otherworld-tickets', no: '06', kicker: 'OTHER WORLD', name: '異世界探索券 ×5',
+      priceLabel: '¥200', accent: '#67e8f9',
+      description: '本日の無料探索回数を使い切った後も、異世界へ合計5回追加で潜入できます。探索券に有効期限はなく、未使用分は保持されます。',
+      stats: [['■ 追加探索回数', '5回'], ['■ 有効期限', 'なし'], ['■ 戦闘・ドロップ補正', 'なし']],
+      cta: '¥200 で5回分購入', action: '購入',
       ctaStyle: 'background:linear-gradient(90deg,#67e8f9,#38bdf8,#60a5fa);color:#020617'
     },
     {
-      id: 'soul-link', no: '07', kicker: 'NETWORK', name: 'ソウルリンク端末',
-      priceLabel: '広告(白)', accent: '#f0abfc',
-      cta: '広告を見て回線同期', action: '広告視聴',
+      id: 'rebirth-arcana', no: '07', kicker: 'REINCARNATION', name: '輪廻のアルカナ ×1',
+      priceLabel: '¥200', accent: '#f0abfc',
+      description: '《輪廻のアルカナ》を1個獲得します。規定ボスの報酬だけでなく、異世界探索でも入手可能です。購入しただけでは能力は上がらず、JOB Lv20からの転生時に消費します。',
+      stats: [['■ 獲得数', '1個'], ['■ 使用条件', 'JOB Lv20'], ['■ 直接能力上昇', 'なし']],
+      cta: '¥200 で1個購入', action: '購入',
       ctaStyle: 'background:linear-gradient(90deg,#f0abfc,#f472b6,#c084fc);color:#020617'
     }
   ];
@@ -127,7 +139,7 @@
             <h2 class="pm-shop-title">✦ PHANTOM SHOP ✦</h2>
             <span style="width:52px"></span>
           </div>
-          <p class="pm-shop-note">コマンドをタップして詳細を展開・裏取引</p>
+          <p class="pm-shop-note">すべて時短専用。戦闘力・報酬量・利用上限は変化しません</p>
         </header>
         <div class="pm-shop-list">${ITEMS.map(item => this.itemHTML(item)).join('')}</div>`;
 
