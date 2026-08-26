@@ -42,6 +42,13 @@ window.ARSENE_DATA = {
     shield: { scaling: {}, powerKey: 'defensePower', damageType: 'physical', accuracyModifier: -0.10 }
   },
   // 防御性能：物理は 体力＋装備防御力 / 魔法は 精神＋装備魔法防御力
+  // ══ 属性の弱点 ══
+  // 耐性による減衰は使わない。弱点を突いた時だけ、その攻撃に倍率が乗る。
+  // 敵側の弱点表記が「火」と「炎」で揺れているので、両方を同じ属性として扱う。
+  elementWeakness: {
+    multiplier: 1.25,
+    labels: { fire: ['火', '炎'], ice: ['氷'], thunder: ['雷'], light: ['光'], dark: ['闇'], sound: ['音'] }
+  },
   defenseScaling: {
     physical: { stat: 'vit', powerKey: 'defensePower' },
     magical:  { stat: 'mnd', powerKey: 'magicDefensePower' }
