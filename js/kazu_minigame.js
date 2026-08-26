@@ -81,6 +81,11 @@
       hotspot.addEventListener('dragstart', blockNative);
       hotspot.addEventListener('click', e => {
         if (typeof e.button === 'number' && e.button !== 0) return;
+        // 音ゲーや隠しメニューが開いている間のタップは数えない。
+        // 音ゲーのGAME STARTボタンがちょうどカズの真上に来るので、
+        // 突き抜けたクリックでタップ数が狂うのを防ぐ。
+        if (!this.root?.hidden) return;
+        if (window.phantomSecret && !(window.phantomSecret.popup?.hidden && window.phantomSecret.shop?.hidden && window.phantomSecret.arcade?.hidden)) return;
         e.preventDefault();
         e.stopPropagation();
         clearTimeout(this.tapTimer);
@@ -397,7 +402,16 @@
       this.setCover(`<div class="kazu-rhythm-card"><small>PERFORMANCE COMPLETE</small><h2>RESULT<em>${accuracy >= 95 ? 'PHANTOM PERFECT' : accuracy >= 80 ? 'BRILLIANT STEAL' : 'KEEP THE BEAT'}</em></h2><div class="kazu-rhythm-results"><div><small>SCORE</small><strong>${String(this.score).padStart(7, '0')}</strong></div><div><small>ACCURACY</small><strong>${accuracy.toFixed(1)}%</strong></div><div><small>MAX COMBO</small><strong>${this.maxCombo}</strong></div><div><small>PERFECT</small><strong>${this.counts.perfect}</strong></div></div><button type="button" data-rhythm-action="start">REPLAY</button><button type="button" class="secondary" data-rhythm-action="exit">拠点へ戻る</button></div>`);
     }
 
+    // pointerdown で閉じると、その直後の click が下の拠点へ抜けてしまい、
+    // 装備画面などが勝手に開く。閉じた直後の1クリックだけ捨てる。
+    swallowNextClick() {
+      const kill = event => { event.preventDefault(); event.stopPropagation(); };
+      addEventListener('click', kill, { capture: true, once: true });
+      setTimeout(() => removeEventListener('click', kill, { capture: true }), 700);
+    }
+
     async close() {
+      this.swallowNextClick();
       clearTimeout(this.judgeTimer);
       cancelAnimationFrame(this.raf);
       this.playing = false;
