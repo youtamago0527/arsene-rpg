@@ -711,7 +711,7 @@
     criticalChanceFor(skill, stats = this.player?.stats || this.totalStats()) {
       if (skill?.kind === 'neutral' || skill?.damageType === 'neutral') return 0;
       const c = D.combatBalance?.critical || { base: .06, luckRate: .008, max: .28 };
-      const comboCrit = this.comboDanceStacks() >= this.comboDanceMax() ? (this.activePassiveByType('comboDance')?.passiveEffect?.maxCriticalBonus || 0) : 0;
+      const comboPassive = this.activePassiveByType('comboDance'), comboCrit = this.comboDanceStacks() >= this.comboDanceMax() ? this.passiveValue(comboPassive, 'maxCriticalBonus') : 0;
       const extra = (Number(skill?.criticalModifier) || 0) + this.traitCriticalBonus() + this.equipmentEffectRate('criticalRateBonus') + comboCrit;
       const statBonus = Number(stats?.critBonus) || 0;
       return clamp(c.base + (Number(stats?.luk) || 0) * c.luckRate + statBonus + extra, c.base, c.max + statBonus + extra);
@@ -728,7 +728,7 @@
     rollPlayerAttackOutcome(skill, enemy, options = {}) {
       const weapon = options.weapon || this.equippedWeapon();
       const weaponType = options.weaponType || skill?.weaponType || weapon?.weaponType || this.equippedWeaponType();
-      const stats = this.playerCombatStats(), offHandCrit = options.offHand ? (this.activePassiveByType('offHandCritical')?.passiveEffect?.rate || 0) : 0;
+      const stats = this.playerCombatStats(), offHandPassive = this.activePassiveByType('offHandCritical'), offHandCrit = options.offHand ? this.passiveRate(offHandPassive) : 0;
       return this.rollAttackOutcome(stats, enemy?.stats || {}, { ...options, skill, weapon, weaponType, criticalChance: this.criticalChanceFor(skill, stats) + offHandCrit });
     }
     rollEnemyAttackOutcome(enemy, action = {}, options = {}) {
@@ -802,23 +802,27 @@
     //   実効値 = rate + 強化段階 × step   （step 未指定なら rate の40%）
     //   max があればそこで頭打ち。MP割引のように青天井にできない効果へ付ける。
     // これで「後から強いJOBが出ても、育てた既存JOBが腐らない」形にする。
-    passiveRate(passive, key = 'rate') {
+    passiveValue(passive, key = 'rate', baseOverride = null) {
       const e = passive?.passiveEffect; if (!e) return 0;
-      const base = e[key] || 0; if (!base) return 0;
+      const base = Number(baseOverride ?? e[key]) || 0; if (!base) return 0;
       const n = this.passiveEnhancementRank(passive.id);
       if (key === 'rate' && e.rebirthTable) {
         const keys = Object.keys(e.rebirthTable).map(Number).filter(level => level <= n).sort((a, b) => b - a);
         return keys.length ? Number(e.rebirthTable[keys[0]]) : base;
       }
       if (!n) return base;
-      const step = e.rebirthStep != null ? e.rebirthStep : base * (this.gb().passiveRebirthStepRate ?? 0.4);
+      const step = Number(e.rebirthSteps?.[key] ?? e.rebirthStatSteps?.[key] ?? e.rebirthStep ?? (base * (this.gb().passiveRebirthStepRate ?? 0.4)));
+      const cap = e.rebirthMax?.[key] ?? e.rebirthStatMax?.[key] ?? (key === 'rate' ? e.max : null);
       const grown = base + n * step;
-      return e.max != null ? Math.min(e.max, grown) : grown;
+      return cap != null ? Math.min(Number(cap), grown) : grown;
     }
+    passiveRate(passive, key = 'rate') { return this.passiveValue(passive, key); }
+    passiveStatRate(passive, stat) { return this.passiveValue(passive, stat, passive?.passiveEffect?.stats?.[stat]); }
+
     // 表示用：効果テキストの数値を、転生で伸びた現在値に差し替える。
     // 「力 +5%」→ 転生2回なら「力 +9%（転生+4%）」のように出す。
     passiveCurrentText(passive) {
-      const e = passive?.passiveEffect; if (!e?.rate) return passive?.effectText || '';
+      const e = passive?.passiveEffect; if (!e) return passive?.effectText || ''; if (!e.rate) { const rank = this.passiveEnhancementRank(passive.id); return rank ? ((passive?.effectText || '') + '（転生強化 段階' + rank + '）') : (passive?.effectText || ''); }
       const base = e.rate, cur = this.passiveRate(passive), text = passive.effectText || '';
       const basePct = Math.round(base * 100), curPct = Math.round(cur * 100);
       // 「HP50%以下で〜 +10%」のように%が複数ある文があるので、
@@ -834,7 +838,7 @@
       for (const p of this.activePassives()) {
         const e = p.passiveEffect; if (!e) continue;
         if (e.type === 'statPercent') total[e.stat] = Math.round((total[e.stat] || 0) * (1 + this.passiveRate(p)));
-        else if (e.type === 'multiStatPercent') Object.entries(e.stats || {}).forEach(([k, r]) => total[k] = Math.round((total[k] || 0) * (1 + r)));
+        else if (e.type === 'multiStatPercent') Object.keys(e.stats || {}).forEach(k => total[k] = Math.round((total[k] || 0) * (1 + this.passiveStatRate(p, k))));
         else if (e.type === 'criticalUp') total.critBonus = (total.critBonus || 0) + this.passiveRate(p);
       }
       return total;
@@ -858,8 +862,8 @@
     comboDanceStacks() { return Math.max(0, Math.min(this.comboDanceMax(), Number(this.player?.comboDance || 0))); }
     comboDanceHit(extra = 0) { if (!this.player || !this.hasPassiveType('comboDance')) return; this.player.comboDance = Math.min(this.comboDanceMax(), this.comboDanceStacks() + 1 + extra); this.updateHUD(); }
     comboDanceMiss() { if (!this.player || !this.hasPassiveType('comboDance') || !this.comboDanceStacks()) return; this.player.comboDance = 0; this.floating($('#ren'), '連舞 BREAK', 'miss'); this.updateHUD(); }
-    comboDanceDamageRate() { const e = this.activePassiveByType('comboDance')?.passiveEffect; return e ? this.comboDanceStacks() * (e.damagePerStack || 0) : 0; }
-    comboMaxBoost() { return this.comboDanceStacks() >= this.comboDanceMax() ? this.activePassiveByType('comboMaxBoost')?.passiveEffect || null : null; }
+    comboDanceDamageRate() { const p = this.activePassiveByType('comboDance'); return p ? this.comboDanceStacks() * this.passiveValue(p, 'damagePerStack') : 0; }
+    comboMaxBoost() { const p = this.activePassiveByType('comboMaxBoost'); return p && this.comboDanceStacks() >= this.comboDanceMax() ? { ...p.passiveEffect, agiRate: this.passiveValue(p, 'agiRate'), offHandRate: this.passiveValue(p, 'offHandRate') } : null; }
     playerCombatStats() { const stats = { ...(this.player?.stats || this.totalStats()) }, boost = this.comboMaxBoost(); if (boost?.agiRate) stats.agi = Math.round((stats.agi || 0) * (1 + boost.agiRate)); return stats; }
     dualWieldRate() { const p = this.activePassiveByType('dualWield'); return p ? this.passiveRate(p) : 0; }
     // ══ JOB特性 ═══════════════════════════════════════════════
@@ -996,7 +1000,7 @@
         const gain = rebirths - last;
         this.profile.passiveEnhancements[id] = this.passiveEnhancementRank(id) + gain;
         this.profile.passiveEnhancedAtRebirth[id] = rebirths;
-        if (D.skills[id].passiveEffect?.rate || D.skills[id].passiveEffect?.rebirthTable) out.push({ skill: D.skills[id], rank: this.passiveEnhancementRank(id) });
+        const effect = D.skills[id].passiveEffect; if (effect?.rate || effect?.rebirthTable || effect?.rebirthSteps || effect?.rebirthStatSteps) out.push({ skill: D.skills[id], rank: this.passiveEnhancementRank(id) });
       });
       return out;
     }
@@ -1442,7 +1446,7 @@
     skillEquipmentReady(skill) { const required = skill?.requiresWeaponSubtype; return !required || this.equippedWeapon()?.weaponSubtype === required; }
     allLearnedPassives() { const ids = [...(this.profile.learnedJobSkills || []), ...(this.profile.learnedCharacterSkills || [])]; return [...new Set(ids)].map(id => D.skills[id]).filter(s => this.isPlayerContentVisible(s) && s.type === 'PASSIVE'); }
     setPassiveSlot(idx, skillId) { this.setEquippedPassive(idx, skillId); }
-    syncSkillUnlocks() { const learnedCharacter = new Set(this.profile.learnedCharacterSkills || []), learnedJob = new Set(this.profile.learnedJobSkills || []); (D.characterSkillProgression || []).forEach(entry => { if (this.profile.level >= entry.level) learnedCharacter.add(entry.skillId); }); Object.entries(this.profile.jobs || {}).forEach(([jobId, progress]) => { const job = D.jobs[jobId]; Object.entries(job?.skillUnlocks || {}).forEach(([level, skillId]) => { if (progress.level >= Number(level)) learnedJob.add(skillId); }); }); this.profile.learnedCharacterSkills = [...learnedCharacter]; this.profile.learnedJobSkills = [...learnedJob]; const allowed = new Set(['quickSlash', ...learnedCharacter, ...learnedJob]); this.profile.activeSkills = (this.profile.activeSkills || []).filter(id => allowed.has(id) && D.skills[id]?.type !== 'PASSIVE').slice(0, 4); }
+    syncSkillUnlocks() { const learnedCharacter = new Set(this.profile.learnedCharacterSkills || []), learnedJob = new Set(this.profile.learnedJobSkills || []); (D.characterSkillProgression || []).forEach(entry => { if (this.profile.level >= entry.level) learnedCharacter.add(entry.skillId); }); Object.entries(this.profile.jobs || {}).forEach(([jobId, progress]) => { const job = D.jobs[jobId]; Object.entries(job?.skillUnlocks || {}).forEach(([level, skillId]) => { if (progress.level >= Number(level)) learnedJob.add(skillId); }); }); this.profile.learnedCharacterSkills = [...learnedCharacter]; this.profile.learnedJobSkills = [...learnedJob]; const allowed = new Set(['quickSlash', ...learnedCharacter, ...learnedJob]); this.profile.activeSkills = (this.profile.activeSkills || []).filter(id => allowed.has(id) && D.skills[id]?.type !== 'PASSIVE').slice(0, 4); Object.entries(this.profile.jobs || {}).forEach(([jobId, progress]) => this.reinforceJobPassives(jobId, progress?.level || 1)); }
     learnedActiveSkillIds() { return [...new Set(['quickSlash', ...(this.profile.learnedCharacterSkills || []), ...(this.profile.learnedJobSkills || [])])].filter(id => D.skills[id]?.type !== 'PASSIVE'); }
     characterHasSkill(id) { return (this.profile.learnedCharacterSkills || []).includes(id) || (D.characterSkillProgression || []).some(entry => entry.skillId === id && this.profile.level >= entry.level); }
     jobExpNeeded(level) { return D.jobExpTable[level] || null; }
@@ -2655,7 +2659,7 @@
       strike.weaponOverrideId = this.profile.equipment.leftHand;
       const outcome = this.rollPlayerAttackOutcome(strike, enemy, { weapon: lw, weaponType: lw.weaponType, offHand: true });
       if (!outcome.hit) { this.comboDanceMiss(); this.triggerEvade('player', enemy, strike, { source: 'offHandStrike' }); this.floating(el, 'EVADE', 'miss'); this.setLog(`${enemy.name}${enemy.label}は左手の追撃をかわした！`); await this.battleSleep(240); ren.classList.remove('attacking'); return; }
-      const pursuitExtra = outcome.critical ? (this.activePassiveByType('offHandCritical')?.passiveEffect?.comboBonusOnCritical || 0) : 0;
+      const pursuitPassive = this.activePassiveByType('offHandCritical'), pursuitExtra = outcome.critical ? this.passiveValue(pursuitPassive, 'comboBonusOnCritical') : 0;
       this.comboDanceHit(pursuitExtra);
       const d = this.damageFor(strike, enemy, outcome);
       if (enemy.infiniteHp) enemy.debugDamageTaken = (enemy.debugDamageTaken || 0) + d.value;
@@ -2913,8 +2917,8 @@
         // 集団・多段攻撃で抽選回数が膨らまないよう、条件を満たした最初の1回だけ判定する。
         if (isHeavyHit && this.player.prayerCheckedTurn !== this.turn) {
           this.player.prayerCheckedTurn = this.turn;
-          if (Math.random() < (effect.chance || 0)) {
-            const turns = Math.max(1, Number(effect.turns) || 1), rate = Math.max(0, Number(effect.healRate) || 0);
+          if (Math.random() < this.passiveValue(prayer, 'chance')) {
+            const turns = Math.max(1, Number(effect.turns) || 1), rate = Math.max(0, this.passiveValue(prayer, 'healRate'));
             this.player.buffs.regenerate = Math.max(this.player.buffs.regenerate || 0, turns + 1);
             this.player.buffs.regenerateRate = Math.max(this.player.buffs.regenerateRate || 0, rate);
             this.player.buffs.regenerateChance = Math.max(this.player.buffs.regenerateChance || 0, 1);

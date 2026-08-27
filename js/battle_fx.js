@@ -78,7 +78,7 @@
     ({ sword: 'fxSlash', martial: 'fxClaw', staff: 'fxBurn', instrument: 'fxNotes', shield: 'fxImpact' }[type] || 'fxSlash')
       .split(' ').forEach(fn => this[fn]?.(field, at));
     // 武器ごとの音は常に鳴らし、クリティカルのときは衝撃音を重ねる
-    this.audio?.sfx?.({ sword: 'swordHit', martial: 'clawHit', staff: 'fireHit', instrument: 'noteHit', shield: 'shieldHit' }[type] || 'swordHit');
+    this.audio?.sfx?.({ sword: 'swordHit', martial: 'clawHit', staff: 'fireHit', instrument: 'noteHit', shield: 'playerHit' }[type] || 'swordHit');
     if (critical) { this.audio?.sfx?.('criticalHit'); this.fxCritical(field, at); }
   };
 

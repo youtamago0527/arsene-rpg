@@ -20,7 +20,7 @@
     passiveProc: { url: '音楽系/効果音/パッシブ発動音.mp3', gain: .78, offset: .018, maxDur: 1.9 }
   };
   // 武器種 → 効果音名。左手の追撃など、武器種から直接鳴らしたい場所で使う
-  const WEAPON_SFX = { sword: 'swordHit', martial: 'clawHit', staff: 'fireFlight', instrument: 'noteHit', shield: 'shieldHit' };
+  const WEAPON_SFX = { sword: 'swordHit', martial: 'clawHit', staff: 'fireFlight', instrument: 'noteHit', shield: 'playerHit' };
 
   class ArseneAudio {
     constructor(bgmPath) {

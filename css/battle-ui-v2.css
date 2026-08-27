@@ -1661,3 +1661,29 @@
 /* 一掃は広告・常設ライセンスの解放中に黒塗りを外し、利用可能状態を明示する。 */
 #game .command-panel button[data-action='quick'].sweep-unlocked:not(:disabled){filter:none;opacity:1;border-color:#bb72ff;background:linear-gradient(125deg,#17062d,#43146b 55%,#170a31);box-shadow:0 0 12px #a747ff88,inset 0 0 12px #7d2eb844}
 #game .command-panel button[data-action='quick'].sweep-unlocked:not(:disabled) strong,#game .command-panel button[data-action='quick'].sweep-unlocked:not(:disabled) span{color:#f1d7ff}
+
+/* iPhoneの動的ブラウザUIでもメニューの末尾まで確実に操作できる。 */
+@media(max-width:430px){.battle-menu-popover{top:max(50px,calc(env(safe-area-inset-top) + 42px));bottom:max(8px,env(safe-area-inset-bottom));max-height:none}.battle-menu-scroll{padding-bottom:6px}}
+/* プロフィールから選んだ写真も、戦闘では通常立ち絵と同じ左下の半身枠へ。
+   縦3:4画像を約1.8倍でトリミングし、頭〜腰を表示する。 */
+#game #ren[data-custom-portrait="true"]{
+  left:-20px!important;
+  bottom:-50px!important;
+  width:214px!important;
+  height:278px!important;
+  overflow:hidden;
+}
+#game #ren[data-custom-portrait="true"] .ren-sprite{
+  inset:auto 0 0!important;
+  width:100%!important;
+  height:100%!important;
+  background-size:auto 180%!important;
+  background-position:center 7%!important;
+  background-repeat:no-repeat!important;
+}
+@media(max-width:390px){
+  #game #ren[data-custom-portrait="true"]{left:-16px!important;bottom:-44px!important;width:204px!important;height:266px!important}
+}
+@media(max-height:720px){
+  #game #ren[data-custom-portrait="true"]{left:-16px!important;bottom:-40px!important;width:192px!important;height:248px!important}
+}
