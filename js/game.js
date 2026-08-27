@@ -5,7 +5,7 @@
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const roll = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
   const clone = value => JSON.parse(JSON.stringify(value));
-  const statLabels = { maxHp: 'HP', maxMp: 'MP', str: '力', vit: '体力', mag: '魔力', mnd: '精神', agi: '素早さ', dex: '器用さ', luk: '運' };
+  const statLabels = { maxHp: 'HP', maxMp: 'MP', str: '力', vit: '体力', mag: '魔力', mnd: '精神', agi: '素早さ', dex: '器用さ', luk: '運', critBonus: '会心率' };
 
   class BattleGame {
     constructor() {
@@ -922,10 +922,14 @@
       }
       // 双刃士など旧growthテーブル方式のJOBはjobGrowthGainedへ記録されない。
       // 現在JOB Lvまでの実補正を継承元へ足し、旧セーブでも50%を確実に反映する。
+      // 「記録が空のときだけ差し替える」形だと、称号成長で jobGrowthGained が
+      // 1でも埋まった時点で旧テーブルぶんが丸ごと無視されてしまう。
+      // totalStats() と同じく、記録ぶんへ現在Lvの旧テーブル補正を足す。
       for (const id of this.gb().phantomLegacyGrowthJobs || []) {
-        if (Object.values(sources[id] || {}).some(v => v)) continue;
         const legacy = this.activeJobBonuses(id);
-        if (Object.values(legacy).some(v => v)) sources[id] = legacy;
+        if (!Object.values(legacy).some(v => v)) continue;
+        const table = sources[id] ||= {};
+        for (const [key, value] of Object.entries(legacy)) table[key] = (Number(table[key]) || 0) + value;
       }
       return sources;
     }
@@ -1020,6 +1024,17 @@
       // 転生で通常JOBの保持能力を20%へ圧縮する前に、PHANTOM THIEFが盗んだ最高値を保存する。
       this.recordPhantomGrowth(jobId);
       const retention = Math.max(0, Math.min(1, this.gb().rebirthStatRetentionRate ?? .20));
+      // 双刃士のような旧growthテーブル方式のJOBは、補正がJOB Lvから毎回導かれる。
+      // Lvを1へ戻すとその補正が丸ごと消え、20%保持が一切効かなかった。
+      // Lvリセット前の実補正を jobGrowthGained へ畳み込み、
+      // 他JOBと同じく20%だけ残るようにする（totalStats()は両方を足すので二重にはならない）。
+      const legacyBonuses = this.activeJobBonuses(jobId);
+      if (Object.values(legacyBonuses).some(v => v)) {
+        this.profile.jobGrowthGained ||= {};
+        const table = this.profile.jobGrowthGained[jobId] ||= {};
+        for (const [key, value] of Object.entries(legacyBonuses)) table[key] = (Number(table[key]) || 0) + value;
+        this.recordPhantomGrowth(jobId);
+      }
       const growth = this.profile.jobGrowthGained?.[jobId] || {};
       for (const [key, value] of Object.entries(growth)) growth[key] = key === 'critBonus'
         ? Number((Number(value || 0) * retention).toFixed(4))
@@ -3290,7 +3305,7 @@
     jobDetailHtml(jobId, unlocked, currentId) {
       const j = D.jobs[jobId], p = this.profile.jobs[jobId] || { level: 1, exp: 0 }, avail = this.isJobUnlocked(jobId), isCur = jobId === currentId, need = this.jobExpNeeded(p.level), bar = need ? Math.round(100 * p.exp / need) : 100;
       const noGrow = this.isNoGrowthJob(jobId) || !!j.noGrowth;
-      const bonuses = this.activeJobBonuses(jobId), bHtml = Object.entries(bonuses).length ? Object.entries(bonuses).map(([k, v]) => `<div class="jbn-item"><span>${statLabels[k] || k}</span><b>${k === 'critBonus' ? `+${Math.round(v * 100)}%` : `+${v}`}</b></div>`).join('') : '<span class="jbn-none">なし</span>';
+      const bonuses = this.activeJobBonuses(jobId);
       // アビリティ一覧＝固有技＋パッシブ＋旧skillUnlocks＋条件つき専用技
       const abilityEntries = [];
       // 固有技は実際の習得JOB Lvで出す（Lv1固定にすると、画面は習得済でも戦闘で出ない食い違いが起きる）
@@ -3320,10 +3335,18 @@
         }).filter(Boolean).join('');
         stealHtml = `<div class="jbonus"><h4>他のJOBから盗んだ能力</h4><div class="jbn-grid">${grid}</div>${srcRows ? `<div class="jsteal"><small>盗奪元（各JOBで育てた合計）</small><div class="jsteal-list">${srcRows}</div></div>` : ''}<p class="jbn-note">全JOBで育てた成長を合算し、その${rate}%を常に引き継いでいます。JOBを育てるほどこの数値が伸びます。</p></div>`;
       }
-      // JOB補正は「このJOBで育てた成長」を出す。旧テーブル方式のJOBは従来どおり。
-      const grown = (this.profile.jobGrowthGained || {})[jobId] || {};
-      const gHtml = Object.entries(grown).filter(([, v]) => v).map(([k, v]) => `<div class="jbn-item"><span>${statLabels[k] || k}</span><b>+${v}</b></div>`).join('');
-      const bonusGrid = gHtml || bHtml;
+      // JOB補正は「このJOBで育てた成長」を出す。
+      // 双刃士のような旧growthテーブル方式のJOBは activeJobBonuses() 側に、
+      // jobGrowthPerLevel 方式のJOBと称号成長は jobGrowthGained 側に入る。
+      // totalStats() は両方を足しているので、表示も両方を足す。
+      // 以前は「gHtml || bHtml」で片方しか出しておらず、称号成長で
+      // jobGrowthGained が埋まった双刃士は、旧テーブルぶんの
+      // STR/AGIが表示から丸ごと消えて「+1」だけになっていた。
+      const grown = { ...bonuses };
+      for (const [k, v] of Object.entries((this.profile.jobGrowthGained || {})[jobId] || {})) grown[k] = (grown[k] || 0) + v;
+      const bonusGrid = Object.entries(grown).filter(([, v]) => v)
+        .map(([k, v]) => `<div class="jbn-item"><span>${statLabels[k] || k}</span><b>${k === 'critBonus' ? `+${Math.round(v * 100)}%` : `+${v}`}</b></div>`).join('')
+        || '<span class="jbn-none">なし</span>';
       // JOB特性：そのJOBに就いている間だけの効果（他JOBへ持ち出せない）
       const traits = this.jobTraitEntries(jobId);
       const traitHtml = traits.length ? `<div class="jbonus jtraits"><h4>JOB特性</h4><div class="jtrait-list">${traits.map(t => `<button type="button" class="jtrait-row" data-job-trait-detail="${jobId}:${t.key}"><b>${t.name}</b><span>${t.label}${t.gain > 0 ? `（転生 +${t.gain}%）` : ''}</span><em>▶</em></button>`).join('')}</div><p class="jbn-note">このJOBに就いている間だけ有効。他JOBへは持ち出せません。</p></div>` : '';
