@@ -11,6 +11,38 @@
   const statusHiddenStats = ['critBonus'];
   const statusStatKeys = Object.keys(statLabels).filter(k => !statusHiddenStats.includes(k));
 
+  // --- 敵名プレート自動フィット -------------------------------------------
+  // 文字数のしきい値ではなく、実際に描画された文字幅(scrollWidth)とプレート内の
+  // 使用可能幅(clientWidth)を比較して font-size を縮小する。モンスターごとの
+  // 個別分岐は持たない汎用処理で、通常敵・ボス・2段名のどのラベルにも同じ関数を使う。
+  const NAMEPLATE_MIN_FONT_SIZE = 7.5;
+  function fitTextToPlate(el, { min = NAMEPLATE_MIN_FONT_SIZE, step = .4 } = {}) {
+    if (!el || !el.textContent || !el.textContent.trim()) return;
+    el.style.fontSize = ''; el.style.whiteSpace = ''; el.style.overflowWrap = '';
+    const standard = parseFloat(getComputedStyle(el).fontSize);
+    if (!standard) return;
+    const available = el.clientWidth;
+    if (!available) return; // 非表示中（display:noneなど）は次回の再フィットに任せる
+    const natural = el.scrollWidth;
+    if (natural <= available) return; // 標準サイズで収まる短い名前はそのまま
+    let size = Math.max(min, Math.min(standard, standard * (available / natural)));
+    el.style.fontSize = `${size}px`;
+    let guard = 24;
+    while (el.scrollWidth > el.clientWidth && size > min && guard-- > 0) {
+      size = Math.max(min, size - step);
+      el.style.fontSize = `${size}px`;
+    }
+    // 最小サイズでも1行に収まりきらない極端な名前だけ、省略記号を使わず折り返して全文を残す。
+    if (el.scrollWidth > el.clientWidth) { el.style.whiteSpace = 'normal'; el.style.overflowWrap = 'anywhere'; }
+  }
+  function fitAllEnemyNameplates(root) {
+    (root || document).querySelectorAll('.enemy-nameplate>span').forEach(span => {
+      if (span.classList.contains('split-name')) Array.from(span.children).forEach(line => fitTextToPlate(line));
+      else fitTextToPlate(span);
+    });
+  }
+  window.arseneFitEnemyNameplates = fitAllEnemyNameplates; // デバッグ／将来の呼び出し用に公開
+
   class BattleGame {
     constructor() {
       this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.autoBattleSpeedIndex = -1; this.autoToggleBusy = false; this.autoPickTimer = null; this.simpleBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.enhanceWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.enhanceArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false; this.lastBattleAction = null; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
@@ -1701,39 +1733,18 @@
         const statuses = '<button type="button" class="status-strip enemy-statuses" aria-label="敵の状態と解析情報"></button>';
         const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : '';
         const slotLabel = String.fromCharCode(65 + i);
+        // 肩書き付きボスの表示名。既存の異名テーブルはそのまま使い、文字数を数えて
+        // font-sizeを決めるのではなく、肩書きデータが実在するボスだけ2段表示にする。
         const bossAliases = { zenakado: '孤高の独奏者', myrthi: '黒紅の双刃戦姫', seripes: '不落の反奏騎士', astact: '断奏の紅姫' };
         const baseName = String(e.name || '').trim();
-        const displayName = e.kind === 'boss' && bossAliases[e.id] ? `${baseName}・${bossAliases[e.id]}` : baseName;
+        const bossTitle = e.kind === 'boss' ? bossAliases[e.id] : null;
+        const splitName = Boolean(bossTitle);
+        const displayName = splitName ? `${bossTitle}・${baseName}` : baseName;
         const accessibleName = `${slotLabel} ${displayName}${e.label || ''}`;
-        const nameChars = [...displayName], nameLength = nameChars.length;
-        const splitThreshold = e.kind === 'boss' ? 13 : 8;
-        const splitName = nameLength >= splitThreshold;
-        let nameLines = [displayName];
-        if (splitName) {
-          const midpoint = Math.ceil(nameLength / 2);
-          let cut = -1;
-          // 固有名は「・」、異名付きボスは閉じ括弧、日本語名は「の」を優先して自然に改行する。
-          for (const marker of ['・', '》']) {
-            const markerIndex = nameChars.indexOf(marker);
-            if (markerIndex > 1 && markerIndex < nameLength - 2) { cut = markerIndex + 1; break; }
-          }
-          if (cut < 0) {
-            const candidates = nameChars
-              .map((character, index) => character === 'の' && index > 1 && index < nameLength - 2 ? index + 1 : -1)
-              .filter(index => index > 0)
-              .sort((a, b) => Math.abs(a - midpoint) - Math.abs(b - midpoint));
-            cut = candidates[0] || midpoint;
-          }
-          nameLines = [nameChars.slice(0, cut).join(''), nameChars.slice(cut).join('')];
-        }
-        const longestLine = Math.max(...nameLines.map(line => [...line].length));
-        const nameClass = [
-          nameLength >= 7 ? 'medium-name' : '',
-          nameLength >= 10 ? 'long-name' : '',
-          splitName ? 'split-name' : '',
-          longestLine >= 8 ? 'dense-name' : ''
-        ].filter(Boolean).join(' ');
-        const displayNameHtml = splitName ? `${nameLines[0]}<small>${nameLines[1]}</small>` : displayName;
+        const nameClass = splitName ? 'split-name' : '';
+        const displayNameHtml = splitName
+          ? `<span class="enemy-name-title">${bossTitle}</span><span class="enemy-name-main">${baseName}</span>`
+          : displayName;
         // Use a real image element for supplied enemy art.  Background sprites
         // were easy to hide behind the legacy slime styles, leaving some D3
         // enemies as an apparently empty silhouette.
@@ -1755,6 +1766,7 @@
         return `<div role="button" tabindex="0" class="enemy ${e.kind === 'boss' ? `boss-enemy enemy-${e.id}${bossClass}` : `enemy-${e.id}`} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" data-enemy-id="${e.id}" data-kind="${e.kind || 'normal'}" data-size="${e.kind === 'boss' ? 'boss' : e.kind === 'rare' ? 'large' : 'normal'}" style="--boss-art-scale:${bossArtScale}" aria-label="${accessibleName}を攻撃"><div class="enemy-nameplate"><b class="enemy-slot-label" aria-hidden="true">${slotLabel}</b><span class="${nameClass}">${displayNameHtml}</span>${statuses}</div><div class="enemy-visual">${visual}</div><div class="enemy-hud${e.kind === 'boss' ? ' boss-hud' : ''}"><label>HP</label><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>${e.hp.toLocaleString('ja-JP')} / ${e.stats.maxHp.toLocaleString('ja-JP')}</small></div></div>`;
       }).join('');
       this.enemies.forEach((enemy, index) => this.bindEnemyTap(enemy, index));
+      requestAnimationFrame(() => fitAllEnemyNameplates(enemyLayer));
     }
     bindEnemyTap(enemy, index) {
       const el = document.getElementById(enemy.uid); if (!el || !enemy.alive) return;
@@ -4463,5 +4475,26 @@
     }
   }
   window.BattleGame = BattleGame; // 異世界モジュールから prototype を拡張するため公開する
-  addEventListener('DOMContentLoaded', () => { window.arseneGame = new BattleGame(); });
+  addEventListener('DOMContentLoaded', () => {
+    window.arseneGame = new BattleGame();
+    // 敵名オートフィットの再計算トリガー: 初回表示・Webフォント読み込み完了・
+    // 画面回転／リサイズのいずれでも、現在表示中の名札だけを再測定する。
+    const enemyLayer = document.getElementById('enemies');
+    document.fonts?.ready?.then(() => fitAllEnemyNameplates(enemyLayer)).catch(() => {});
+    if (enemyLayer && 'ResizeObserver' in window) {
+      let pending = null;
+      const observer = new ResizeObserver(() => {
+        if (pending) return;
+        pending = requestAnimationFrame(() => { pending = null; fitAllEnemyNameplates(enemyLayer); });
+      });
+      observer.observe(enemyLayer);
+    } else {
+      let resizeTimer = null;
+      addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => fitAllEnemyNameplates(enemyLayer), 150);
+      });
+      addEventListener('orientationchange', () => fitAllEnemyNameplates(enemyLayer));
+    }
+  });
 })();
