@@ -489,8 +489,12 @@
     root.querySelector('#dbg-del').style.display = def.list ? '' : 'none';
     root.querySelector('#dbg-new').style.display = def.list ? '' : 'none';
     const n = Object.values(ov).reduce((a, p) => a + Object.keys(p).filter(k => k !== '__deleted').length + (p.__deleted || []).length, 0);
+    const collectionTitle = window.arseneGame?.equippedCollectionTitle?.();
+    const titleStatus = collectionTitle
+      ? `COLLECTION TITLE: ${collectionTitle.id} (${collectionTitle.effectType} ×${collectionTitle.effectValue})`
+      : 'COLLECTION TITLE: なし';
     root.querySelector('.dbg-foot').textContent =
-      `未書き出しの変更 ${n} 件　／　変更は端末に保存され次回起動時にも適用されます。data.js へ正式に取り込むには「書き出し」でJSONをコピーしてください。`;
+      `未書き出しの変更 ${n} 件　／　変更は端末に保存され次回起動時にも適用されます。data.js へ正式に取り込むには「書き出し」でJSONをコピーしてください。　／　${titleStatus}`;
   }
 
   // フォームだけ描き直す（カテゴリ一覧などは触らない）
