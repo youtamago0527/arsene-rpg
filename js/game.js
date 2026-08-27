@@ -2015,7 +2015,7 @@
       }).join('');
       const testReturn = D.settings.battleMenuTestReturn ? '<button type="button" class="test-return" data-go-menu>拠点へ戻る<small>TEST ONLY</small></button>' : '';
       const support = window.arseneQOffer?.battleHTML?.() || '';
-      pop.innerHTML = `<div class="battle-menu-header"><small>BATTLE MENU</small><button type="button" data-battle-menu-close aria-label="設定を閉じる">×</button></div>${support}${rows}<div class="battle-menu-actions"><button type="button" data-battle-menu-close>戦闘へ戻る</button>${testReturn}</div>`;
+      pop.innerHTML = `<div class="battle-menu-header"><small>BATTLE MENU</small><button type="button" data-battle-menu-close aria-label="設定を閉じる">×</button></div><div class="battle-menu-scroll">${support}${rows}</div><div class="battle-menu-actions"><button type="button" data-battle-menu-close>戦闘へ戻る</button>${testReturn}</div>`;
     }
     panel(html, layout = 'sub') {
       const panel = $('#command-panel'), drawer = $('#command-drawer');
