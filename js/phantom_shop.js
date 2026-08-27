@@ -191,6 +191,12 @@
         if (!this.shop.hidden || !this.arcade.hidden) this.backToPopup();
         else if (!this.popup.hidden) this.close();
       });
+
+      // 画面回転／リサイズで折り返しが変わっても、開いている商品のmax-heightが
+      // 古い値のまま固定されて中身が切れないよう追従させる。
+      addEventListener('resize', () => {
+        shop.querySelectorAll('.pm-item.open .pm-item-body').forEach(body => { body.style.maxHeight = 'none'; });
+      });
     }
 
     itemHTML(item) {
@@ -300,7 +306,23 @@
       this.toast(item.name, result);
     }
 
-    toggleItem(item) { if (item) item.classList.toggle('open'); }
+    // 開閉のたびに実際の中身の高さ(scrollHeight)を測ってmax-heightへ反映する。
+    // 固定pxの当て推量をやめることで、商品の文章量がどれだけ増えても中身が
+    // 切れず、かつ「下に伸びる」開閉アニメーションも保てる。
+    toggleItem(item) {
+      const body = item?.querySelector('.pm-item-body');
+      if (!body) { item?.classList.toggle('open'); return; }
+      if (item.classList.contains('open')) {
+        body.style.maxHeight = `${body.scrollHeight}px`; // 'none'から数値へ戻してから閉じる
+        requestAnimationFrame(() => { item.classList.remove('open'); body.style.maxHeight = '0px'; });
+      } else {
+        item.classList.add('open');
+        body.style.maxHeight = `${body.scrollHeight}px`;
+        body.addEventListener('transitionend', event => {
+          if (event.propertyName === 'max-height' && item.classList.contains('open')) body.style.maxHeight = 'none';
+        }, { once: true });
+      }
+    }
 
     // ── 開閉 ──
     open() {
