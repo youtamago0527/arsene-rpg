@@ -6,6 +6,9 @@
   const roll = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
   const clone = value => JSON.parse(JSON.stringify(value));
   const statLabels = { maxHp: 'HP', maxMp: 'MP', str: '力', vit: '体力', mag: '魔力', mnd: '精神', agi: '素早さ', dex: '器用さ', luk: '運', critBonus: '会心率' };
+  // 会心率は仕様として非公式な値なので、ステータス画面の一覧には出さない。
+  const statusHiddenStats = ['critBonus'];
+  const statusStatKeys = Object.keys(statLabels).filter(k => !statusHiddenStats.includes(k));
 
   class BattleGame {
     constructor() {
@@ -4097,7 +4100,7 @@
       const legacyJob = this.activeJobBonuses(), growthJob = this.jobStatBonuses(), jobBonus = {};
       for (const src of [legacyJob, growthJob]) for (const [k, v] of Object.entries(src)) if (v) jobBonus[k] = (jobBonus[k] || 0) + v;
       // 基礎値 ＋ JOB ＋ 装備 が合計と一致するように並べる
-      const statRows = Object.keys(statLabels).map(k => {
+      const statRows = statusStatKeys.map(k => {
         const b = base[k] || 0, j = jobBonus[k] || 0, e = bonus[k] || 0;
         const parts = [`<i class="src-base">基礎 ${b}</i>`];
         if (j) parts.push(`<i class="src-job">JOB +${j}</i>`);
@@ -4106,7 +4109,7 @@
         if (rest) parts.push(`<i class="src-etc">その他 ${rest > 0 ? '+' : ''}${rest}</i>`);
         return `<div class="st-stat"><span>${statLabels[k]}</span><b>${total[k]}</b><em>${parts.join('<u>+</u>')}</em></div>`;
       }).join('');
-      const jobBonusRows = Object.entries(jobBonus).filter(([, v]) => v).map(([k, v]) => `<div class="st-jb-row"><span>${statLabels[k] || k.toUpperCase()}</span><b>+${v}</b></div>`).join('');
+      const jobBonusRows = Object.entries(jobBonus).filter(([k, v]) => v && !statusHiddenStats.includes(k)).map(([k, v]) => `<div class="st-jb-row"><span>${statLabels[k] || k.toUpperCase()}</span><b>+${v}</b></div>`).join('');
       // ファントムシーフは全JOBの育てた成長を合算して一定割合を引き継ぐ。
       // 何がどこから来ているか分かるよう、内訳と引継率を明示する。
       const inheritRate = Math.round((this.gb().phantomThiefInheritRate ?? 0.5) * 100);
