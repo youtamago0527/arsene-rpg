@@ -338,6 +338,15 @@
         profile.unlockedJobs = [...new Set(profile.unlockedJobs || [])].filter(id => (id !== 'magicKnight' || d1Cleared) && (id !== 'dualBlade' || d2Cleared) && (id !== 'guardian' || d3Cleared));
         if (d1Cleared && !profile.unlockedJobs.includes('magicKnight')) profile.unlockedJobs.push('magicKnight');
         if (d2Cleared && !profile.unlockedJobs.includes('dualBlade')) profile.unlockedJobs.push('dualBlade');
+        // 解放条件（unlockCondition）をすでに満たしているJOBは、どの経路で来たセーブでも
+        // 解放済みとして扱う。個別のフラグ移行に頼ると取りこぼしが出るため、条件から導く。
+        for (const [id, job] of Object.entries(D.jobs || {})) {
+          if (job.devOnly || job.futureOnly || !job.unlockCondition) continue;
+          const cond = job.unlockCondition;
+          if (cond.bossDefeated && !profile.bossDefeated[cond.bossDefeated]) continue;
+          if (cond.jobLevels && Object.entries(cond.jobLevels).some(([rid, rlv]) => (profile.jobs[rid]?.level || 1) < rlv)) continue;
+          if (!profile.unlockedJobs.includes(id)) profile.unlockedJobs.push(id);
+        }
         // 解放リストへ入れただけでレベル情報が無いと、JOB詳細を開いた瞬間に落ちる。
         // 一覧には出るのにタップしても開かない、という状態になるので必ず補う。
         profile.unlockedJobs.forEach(id => { if (D.jobs[id] && !profile.jobs[id]) profile.jobs[id] = { level: 1, exp: 0 }; });
@@ -3237,7 +3246,17 @@
       // キャラクターLvは廃止済み。現在のJOBとそのLvを出す。
       const hdr = `<div class="job-hdr"><div class="job-hdr-l"><small>JOB & ABILITY</small><b>${this.playerName()}</b><span>武器学 ${this.weaponTypeName(this.equippedWeaponType())} Lv.${this.masteryOf(this.equippedWeaponType()).level}</span></div><div class="job-hdr-r"><small>現在のJOB</small><strong>${curJob.name} Lv.${this.profile.jobs?.[currentId]?.level || 1}</strong></div></div>`;
       let body;
-      if (ui.tab === 'job') { body = ui.detailId ? this.jobDetailHtml(ui.detailId, unlocked, currentId) : this.jobListHtml(unlocked, currentId); }
+      // 描画中に例外が出ると本文が空のままになり、「タップしても何も起きない」ように見える。
+      // 握りつぶさず、画面へ理由を出して一覧へ戻れるようにする。
+      const safeBody = (build, label) => {
+        try { return build(); }
+        catch (error) {
+          console.error(`[JOB] ${label} の描画に失敗`, error);
+          return `<div class="jdetail"><button class="jback-btn" data-job-back>← JOB一覧</button>
+            <p class="job-lock-notice">${label}の表示でエラーが発生しました。<br><small>${String(error?.message || error).slice(0, 160)}</small></p></div>`;
+        }
+      };
+      if (ui.tab === 'job') { body = ui.detailId ? safeBody(() => this.jobDetailHtml(ui.detailId, unlocked, currentId), `JOB詳細（${D.jobs[ui.detailId]?.name || ui.detailId}）`) : safeBody(() => this.jobListHtml(unlocked, currentId), 'JOB一覧'); }
       else if (ui.tab === 'title' && this.titlePanelHtml) { this.titlePanelSource = 'job'; body = this.titlePanelHtml(); }
       else { body = this.abilitySetHtml(currentId); }
       let modal = '';
