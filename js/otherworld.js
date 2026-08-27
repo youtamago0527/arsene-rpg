@@ -65,7 +65,11 @@
       if (resumable) {
         f.owResumePending = true;
       } else {
-        if (sameDay && (f.owUsedToday || 0) > 0) {
+        if (f.owEntryInProgress?.usedPremiumTicket) {
+          p.premium ||= {};
+          p.premium.otherworldTickets = Math.max(0, Number(p.premium.otherworldTickets) || 0) + 1;
+          f.owInterferenceRefundNotice = true;
+        } else if (sameDay && (f.owUsedToday || 0) > 0) {
           f.owUsedToday--;
           f.owInterferenceRefundNotice = true;
         }
@@ -257,8 +261,10 @@
   P.owInterference = function () {
     this.owRefreshDaily();
     const baseMax = this.profile.flags.owInterferenceMax ?? (this.owCfg().interferenceMax ?? 2);
-    const max = baseMax + Number(window.arseneQOffer?.bonus?.('otherworld') || 0);
-    return { left: Math.max(0, max - (this.profile.flags.owUsedToday || 0)), max };
+    const dailyMax = baseMax + Number(window.arseneQOffer?.bonus?.('otherworld') || 0);
+    const dailyLeft = Math.max(0, dailyMax - (this.profile.flags.owUsedToday || 0));
+    const tickets = Math.max(0, Number(this.profile.premium?.otherworldTickets) || 0);
+    return { left: dailyLeft + tickets, max: dailyMax + tickets, dailyLeft, dailyMax, tickets };
   };
   P.owSettleEntry = function (outcome = 'complete') {
     const f = this.profile.flags;
@@ -293,7 +299,10 @@
   };
   P.owRefundBrokenCheckpoint = function () {
     const f = this.profile.flags, marker = f.owEntryInProgress;
-    if (marker?.date === this.owDateKey() && (f.owUsedToday || 0) > 0) f.owUsedToday--;
+    if (marker?.usedPremiumTicket) {
+      this.profile.premium ||= {};
+      this.profile.premium.otherworldTickets = Math.max(0, Number(this.profile.premium.otherworldTickets) || 0) + 1;
+    } else if (marker?.date === this.owDateKey() && (f.owUsedToday || 0) > 0) f.owUsedToday--;
     f.owEntryInProgress = null; f.owBattleCheckpoint = null; f.owResumePending = false; f.owInterferenceRefundNotice = true;
     this.owRun = null; this.saveProfile(); this.showMenu('home');
   };
@@ -688,8 +697,14 @@
     if (inf.left <= 0) return;
     const selected = this.owDungeonChoices().find(d => d.id === dungeonId) || this.owDungeonChoices()[0];
     const cfg = this.owRunCfg(selected?.id);
-    this.profile.flags.owUsedToday = (this.profile.flags.owUsedToday || 0) + 1;
-    this.profile.flags.owEntryInProgress = { date: this.owDateKey(), dungeonId: selected?.id || cfg.id, startedAt: Date.now() };
+    const usedPremiumTicket = inf.dailyLeft <= 0;
+    if (usedPremiumTicket) {
+      this.profile.premium ||= {};
+      this.profile.premium.otherworldTickets = Math.max(0, Number(this.profile.premium.otherworldTickets) || 0) - 1;
+    } else {
+      this.profile.flags.owUsedToday = (this.profile.flags.owUsedToday || 0) + 1;
+    }
+    this.profile.flags.owEntryInProgress = { date: this.owDateKey(), dungeonId: selected?.id || cfg.id, startedAt: Date.now(), usedPremiumTicket };
     this.profile.flags.owInterferenceRefundNotice = false;
     this.saveProfile();
     this.owRun = {

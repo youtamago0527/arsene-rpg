@@ -4,8 +4,10 @@
   const DAY = () => new Date().toLocaleDateString('ja-JP');
   const QD = window.ARSENE_Q_DIALOGUE || { rates: { hint: .1, secret: .01 }, offer: {}, success: [], hint: [], secret: [] };
   const defs = {
-    auto2: { title: 'AUTO ×2.0', copy: '30分間、AUTO速度を×2.0へ。', key: 'auto2Uses', expiry: 'auto2ExpiresAt', label: 'AUTO速度アップ' },
-    sweep: { title: '一掃', copy: '30分間、通常ダンジョンの一掃を解放する。', key: 'sweepUses', expiry: 'sweepExpiresAt', label: '一掃解放' },
+    auto2: { title: 'AUTO ×2.0', copy: '30分間、AUTOの演出速度を×2.0へ。AIが通常戦闘を操作するだけで、能力・ダメージ・報酬は変化しない。アイテム消費と敗北は通常どおり発生する。', key: 'auto2Uses', expiry: 'auto2ExpiresAt', label: 'AUTO速度アップ' },
+    sweep: { title: '一掃', copy: '30分間、通常ダンジョンの雑魚戦だけ一掃を解放する。現在の残HP・MP、装備/JOB/技と敵全員の能力から勝敗を予測し、戦力不足なら敗北する。エリート・レア・全ボス・異世界には使用できない。', key: 'sweepUses', expiry: 'sweepExpiresAt', label: '雑魚戦の簡易決着' },
+    exp2: { title: '強昆布ラーメン', copy: '1時間、通常ダンジョンで敵撃破EXPとJOB EXPを2倍にする。GOLD・ドロップ・武器学EXPは増加しない。', key: 'exp2Uses', expiry: 'exp2ExpiresAt', durationMs: 60 * 60 * 1000, extend: true, label: '獲得EXP ×2' },
+    gold2: { title: '海老味噌ラーメン', copy: '1時間、通常ダンジョンで敵撃破GOLDを2倍にする。EXP・JOB EXP・ドロップ・武器学EXPは増加しない。', key: 'gold2Uses', expiry: 'gold2ExpiresAt', durationMs: 60 * 60 * 1000, extend: true, label: '獲得GOLD ×2' },
     otherworld: { title: '異世界 +1', copy: '本日の異世界入場回数を1回追加。', key: 'otherworldUses', label: '異世界入場' },
     revive: { title: '怪盗の再起', copy: '戦闘不能から復活し、HP50%で現在の戦闘を続行する。', key: 'reviveUses', label: '戦闘復活' },
     protect: { title: '保護のアルカナ', copy: '破壊された装備を、強化値+0で復元する。', key: 'restoreUses', label: '破壊装備の復元' },
@@ -20,13 +22,29 @@
     delete s.bossDropBonus;
     if (s.dateKey !== DAY()) Object.assign(s, {
       dateKey: DAY(), auto2Uses: 0, sweepUses: 0, otherworldUses: 0,
-      reviveUses: 0, restoreUses: 0, otherworldBonus: 0
+      reviveUses: 0, restoreUses: 0, exp2Uses: 0, gold2Uses: 0, otherworldBonus: 0
     });
     return s;
   }
   function save(g) { g.saveProfile?.(); }
+  function premium(g) {
+    if (!g?.profile) return null;
+    return g.profile.premium ||= { adSkipLicense: false, adSkipTickets: 0, auto3License: false, sweepLicense: false, otherworldTickets: 0 };
+  }
+  function hasAdSkip(g) { const p = premium(g); return !!(p?.adSkipLicense || Number(p?.adSkipTickets) > 0); }
+  function consumeAdSkip(g) {
+    const p = premium(g); if (!p || p.adSkipLicense) return;
+    p.adSkipTickets = Math.max(0, (Number(p.adSkipTickets) || 0) - 1); save(g);
+  }
   function active(s, key) { return Number(s[key] || 0) > Date.now(); }
-  function isDaily(type) { return ['auto2', 'sweep', 'otherworld', 'revive', 'protect'].includes(type); }
+  function timeLabel(ms) {
+    if (ms <= 0) return '未発動';
+    const minutes = Math.max(1, Math.ceil(ms / 60000));
+    if (minutes < 60) return `残り ${minutes}分`;
+    const hours = Math.floor(minutes / 60), rest = minutes % 60;
+    return `残り ${hours}時間${rest ? `${rest}分` : ''}`;
+  }
+  function isDaily(type) { return ['auto2', 'sweep', 'exp2', 'gold2', 'otherworld', 'revive', 'protect'].includes(type); }
   function canUse(g, type) {
     if (!g) return false;
     const d = defs[type] || defs.auto2, s = state(g);
@@ -57,21 +75,29 @@
     defs,
     canUse(type = 'auto2') { return canUse(game(), type); },
     remaining,
-    isActive(type) { const g = game(), d = defs[type]; return !!(g && d?.expiry && active(state(g), d.expiry)); },
+    isActive(type) {
+      const g = game(), d = defs[type];
+      if (type === 'sweep' && g?.profile?.premium?.sweepLicense) return true;
+      return !!(g && d?.expiry && active(state(g), d.expiry));
+    },
+    hasAdSkip() { return hasAdSkip(game()); },
+    adSkipTickets() { return Math.max(0, Number(premium(game())?.adSkipTickets) || 0); },
     bonus(type) { const g = game(); return g ? Number(state(g)[`${type}Bonus`] || 0) : 0; },
     show(type = 'auto2', extra = {}) {
       const g = game(); if (!canUse(g, type)) return false;
       const d = { ...(defs[type] || defs.auto2), ...extra }, left = remaining(type);
-      const qCopy = String(extra.copy ?? QD.offer?.[type] ?? d.copy).replace(/\n/g, '<br>');
-      const reviveCard = `<div class="q-offer-card q-revive-card" role="dialog" aria-label="戦闘復活"><button class="q-offer-close" data-q-close aria-label="閉じる">✕ CLOSE</button><header><small class="q-revive-tag"><i></i>DAILY REVIVE REWARD</small><h2>怪盗の再起</h2><p>Q「${qCopy}」</p></header><div class="q-revive-details"><div><span><i></i>復活時HP</span><b>最大HPの50%</b></div><div><span><i></i>復帰地点</span><b>現在の戦闘</b></div><div><span><i></i>本日の残り回数</span><b>${left} 回</b></div></div><div class="q-offer-ad"><span>広告を再生しています</span><b data-q-countdown>3</b></div><button class="q-offer-watch" data-q-watch><span>▶　広告を見て発動する</span></button><button class="q-revive-cancel" data-q-close>今回は諦める</button></div>`;
-      const normalCard = `<div class="q-offer-card" role="dialog" aria-label="Q offer"><button class="q-offer-close" data-q-close aria-label="閉じる">×</button><div class="q-offer-q">Q</div><small class="q-offer-kicker">Q'S OFFER</small><h2>${d.title}</h2><p>「${qCopy}」</p><div class="q-offer-ad"><span>広告を再生しています</span><b data-q-countdown>3</b></div><button class="q-offer-watch" data-q-watch>広告を見て発動する<span>WATCH MOCK AD</span></button></div>`;
+      const qCopy = String(extra.copy ?? QD.offer?.[type] ?? d.copy).replace(/\n/g, '<br>'), skip = hasAdSkip(g);
+      const adStatus = skip ? (premium(g).adSkipLicense ? '永久スキップ適用' : `スキップ券を使用（残り${Number(premium(g).adSkipTickets) || 0}）`) : '広告を再生しています';
+      const countdown = skip ? 'READY' : '3', watchText = skip ? '広告をスキップして発動する' : '広告を見て発動する';
+      const reviveCard = `<div class="q-offer-card q-revive-card" role="dialog" aria-label="戦闘復活"><button class="q-offer-close" data-q-close aria-label="閉じる">✕ CLOSE</button><header><small class="q-revive-tag"><i></i>DAILY REVIVE REWARD</small><h2>怪盗の再起</h2><p>Q「${qCopy}」</p></header><div class="q-revive-details"><div><span><i></i>復活時HP</span><b>最大HPの50%</b></div><div><span><i></i>復帰地点</span><b>現在の戦闘</b></div><div><span><i></i>本日の残り回数</span><b>${left} 回</b></div></div><div class="q-offer-ad"><span>${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch><span>▶　${watchText}</span></button><button class="q-revive-cancel" data-q-close>今回は諦める</button></div>`;
+      const normalCard = `<div class="q-offer-card" role="dialog" aria-label="Q offer"><button class="q-offer-close" data-q-close aria-label="閉じる">×</button><div class="q-offer-q">Q</div><small class="q-offer-kicker">Q'S OFFER</small><h2>${d.title}</h2><p>「${qCopy}」</p><div class="q-offer-ad"><span>${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch>${watchText}<span>${skip ? 'SKIP ENTITLEMENT' : 'WATCH MOCK AD'}</span></button></div>`;
       const modal = document.createElement('div'); modal.className = 'q-offer-modal'; modal.innerHTML = type === 'revive' ? reviveCard : normalCard; if (type === 'revive') modal.classList.add('q-offer-defeat'); document.body.appendChild(modal);
-      let n = 3; const count = modal.querySelector('[data-q-countdown]'), watch = modal.querySelector('[data-q-watch]'); watch.disabled = true;
-      const timer = setInterval(() => { n--; if (count) count.textContent = n; if (n <= 0) { clearInterval(timer); watch.disabled = false; } }, 1000);
+      let n = 3; const count = modal.querySelector('[data-q-countdown]'), watch = modal.querySelector('[data-q-watch]'); watch.disabled = !skip;
+      const timer = skip ? null : setInterval(() => { n--; if (count) count.textContent = n; if (n <= 0) { clearInterval(timer); watch.disabled = false; } }, 1000);
       modal.addEventListener('click', e => {
         if (e.target.closest('[data-q-close]')) { clearInterval(timer); modal.remove(); d.onClose?.(); return; }
         if (e.target.closest('[data-q-watch]') && !watch.disabled) {
-          clearInterval(timer); modal.remove(); playIntervention(g, d.forceDialogueCategory, () => { const granted = api.grant(type); if (granted) d.onGrant?.(); });
+          clearInterval(timer); modal.remove(); playIntervention(g, d.forceDialogueCategory, () => { const granted = api.grant(type); if (granted) { if (skip) consumeAdSkip(g); d.onGrant?.(); } });
         }
       });
       return true;
@@ -81,32 +107,59 @@
       const d = defs[type] || defs.auto2, s = state(g), daily = isDaily(type);
       if (daily && Number(s[d.key] || 0) >= DAILY) { window.arseneStartFlow?.toast?.('本日のQ’S OFFERは受け取り済みです'); return false; }
       if (daily) s[d.key] = (Number(s[d.key]) || 0) + 1;
-      if (d.expiry) s[d.expiry] = Math.max(Number(s[d.expiry]) || 0, Date.now() + 30 * 60 * 1000);
+      if (d.expiry) {
+        const duration = Number(d.durationMs) || 30 * 60 * 1000;
+        const start = d.extend ? Math.max(Date.now(), Number(s[d.expiry]) || 0) : Date.now();
+        s[d.expiry] = start + duration;
+      }
       if (type === 'otherworld') s.otherworldBonus = Number(s.otherworldBonus || 0) + 1;
       // 保護とボス素材は発生した瞬間に効果を適用する。後で消費するトークンは保持しない。
       save(g); api.indicator();
       if (type === 'auto2' || type === 'sweep') { g.renderBattleMenu?.(); g.showMainCommands?.(); }
+      if (type === 'exp2' || type === 'gold2') {
+        g.renderMenuSummary?.();
+        const panel = document.querySelector('#menu-panel[data-panel="food"]');
+        if (panel) g.renderMenuPanel?.('food');
+      }
       if (type === 'otherworld') { const panel = document.querySelector('#menu-panel'); if (panel) g.renderOtherWorldPanel?.(panel); }
       return true;
     },
     indicator() {
-      const g = game(); if (!g) return;
-      const s = state(g); let el = document.getElementById('q-offer-indicator');
-      if (!el) { el = document.createElement('div'); el.id = 'q-offer-indicator'; document.body.appendChild(el); }
-      const rows = [];
-      if (active(s, 'auto2ExpiresAt')) rows.push('AUTO ×2');
-      if (active(s, 'sweepExpiresAt')) rows.push('一掃');
-      el.textContent = rows.join('　'); el.hidden = !rows.length;
+      // 広告由来の効果は固定HUDへ出さず、戦闘MENU／設定の専用欄へ集約する。
+      document.getElementById('q-offer-indicator')?.remove();
     },
     otherworldHTML() {
       const g = game(); if (!g) return '';
       const s = state(g), left = remaining('otherworld'), added = Number(s.otherworldBonus || 0), disabled = left <= 0;
       return `<section class="q-context-offer q-otherworld-offer"><div><small>Q'S OFFER // OTHER WORLD</small><b>異界干渉力 +1</b><span>${added ? `本日 +${added} 回追加済み` : '広告を見て本日の侵入回数を追加'}</span></div><button data-q-offer="otherworld" ${disabled ? 'disabled' : ''}>${disabled ? '本日分終了' : '広告で +1'}<small>残り ${left} 回</small></button></section>`;
     },
+    foodHTML() {
+      const g = game(); if (!g) return '';
+      const s = state(g);
+      const meal = (type, name, effect, excluded) => {
+        const d = defs[type], left = remaining(type), ms = Math.max(0, Number(s[d.expiry] || 0) - Date.now());
+        const activeNow = ms > 0, disabled = left <= 0;
+        return `<article class="q-ad-meal ${activeNow ? 'active' : ''}"><div><b>${name}</b><span>${effect}</span><em>${excluded}　${timeLabel(ms)}</em></div><button data-q-offer="${type}" ${disabled ? 'disabled' : ''}>${disabled ? '本日分終了' : activeNow ? '広告を見て1時間追加' : `広告を見て${name}を食べる`}<small>本日残り ${left} 回</small></button></article>`;
+      };
+      return `<details class="q-food-ad-menu"><summary><span><small>KAZU × Q // SECRET REWARD MENU</small><b>広告メニュー</b></span><em>広告で発動する時短料理</em></summary><div>${meal('exp2', '強昆布ラーメン', '1時間　敵撃破EXP・JOB EXP ×2', 'GOLD・DROP・武器学は対象外')}${meal('gold2', '海老味噌ラーメン', '1時間　敵撃破GOLD ×2', 'EXP・DROP・武器学は対象外')}<article class="q-ad-meal coming"><div><b>ホタテ塩バターラーメン</b><span>COMING SOON</span></div></article><article class="q-ad-meal coming"><div><b>カニ味噌ラーメン</b><span>COMING SOON</span></div></article></div></details>`;
+    },
+    adEffectsHTML(compact = false) {
+      const g = game(); if (!g) return '';
+      const s = state(g), rows = [
+        { name: '強昆布ラーメン', effect: '敵撃破EXP・JOB EXP ×2', expiry: 'exp2ExpiresAt' },
+        { name: '海老味噌ラーメン', effect: '敵撃破GOLD ×2', expiry: 'gold2ExpiresAt' },
+        { name: 'AUTO速度', effect: 'AUTO演出速度 ×2.0', expiry: 'auto2ExpiresAt' },
+        { name: '一掃', effect: '通常Dの雑魚戦を簡易決着', expiry: 'sweepExpiresAt', permanent: !!g.profile?.premium?.sweepLicense }
+      ].map(row => {
+        const ms = Math.max(0, Number(s[row.expiry] || 0) - Date.now()), on = row.permanent || ms > 0;
+        return `<article class="${on ? 'active' : ''}"><i></i><div><b>${row.name}</b><span>${row.effect}</span></div><em>${row.permanent ? '永久解放' : timeLabel(ms)}</em></article>`;
+      }).join('');
+      return `<section class="q-ad-status ${compact ? 'compact' : ''}"><div class="q-ad-status-inner"><header><small>PHANTOM REWARD STATUS</small><h3>広告効果</h3><span>広告で発動した効果と残り時間</span></header><div class="q-ad-status-rows">${rows}</div>${compact ? '' : `<p>広告料理は「カズのまかない」内の裏メニューから各1日2回まで発動できます。効果中に同じ料理を食べると残り時間へ1時間追加されます。</p>`}</div></section>`;
+    },
     battleHTML() {
-      const autoActive = api.isActive('auto2'), sweepActive = api.isActive('sweep');
+      const autoActive = api.isActive('auto2'), sweepActive = api.isActive('sweep'), sweepPermanent = !!game()?.profile?.premium?.sweepLicense;
       const autoLeft = remaining('auto2'), sweepLeft = remaining('sweep');
-      return `<section class="q-battle-offers"><small>Q'S BATTLE SUPPORT</small><div><button data-q-offer="auto2" class="${autoActive ? 'active' : ''}" ${autoLeft <= 0 ? 'disabled' : ''}><b>AUTO ×2</b><span>${autoActive ? '発動中' : autoLeft <= 0 ? '本日分終了' : `広告で解放　残り${autoLeft}`}</span></button><button data-q-offer="sweep" class="${sweepActive ? 'active' : ''}" ${sweepLeft <= 0 ? 'disabled' : ''}><b>一掃</b><span>${sweepActive ? '発動中' : sweepLeft <= 0 ? '本日分終了' : `広告で解放　残り${sweepLeft}`}</span></button></div></section>`;
+      return `${api.adEffectsHTML(true)}<section class="q-battle-offers"><small>Q'S BATTLE SUPPORT</small><div><button data-q-offer="auto2" class="${autoActive ? 'active' : ''}" ${autoLeft <= 0 ? 'disabled' : ''}><b>AUTO ×2</b><span>${autoActive ? '発動中' : autoLeft <= 0 ? '本日分終了' : `広告で解放　残り${autoLeft}`}</span></button><button data-q-offer="sweep" class="${sweepActive ? 'active' : ''}" ${sweepPermanent || sweepLeft <= 0 ? 'disabled' : ''}><b>一掃</b><span>${sweepPermanent ? '永久解放済み' : sweepActive ? '発動中' : sweepLeft <= 0 ? '本日分終了' : `広告で解放　残り${sweepLeft}`}</span></button></div><details class="q-battle-rules"><summary>AUTO・一掃の仕様を確認</summary><p><b>AUTO</b> 通常戦闘をAI操作。倍率は演出速度だけで、能力・ダメージ・報酬は変わりません。回復アイテムを使うことも、敗北することもあります。</p><p><b>一掃</b> 通常Dの雑魚戦だけ。現在の残HP・MP、装備/JOB込みの攻防、習得技、敵全員のHP・攻防から必要ターンと被ダメージを予測します。<strong>予測被ダメージが現在HP以上なら敗北</strong>。回復アイテムは使用せず、エリート・レア・全ボス・異世界には使用できません。勝利時のEXP/GOLD/DROPは通常抽選、武器学は推定ターンに応じて1〜8獲得します。</p></details></section>`;
     },
     testDialogue(category = 'success') { const g = game(); if (!g) return false; playIntervention(g, category); return true; },
     // 文脈限定の「復活・装備復元・ボス素材」はデバッグ入口からも直接起動させない。

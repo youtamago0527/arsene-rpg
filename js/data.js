@@ -602,17 +602,14 @@ window.ARSENE_DATA = {
     buffs: {
       makanai: { id: 'makanai', name: '店主特製・怪盗まかない', priceType: 'goldRate', goldRate: .30, maxHpRate: .03, description: 'HP・MPを全回復し、潜入中は最大HPが3%上昇する。拠点帰還・敗北で消滅。' },
       sapporoMiso: { id: 'sapporoMiso', name: '札幌味噌ラーメン', price: 100, unlockBoss: 'zenacad', goldRate: .10, description: '潜入中、獲得GOLDが10%増加する。拠点帰還・敗北で消滅。' },
-      // EXP強化案は予約として保持。現段階の裏メニュー効果はGOLD +20%のみ。
-      taiwanMazesoba: { id: 'taiwanMazesoba', name: '台湾まぜそば', price: 150, unlockFlag: 'taiwanMazesobaUnlocked', secretMenu: true, goldRate: .20, reservedBuff: { expRate: .10 }, description: '潜入中、獲得GOLDが20%増加する。拠点帰還・敗北で消滅。', unlockByMeal: { mealId: 'sapporoMiso', chance: .01 } }
+      // 裏メニュー効果はGOLD +20%。EXP強化は広告料理《強昆布ラーメン》へ分離する。
+      taiwanMazesoba: { id: 'taiwanMazesoba', name: '台湾まぜそば', price: 150, unlockFlag: 'taiwanMazesobaUnlocked', secretMenu: true, goldRate: .20, description: '潜入中、獲得GOLDが20%増加する。拠点帰還・敗北で消滅。', unlockByMeal: { mealId: 'sapporoMiso', chance: .01 } }
     },
     comingSoon: [
       { id: 'asahikawaShoyu', name: '旭川醤油ラーメン' },
       { id: 'hakodateShio', name: '函館塩ラーメン' }
     ],
-    // デバッグ用の常設枠。料理バフではなく、所持品へ直接追加する。
-    testItems: [
-      { id: 'rebirthArcana', price: 100, label: 'REBIRTH TEST', description: 'JOB Lv20からの転生に必要な特別なアルカナ。テスト用に100 GOLDで用意した。' }
-    ]
+    testItems: []
   },
   musicScores: {
     cadenzaLoot: { id: 'cadenzaLoot', title: 'CADENZA', subtitle: '絶望の戦利品', artist: 'ZENAKADO', use: 'privateMode', unlockBoss: 'zenacad', description: '独奏卿ゼナカドから盗み出した禁断の楽譜。プライベートモードで演奏可能。' },
