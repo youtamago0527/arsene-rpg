@@ -1404,12 +1404,32 @@
     }
     // 固有技＝現在ジョブの固有スキル（戦士→ちからため、武道家→ばくれつけん等）
     personalSkills() {
-      if (this.isPhantomThief()) return [...new Set(this.profile.ptActionSlots || [])].map(id => D.skills[id]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE');
+      if (this.isPhantomThief()) return [...new Set(this.profile.ptActionSlots || [])].map(id => D.skills[id]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE' && s.id !== 'resonanceBreak');
       const jobId = this.profile.currentJob, sig = D.skills[D.jobs[jobId]?.signatureSkillId];
-      return this.isPlayerContentVisible(sig) && sig.type !== 'PASSIVE' && this.jobAbilityLearned(jobId, sig.id, sig.unlockJobLevel || 1) ? [sig] : [];
+      return this.isPlayerContentVisible(sig) && sig.type !== 'PASSIVE' && sig.id !== 'resonanceBreak' && this.jobAbilityLearned(jobId, sig.id, sig.unlockJobLevel || 1) ? [sig] : [];
     }
-    resonanceEnabled() { return this.profile.currentJob === 'guardian' || (this.isPhantomThief() && this.isJobMastered('guardian')); }
-    resonanceMultiplier(value = this.player?.resonance || 0) { return (D.guardianBalance?.resonanceTiers || []).find(t => value >= t.min)?.multiplier || 0; }
+    resonanceEnabled() {
+      return this.profile.currentJob === 'guardian'
+        || (this.isPhantomThief() && (this.profile.ptActionSlots || []).includes('resonanceBreak'));
+    }
+    resonanceGainRate() {
+      const b = D.guardianBalance || {}, base = b.resonanceBaseRate ?? b.resonanceGainPerDamage ?? .05;
+      const rebirth = this.rebirthCount?.('guardian') || 0;
+      const bonus = rebirth * (b.resonanceRebirthBonus ?? .01) * (this.isPhantomThief() ? (b.phantomRebirthBonusRate ?? .5) : 1);
+      return Math.min(b.resonanceRebirthCap ?? .15, base + bonus);
+    }
+    resonanceGainMultiplier() {
+      let multiplier = 1 + this.equipmentEffectRate('resonanceGainPercent');
+      const passives = this.activePassives();
+      if (passives.some(p => p.passiveEffect?.type === 'damageEcho')) multiplier += passives.reduce((sum, p) => sum + (p.passiveEffect?.type === 'damageEcho' ? this.passiveRate(p, 'resonanceGainRate') : 0), 0);
+      if (this.player?.buffs?.guardUntil === this.turn) multiplier += passives.reduce((sum, p) => sum + (p.passiveEffect?.type === 'guardStance' ? this.passiveRate(p, 'resonanceGainRate') : 0), 0);
+      return multiplier;
+    }
+    guardStatusResistanceRate() {
+      if (this.player?.buffs?.guardUntil !== this.turn) return 0;
+      const passive = this.activePassives().find(p => p.passiveEffect?.type === 'guardStance');
+      return passive ? this.passiveRate(passive) : 0;
+    }    resonanceMultiplier(value = this.player?.resonance || 0) { return (D.guardianBalance?.resonanceTiers || []).find(t => value >= t.min)?.multiplier || 0; }
     jobLearnedActiveSkills(jobId) { const job = D.jobs[jobId]; if (!this.isPlayerContentVisible(job)) return []; const list = Object.entries(job.skillUnlocks || {}).filter(([lv, id]) => this.jobAbilityLearned(jobId, id, lv)).map(([, id]) => D.skills[id]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE'); const sig = D.skills[job.signatureSkillId]; if (this.isPlayerContentVisible(sig) && sig.type !== 'PASSIVE' && this.jobAbilityLearned(jobId, sig.id, sig.unlockJobLevel || 1) && !list.some(s => s.id === sig.id)) list.unshift(sig); return list; }
     masteredActions() { return (this.profile.jobMastered || []).map(id => D.skills[D.jobs[id]?.signatureSkillId]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE'); }
     setPhantomAction(idx, skillId) { const max = this.actionSlotCount(); this.profile.ptActionSlots ||= new Array(max).fill(null); while (this.profile.ptActionSlots.length < max) this.profile.ptActionSlots.push(null); if (skillId) this.profile.ptActionSlots = this.profile.ptActionSlots.map(v => v === skillId ? null : v); this.profile.ptActionSlots[idx] = skillId || null; this.saveProfile(); this.audio.sfx('confirm'); if (this.jobUI) this.jobUI.modal = null; this.renderMenuPanel('job'); }
@@ -1944,7 +1964,9 @@
         if (b.magicCharge) chips.push(this.statusChip('魔力装填'));
         if (b.magFocus) chips.push(this.statusChip('精神集中', 'buff', '次に使う魔法攻撃の威力が2.5倍になります。'));
         if (b.defUp && this.turn <= b.defUp.until) chips.push(this.statusChip('DEF↑', 'buff', '', b.defUp.until - this.turn + 1 <= 1));
-        if (b.guardUntil === this.turn) chips.push(this.statusChip('防御', 'buff', '', true));
+        if (b.guardUntil === this.turn) { const statusResist = this.guardStatusResistanceRate(); chips.push(this.statusChip('防御', 'buff', statusResist ? ('状態異常耐性 +' + Math.round(statusResist * 100) + '%') : '', true)); }
+        if (b.damageEcho) chips.push(this.statusChip(`受響 +${Math.round((b.damageEcho.rate || 0) * 100)}%`, 'passive', '次の攻撃ダメージが上昇。', true));
+        if (this.player?.lastStandUsed) chips.push(this.statusChip('不落 使用済', 'neutral'));
         if (b.fortressUntil >= this.turn) chips.push(this.statusChip('FORTRESS', 'buff', '', b.fortressUntil - this.turn + 1 <= 1));
         if (this.player?.defDownUntil >= this.turn) chips.push(this.statusChip('DEF↓', 'debuff', '', this.player.defDownUntil - this.turn + 1 <= 1));
         if (b.versicrellAtkDown && this.turn <= b.versicrellAtkDown.until) chips.push(this.statusChip('ATK↓', 'debuff', '', b.versicrellAtkDown.until - this.turn + 1 <= 1));
@@ -2440,6 +2462,9 @@
       // 精神集中は戦士のちからためと対になる魔法用チャージ。rate:1.5で最終威力は×2.5。
       const magFocus = isMagicSkill ? (this.player.buffs?.magFocus?.rate || 0) : 0;
       if (magFocus) value *= (1 + magFocus);
+      // 守護士《受響》：被弾後の次の攻撃だけを強化。多段技は1 ACTIONとしてまとめて強化する。
+      const damageEcho = this.player.buffs?.damageEcho?.rate || 0;
+      if (damageEcho) value *= (1 + damageEcho);
       // パッシブ：闘争本能（HP50%以下で物理+10%）／魔法増幅／属性増幅
       if (isPhysical && this.player.hp / s.maxHp <= 0.5) value *= (1 + this.passiveEffectRate('lowHpPhysicalUp'));
       if (isPhysical) value *= (1 + this.equipmentEffectRate('physicalDamagePercent'));
@@ -2507,7 +2532,7 @@
       const earned = this.grantEnemyReward(target); this.setLog(`${target.name}${target.label}を葬送した！ EXP+${earned.exp} GOLD+${earned.gold}`); await this.battleSleep(380);
       return { anyHit: true, instantDeath: true, total: defeatedHp, chance: result.chance };
     }
-    async playerAction(skill, targetIndex) { const result = await this.playerAttack(skill, targetIndex); if (result?.anyHit) await this.offHandStrike(skill, targetIndex); const setFx = this.activeSetEffects(); const repeatChance = setFx.magicRepeatChance || 0; if (skill.kind === 'magical' && this.enemies.some(e => e.alive) && Math.random() < repeatChance) { this.flashTitle('《独奏曲》', 'CADENZA // ENCORE'); this.setLog('ゼナカドの旋律が魔法を再演する！'); await this.battleSleep(360); await this.playerAttack(skill, targetIndex); } const physRepeatChance = setFx.physicalRepeatChance || 0; if (skill.kind === 'physical' && this.enemies.some(e => e.alive) && Math.random() < physRepeatChance) { this.flashTitle('DEADLY RHYTHM', 'MYRTHI // EXTRA BEAT'); this.setLog('鼓動が刻む追加連撃！'); await this.battleSleep(360); await this.playerAttack(skill, targetIndex); } }
+    async playerAction(skill, targetIndex) { const result = await this.playerAttack(skill, targetIndex); if (result?.anyHit) await this.offHandStrike(skill, targetIndex); const setFx = this.activeSetEffects(); const repeatChance = setFx.magicRepeatChance || 0; if (skill.kind === 'magical' && this.enemies.some(e => e.alive) && Math.random() < repeatChance) { this.flashTitle('《独奏曲》', 'CADENZA // ENCORE'); this.setLog('ゼナカドの旋律が魔法を再演する！'); await this.battleSleep(360); await this.playerAttack(skill, targetIndex); } if (this.player.buffs?.damageEcho && (skill.target !== 'self')) delete this.player.buffs.damageEcho; const physRepeatChance = setFx.physicalRepeatChance || 0; if (skill.kind === 'physical' && this.enemies.some(e => e.alive) && Math.random() < physRepeatChance) { this.flashTitle('DEADLY RHYTHM', 'MYRTHI // EXTRA BEAT'); this.setLog('鼓動が刻む追加連撃！'); await this.battleSleep(360); await this.playerAttack(skill, targetIndex); } }
     async playerAttack(skill, targetIndex) {
       if (skill.target === 'self') { await this.applySelfSkill(skill); return { anyHit: false }; }
       if (skill.target === 'all' && !skill.randomTarget) { await this.playerAttackAll(skill); return; }
@@ -2775,7 +2800,15 @@
         target.confuseUntil = this.turn + (e.turns || 2);
         this.setLog(`${target.name}${target.label}は混乱した！`);
       }
-      if (e.type === 'enemyBind') {
+      if (e.type === 'enemyStun') {
+        const el = document.getElementById(target.uid);
+        if ((target.stunTurns || 0) > 0) { this.floating(el, 'NO STACK', 'miss'); return; }
+        const baseChance = target.kind === 'boss' ? ((target.overdriveLevel || target.isOverdrive) ? (e.overdriveChance ?? .08) : (e.bossChance ?? .18)) : (e.chance ?? .55);
+        const resistance = clamp(target.stunResistance || 0, 0, .9), chance = clamp(baseChance * (1 - resistance), .01, .95);
+        if (Math.random() < chance) { target.stunTurns = e.turns || 1; target.stunResistance = clamp(resistance + .18, 0, .9); this.floating(el, 'STUN', 'debuff'); this.setLog(target.name + target.label + 'は盾の衝撃でひるんだ！'); }
+        else { target.stunResistance = clamp(resistance + .06, 0, .9); this.floating(el, 'RESIST', 'miss'); this.setLog(target.name + target.label + 'は体勢を崩さない！'); }
+        this.updateHUD();
+      }      if (e.type === 'enemyBind') {
         const el = document.getElementById(target.uid);
         if ((target.bindTurns || 0) > 0) {
           this.floating(el, 'NO STACK', 'miss'); this.setLog(`${target.name}${target.label}はすでに影を縫われている。重ね掛けはできない！`); return;
@@ -2832,10 +2865,20 @@
       if (passiveReduction || gearReduction) damage = Math.max(0, Math.round(damage * (1 - clamp(passiveReduction + gearReduction, 0, .8))));
       // 共通《防御》はDEFの置換ではなく最終軽減。物理・魔法のどちらにも同じ効果を持つ。
       if (this.player.buffs?.guardUntil === this.turn) damage = Math.max(0, Math.round(damage * (1 - (this.player.buffs.guardReduction ?? D.combatBalance?.guardReduction ?? .50))));
-      const before = this.player.hp; this.player.hp = Math.max(0, before - damage); const actual = before - this.player.hp;
+      const before = this.player.hp;
+      const lowHpSkill = this.activePassives().find(p => p.passiveEffect?.type === 'lowHpDamageReduction');
+      const lowHpPassive = lowHpSkill?.passiveEffect;
+      if (lowHpPassive && before / Math.max(1, this.player.stats.maxHp) <= (lowHpPassive.hpThreshold ?? .30)) damage = Math.max(0, Math.round(damage * (1 - this.passiveRate(lowHpSkill))));
+      const lastStand = this.activePassives().find(p => p.passiveEffect?.type === 'lastStand')?.passiveEffect;
+      if (lastStand && !this.player.lastStandUsed && before > 1 && damage >= before) {
+        damage = Math.max(0, before - (lastStand.hpFloor ?? 1)); this.player.lastStandUsed = true;
+        this.flashTitle('UNFALLEN', 'HP 1'); this.floating($('#ren'), '不落', 'heal'); this.setLog('《不落》が致命傷を受け止めた！');
+      }
+      this.player.hp = Math.max(0, before - damage); const actual = before - this.player.hp;
       if (actual > 0) {
         this.player.lastReceivedType = type;
-        if (this.resonanceEnabled()) { const max = D.guardianBalance?.resonanceMax || 100, gainMult = (setEffects.resonanceGainMultiplier || 1) * (1 + this.equipmentEffectRate('resonanceGainPercent')); this.player.resonance = Math.min(max, (this.player.resonance || 0) + actual * (D.guardianBalance?.resonanceGainPerDamage ?? .05) * gainMult); }
+        if (this.resonanceEnabled()) { const max = D.guardianBalance?.resonanceMax || 100, gainMult = (setEffects.resonanceGainMultiplier || 1) * this.resonanceGainMultiplier(); this.player.resonance = Math.min(max, (this.player.resonance || 0) + actual * this.resonanceGainRate() * gainMult); }
+        const echoSkill = this.activePassives().find(p => p.passiveEffect?.type === 'damageEcho'); if (echoSkill) this.player.buffs.damageEcho = { rate: this.passiveRate(echoSkill) };
         // 《祈祷》は敵から受けた一度の大きな実ダメージだけを参照する。
         // Body-to-Mind はHPを直接消費するため、この経路を通らず発動条件を満たさない。
         const prayer = this.activePassives().find(p => p.passiveEffect?.type === 'heavyHitRegenerate'), effect = prayer?.passiveEffect;
@@ -2892,6 +2935,10 @@
       await this.seripesStrike(enemy, '反奏剣', 'physical', .9);
     }
     async enemyAttack(enemy) {
+      if ((enemy.stunTurns || 0) > 0) {
+        const el = document.getElementById(enemy.uid); enemy.stunTurns--;
+        this.setLog(enemy.name + enemy.label + 'はひるんで動けない！'); this.floating(el, 'STUN', 'debuff'); this.updateHUD(); await this.battleSleep(420); return;
+      }
       if ((enemy.bindTurns || 0) > 0) {
         const el = document.getElementById(enemy.uid); enemy.bindTurns--;
         this.setLog(`${enemy.name}${enemy.label}は影を縫われて動けない！`); this.floating(el, `足止め ${enemy.bindTurns}`, 'debuff'); this.updateHUD(); await this.battleSleep(420); return;

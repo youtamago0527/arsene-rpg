@@ -170,6 +170,7 @@
     { g: '将来予約（DEV）', key: 'futureContent', label: '五属性・倍率', list: false, path: 'magicElements', hint: '炎 / 氷 / 雷 / 光 / 闇と耐性・弱点倍率' },
 
     { g: 'バランス', key: 'combatBalance', label: '戦闘計算', list: false, hint: '会心率 / 敵ダメージ式 / ばらつき' },
+    { g: 'バランス', key: 'guardianBalance', label: '守護士・RESONANCE', list: false, hint: '共鳴の基礎率 / 転生補正 / 上限 / パッシブ補正' },
     { g: 'バランス', key: 'growthBalance', label: '成長全体', list: false, hint: 'HP/MP成長率 / 閃き率 / 特性倍率' },
     { g: 'バランス', key: 'accuracy', label: '命中率', list: false, hint: '器用さ→命中（隠しステータス）' },
     { g: 'バランス', key: 'defenseScaling', label: '防御の参照', list: false, hint: '物理=体力+防御力 / 魔法=精神+魔法防御力' }
