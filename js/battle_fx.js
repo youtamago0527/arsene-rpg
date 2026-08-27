@@ -89,7 +89,7 @@
       el.style.setProperty('--fx-size', `${Math.max(76, Math.min(112, at.w * .92))}px`);
       const img = document.createElement('img');
       // 同じ敵への連続着弾でもGIFを必ず先頭フレームから再生する。
-      img.src = `assets/effects/fire/pixel-fire-impact.gif?v=1&hit=${Date.now()}-${Math.random()}`;
+      img.src = `assets/effects/fire/pixel-fire-impact.gif?v=2&hit=${Date.now()}-${Math.random()}`;
       img.alt = '';
       img.setAttribute('aria-hidden', 'true');
       el.innerHTML = '<i class="fx-blast"></i><i class="fx-fire-ring"></i>';

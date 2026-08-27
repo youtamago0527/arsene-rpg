@@ -37,7 +37,7 @@
       { day: 1, id: 'arcanaMight',  stat: 'str',    name: '剛力のアルカナ', background: 'assets/bg/otherworld/monday.png' },
       { day: 2, id: 'arcanaGuard',  stat: 'vit',    name: '堅牢のアルカナ', background: 'assets/bg/otherworld/tuesday.png' },
       { day: 3, id: 'arcanaMagic',  stat: 'mag',    name: '魔導のアルカナ', background: 'assets/bg/otherworld/wednesday.png' },
-      { day: 4, id: 'arcanaSpirit', stat: 'mnd',    name: '精神のアルカナ', background: 'assets/bg/otherworld/thursday.png' },
+      { day: 4, id: 'arcanaSpirit', stat: 'mnd',    name: '精神のアルカナ', background: 'assets/bg/otherworld/thursday-v2.png' },
       { day: 5, id: 'arcanaGale',   stat: 'agi',    name: '疾風のアルカナ', background: 'assets/bg/otherworld/friday.png' },
       { day: 6, id: 'arcanaLuck',   stat: 'luk',    name: '幸運のアルカナ', background: 'assets/bg/otherworld/saturday.png' }
     ],
