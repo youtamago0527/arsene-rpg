@@ -191,12 +191,6 @@
         if (!this.shop.hidden || !this.arcade.hidden) this.backToPopup();
         else if (!this.popup.hidden) this.close();
       });
-
-      // 画面回転／リサイズで折り返しが変わっても、開いている商品のmax-heightが
-      // 古い値のまま固定されて中身が切れないよう追従させる。
-      addEventListener('resize', () => {
-        shop.querySelectorAll('.pm-item.open .pm-item-body').forEach(body => { body.style.maxHeight = 'none'; });
-      });
     }
 
     itemHTML(item) {
@@ -306,34 +300,21 @@
       this.toast(item.name, result);
     }
 
-    // 開閉のたびに実際の中身の高さ(scrollHeight)を測ってmax-heightへ反映する。
-    // 固定pxの当て推量をやめることで、商品の文章量がどれだけ増えても中身が
-    // 切れず、かつ「下に伸びる」開閉アニメーションも保てる。
-    //
-    // 実機Safariでは、クラス変更とmax-height変更を同じ同期処理内で行うと
-    // トランジションが発火せず(＝transitionendも来ず)、Webフォント読込前の
-    // 小さい高さのままmax-heightが固定されて中身が切れ続ける不具合があった。
-    // そのため、①offsetHeightを読んで強制リフローしてから次フレームで
-    // 目標値を適用する、②transitionendに加えて必ずタイマーでも上限を
-    // 解除する、の二重の保険を掛けている。
-    openItemBody(item, body) {
-      item.classList.add('open');
-      body.style.maxHeight = '0px';
-      body.offsetHeight; // 強制リフロー
-      requestAnimationFrame(() => { body.style.maxHeight = `${body.scrollHeight}px`; });
-      const release = () => { if (item.classList.contains('open')) body.style.maxHeight = 'none'; };
-      body.addEventListener('transitionend', event => { if (event.propertyName === 'max-height') release(); }, { once: true });
-      setTimeout(release, 450);
-    }
+    // 開いている間はmax-heightを一切掛けない(CSS側で.open時にnone/overflow:visible)。
+    // JSで高さを測って数値を当てはめる方式は実機Safariで中身が切れる事例が
+    // 複数確認されたため撤去した。開閉の見た目は opacity/transform だけで作り、
+    // 「絶対に切れない」という正しさをJSの計測に依存させない。
+    // 閉じるときだけ、フェードが見えるよう .closing を先に付けてから
+    // 少し遅れて実際にopenを外す(=max-heightが0へ戻る)。
     toggleItem(item) {
       const body = item?.querySelector('.pm-item-body');
       if (!body) { item?.classList.toggle('open'); return; }
       if (item.classList.contains('open')) {
-        body.style.maxHeight = `${body.scrollHeight}px`; // 'none'から具体的な数値へ戻してから閉じる
-        body.offsetHeight; // 強制リフロー
-        requestAnimationFrame(() => { item.classList.remove('open'); body.style.maxHeight = '0px'; });
+        body.classList.add('closing');
+        setTimeout(() => { item.classList.remove('open'); body.classList.remove('closing'); }, 240);
       } else {
-        this.openItemBody(item, body);
+        body.classList.remove('closing');
+        item.classList.add('open');
       }
     }
 

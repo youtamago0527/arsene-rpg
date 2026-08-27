@@ -158,13 +158,20 @@
 .pm-item-arrow { color: #94a3b8; font-size: 12px; transition: transform .3s }
 .pm-item.open .pm-item-arrow { transform: rotate(180deg) }
 
-/* max-height: <固定px> の当て推量では、文言が長い商品(特に01番)で中身が
-   キャップを超えて切れる。固定値を使う代わりに、開閉のたびにJS側で実際の
-   中身の高さ(scrollHeight)を測って max-height にセットする(phantom_shop.js
-   の toggleItem)。これなら「下に伸びる」アニメーションを保ったまま、
-   文章量がどれだけ増えても絶対に中身が切れない。 */
-.pm-item-body { max-height: 0; overflow: hidden; opacity: 0; transition: max-height .35s cubic-bezier(.16, 1, .3, 1), opacity .25s }
-.pm-item.open .pm-item-body { opacity: 1 }
+/* max-height: <固定px> の当て推量でも、開閉のたびにJSでscrollHeightを測る方式
+   でも、実機Safariでは商品によって中身が切れる事例が確認された。
+   「開いた状態は絶対に切れない」を保証するため、開いている間は
+   max-height を一切掛けず(none/overflow:visible)、JSでの高さ計測もしない。
+   見た目の開閉モーションは opacity + transform（フェード＋わずかな上下移動）
+   だけで作る。閉じるときだけ、モーションが見えるよう .closing で
+   opacity/transformを先に戻してから、少し遅れて実際に高さを0へ戻す
+   (phantom_shop.js の toggleItem)。 */
+.pm-item-body {
+  max-height: 0; overflow: hidden; opacity: 0; transform: translateY(-6px);
+  transition: opacity .22s ease, transform .22s ease;
+}
+.pm-item.open .pm-item-body { max-height: none; overflow: visible; opacity: 1; transform: translateY(0) }
+.pm-item.open .pm-item-body.closing { opacity: 0; transform: translateY(-6px) }
 .pm-item-body > div { padding: 10px 14px 14px; display: grid; gap: 10px; border-top: 1px solid #ffffff26; margin: 0 14px 0; padding-inline: 0 }
 .pm-item-body p { margin: 0; color: #cbd5e1; font-size: 11px; line-height: 1.7 }
 .pm-item-stats { display: grid; gap: 6px; padding: 8px; background: #ffffff08; border: 1px solid #ffffff0d; font-size: 10px }
