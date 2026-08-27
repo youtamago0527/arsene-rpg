@@ -309,18 +309,31 @@
     // 開閉のたびに実際の中身の高さ(scrollHeight)を測ってmax-heightへ反映する。
     // 固定pxの当て推量をやめることで、商品の文章量がどれだけ増えても中身が
     // 切れず、かつ「下に伸びる」開閉アニメーションも保てる。
+    //
+    // 実機Safariでは、クラス変更とmax-height変更を同じ同期処理内で行うと
+    // トランジションが発火せず(＝transitionendも来ず)、Webフォント読込前の
+    // 小さい高さのままmax-heightが固定されて中身が切れ続ける不具合があった。
+    // そのため、①offsetHeightを読んで強制リフローしてから次フレームで
+    // 目標値を適用する、②transitionendに加えて必ずタイマーでも上限を
+    // 解除する、の二重の保険を掛けている。
+    openItemBody(item, body) {
+      item.classList.add('open');
+      body.style.maxHeight = '0px';
+      body.offsetHeight; // 強制リフロー
+      requestAnimationFrame(() => { body.style.maxHeight = `${body.scrollHeight}px`; });
+      const release = () => { if (item.classList.contains('open')) body.style.maxHeight = 'none'; };
+      body.addEventListener('transitionend', event => { if (event.propertyName === 'max-height') release(); }, { once: true });
+      setTimeout(release, 450);
+    }
     toggleItem(item) {
       const body = item?.querySelector('.pm-item-body');
       if (!body) { item?.classList.toggle('open'); return; }
       if (item.classList.contains('open')) {
-        body.style.maxHeight = `${body.scrollHeight}px`; // 'none'から数値へ戻してから閉じる
+        body.style.maxHeight = `${body.scrollHeight}px`; // 'none'から具体的な数値へ戻してから閉じる
+        body.offsetHeight; // 強制リフロー
         requestAnimationFrame(() => { item.classList.remove('open'); body.style.maxHeight = '0px'; });
       } else {
-        item.classList.add('open');
-        body.style.maxHeight = `${body.scrollHeight}px`;
-        body.addEventListener('transitionend', event => {
-          if (event.propertyName === 'max-height' && item.classList.contains('open')) body.style.maxHeight = 'none';
-        }, { once: true });
+        this.openItemBody(item, body);
       }
     }
 
