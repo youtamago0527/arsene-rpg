@@ -159,11 +159,13 @@
 .pm-item.open .pm-item-arrow { transform: rotate(180deg) }
 
 /* max-height: <固定px> の当て推量では、文言が長い商品(特に01番)で中身が
-   キャップを超えて切れてしまう。grid-template-rows: 0fr→1fr は実際の中身の高さに
-   自動追従するため、商品ごとの説明文・stats行数がどれだけ増えても切れない。 */
-.pm-item-body { display: grid; grid-template-rows: 0fr; overflow: hidden; opacity: 0; transition: grid-template-rows .35s cubic-bezier(.16, 1, .3, 1), opacity .25s }
-.pm-item.open .pm-item-body { grid-template-rows: 1fr; opacity: 1 }
-.pm-item-body > div { min-height: 0; overflow: hidden; padding: 10px 14px 14px; display: grid; gap: 10px; border-top: 1px solid #ffffff26; margin: 0 14px 0; padding-inline: 0 }
+   キャップを超えて切れる。grid-template-rows: 0fr→1fr のアニメーションは
+   実機ブラウザによって展開が崩れる報告があったため使わず、開閉時は
+   max-height を掛けず(none)に高さは即座に確定させ、opacityだけをフェード
+   させる。どんなに文章量が増えても、どの端末でも絶対に中身は切れない。 */
+.pm-item-body { max-height: 0; overflow: hidden; opacity: 0; transition: opacity .2s }
+.pm-item.open .pm-item-body { max-height: none; overflow: visible; opacity: 1 }
+.pm-item-body > div { padding: 10px 14px 14px; display: grid; gap: 10px; border-top: 1px solid #ffffff26; margin: 0 14px 0; padding-inline: 0 }
 .pm-item-body p { margin: 0; color: #cbd5e1; font-size: 11px; line-height: 1.7 }
 .pm-item-stats { display: grid; gap: 6px; padding: 8px; background: #ffffff08; border: 1px solid #ffffff0d; font-size: 10px }
 .pm-item-stats span { display: flex; justify-content: space-between; color: #cbd5e1 }
