@@ -187,20 +187,20 @@
 #game .command-panel[data-layout="main"]>button[data-action="guard"]{background-image:url("../assets/ui/battle/lower-ui-v2/command-guard-v2.png")!important}
 #game .command-panel[data-layout="main"]>button[data-action="item"]{background-image:url("../assets/ui/battle/lower-ui-v2/command-item-v2.png")!important}
 #game .command-panel[data-layout="main"]>button[data-action="escape"]{background-image:url("../assets/ui/battle/lower-ui-v2/command-escape-v2.png")!important}
-#game .command-panel[data-layout="main"]>button[data-action="simpleBattle"]{background-image:url("../assets/ui/battle/lower-ui-v2/command-simple-v2.png")!important}
+#game .command-panel[data-layout="main"]>button[data-action="quick"]{background-image:url("../assets/ui/battle/lower-ui-v2/command-simple-v2.png")!important}
 #game .command-panel[data-layout="main"]>button[data-action="autoBattle"]{background-image:url("../assets/ui/battle/lower-ui-v2/command-auto-v2.png")!important}
 
 /* 固定絵のボタンは画像内ラベルを使用。ON/OFFだけライブ表示する。 */
 #game .command-panel[data-layout="main"]>button:not([data-action="weaponArts"])>i,
 #game .command-panel[data-layout="main"]>button:not([data-action="weaponArts"])>strong,
 #game .command-panel[data-layout="main"]>button:not([data-action="weaponArts"])>span{opacity:0}
-#game .command-panel[data-layout="main"]>button[data-action="simpleBattle"]::after,
 #game .command-panel[data-layout="main"]>button[data-action="autoBattle"]::after{
   content:"OFF";position:absolute;z-index:3;right:3px;top:3px;padding:2px 3px;color:#817d87;
   background:#03050bdc;border:1px solid #494757;font:800 5px/1 Cinzel;letter-spacing:.08em;
 }
-#game .command-panel[data-layout="main"]>button[data-action="simpleBattle"].active::after{content:"ON";color:#79e9ff;border-color:#4bc8e0;box-shadow:0 0 5px #36cbe0}
 #game .command-panel[data-layout="main"]>button[data-action="autoBattle"].active::after{content:"ON";color:#ffdc75;border-color:#d8ac4c;box-shadow:0 0 5px #d8a438}
+/* 一掃はON/OFFの切替ボタンではなく、広告・常設ライセンスで使えるかどうかのゲート。
+   バッジは付けず、使える間は.sweep-unlockedの発光、使えない間はdisabledの減光だけで表す。 */
 
 /* 武器学枠だけは内側をライブレイヤー化。装備変更時に既存JSが画像・名称を再描画する。 */
 #game .command-panel[data-layout="main"]>button[data-action="weaponArts"]::after{
