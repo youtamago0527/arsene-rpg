@@ -2242,15 +2242,17 @@
       this.bindActions({ attack: () => this.chooseTarget(basic.id), weaponArts: () => this.showWeaponArts(), personal: () => this.showPersonalSkills(), resonance: () => this.chooseTarget('resonanceBreak'), mainCmd: () => this.showCommandSkills(curJobId), item: () => this.showBattleItems(), escape: () => this.tryEscape(), quick: () => this.quickResolveBattle(), 'auto-toggle': () => { this.autoBattle = !this.autoBattle; this.showMainCommands(); } });
       */
       const skills = this.combatSkillList();
+      const sweepUnlocked = this.isSweepUnlocked();
       const html = this.button('たたかう', `${basic.name} // ATTACK`, 'attack', false, 'attack')
         + this.button(artsCmd.name, arts.length ? `${artsCmd.nameEn} ▶` : '未習得', 'weaponArts', !arts.length, `weapon-${wType}`)
         + this.button('スキル', skills.length ? 'SKILL ▶' : '未習得', 'skills', !skills.length, 'skill')
         + this.button('防御', 'GUARD // 50%', 'guard', false, 'guard')
         + this.button('アイテム', 'ITEM', 'item', false, 'item')
         + this.button('再行動', 'REPEAT', 'repeat', false, 'repeat')
-        + this.button('一掃', !this.isQuickBattleModeEligible() ? 'BOSS不可' : this.hasQuickBattleStrongEnemy() ? '強敵不可' : window.arseneQOffer?.isActive?.('sweep') ? 'SWEEP' : 'LOCKED', 'quick', !this.canQuickResolveBattle() || !window.arseneQOffer?.isActive?.('sweep'), 'simple')
+        + this.button('一掃', !this.isQuickBattleModeEligible() ? 'BOSS不可' : this.hasQuickBattleStrongEnemy() ? '強敵不可' : sweepUnlocked ? 'SWEEP' : 'LOCKED', 'quick', !this.canQuickResolveBattle() || !sweepUnlocked, 'simple')
         + this.button('AUTO', this.autoBattle ? `AUTO // ×${this.autoBattleSpeedMultiplier()}` : 'AUTO // OFF', 'autoBattle', false, 'auto');
       this.panel(html, 'main');
+      document.querySelector('[data-action="quick"]')?.classList.toggle('sweep-unlocked', sweepUnlocked);
       // AUTOを演出中にOFFへ切り替えた場合、旧パネルのturn-lockedがDOMに残ることがある。
       // 現在の戦闘ロック状態と必ず同期し、ターン終了後に通常コマンドを再び操作可能にする。
       $('#command-panel')?.classList.toggle('turn-locked', !!this.locked);
@@ -2258,6 +2260,7 @@
       this.scheduleAutoPick();
     }
     autoPickAction() { if (!this.autoBattle || this.locked || this.finished) return; const basic = this.basicAttackSkill(); const maxHp = this.player.stats.maxHp, maxMp = this.player.stats.maxMp, hpPct = this.player.hp / maxHp; if (hpPct < 0.4 && (this.profile.inventory.potion || 0) > 0) { this.useConsumable('potion'); return; } if (this.player.mp < maxMp * 0.2 && (this.profile.inventory.manaPotion || 0) > 0) { this.useConsumable('manaPotion'); return; } const aliveEnemies = this.enemies.filter(e => e.alive); const skills = this.availableSkills().filter(s => this.canPaySkillCosts(s) && this.cooldownRemaining(s) === 0); const weapon = this.equippedWeapon(); const atkScore = weapon?.power || 1; let best = { type: 'attack', score: atkScore }; for (const s of skills) { let score = 0; if (s.kind === 'support') { if (s.effect?.type === 'hpRecover') score = hpPct < 0.75 ? (1 - hpPct) * 200 : 0; else if (s.effect?.type === 'mpRecover') score = this.player.mp < maxMp * 0.5 ? 45 : 0; else if (s.effect?.type === 'regenerate') score = hpPct < 0.8 && !(this.player.buffs.regenerate > 0) ? 38 : 0; else if (s.effect?.type === 'hpToMp') score = this.player.mp < maxMp * .45 && hpPct > .55 ? 48 : 0; } else if (s.kind === 'hybrid') { score = (s.strScale + s.magScale) * 12; } else { const multi = s.target === 'all' ? Math.min(aliveEnemies.length, 3) * 0.7 : 1; score = (s.power || 1) * (s.hits || 1) * multi; } if (score > best.score) best = { type: 'skill', skill: s, score }; } if (best.type === 'skill') { const s = best.skill; if (s.target === 'all' || s.target === 'self') { this.executeRound(s.id, -1); } else { this.executeRound(s.id, this.enemies.findIndex(e => e.alive)); } } else { this.executeRound(basic.id, this.enemies.findIndex(e => e.alive)); } }
+    isSweepUnlocked() { return !!(window.arseneQOffer?.isActive?.('sweep') || this.profile?.premium?.sweepLicense); }
     isQuickBattleModeEligible() { return this.battleMode === 'slime'; }
     hasQuickBattleStrongEnemy() {
       return this.enemies.some(enemy => enemy.alive && (['boss', 'elite', 'rare'].includes(enemy.kind) || enemy.cannotDefeat || enemy.infiniteHp));
@@ -2267,7 +2270,7 @@
       if (this.locked || this.finished) return;
       if (!this.isQuickBattleModeEligible()) { window.arseneStartFlow?.toast?.('一掃は通常ダンジョンの通常戦闘専用です'); return; }
       if (this.hasQuickBattleStrongEnemy()) { window.arseneStartFlow?.toast?.('エリート・レア・ボスは一掃できません'); return; }
-      if (!window.arseneQOffer?.isActive?.('sweep')) { window.arseneStartFlow?.toast?.('戦闘MENUから「一掃」を解放できます'); return; }
+      if (!this.isSweepUnlocked()) { window.arseneStartFlow?.toast?.('戦闘MENUから「一掃」を解放できます'); return; }
       this.locked = true; this.quickResolving = true; this.autoBattle = false; this.autoBattleSpeedIndex = -1; this.cancelAutoPick(); this.panel(''); $('#phase-label').textContent = 'QUICK';
       const enemies = this.enemies.filter(enemy => enemy.alive), stats = this.playerCombatStats(), pDef = this.defensePowerFor('physical', stats), mDef = this.defensePowerFor('magical', stats);
       const basic = this.basicAttackSkill(), learned = [basic, ...this.availableSkills()].filter((skill, index, list) => skill && list.findIndex(s => s.id === skill.id) === index);

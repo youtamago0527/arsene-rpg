@@ -1657,3 +1657,7 @@
 }
 #game .command-panel[data-layout="main"]>button[data-action="repeat"]::before{display:none!important}
 #game .command-panel[data-layout="main"]>button[data-action="repeat"]>*{opacity:0!important}
+
+/* 一掃は広告・常設ライセンスの解放中に黒塗りを外し、利用可能状態を明示する。 */
+#game .command-panel button[data-action='quick'].sweep-unlocked:not(:disabled){filter:none;opacity:1;border-color:#bb72ff;background:linear-gradient(125deg,#17062d,#43146b 55%,#170a31);box-shadow:0 0 12px #a747ff88,inset 0 0 12px #7d2eb844}
+#game .command-panel button[data-action='quick'].sweep-unlocked:not(:disabled) strong,#game .command-panel button[data-action='quick'].sweep-unlocked:not(:disabled) span{color:#f1d7ff}
