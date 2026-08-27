@@ -1,7 +1,7 @@
 /* ══════════════════════════════════════════════════════════════
    戦闘エフェクト（武器種ごとの通常攻撃 + クリティカル）
 
-   画像素材は使わず、DOM + CSS アニメーションだけで描く。
+   武器演出はDOM + CSS、炎属性の着弾は支給されたPixel Fire素材を使う。
    game.js の playerAttack から次の2点で呼ばれる：
      attackSwingFx(skill)              … 振りかぶり／詠唱のタイミング
      attackImpactFx(skill, el, crit)   … ヒットしたタイミング
@@ -40,6 +40,10 @@
     if (skill.weaponType) return true;
     return skill.kind !== 'magical' && skill.kind !== 'hybrid';
   };
+  // 杖を持っているだけでは炎扱いにしない。技データの属性を最優先する。
+  P.fxIsFireAction = function (skill) {
+    return (skill?.element || skill?.elementId) === 'fire';
+  };
 
   // ── 振り／詠唱のタイミング ────────────────────────────────
   P.attackSwingFx = function (skill) {
@@ -58,17 +62,39 @@
   P.attackImpactFx = function (skill, targetEl, critical) {
     const field = $('#battlefield');
     if (!field || !targetEl) return;
-    if (!this.fxIsWeaponAction(skill)) {
-      this.audio?.sfx?.('enemyHit');
-      if (critical) { this.audio?.sfx?.('criticalHit'); this.fxCritical(field, centerIn(field, targetEl)); }
+    const at = centerIn(field, targetEl);
+    if (this.fxIsFireAction(skill)) {
+      this.fxPixelFireImpact(field, at);
+      this.audio?.sfx?.('fireHit');
+      if (critical) { this.audio?.sfx?.('criticalHit'); this.fxCritical(field, at); }
       return;
     }
-    const type = this.fxWeaponType(skill), at = centerIn(field, targetEl);
+    if (!this.fxIsWeaponAction(skill)) {
+      this.audio?.sfx?.('enemyHit');
+      if (critical) { this.audio?.sfx?.('criticalHit'); this.fxCritical(field, at); }
+      return;
+    }
+    const type = this.fxWeaponType(skill);
     ({ sword: 'fxSlash', martial: 'fxClaw', staff: 'fxBurn', instrument: 'fxNotes', shield: 'fxImpact' }[type] || 'fxSlash')
       .split(' ').forEach(fn => this[fn]?.(field, at));
     // 武器ごとの音は常に鳴らし、クリティカルのときは衝撃音を重ねる
     this.audio?.sfx?.({ sword: 'swordHit', martial: 'clawHit', staff: 'fireHit', instrument: 'noteHit', shield: 'shieldHit' }[type] || 'swordHit');
     if (critical) { this.audio?.sfx?.('criticalHit'); this.fxCritical(field, at); }
+  };
+
+  // 炎属性：Pixel Fire Asset Packの8フレーム炎を、既存の着弾光と重ねる。
+  P.fxPixelFireImpact = function (field, at) {
+    spawn(field, 'fx fx-pixel-fire-impact', 840, el => {
+      el.style.left = `${at.x}px`; el.style.top = `${at.y}px`;
+      el.style.setProperty('--fx-size', `${Math.max(76, Math.min(112, at.w * .92))}px`);
+      const img = document.createElement('img');
+      // 同じ敵への連続着弾でもGIFを必ず先頭フレームから再生する。
+      img.src = `assets/effects/fire/pixel-fire-impact.gif?v=1&hit=${Date.now()}-${Math.random()}`;
+      img.alt = '';
+      img.setAttribute('aria-hidden', 'true');
+      el.innerHTML = '<i class="fx-blast"></i><i class="fx-fire-ring"></i>';
+      el.appendChild(img);
+    });
   };
 
   // 剣：斜めに走る一閃と、遅れて消える残光
@@ -149,10 +175,10 @@
     setTimeout(() => bf.classList.remove('fx-shake'), 340);
   };
 
-  // ── 杖の通常攻撃は弾も炎にする ────────────────────────────
+  // ── 炎属性の攻撃は弾も炎にする ────────────────────────────
   const origProjectile = P.magicProjectile;
   P.magicProjectile = async function (targetEl, skill) {
-    const fire = this.fxWeaponType(skill) === 'staff';
+    const fire = this.fxIsFireAction(skill);
     if (!fire) return origProjectile.call(this, targetEl, skill);
     const field = $('#battlefield'), from = $('#weapon-layer'), ren = $('#ren');
     if (!field || !targetEl) return origProjectile.call(this, targetEl, skill);

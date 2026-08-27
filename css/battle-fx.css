@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   戦闘エフェクト。画像素材は使わず、グラデーションと図形だけで描く。
+   戦闘エフェクト。武器演出はCSS、炎属性の着弾はPixel Fire素材を併用する。
    すべて pointer-events:none で、タップ操作を邪魔しない。
    ══════════════════════════════════════════════════════════════ */
 .fx,.fx-crit-flash,.fx-fireball{position:absolute;pointer-events:none;z-index:6}
@@ -50,6 +50,24 @@
   animation:fx-ember .95s ease-out forwards;animation-delay:var(--dly)}
 @keyframes fx-ember{0%{transform:translate(0,10px) scale(.5);opacity:0}
   25%{opacity:1}100%{transform:translate(calc(var(--dx) * 26px),-58px) scale(.2);opacity:0}}
+
+/* Pixel Fire Asset Pack：炎属性魔法の着弾。32×48pxを整数感のある倍率で拡大する。 */
+.fx-pixel-fire-impact{z-index:8}
+.fx-pixel-fire-impact img{position:absolute;display:block;pointer-events:none;
+  left:calc(var(--fx-size) * -.5);top:calc(var(--fx-size) * -.78);
+  width:var(--fx-size);height:calc(var(--fx-size) * 1.5);object-fit:contain;
+  image-rendering:pixelated;filter:drop-shadow(0 0 7px #ffcb58) drop-shadow(0 0 16px #ff5015);
+  animation:fx-pixel-fire-pop .8s steps(8,end) both}
+.fx-pixel-fire-impact .fx-blast{width:calc(var(--fx-size) * .78);height:calc(var(--fx-size) * .78);
+  margin:calc(var(--fx-size) * -.39) 0 0 calc(var(--fx-size) * -.39)}
+.fx-fire-ring{left:calc(var(--fx-size) * -.34);top:calc(var(--fx-size) * -.34);
+  width:calc(var(--fx-size) * .68);height:calc(var(--fx-size) * .68);border-radius:50%;
+  border:2px solid #ffce67;box-shadow:0 0 12px #ff6d19,0 0 18px #ff3a0b88 inset;
+  animation:fx-fire-ring .48s ease-out forwards}
+@keyframes fx-pixel-fire-pop{0%{transform:scale(.58);opacity:0}12%{opacity:1}
+  72%{transform:scale(1.04);opacity:1}100%{transform:scale(1);opacity:0}}
+@keyframes fx-fire-ring{0%{transform:scale(.25);opacity:0}25%{opacity:1}
+  100%{transform:scale(1.55);opacity:0}}
 
 /* 飛んでいく火球 */
 .fx-fireball{width:26px;height:26px;transform:translate(-50%,-50%);
@@ -123,7 +141,7 @@
 @media(prefers-reduced-motion:reduce){
   .fx-shake,.fx-swing-sword .ren-sprite,.fx-swing-martial .ren-sprite,
   .fx-swing-shield .ren-sprite,.fx-swing-staff .ren-sprite,.fx-swing-instrument .ren-sprite{animation:none}
-  .fx-ember,.fx-crit-ray{display:none}
+  .fx-ember,.fx-crit-ray,.fx-pixel-fire-impact img{display:none}
 }
 
 /* 属性の弱点を突いたHit。耐性による減衰は無いので、有利な時だけ光る。 */

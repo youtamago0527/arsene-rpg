@@ -1166,14 +1166,14 @@
 
 /* 敵の待機は小さな上下動へ統一。旧モンスター固有の大揺れ・回転は戦闘画面では使わない。 */
 @keyframes battleEnemyGentleBob{0%,100%{translate:0 0}50%{translate:0 -3px}}
-@keyframes battleBossGentleBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes battleBossGentleBob{0%,100%{translate:0 0}50%{translate:0 -3px}}
 #game .enemy:not(.boss-enemy):not(.enemy-escaped) .slime[style*="background-image"]{animation:none!important}
 #game .enemy:not(.boss-enemy):not(.enemy-attacking):not(.hit):not(.defeated):not(.enemy-escaped) .enemy-visual{
   animation:battleEnemyGentleBob 2.8s ease-in-out infinite!important;
 }
 #game .enemy.delay-1:not(.enemy-attacking):not(.hit):not(.defeated):not(.enemy-escaped) .enemy-visual{animation-delay:-.8s!important}
 #game .enemy.delay-2:not(.enemy-attacking):not(.hit):not(.defeated):not(.enemy-escaped) .enemy-visual{animation-delay:-1.6s!important}
-#game .boss-enemy:not(.enemy-attacking):not(.hit):not(.defeated):not(.guitar-axe-windup):not(.silver-claw) .noel-sprite{
+#game .boss-enemy:not(.enemy-attacking):not(.hit):not(.defeated):not(.guitar-axe-windup):not(.silver-claw) .enemy-visual{
   animation:battleBossGentleBob 3.2s ease-in-out infinite!important;
 }
 
@@ -1412,15 +1412,18 @@
 #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span{font-size:10px}
 #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{font-size:8.5px;letter-spacing:-.06em}
 #game .enemy:not(.boss-enemy) .enemy-nameplate>span{
-  position:absolute;
-  inset:5px 5px auto 31px;
-  width:auto;
+  position:relative;
+  inset:auto;
+  width:100%;
   padding:0;
-  min-height:13px;
+  min-height:14px;
   display:grid;
   place-items:center;
   text-align:center;
   transform:none;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  line-height:1.05;
 }
 
 /* 長い固有名は中黒を自然な改行位置にする。短い名前は従来どおり中央1段。 */
@@ -1514,8 +1517,48 @@
   line-height:1.02;
   white-space:nowrap;
 }
+
+/* Nameplate final fit: keep every name inside the supplied frame. */
+#game .enemy-nameplate>span{
+  overflow-wrap:anywhere;
+  word-break:normal;
+  text-overflow:clip;
+}
+#game .enemy:not(.boss-enemy) .enemy-nameplate>span:not(.split-name){
+  font-size:clamp(8px,2.45vw,12px);
+  letter-spacing:-.025em;
+}
+#game .boss-enemy .enemy-nameplate>span.split-name{
+  font-size:clamp(8px,2.5vw,11px);
+  padding-inline:32px;
+  white-space:normal;
+}
+#game .boss-enemy .enemy-nameplate>span.split-name small{white-space:normal;overflow-wrap:anywhere}
 #game .boss-enemy .enemy-visual{
   inset:24px -24px 27px;
+}
+/* ゼナカドは顔が素材上端寄りなので、名札は固定したまま立ち絵だけを下げる。 */
+#game .boss-enemy.enemy-zenakado .enemy-art-image{
+  transform:translate(-50%,24px);
+}
+/* game.css の汎用モーションは transform:scale(1) を含み、拡大したボスだけ
+   攻撃・被弾中に縮んでいた。移動を translate で行い通常の拡大率を維持する。 */
+#game .boss-enemy.enemy-attacking .enemy-visual{
+  animation:battleBossVisualAttack .65s ease-in-out;
+}
+#game .boss-enemy.hit .enemy-visual{
+  animation:battleBossVisualHit .42s steps(2);
+}
+@keyframes battleBossVisualAttack{
+  0%,100%{translate:0 0}
+  42%{translate:-24px 0}
+  58%{translate:-32px 0}
+}
+@keyframes battleBossVisualHit{
+  0%,100%{translate:0 0;filter:none}
+  25%{translate:-4px 0;filter:brightness(1.8)}
+  50%{translate:4px 0;filter:brightness(.72)}
+  75%{translate:-2px 0;filter:brightness(1.5)}
 }
 #game .boss-enemy .noel-sprite{
   width:min(110vw,480px);

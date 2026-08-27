@@ -1700,7 +1700,11 @@
       enemyLayer.innerHTML = this.enemies.map((e, i) => {
         const statuses = '<button type="button" class="status-strip enemy-statuses" aria-label="敵の状態と解析情報"></button>';
         const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : '';
-        const displayName = String(e.name || '').trim(), accessibleName = `${displayName}${e.label || ''}`;
+        const slotLabel = String.fromCharCode(65 + i);
+        const bossAliases = { zenakado: '孤高の独奏者', myrthi: '黒紅の双刃戦姫', seripes: '不落の反奏騎士', astact: '断奏の紅姫' };
+        const baseName = String(e.name || '').trim();
+        const displayName = e.kind === 'boss' && bossAliases[e.id] ? `${baseName}・${bossAliases[e.id]}` : baseName;
+        const accessibleName = `${slotLabel} ${displayName}${e.label || ''}`;
         const nameChars = [...displayName], nameLength = nameChars.length;
         const splitThreshold = e.kind === 'boss' ? 13 : 8;
         const splitName = nameLength >= splitThreshold;
@@ -1748,7 +1752,7 @@
           : (e.kind === 'boss'
             ? `<div class="slime-shadow boss-shadow"></div><div class="noel-sprite${e.spriteClass ? ' ' + e.spriteClass : ''}"></div>`
             : `<div class="slime-shadow"></div><div class="slime"></div>`);
-        return `<div role="button" tabindex="0" class="enemy ${e.kind === 'boss' ? `boss-enemy enemy-${e.id}${bossClass}` : `enemy-${e.id}`} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" data-enemy-id="${e.id}" data-kind="${e.kind || 'normal'}" data-size="${e.kind === 'boss' ? 'boss' : e.kind === 'rare' ? 'large' : 'normal'}" style="--boss-art-scale:${bossArtScale}" aria-label="${accessibleName}を攻撃"><div class="enemy-nameplate"><b class="enemy-slot-label" aria-hidden="true">${String.fromCharCode(65 + i)}</b><span class="${nameClass}">${displayNameHtml}</span>${statuses}</div><div class="enemy-visual">${visual}</div><div class="enemy-hud${e.kind === 'boss' ? ' boss-hud' : ''}"><label>HP</label><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>${e.hp.toLocaleString('ja-JP')} / ${e.stats.maxHp.toLocaleString('ja-JP')}</small></div></div>`;
+        return `<div role="button" tabindex="0" class="enemy ${e.kind === 'boss' ? `boss-enemy enemy-${e.id}${bossClass}` : `enemy-${e.id}`} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" data-enemy-id="${e.id}" data-kind="${e.kind || 'normal'}" data-size="${e.kind === 'boss' ? 'boss' : e.kind === 'rare' ? 'large' : 'normal'}" style="--boss-art-scale:${bossArtScale}" aria-label="${accessibleName}を攻撃"><div class="enemy-nameplate"><b class="enemy-slot-label" aria-hidden="true">${slotLabel}</b><span class="${nameClass}">${displayNameHtml}</span>${statuses}</div><div class="enemy-visual">${visual}</div><div class="enemy-hud${e.kind === 'boss' ? ' boss-hud' : ''}"><label>HP</label><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>${e.hp.toLocaleString('ja-JP')} / ${e.stats.maxHp.toLocaleString('ja-JP')}</small></div></div>`;
       }).join('');
       this.enemies.forEach((enemy, index) => this.bindEnemyTap(enemy, index));
     }
@@ -2776,7 +2780,7 @@
       this.setLog(`${skill.name}！`); this.flashTitle(skill.name, 'AREA MAGIC'); this.audio.sfx('magic');
       const ren = $('#ren'); ren.classList.add('casting');
       for (const target of targets) {
-        const el = document.getElementById(target.uid); await this.magicProjectile(el);
+        const el = document.getElementById(target.uid); await this.magicProjectile(el, skill);
         const outcome = this.rollPlayerAttackOutcome(skill, target);
         if (!outcome.hit) { this.comboDanceMiss(); this.triggerEvade('player', target, skill, { source: 'playerAttackAll' }); this.floating(el, 'EVADE', 'miss'); await this.battleSleep(180); continue; }
         this.comboDanceHit();
@@ -2784,7 +2788,7 @@
         const d = this.damageFor(skill, target, outcome); if (target.infiniteHp) target.debugDamageTaken = (target.debugDamageTaken || 0) + d.value; target.hp = target.infiniteHp ? target.stats.maxHp : target.cannotDefeat ? Math.max(1, target.hp - d.value) : Math.max(0, target.hp - d.value);
         this.refundMpFromSpell(d.value, skill); // 魔導士《魔力還流》
         this.recordSeripesHit(target, skill, d.value);
-        this.floating(el, d.value, d.critical ? 'critical' : 'damage'); this.audio.sfx(d.critical ? 'critical' : 'enemyHit'); this.updateHUD();
+        this.floating(el, d.value, d.critical ? 'critical' : 'damage'); if (d.weak && !d.critical) this.floating(el, 'WEAK!', 'weak-label'); this.attackImpactFx ? this.attackImpactFx(skill, el, d.critical) : this.audio.sfx(d.critical ? 'critical' : 'enemyHit'); this.updateHUD();
         await this.battleSleep(220); el.classList.remove('hit');
         // 全体攻撃でも状態異常・弱体は個別に判定する（単体攻撃と同じ規則）
         if (target.hp > 0) this.applySkillDebuff(skill, target);
