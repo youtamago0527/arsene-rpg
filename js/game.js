@@ -1588,14 +1588,6 @@
       this.setLog(`ミルティの${chosen.name}！ ${this.playerName()}は${actual}ダメージを受けた！ 【BEAT ${enemy.beat}/4】`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
       await this.tryCounter(enemy);
     }
-    isAdvancedJobUnlocked(jobId) {
-      const job = D.jobs[jobId]; if (!job?.unlockCondition) return true;
-      const cond = job.unlockCondition;
-      if (cond.bossDefeated && !this.isBossDefeated(cond.bossDefeated)) return false;
-      if (cond.jobLevels) { for (const [reqId, reqLv] of Object.entries(cond.jobLevels)) { if ((this.profile.jobs[reqId]?.level || 1) < reqLv) return false; } }
-      return true;
-    }
-    checkAdvancedJobUnlocks() { const ids = D.advancedJobIds || []; ids.forEach(id => { if (this.isAdvancedJobUnlocked(id)) { const job = D.jobs[id]; if (job && !this.profile.jobs[id]) this.profile.jobs[id] = { level: 1, exp: 0 }; } }); }
     makeEnemy(id, index) {
       const t = D.enemies[id], floor = this.activeFloor(this.currentDungeonId), scale = t.ignoreFloorStatScale ? {} : (floor?.enemyScale || {});
       const rateFor = key => scale[key] ?? (key === 'maxHp' ? scale.hp : 1) ?? 1;
@@ -2982,7 +2974,7 @@
       this.saveProfile(); return levels;
     }
     isRecipeUnlocked(recipe) { if (!this.isPlayerContentVisible(recipe)) return false; if (!recipe.materialUnlockId) return true; return (this.profile.unlockedRecipes || []).includes(recipe.id); }
-    grantJobExp(amount) { const jobId = this.profile.currentJob, job = D.jobs[jobId], progress = this.profile.jobs[jobId], from = progress.level, learnedBefore = new Set(this.profile.learnedJobSkills || []); const raw = Math.max(0, amount) / 4 + (progress.expCarry || 0), gained = Math.floor(raw); progress.expCarry = raw - gained; progress.exp += gained; while (progress.level < D.jobLevelCap) { const need = this.jobExpNeeded(progress.level); if (!need || progress.exp < need) break; progress.exp -= need; progress.level++; } if (progress.level >= D.jobLevelCap) { progress.exp = 0; progress.expCarry = 0; this.markJobMastered(jobId); } const gainedLevels = progress.level - from; const statGain = gainedLevels > 0 ? this.applyJobLevelGrowth(jobId, gainedLevels) : null; if (progress.level >= D.jobLevelCap) this.recordPhantomGrowth(jobId); const newPassives = gainedLevels > 0 ? this.grantJobPassives(jobId, progress.level) : []; const reinforcedPassives = gainedLevels > 0 ? this.reinforceJobPassives(jobId, progress.level) : []; this.syncSkillUnlocks(); this.checkAdvancedJobUnlocks(); const learned = (this.profile.learnedJobSkills || []).filter(id => !learnedBefore.has(id)); this.saveProfile(); return { jobId, jobName: job.name, jobNameEn: job.nameEn, exp: gained, from, to: progress.level, learned, statGain, newPassives, reinforcedPassives }; }
+    grantJobExp(amount) { const jobId = this.profile.currentJob, job = D.jobs[jobId], progress = this.profile.jobs[jobId], from = progress.level, learnedBefore = new Set(this.profile.learnedJobSkills || []); const raw = Math.max(0, amount) / 4 + (progress.expCarry || 0), gained = Math.floor(raw); progress.expCarry = raw - gained; progress.exp += gained; while (progress.level < D.jobLevelCap) { const need = this.jobExpNeeded(progress.level); if (!need || progress.exp < need) break; progress.exp -= need; progress.level++; } if (progress.level >= D.jobLevelCap) { progress.exp = 0; progress.expCarry = 0; this.markJobMastered(jobId); } const gainedLevels = progress.level - from; const statGain = gainedLevels > 0 ? this.applyJobLevelGrowth(jobId, gainedLevels) : null; if (progress.level >= D.jobLevelCap) this.recordPhantomGrowth(jobId); const newPassives = gainedLevels > 0 ? this.grantJobPassives(jobId, progress.level) : []; const reinforcedPassives = gainedLevels > 0 ? this.reinforceJobPassives(jobId, progress.level) : []; this.syncSkillUnlocks(); const learned = (this.profile.learnedJobSkills || []).filter(id => !learnedBefore.has(id)); this.saveProfile(); return { jobId, jobName: job.name, jobNameEn: job.nameEn, exp: gained, from, to: progress.level, learned, statGain, newPassives, reinforcedPassives }; }
     jobResultHTML(result) { if (!result) return ''; return `<div class="job-result"><small>JOB EXPERIENCE</small><strong>${result.jobName}</strong><span>JEXP <b>+${result.exp}</b></span>${result.to > result.from ? `<h3>JOB LEVEL UP!　Lv.${result.from} → Lv.${result.to}</h3>` : ''}${result.learned.length ? `<div>${result.learned.map(id => `<b>NEW SKILL　${D.skills[id].name}</b>`).join('')}</div>` : ''}${result.reinforcedPassives?.length ? `<div>${result.reinforcedPassives.map(row => `<b>PASSIVE UP　${row.skill.name}　段階${row.rank}</b>`).join('')}</div>` : ''}</div>`; }
     rewardHTML(reward, levels) {
       const drops = Object.entries(reward.drops); let html = `<div class="reward-summary"><span>EXP <b>+${reward.exp}</b></span><span>GOLD <b>+${reward.gold}</b></span></div>`;
@@ -3254,21 +3246,19 @@
     }
     jobListHtml(unlocked, currentId) {
       // 未解放JOBはLOCKEDカードも出さず、解放された瞬間に初めて一覧へ追加する。
-      const base = [...(D.startingJobIds || []), 'magicKnight', 'guardian'].filter(id => this.isJobUnlocked(id));
-      const adv = [...new Set([...(D.advancedJobIds || []), 'dualBlade'])].filter(id => this.isJobUnlocked(id));
+      // 上位JOBという区分は廃止。解放済みのJOBはすべて同じ並びに出す。
+      const base = [...(D.startingJobIds || []), 'magicKnight', 'guardian', 'dualBlade'].filter(id => this.isJobUnlocked(id));
       const special = ['phantomThief'].filter(id => this.isJobUnlocked(id));
       // 解放判定は profile.unlockedJobs が唯一の情報源。初期ジョブを固定しない。
-      const card = id => { const j = D.jobs[id]; if (!j) return ''; const p = this.profile.jobs[id] || { level: 1 }, isAdv = adv.includes(id), avail = isAdv ? this.isAdvancedJobUnlocked(id) : this.isJobUnlocked(id), isCur = id === currentId; return `<button class="jcard${isCur ? ' cur' : ''}${avail ? '' : ' locked'}" data-job-detail="${id}"><div class="jcard-name">${j.name}</div><div class="jcard-lv">${avail ? `Lv.${p.level}` : 'LOCKED'}</div></button>`; };
+      const card = id => { const j = D.jobs[id]; if (!j) return ''; const p = this.profile.jobs[id] || { level: 1 }, avail = this.isJobUnlocked(id), isCur = id === currentId; return `<button class="jcard${isCur ? ' cur' : ''}${avail ? '' : ' locked'}" data-job-detail="${id}"><div class="jcard-name">${j.name}</div><div class="jcard-lv">${avail ? `Lv.${p.level}` : 'LOCKED'}</div></button>`; };
       // ダンジョン名はデータから引く。名前を変えても文言が追従する。
       const d1Name = this.getDungeon('dungeon1')?.name || 'ダンジョン1';
       const notice = this.isJobUnlocked('magicKnight') ? '' : `<p class="job-lock-notice">《${d1Name}》をクリアして《魔奏士の証》を入手すると、残りの基本JOBと魔奏士が解放されます。</p>`;
-      // 上位JOBは中身が無いときは節ごと出さない
-      const advSec = adv.length ? `<section class="jsec"><h4>上位JOB</h4><div class="jgrid">${adv.map(card).join('')}</div></section>` : '';
       const specialSec = special.length ? `<section class="jsec"><h4>特殊JOB</h4><div class="jgrid">${special.map(card).join('')}</div></section>` : '';
-      return `${notice}<section class="jsec"><h4>基本JOB</h4><div class="jgrid">${base.map(card).join('')}</div></section>${specialSec}${advSec}`;
+      return `${notice}<section class="jsec"><h4>基本JOB</h4><div class="jgrid">${base.map(card).join('')}</div></section>${specialSec}`;
     }
     jobDetailHtml(jobId, unlocked, currentId) {
-      const j = D.jobs[jobId], p = this.profile.jobs[jobId], isAdv = (D.advancedJobIds || []).includes(jobId), avail = isAdv ? this.isAdvancedJobUnlocked(jobId) : this.isJobUnlocked(jobId), isCur = jobId === currentId, need = this.jobExpNeeded(p.level), bar = need ? Math.round(100 * p.exp / need) : 100;
+      const j = D.jobs[jobId], p = this.profile.jobs[jobId], avail = this.isJobUnlocked(jobId), isCur = jobId === currentId, need = this.jobExpNeeded(p.level), bar = need ? Math.round(100 * p.exp / need) : 100;
       const noGrow = this.isNoGrowthJob(jobId) || !!j.noGrowth;
       const bonuses = this.activeJobBonuses(jobId), bHtml = Object.entries(bonuses).length ? Object.entries(bonuses).map(([k, v]) => `<div class="jbn-item"><span>${statLabels[k] || k}</span><b>${k === 'critBonus' ? `+${Math.round(v * 100)}%` : `+${v}`}</b></div>`).join('') : '<span class="jbn-none">なし</span>';
       // アビリティ一覧＝固有技＋パッシブ＋旧skillUnlocks＋条件つき専用技
@@ -3282,7 +3272,7 @@
       this.conditionalSkillsForJob(jobId).forEach(({ skill, level }) => abilityEntries.push([level, skill.id]));
       const skillRows = abilityEntries.sort((a, b) => a[0] - b[0]).map(([lv, id]) => { const s = D.skills[id], learned = this.jobAbilityLearned(jobId, id, lv), cond = s?.requiresBuff ? this.buffSourceName(jobId, s.requiresBuff) : ''; return `<button class="jar${learned ? ' learned' : ' locked'}${cond ? ' jar-cond' : ''}"${learned ? ` data-job-skill-detail="${id}"` : ''}><span class="jar-lv">Lv.${lv}</span><span class="jar-nm">${s?.name || id}</span><em class="jar-type">${s?.type === 'PASSIVE' ? 'P' : 'A'}</em><small class="jar-st">${learned ? (cond ? `《${cond}》中` : '習得済') : 'LOCK'}</small></button>`; }).join('');
       let condHtml = '';
-      if (isAdv && !avail && j.unlockCondition) { const c = j.unlockCondition, bOk = c.bossDefeated ? this.isBossDefeated(c.bossDefeated) : true, bName = c.bossDefeated ? (D.enemies[c.bossDefeated]?.name || c.bossDefeated) : ''; const jcs = Object.entries(c.jobLevels || {}).map(([rid, rlv]) => { const cur = this.profile.jobs[rid]?.level || 0, ok = cur >= rlv; return `<div class="cond-row${ok ? ' ok' : ' ng'}"><b>${ok ? '✓' : '✕'} ${D.jobs[rid]?.name || rid} Lv${rlv}</b><small>現在 Lv.${cur}</small></div>`; }).join(''); condHtml = `<div class="jconds"><h4>解放条件</h4>${bName ? `<div class="cond-row${bOk ? ' ok' : ' ng'}"><b>${bOk ? '✓' : '✕'} ${bName}を撃破</b></div>` : ''}${jcs}</div>`; }
+      if (!avail && j.unlockCondition) { const c = j.unlockCondition, bOk = c.bossDefeated ? this.isBossDefeated(c.bossDefeated) : true, bName = c.bossDefeated ? (D.enemies[c.bossDefeated]?.name || c.bossDefeated) : ''; const jcs = Object.entries(c.jobLevels || {}).map(([rid, rlv]) => { const cur = this.profile.jobs[rid]?.level || 0, ok = cur >= rlv; return `<div class="cond-row${ok ? ' ok' : ' ng'}"><b>${ok ? '✓' : '✕'} ${D.jobs[rid]?.name || rid} Lv${rlv}</b><small>現在 Lv.${cur}</small></div>`; }).join(''); condHtml = `<div class="jconds"><h4>解放条件</h4>${bName ? `<div class="cond-row${bOk ? ' ok' : ' ng'}"><b>${bOk ? '✓' : '✕'} ${bName}を撃破</b></div>` : ''}${jcs}</div>`; }
       // ファントムシーフは自分では育たないので、代わりに「他JOBから盗んだ能力」を出す。
       const isPT = this.isPhantomThief(jobId);
       let stealHtml = '';
@@ -3539,10 +3529,8 @@
       this.startBossEncounter();
     }
     switchJobState(id, render = false) {
-      const isAdv = (D.advancedJobIds || []).includes(id);
       if (!D.jobs[id] || id === this.profile.currentJob) return false;
-      if (isAdv && !this.isAdvancedJobUnlocked(id)) return false;
-      if (!isAdv && !this.isJobUnlocked(id)) return false;
+      if (!this.isJobUnlocked(id)) return false;
       const before = this.totalStats(), vitals = this.storedVitals(before); this.profile.currentJob = id;
       if (id !== 'phantomThief') this.profile.lastNormalJob = id;
       this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); const after = this.totalStats();

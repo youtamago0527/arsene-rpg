@@ -218,8 +218,6 @@ window.ARSENE_DATA = {
     soloTurns: 2,          // ソロ（2回行動）の持続ターン
     soloChance: 0.35       // ソロだけは別の発動率。2回行動は影響が大きいので絞る
   },
-  // 上位JOBは設計見直し中のため一旦空。復活させるときはここへIDを戻す。
-  advancedJobIds: [],
 
   // 1面クリア目安30分：通常戦17回（1戦約50秒）＋ボス2戦＋拠点操作
   battleProgression: { noelEncounterWins: 8, zenakadoEncounterWins: 17 },

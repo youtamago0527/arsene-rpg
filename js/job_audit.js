@@ -21,7 +21,6 @@
 
   const activeJobIds = () => [...new Set([
     ...(D.startingJobIds || []),
-    ...(D.advancedJobIds || []),
     ...(D.futureJobIds || []),
     'magicKnight', 'guardian', 'dualBlade', 'phantomThief'
   ])].filter(id => D.jobs?.[id]);
