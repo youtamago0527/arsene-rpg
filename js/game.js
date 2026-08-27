@@ -1711,9 +1711,10 @@
     }
     rollEncounter(wins, progression) {
       if (this.currentDungeonId === 'dungeon3') {
+        const rareMult = this.collectionTitleEffect?.('rareEncounterMultiplier') ?? 1;
         let rareRoll = Math.random();
         for (const rare of D.dungeon3RareEncounters || []) {
-          rareRoll -= rare.chance || 0;
+          rareRoll -= Math.min(1, (rare.chance || 0) * rareMult);
           if (rareRoll <= 0) return [rare.id];
         }
       }
@@ -1730,6 +1731,7 @@
       let added = false;
       for (const e of this.enemies || []) if (e.id && !seen.includes(e.id)) { seen.push(e.id); added = true; }
       if (added) this.saveProfile();
+      this.checkCollectionTitleUnlocks?.(this.currentDungeonId);
     }
     /* Remote pre-redesign battle renderer (superseded by the live mobile HUD below).
     renderEnemies() {
@@ -2809,12 +2811,13 @@
       const mode = String(this.battleMode || '');
       const normalDungeon = mode !== 'infiniteScore' && !mode.startsWith('ow');
       const adBoost = normalDungeon && window.arseneQOffer?.isActive?.('exp2') ? 2 : 1;
-      return (1 + this.mealExpBonusRate()) * adBoost;
+      return (1 + this.mealExpBonusRate()) * adBoost * (this.collectionTitleEffect?.('expMultiplier') ?? 1);
     }
     rewardGoldMultiplier() {
       const mode = String(this.battleMode || '');
       const normalDungeon = mode !== 'infiniteScore' && !mode.startsWith('ow');
-      return normalDungeon && window.arseneQOffer?.isActive?.('gold2') ? 2 : 1;
+      const adBoost = normalDungeon && window.arseneQOffer?.isActive?.('gold2') ? 2 : 1;
+      return adBoost * (this.collectionTitleEffect?.('goldMultiplier') ?? 1);
     }
     mealEffectLabel(meal = this.activeMealBuff()) { if (!meal) return 'カズのまかないで潜入を強化'; if (meal.maxHpRate) return `最大HP ＋${Math.round(meal.maxHpRate * 100)}%`; if (meal.goldRate) return `GOLD ＋${Math.round(meal.goldRate * 100)}%`; if (meal.expRate) return `EXP ＋${Math.round(meal.expRate * 100)}%`; return meal.description || '効果あり'; }
     clearMealBuff() { if (!this.profile?.flags) return; this.profile.flags.ramenBuffActive = false; this.profile.flags.ramenBuffType = null; }
@@ -3150,8 +3153,8 @@
       return `${notices}${this.rewardHTML({ exp: r.exp, gold: r.gold, drops: r.drops }, r.levels)}`;
     }
     rollDrops(enemy) {
-      const drops = [], bonus = this.traitDropRateBonus();
-      (enemy.dropTable || []).forEach(d => { if (Math.random() < Math.min(1, (Number(d.chance) || 0) + bonus)) drops.push([d.itemId, 1]); }); return drops;
+      const drops = [], bonus = this.traitDropRateBonus(), mult = this.collectionTitleEffect?.('dropMultiplier') ?? 1;
+      (enemy.dropTable || []).forEach(d => { if (Math.random() < Math.min(1, (Number(d.chance) || 0) * mult + bonus)) drops.push([d.itemId, 1]); }); return drops;
     }
     applyRewards(reward) {
       this.profile.exp += reward.exp; this.profile.gold += reward.gold; Object.entries(reward.drops).forEach(([id, n]) => this.profile.inventory[id] = (this.profile.inventory[id] || 0) + n); this.recordEquipmentDiscovery(Object.keys(reward.drops)); const levels = [];
@@ -4090,6 +4093,20 @@
     //   ・まだ一度も戦闘で出会っていない敵も伏せる
     hasMetEnemy(id) { return (this.profile.seenEnemies || []).includes(id); }
     isArchiveHidden(e) { return e.id === 'noelFirstEncounter' || e.hideInArchive || !this.hasMetEnemy(e.id); }
+    // ダンジョンの怪異図鑑対象一覧。renderArchivePanel()の判定と、
+    // 図鑑称号の完成チェック（checkCollectionTitleUnlocks）の両方から参照する。
+    archiveEnemyList(dungeonId) {
+      const bossIds = new Set(['zenakado', 'myrthi', 'seripes', 'noelFirstEncounter']);
+      // ボスは出現表からの逆引きに頼らず、所属ダンジョンを一意に固定する。
+      const bossDungeon = { zenakado: 'dungeon1', noelFirstEncounter: 'dungeon1', myrthi: 'dungeon2', seripes: 'dungeon3' };
+      const all = Object.values(D.enemies).filter(e => e.id !== 'noelFirstEncounter' && (bossDungeon[e.id] || this.enemyDungeonId(e)) === dungeonId);
+      return [...all].sort((a, b) => (bossIds.has(a.id) ? 1 : 0) - (bossIds.has(b.id) ? 1 : 0) || (a.stats?.maxHp || 0) - (b.stats?.maxHp || 0));
+    }
+    archiveCompletionPct(dungeonId) {
+      const list = this.archiveEnemyList(dungeonId);
+      const met = list.filter(e => !this.isArchiveHidden(e)).length;
+      return list.length ? Math.round(met / list.length * 100) : 0;
+    }
     recordEquipmentDiscovery(ids = []) {
       const archive = new Set(this.profile.equipmentArchive || []);
       ids.forEach(id => { if (D.items[id]?.category === 'equipment') archive.add(id); });
@@ -4127,13 +4144,9 @@
       const dungeons = this.archiveDungeons();
       if (!dungeons.some(d => d.id === this.archiveDungeon)) this.archiveDungeon = 'dungeon1';
       const dunId = this.archiveDungeon;
+      this.checkCollectionTitleUnlocks?.(dunId);
       const bossIds = new Set(['zenakado', 'myrthi', 'seripes', 'noelFirstEncounter']);
-      // ボスは出現表からの逆引きに頼らず、所属ダンジョンを一意に固定する。
-      // 後続ボスがD1にも重複表示されるのを防ぐ。
-      const bossDungeon = { zenakado: 'dungeon1', noelFirstEncounter: 'dungeon1', myrthi: 'dungeon2', seripes: 'dungeon3' };
-      const all = Object.values(D.enemies).filter(e => e.id !== 'noelFirstEncounter' && (bossDungeon[e.id] || this.enemyDungeonId(e)) === dunId);
-      // 雑魚 → ボスの順。ボスは末尾へ。
-      const list = [...all].sort((a, b) => (bossIds.has(a.id) ? 1 : 0) - (bossIds.has(b.id) ? 1 : 0) || (a.stats?.maxHp || 0) - (b.stats?.maxHp || 0));
+      const list = this.archiveEnemyList(dunId);
       const tabs = dungeons.map(d => `<button data-archive-dungeon="${d.id}" class="${d.id === dunId ? 'active' : ''}"><b>${d.label}</b></button>`).join('');
       if (this.archiveMode === 'equipment') { this.renderEquipmentArchive(panel, dungeons, dunId, tabs); return; }
       const statRow = s => !s ? '' : `<div class="ar-stats">
@@ -4164,11 +4177,21 @@
           </div>
         </details>`;
       }).join('');
-      const met = list.filter(e => !this.isArchiveHidden(e)).length, archivePct = list.length ? Math.round(met / list.length * 100) : 0;
+      const archivePct = this.archiveCompletionPct(dunId);
+      const collectionTitles = window.ArseneTitleSystem?.collectionTitles || {};
+      const dungeonTitle = Object.values(collectionTitles).find(t => t.dungeonId === dunId);
+      const titleAcquired = dungeonTitle && (this.profile.titleSystem?.acquiredCollection || []).includes(dungeonTitle.id);
+      const titleEquipped = dungeonTitle && this.profile.titleSystem?.equipped?.collection === dungeonTitle.id;
+      const titleHtml = dungeonTitle ? `<section class="archive-title-preview ${titleAcquired ? 'acquired' : 'locked'}">
+          <small>図鑑称号</small><b>${titleAcquired ? dungeonTitle.name : '？？？？？？？'}</b>
+          <span>取得条件　${dungeonTitle.acquireCondition}</span><em>${dungeonTitle.effectText}</em>
+          ${titleAcquired ? `<i>${titleEquipped ? '装備中' : '未装備（称号装備欄から選択できます）'}</i>` : ''}
+        </section>` : '';
       panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>PHANTOM ARCHIVE</small><h2>図鑑</h2>${this.archiveModeTabsHTML()}
         <div class="item-tabs ar-tabs">${tabs}</div>
         <section class="archive-monster-fixed">
           <p class="ar-hint"><b>記録率 ${archivePct}%</b>　—　怪異名をタップすると詳細が開きます。</p>
+          ${titleHtml}
           <div class="ar-list">${cards || '<p class="item-empty">このダンジョンの記録はまだありません。</p>'}</div>
         </section>`;
     }

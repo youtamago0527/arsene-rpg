@@ -19,6 +19,35 @@
   // 図鑑称号は取得条件と効果が確定した時に registerCollectionTitle() で追加する。
   // ボス称号とは保存先・装備枠を分離し、探索効果とJOB成長効果を混同しない。
   const COLLECTION_TITLES = {};
+  // D1〜D4の図鑑（怪異図鑑）完成で得られる図鑑称号。
+  // effectType/effectValue はゲーム各所の倍率計算が汎用的に参照する。
+  // D5〜D7を追加するときはここへ定義を1件足すだけでよい（他コードの変更は不要）。
+  [
+    {
+      id: 'd1_collection_gold', dungeonId: 'dungeon1', name: '《蒐集家・金脈》', nameEn: 'COLLECTOR // GOLD VEIN',
+      acquireCondition: 'D1 図鑑完成', effectType: 'goldMultiplier', effectValue: 1.20,
+      effectText: 'EFFECT　獲得GOLD ×1.20',
+      description: 'D1の怪異図鑑を完成させた証。装備中は獲得GOLDが1.20倍になる。'
+    },
+    {
+      id: 'd2_collection_exp', dungeonId: 'dungeon2', name: '《蒐集家・研鑽》', nameEn: 'COLLECTOR // TRAINING',
+      acquireCondition: 'D2 図鑑完成', effectType: 'expMultiplier', effectValue: 1.20,
+      effectText: 'EFFECT　獲得EXP ×1.20',
+      description: 'D2の怪異図鑑を完成させた証。装備中は獲得EXPが1.20倍になる。'
+    },
+    {
+      id: 'd3_collection_drop', dungeonId: 'dungeon3', name: '《蒐集家・目利き》', nameEn: 'COLLECTOR // APPRAISER',
+      acquireCondition: 'D3 図鑑完成', effectType: 'dropMultiplier', effectValue: 1.10,
+      effectText: 'EFFECT　DROP RATE ×1.10（元のDROP率に対する倍率補正）',
+      description: 'D3の怪異図鑑を完成させた証。装備中はDROP率が元の値の1.10倍になる。'
+    },
+    {
+      id: 'd4_collection_rare', dungeonId: 'dungeon4', name: '《蒐集家・探究》', nameEn: 'COLLECTOR // SEEKER',
+      acquireCondition: 'D4 図鑑完成', effectType: 'rareEncounterMultiplier', effectValue: 1.25,
+      effectText: 'EFFECT　レアモンスター遭遇率 ×1.25',
+      description: 'D4の怪異図鑑を完成させた証。装備中はレアモンスターの遭遇率が1.25倍になる。'
+    }
+  ].forEach(definition => { COLLECTION_TITLES[definition.id] = { ...definition, category: 'collection' }; });
 
   const normalizeTitleProfile = profile => {
     if (!profile) return profile;
@@ -79,6 +108,34 @@
     system.collectionSlotUnlocked = true;
     this.saveProfile();
     return { ...def, first, systemUnlocked: !wasSystemUnlocked };
+  };
+  proto.equippedCollectionTitle = function () {
+    normalizeTitleProfile(this.profile);
+    return COLLECTION_TITLES[this.profile.titleSystem.equipped.collection] || null;
+  };
+  // 図鑑称号の効果値を汎用的に取得する。装備中の図鑑称号のeffectTypeが一致しなければ
+  // fallback（効果なし＝1倍）を返すので、GOLD/EXP/DROP/レア遭遇の各計算式は
+  // 称号IDを一切知らずに「今の倍率」だけを聞ける。
+  proto.collectionTitleEffect = function (effectType, fallback = 1) {
+    const title = this.equippedCollectionTitle();
+    if (!title || title.effectType !== effectType) return fallback;
+    const value = Number(title.effectValue);
+    return Number.isFinite(value) ? value : fallback;
+  };
+  // 図鑑（怪異図鑑）が対象ダンジョンで100%になった瞬間に、対応する図鑑称号を自動付与する。
+  // 何度呼ばれても安全（未登録・未100%・取得済みは何もしない）。
+  // 旧セーブで既に100%だったプレイヤーも、次にそのダンジョンの戦闘へ入るか
+  // 図鑑を開いた時点で自動的に取得できる（再取得の操作は不要）。
+  proto.checkCollectionTitleUnlocks = function (dungeonId) {
+    if (!dungeonId || typeof this.archiveCompletionPct !== 'function') return;
+    const system = normalizeTitleProfile(this.profile).titleSystem;
+    Object.values(COLLECTION_TITLES).forEach(title => {
+      if (title.dungeonId !== dungeonId) return;
+      if (system.acquiredCollection.includes(title.id)) return;
+      if (this.archiveCompletionPct(dungeonId) !== 100) return;
+      const acquired = this.acquireCollectionTitle(title.id);
+      if (acquired?.first) this.flashTitle?.('図鑑称号 GET', title.name);
+    });
   };
   proto.equippedBossTitle = function () {
     normalizeTitleProfile(this.profile);
@@ -142,7 +199,7 @@
     const collectionCards = system.acquiredCollection.map(id => {
       const title = COLLECTION_TITLES[id] || { id, name: id, description: '探索・収集を支援する図鑑称号。', effectText: '効果準備中' };
       const equipped = id === system.equipped.collection;
-      return `<article class="title-card collection${equipped ? ' equipped' : ''}"><div><small>COLLECTION TITLE</small><strong>${title.name}</strong><p>${title.description || title.effectText || '探索・収集を支援する称号。'}</p></div><button data-collection-title-${equipped ? 'unequip' : 'equip'}="${id}">${equipped ? 'EQUIPPED / 外す' : '装備する'}</button></article>`;
+      return `<article class="title-card collection${equipped ? ' equipped' : ''}"><div><small>COLLECTION TITLE</small><strong>${title.name}</strong><p>${title.description || ''}</p>${title.effectText ? `<em class="title-effect">${title.effectText}</em>` : ''}</div><button data-collection-title-${equipped ? 'unequip' : 'equip'}="${id}">${equipped ? 'EQUIPPED / 外す' : '装備する'}</button></article>`;
     }).join('');
     const cards = `${collectionCards}${bossCards}` || '<p class="jbn-none">まだ称号を獲得していません。</p>';
     const collectionSlot = system.collectionSlotUnlocked ? `<div class="title-slot"><small>COLLECTION TITLE</small><b>${collection?.name || '未装備'}</b><span>${collection?.effectText || '探索・収集称号枠'}</span></div>` : '';
