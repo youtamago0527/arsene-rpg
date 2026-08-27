@@ -1,6 +1,10 @@
 (() => {
   'use strict';
 
+  // 称号成長の内訳でJOB名を引くのに使う。宣言が漏れていたため、
+  // 称号成長を持つJOBの詳細を開くと ReferenceError で描画ごと落ちていた。
+  const D = window.ARSENE_DATA;
+
   const STAT_LABELS = { str: 'STR', vit: 'VIT', mag: 'MAG', mnd: 'MND', agi: 'AGI', dex: 'DEX', luk: 'LUK' };
   const BOSS_TITLES = {
     zenakado: { id: 'boss_cadenza', bossId: 'zenakado', defeatedId: 'zenacad', bossName: '独奏卿ゼナカド', origin: 'CADENZA', name: '《超越・CADENZA》', stat: 'mag', statLabel: 'MAG' },
