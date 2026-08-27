@@ -1259,11 +1259,17 @@
       const hpTier = Math.floor(Math.max(0, currentMaxHp) / (gb.vitalGrowthHpTierSize ?? 100));
       const requiredSparkLevel = hpTier * (gb.vitalGrowthSparkPerTier ?? 10);
       const hpEligible = strongest >= requiredSparkLevel;
+      // MPもHPと同じ考え方：現在の最大MPが一定量増えるごとに、成長へ必要な敵Spark Lvも上がる。
+      // さらにMPは「その戦闘でMPを使う行動を1回でも行った場合」のみ判定対象にする。
+      const currentMaxMp = this.profile.baseStats?.maxMp || this.player?.stats?.maxMp || 0;
+      const mpTier = Math.floor(Math.max(0, currentMaxMp) / (gb.vitalGrowthMpTierSize ?? gb.vitalGrowthHpTierSize ?? 100));
+      const requiredSparkLevelForMp = mpTier * (gb.vitalGrowthSparkPerTier ?? 10);
+      const mpEligible = !!this.usedMpThisBattle && strongest >= requiredSparkLevelForMp;
       const hpRate = (gb.baseHpGrowthRate ?? 0) + ((gb.jobHpGrowthBonus || {})[job] ?? 0);
       const mpRate = ((gb.baseMpGrowthRate ?? 0) + ((gb.jobMpGrowthBonus || {})[job] ?? 0)) * this.traitMpGrowthMult();
       const amt = r => Math.floor(Math.random() * ((r?.max ?? 1) - (r?.min ?? 1) + 1)) + (r?.min ?? 1);
       if (hpEligible && Math.random() < hpRate) out.hp = amt(gb.hpGrowthAmount);
-      if (Math.random() < mpRate) out.mp = amt(gb.mpGrowthAmount);
+      if (mpEligible && Math.random() < mpRate) out.mp = amt(gb.mpGrowthAmount);
       if (!out.hp && !out.mp) return null;
       const b = this.profile.baseStats; this.profile.currentVitals ||= { hp: b.maxHp, mp: b.maxMp };
       if (out.hp) { b.maxHp += out.hp; this.profile.currentVitals.hp += out.hp; if (this.player) { this.player.stats.maxHp += out.hp; this.player.hp += out.hp; } }
@@ -1442,7 +1448,7 @@
     jobExpNeeded(level) { return D.jobExpTable[level] || null; }
     activeJobBonuses(jobId = this.profile.currentJob) { if ((this.gb().jobGrowthPerLevel || {})[jobId]) return {}; const job = D.jobs[jobId], level = this.profile.jobs?.[jobId]?.level || 1, bonuses = {}; for (let lv = 1; lv <= level; lv++) Object.entries(job?.growth?.[lv] || {}).forEach(([key, value]) => bonuses[key] = (bonuses[key] || 0) + value); return bonuses; }
     storedVitals(stats = this.totalStats()) { const v = this.profile.currentVitals || {}; return { hp: clamp(Number.isFinite(v.hp) ? v.hp : stats.maxHp, 0, stats.maxHp), mp: clamp(Number.isFinite(v.mp) ? v.mp : stats.maxMp, 0, stats.maxMp) }; }
-    freshBattlePlayer(stats, hp, mp) { return { stats, hp, mp, inventory: this.profile.inventory, buffs: {}, cooldowns: {}, skillUses: {}, resonance: 0, lastReceivedType: null }; }
+    freshBattlePlayer(stats, hp, mp) { this.usedMpThisBattle = false; return { stats, hp, mp, inventory: this.profile.inventory, buffs: {}, cooldowns: {}, skillUses: {}, resonance: 0, lastReceivedType: null }; }
     persistVitals() { if (!this.player) return; this.profile.currentVitals = { hp: clamp(this.player.hp, 0, this.player.stats.maxHp), mp: clamp(this.player.mp, 0, this.player.stats.maxMp) }; this.saveProfile(); }
     expNeeded(level = this.profile.level) { return D.expTable[level] || Math.round(220 * Math.pow(1.48, level - 3)); }
     equipmentDefinition(id) { return D.weapons[id] || D.accessories[id] || D.armors?.[id] || D.equipment?.[id] || null; }
@@ -2441,7 +2447,7 @@
       if (this.locked || !skill || this.cooldownRemaining(skill) > 0 || !this.canPaySkillCosts(skill) || !this.skillEquipmentReady(skill) || (!self && (aoe ? !this.enemies.some(e => e.alive) : !this.enemies[targetIndex]?.alive))) return;
       this.lastBattleAction = { type: 'skill', skillId, targetIndex };
       if (skillId === 'resonanceBreak') { const stored = this.player.resonance; skill = { ...skill, resonanceStored: stored, power: this.resonanceMultiplier(stored) }; this.player.resonance = 0; this.flashTitle('RESONANCE BREAK', `${stored.toFixed(1)}% // ×${skill.power}`); }
-      this.locked = true; this.clearTargets(); this.keepAutoControlVisible(); $('#phase-label').textContent = 'ACTION'; await this.beginPlayerTurn(); const setEffects = this.activeSetEffects(), freeMp = skill.kind === 'magical' && skill.mp > 0 && Math.random() < (setEffects.freeMagicMpChance || 0); if (!freeMp) this.player.mp -= this.skillMpCost(skill); else this.flashTitle('MAESTRO', 'MP COST 0'); if (skill.cooldown) this.player.cooldowns[skill.id] = this.turn + skill.cooldown; this.persistVitals(); this.updateHUD();
+      this.locked = true; this.clearTargets(); this.keepAutoControlVisible(); $('#phase-label').textContent = 'ACTION'; await this.beginPlayerTurn(); const setEffects = this.activeSetEffects(), freeMp = skill.kind === 'magical' && skill.mp > 0 && Math.random() < (setEffects.freeMagicMpChance || 0); if (this.skillMpCost(skill) > 0) this.usedMpThisBattle = true; if (!freeMp) this.player.mp -= this.skillMpCost(skill); else this.flashTitle('MAESTRO', 'MP COST 0'); if (skill.cooldown) this.player.cooldowns[skill.id] = this.turn + skill.cooldown; this.persistVitals(); this.updateHUD();
       const actors = [{ type: 'player', speed: this.playerCombatStats().agi + roll(0, 4) + (skill.speedBonus || 0), act: () => this.playerActionWithSpark(skill, targetIndex) }]; this.enemies.filter(e => e.alive).forEach(e => actors.push({ type: 'enemy', enemy: e, speed: e.stats.spd + roll(0, 4), act: () => this.enemyAttack(e) })); actors.sort((a, b) => b.speed - a.speed);
       for (const actor of actors) { if (this.finished || this.player.hp <= 0) break; if (actor.type === 'enemy' && !actor.enemy.alive) continue; await actor.act(); await this.battleSleep(300); if (!this.enemies.some(e => e.alive)) { const fallen = this.enemies[0]; if (this.battleMode === 'versicrell' && fallen?.form === 1) { await this.transformVersicrell(fallen); return; } if (this.enemies.every(e => e.escaped)) { await this.enemyEncounterEscaped(); return; } await this.victory(); return; } }
       if (this.player.hp <= 0) { await this.defeat(); return; } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands();

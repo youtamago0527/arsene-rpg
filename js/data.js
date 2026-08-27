@@ -145,7 +145,9 @@ window.ARSENE_DATA = {
     mpGrowthAmount: { min: 1, max: 3 },
     // 最大HPが100増えるごとに、HP成長へ必要な敵Spark Lvも10上がる。
     // HP 0～99: 全敵 / 100～199: Spark Lv.10以上 / 200～299: Lv.20以上…
+    // MPも同じ考え方（最大MPの区切りごとにSpark Lv要求が上がる）。
     vitalGrowthHpTierSize: 100,
+    vitalGrowthMpTierSize: 100,
     vitalGrowthSparkPerTier: 10,
     jobHpGrowthBonus: { warrior: 0.10, martialArtist: 0.07, mage: 0.00, priest: 0.05, guardian: 0.12 },
     jobMpGrowthBonus: { warrior: 0.00, martialArtist: 0.02, mage: 0.10, priest: 0.08, guardian: 0.03 },
