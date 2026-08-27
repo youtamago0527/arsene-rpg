@@ -6,6 +6,10 @@
   const roll = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
   const clone = value => JSON.parse(JSON.stringify(value));
   const statLabels = { maxHp: 'HP', maxMp: 'MP', str: '力', vit: '体力', mag: '魔力', mnd: '精神', agi: '素早さ', dex: '器用さ', luk: '運', critBonus: '会心率' };
+  // 会心率は仕様として非公式な値なので、合計値（今いくつか）を並べる一覧には出さない。
+  // 装備1点あたりの補正表示（bonusText など）は従来どおり残す。
+  const statusHiddenStats = ['critBonus'];
+  const statusStatKeys = Object.keys(statLabels).filter(k => !statusHiddenStats.includes(k));
 
   class BattleGame {
     constructor() {
@@ -4097,7 +4101,7 @@
       const legacyJob = this.activeJobBonuses(), growthJob = this.jobStatBonuses(), jobBonus = {};
       for (const src of [legacyJob, growthJob]) for (const [k, v] of Object.entries(src)) if (v) jobBonus[k] = (jobBonus[k] || 0) + v;
       // 基礎値 ＋ JOB ＋ 装備 が合計と一致するように並べる
-      const statRows = Object.keys(statLabels).map(k => {
+      const statRows = statusStatKeys.map(k => {
         const b = base[k] || 0, j = jobBonus[k] || 0, e = bonus[k] || 0;
         const parts = [`<i class="src-base">基礎 ${b}</i>`];
         if (j) parts.push(`<i class="src-job">JOB +${j}</i>`);
@@ -4106,7 +4110,7 @@
         if (rest) parts.push(`<i class="src-etc">その他 ${rest > 0 ? '+' : ''}${rest}</i>`);
         return `<div class="st-stat"><span>${statLabels[k]}</span><b>${total[k]}</b><em>${parts.join('<u>+</u>')}</em></div>`;
       }).join('');
-      const jobBonusRows = Object.entries(jobBonus).filter(([, v]) => v).map(([k, v]) => `<div class="st-jb-row"><span>${statLabels[k] || k.toUpperCase()}</span><b>+${v}</b></div>`).join('');
+      const jobBonusRows = Object.entries(jobBonus).filter(([k, v]) => v && !statusHiddenStats.includes(k)).map(([k, v]) => `<div class="st-jb-row"><span>${statLabels[k] || k.toUpperCase()}</span><b>+${v}</b></div>`).join('');
       // ファントムシーフは全JOBの育てた成長を合算して一定割合を引き継ぐ。
       // 何がどこから来ているか分かるよう、内訳と引継率を明示する。
       const inheritRate = Math.round((this.gb().phantomThiefInheritRate ?? 0.5) * 100);
@@ -4254,7 +4258,7 @@
     equipmentPreviewHTML(id) {
       if (!id) return `<div class="equipment-empty-preview"><b>装備候補を選択</b><span>候補をタップすると、現在装備との能力差を確認できます。</span></div>`;
       const item = D.items[id], targetSlot = this.equipSlot || item.slot, currentId = this.profile.equipment[targetSlot], currentItem = D.items[currentId], nextEquipment = { ...this.profile.equipment, [targetSlot]: id }, before = this.totalStats(), after = this.totalStats(nextEquipment), active = currentId === id;
-      const rows = Object.keys(statLabels).map(key => { const delta = after[key] - before[key], state = delta > 0 ? 'up' : delta < 0 ? 'down' : 'same', change = delta ? `${delta > 0 ? '+' : ''}${delta} ${delta > 0 ? '↑' : '↓'}` : '－'; return `<div class="compare-row ${state}"><span>${statLabels[key]}</span><b>${before[key]}</b><i>→</i><strong>${after[key]}</strong><em>${change}</em></div>`; }).join('');
+      const rows = statusStatKeys.map(key => { const delta = after[key] - before[key], state = delta > 0 ? 'up' : delta < 0 ? 'down' : 'same', change = delta ? `${delta > 0 ? '+' : ''}${delta} ${delta > 0 ? '↑' : '↓'}` : '－'; return `<div class="compare-row ${state}"><span>${statLabels[key]}</span><b>${before[key]}</b><i>→</i><strong>${after[key]}</strong><em>${change}</em></div>`; }).join('');
       return `<div class="equipment-swap"><div><small>現在装備</small><b>${currentItem?.name || 'なし'}</b><span>${currentId ? this.bonusText(currentId) : '補正なし'}</span></div><i>→</i><div><small>変更後</small><b>${item.name}</b><span>${this.bonusText(id)}</span></div></div><div class="equipment-description">${item.description}</div>${this.combatComparisonHTML(nextEquipment)}<div class="compare-table"><div class="compare-head"><span>基礎能力</span><b>現在</b><i></i><strong>装備後</strong><em>変化</em></div>${rows}</div><button class="equip-confirm" data-equip-confirm="${id}" ${active ? 'disabled' : ''}>${active ? '装備中' : 'この装備に変更'}<span>${active ? 'EQUIPPED' : 'EQUIP'}</span></button>`;
     }
     musicScoreSectionHTML() { const scores = Object.values(D.musicScores || {}).filter(score => this.isPlayerContentVisible(score)); return `<section class="music-score-section"><h3>楽曲 <span>MUSIC SCORE // PRIVATE MODE</span></h3><div>${scores.map(score => { const owned = !!this.profile.musicScores?.[score.id]; return `<article class="music-score-card ${owned ? 'owned' : 'locked'}"><i>♪</i><div><small>${owned ? 'PLAYABLE SCORE' : 'LOCKED SCORE'}</small><b>${owned ? score.title : '？？？'}</b><strong>${owned ? `（${score.subtitle}）` : '未入手の楽曲'}</strong><span>${owned ? score.description : '入手すると楽曲名と詳細が開示されます。'}</span></div><em>${owned ? 'PRIVATE MODE ITEM' : 'LOCKED'}</em></article>`; }).join('')}</div></section>`; }
@@ -4343,7 +4347,7 @@
         } else this.equipWeaponType = null;
         const sortKey = this.equipSort || 'default';
         if (sortKey !== 'default') list = [...list].sort((a, b) => this.equipSortValue(b, sortKey) - this.equipSortValue(a, sortKey) || (D.items[a]?.name || '').localeCompare(D.items[b]?.name || ''));
-        const sortOpts = [{ id: 'default', name: '標準' }, ...Object.keys(statLabels).map(k => ({ id: k, name: statLabels[k] }))];
+        const sortOpts = [{ id: 'default', name: '標準' }, ...statusStatKeys.map(k => ({ id: k, name: statLabels[k] }))];
         const sortHtml = `<div class="equip-sort"><span>並べ替え</span><div class="equip-sort-btns">${sortOpts.map(o => `<button data-equip-sort="${o.id}" class="${sortKey === o.id ? 'active' : ''}">${o.name}</button>`).join('')}</div></div>`;
         const weaponTabs = weaponTypes.length ? `<div class="equip-weapon-tabs" role="tablist" aria-label="武器学で絞り込み">${weaponTypes.map(type => { const mastery = this.masteryOf(type.id); return `<button type="button" role="tab" data-equip-weapon-tab="${type.id}" class="${this.equipWeaponType === type.id ? 'active' : ''}"><b>${type.name}</b><small>武器学 Lv.${mastery.level}</small></button>`; }).join('')}</div>` : '';
         const curId = this.profile.equipment[activeSlot];
@@ -4370,7 +4374,7 @@
     equipSortValue(id, key) { const before = this.totalStats(), item = D.items[id]; if (!item) return 0; const slot = this.equipSlot || item.slot; const after = this.totalStats({ ...this.profile.equipment, [slot]: id }); return after[key] - before[key]; }
     equipDeltaSummary(id, slotId) {
       const before = this.totalStats(), after = this.totalStats({ ...this.profile.equipment, [slotId]: id });
-      const parts = Object.keys(statLabels).map(k => { const d = after[k] - before[k]; return d ? `<i class="${d > 0 ? 'up' : 'down'}">${statLabels[k]} ${d > 0 ? '+' : ''}${d}</i>` : ''; }).filter(Boolean);
+      const parts = statusStatKeys.map(k => { const d = after[k] - before[k]; return d ? `<i class="${d > 0 ? 'up' : 'down'}">${statLabels[k]} ${d > 0 ? '+' : ''}${d}</i>` : ''; }).filter(Boolean);
       return parts.length ? parts.join('') : '<i class="same">変化なし</i>';
     }
     previewEquipment(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; this.selectedEquipmentId = id; this.renderMenuPanel('equipment'); }
