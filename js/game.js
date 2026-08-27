@@ -333,6 +333,10 @@
         if (profile.bossDefeated.myrthi == null) profile.bossDefeated.myrthi = false;
         if (profile.bossDefeated.versicrell == null) profile.bossDefeated.versicrell = false;
         if (profile.bossDefeated.seripes == null) profile.bossDefeated.seripes = false;
+        // JOBレベル上限解放(Lv20→40)はセリペス撃破時の勝利処理でフラグが立つ仕様。
+        // 本機能を追加する前に既にセリペスを倒していた旧セーブは、再戦しない限り
+        // フラグが立たずLv20で頭打ちのままになるため、撃破済みなら補完する。
+        if (profile.bossDefeated.seripes) profile.flags.jobLevelCapUnlocked = true;
         for (const id of ['d4MidBoss', 'astact', 'd5MidBoss', 'ostina']) if (profile.bossDefeated[id] == null) profile.bossDefeated[id] = false;
         for (const id of ['ronin', 'hunter']) if (!profile.jobs[id]) profile.jobs[id] = { level: 1, exp: 0 };
         if (!profile.weaponMastery.bow) profile.weaponMastery.bow = { level: 1, exp: 0 };
