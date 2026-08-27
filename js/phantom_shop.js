@@ -16,8 +16,8 @@
     {
       id: 'time-complete-pass', no: '01', kicker: 'TOP RECOMMEND', name: '怪盗の時短パス COMPLETE',
       priceLabel: '¥1,500', accent: '#ffffff', featured: true,
-      description: '広告スキップ・AUTO×3・一掃をまとめて永久解放。AUTOはAI操作と演出速度だけを変え、一掃は通常ダンジョンの通常戦闘だけを簡易判定します。どちらも能力を強化せず、敗北することがあります。',
-      stats: [['■ 広告スキップ', '永久'], ['■ AUTO SPEED', '×3.0 常設'], ['■ 一掃', '雑魚戦のみ／敗北あり']],
+      description: '広告スキップ・AUTO×3・一掃をまとめて永久解放。AUTOはAI操作と演出速度だけを変え、AUTO×3中は勝利後も次の戦闘へ自動で進みます。一掃は通常ダンジョンの通常戦闘だけを簡易判定します。どちらも能力を強化せず、敗北することがあります。',
+      stats: [['■ 広告スキップ', '永久'], ['■ AUTO SPEED', '×3.0 常設・連戦自動継続'], ['■ 一掃', '雑魚戦のみ／敗北あり']],
       cta: '¥1,500 で全部解放', action: '購入',
       ctaStyle: 'background:linear-gradient(90deg,#f1f5f9,#fff,#e2e8f0);color:#020617;border:1px solid #fff;box-shadow:0 0 15px #ffffff80'
     },
@@ -40,8 +40,8 @@
     {
       id: 'auto3-license', no: '04', kicker: 'BATTLE SPEED', name: 'AUTO×3 常設ライセンス',
       priceLabel: '¥480', accent: '#22d3ee',
-      description: '有料版限定のAUTO×3をいつでも使用できます。AUTOは通常戦闘をAIが実際に操作し、倍率は演出の待ち時間だけを短縮します。ダメージ・行動順・敵・報酬は変わらず、回復アイテムを消費することも敗北することもあります。',
-      stats: [['■ 最大AUTO速度', '×3.0'], ['■ AUTO×2', '広告で利用可'], ['■ AI行動', '技・回復・対象を自動選択'], ['■ 戦闘性能', '変更なし／敗北あり']],
+      description: '有料版限定のAUTO×3をいつでも使用できます。AUTOは通常戦闘をAIが実際に操作し、倍率は演出の待ち時間だけを短縮します。さらにAUTO×3が有効な間は、勝利画面の「次の戦闘へ」も自動で選ばれ、連戦がノータップで進みます。ダメージ・行動順・敵・報酬は変わらず、回復アイテムを消費することも敗北することもあります。',
+      stats: [['■ 最大AUTO速度', '×3.0'], ['■ 連戦', '勝利後に自動で次の戦闘へ'], ['■ AUTO×2', '広告で利用可'], ['■ AI行動', '技・回復・対象を自動選択'], ['■ 戦闘性能', '変更なし／敗北あり']],
       cta: '¥480 で永久解放', action: '購入',
       ctaStyle: 'background:linear-gradient(90deg,#22d3ee,#38bdf8,#3b82f6);color:#020617'
     },

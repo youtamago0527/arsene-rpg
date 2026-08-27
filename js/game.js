@@ -45,7 +45,7 @@
 
   class BattleGame {
     constructor() {
-      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.autoBattleSpeedIndex = -1; this.autoToggleBusy = false; this.autoPickTimer = null; this.simpleBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.enhanceWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.enhanceArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false; this.lastBattleAction = null; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
+      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.autoBattleSpeedIndex = -1; this.autoToggleBusy = false; this.autoPickTimer = null; this.autoAdvanceTimer = null; this.simpleBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.enhanceWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.enhanceArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false; this.lastBattleAction = null; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
       // 旧セーブ・新規プロファイルの両方で楽器学を必ず初期化する。
       this.profile.weaponMastery.instrument ||= { level: 1, exp: 0 };
       this.currentDungeonId = 'dungeon1';
@@ -2169,6 +2169,7 @@
       // 戦闘結果中は自動入力だけ止め、倍率設定は次の戦闘へ持ち越す。
       this.autoToggleBusy = false;
       this.cancelAutoPick();
+      this.cancelAutoAdvance();
       $('#command-panel')?.classList.remove('turn-locked');
     }
     endAutoBattle() {
@@ -2176,6 +2177,23 @@
       this.autoBattle = false;
       this.autoBattleSpeedIndex = -1;
       this.pauseAutoBattle();
+    }
+    // AUTO×3（裏ショップの常設ライセンス）専用: 勝利画面で「次の戦闘へ」を
+    // 自動で押した状態にする。ダメージ・報酬・行動順には一切関与しない、
+    // 演出上の待ち時間短縮のみの機能。
+    isAutoTripleActive() { return !!this.autoBattle && this.autoBattleSpeedMultiplier() === 3; }
+    cancelAutoAdvance() {
+      if (this.autoAdvanceTimer) clearTimeout(this.autoAdvanceTimer);
+      this.autoAdvanceTimer = null;
+    }
+    scheduleAutoAdvance(action) {
+      this.cancelAutoAdvance();
+      if (!this.isAutoTripleActive()) return;
+      this.autoAdvanceTimer = setTimeout(() => {
+        this.autoAdvanceTimer = null;
+        // 発火直前にも再確認: その間にAUTOを切った／拠点へ戻った場合は何もしない。
+        if (this.isAutoTripleActive() && !this.locked) action();
+      }, 900);
     }
     scheduleAutoPick() {
       this.cancelAutoPick();
@@ -3071,7 +3089,9 @@
       this.finished = true; this.pauseAutoBattle(); this.locked = false; $('#phase-label').textContent = 'ESCAPED';
       $('#log').innerHTML = '<p>希少怪異は逃走した。この遭遇は階層踏破数に加算されない。</p>';
       this.panel(this.button('次の戦闘へ', 'NEXT BATTLE', 'next') + this.button('拠点へ戻る', 'HIDEOUT', 'hideout'));
-      this.bindActions({ next: () => this.startBattle(), hideout: () => this.showMenu('home') });
+      const goNext = () => { this.cancelAutoAdvance(); this.startBattle(); };
+      this.bindActions({ next: goNext, hideout: () => { this.cancelAutoAdvance(); this.showMenu('home'); } });
+      this.scheduleAutoAdvance(goNext);
     }
 
     grantEnemyReward(enemy) {
@@ -3262,7 +3282,9 @@
       const boss = this.resultBossRematchEntry();
       const bossButton = boss ? this.button('ボス戦へ', `BOSS // ${boss.name}`, 'bossBattle') : '';
       this.panel(this.button('次の戦闘へ', 'NEXT BATTLE', 'next') + bossButton + this.button('拠点へ戻る', 'HIDEOUT', 'hideout'));
-      this.bindActions({ next: () => { $('#ren').classList.remove('victory'); this.startBattle(); }, bossBattle: () => this.startBossByKey(boss.key), hideout: () => this.showMenu('home') });
+      const goNext = () => { this.cancelAutoAdvance(); $('#ren').classList.remove('victory'); this.startBattle(); };
+      this.bindActions({ next: goNext, bossBattle: () => { this.cancelAutoAdvance(); this.startBossByKey(boss.key); }, hideout: () => { this.cancelAutoAdvance(); this.showMenu('home'); } });
+      this.scheduleAutoAdvance(goNext);
     }
     async defeat() {
       this.finished = true; this.endAutoBattle(); this.audio.stopMusic(500); this.audio.sfx('defeat'); $('#ren').classList.add('down');
