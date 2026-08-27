@@ -338,6 +338,9 @@
         profile.unlockedJobs = [...new Set(profile.unlockedJobs || [])].filter(id => (id !== 'magicKnight' || d1Cleared) && (id !== 'dualBlade' || d2Cleared) && (id !== 'guardian' || d3Cleared));
         if (d1Cleared && !profile.unlockedJobs.includes('magicKnight')) profile.unlockedJobs.push('magicKnight');
         if (d2Cleared && !profile.unlockedJobs.includes('dualBlade')) profile.unlockedJobs.push('dualBlade');
+        // 解放リストへ入れただけでレベル情報が無いと、JOB詳細を開いた瞬間に落ちる。
+        // 一覧には出るのにタップしても開かない、という状態になるので必ず補う。
+        profile.unlockedJobs.forEach(id => { if (D.jobs[id] && !profile.jobs[id]) profile.jobs[id] = { level: 1, exp: 0 }; });
         if (d3Cleared && !profile.unlockedJobs.includes('guardian')) profile.unlockedJobs.push('guardian');
         if (d4Cleared && !profile.unlockedJobs.includes('ronin')) profile.unlockedJobs.push('ronin');
         if (d5Cleared && !profile.unlockedJobs.includes('hunter')) profile.unlockedJobs.push('hunter');
@@ -3258,7 +3261,7 @@
       return `${notice}<section class="jsec"><h4>基本JOB</h4><div class="jgrid">${base.map(card).join('')}</div></section>${specialSec}`;
     }
     jobDetailHtml(jobId, unlocked, currentId) {
-      const j = D.jobs[jobId], p = this.profile.jobs[jobId], avail = this.isJobUnlocked(jobId), isCur = jobId === currentId, need = this.jobExpNeeded(p.level), bar = need ? Math.round(100 * p.exp / need) : 100;
+      const j = D.jobs[jobId], p = this.profile.jobs[jobId] || { level: 1, exp: 0 }, avail = this.isJobUnlocked(jobId), isCur = jobId === currentId, need = this.jobExpNeeded(p.level), bar = need ? Math.round(100 * p.exp / need) : 100;
       const noGrow = this.isNoGrowthJob(jobId) || !!j.noGrowth;
       const bonuses = this.activeJobBonuses(jobId), bHtml = Object.entries(bonuses).length ? Object.entries(bonuses).map(([k, v]) => `<div class="jbn-item"><span>${statLabels[k] || k}</span><b>${k === 'critBonus' ? `+${Math.round(v * 100)}%` : `+${v}`}</b></div>`).join('') : '<span class="jbn-none">なし</span>';
       // アビリティ一覧＝固有技＋パッシブ＋旧skillUnlocks＋条件つき専用技
