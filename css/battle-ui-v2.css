@@ -1158,7 +1158,6 @@
 #game .enemy-nameplate::before{box-shadow:inset 0 0 14px color-mix(in srgb,var(--nameplate-accent) 24%,transparent)}
 #game .enemy-nameplate::after{left:8px;right:8px;top:20px;background:linear-gradient(90deg,transparent,var(--nameplate-accent) 16%,#fff 50%,var(--nameplate-accent) 84%,transparent);box-shadow:0 0 4px color-mix(in srgb,var(--nameplate-accent) 72%,transparent)}
 #game .enemy-nameplate>span{overflow:visible;text-overflow:clip;white-space:nowrap;font-size:13px;font-weight:700;line-height:1;text-align:center;text-shadow:0 1px 2px #0009,0 0 6px color-mix(in srgb,var(--nameplate-accent) 38%,transparent)}
-#game .enemy-nameplate>span.long-name{font-size:11px;letter-spacing:-.04em}
 #game .enemy-nameplate .enemy-statuses{height:10px;min-height:10px;margin:0;gap:1px}
 #game .enemy-nameplate .status-chip{width:10px;min-width:10px;max-width:10px;height:10px;padding:0;font-size:0;line-height:1;border-width:1px}
 #game .enemy[data-size="boss"]{flex-basis:100%;max-width:none;width:100%}
@@ -1224,7 +1223,6 @@
   padding-inline:4px;
 }
 #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span{font-size:11px}
-#game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{font-size:9.5px}
 
 /* Player HUD readability: スマホでもJOB／武器学名の上端を切らず、大きく読む。 */
 #game .player-card{
@@ -1341,12 +1339,6 @@
   text-align:center;
   text-shadow:0 1px 2px #000,0 0 5px #000;
 }
-#game .enemy-nameplate>span.long-name,
-#game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{
-  font-size:11px;
-  letter-spacing:-.055em;
-}
-#game .enemy-nameplate>span.medium-name:not(.long-name){font-size:11.5px}
 #game .enemy-nameplate .enemy-statuses{
   position:relative;
   z-index:3;
@@ -1393,8 +1385,6 @@
   #game .enemy-nameplate .enemy-slot-label{left:6px;width:24px;font-size:11px}
   #game .enemy-nameplate>span,
   #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span{font-size:10px}
-  #game .enemy-nameplate>span.long-name,
-  #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{font-size:8.5px}
 }
 
 /* 3体編成は戦場の左右余白を同値にして、敵本体・名札・HPを3等分で配置する。 */
@@ -1411,7 +1401,6 @@
   min-width:0;
 }
 #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span{font-size:10px}
-#game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{font-size:8.5px;letter-spacing:-.06em}
 #game .enemy:not(.boss-enemy) .enemy-nameplate>span{
   position:relative;
   inset:auto;
@@ -1422,8 +1411,7 @@
   place-items:center;
   text-align:center;
   transform:none;
-  white-space:normal;
-  overflow-wrap:anywhere;
+  white-space:nowrap;
   line-height:1.05;
 }
 
@@ -1434,34 +1422,6 @@
   height:38px;
   min-height:38px;
   grid-template-rows:23px 9px;
-}
-#game .enemy:not(.boss-enemy) .enemy-nameplate>span.split-name{
-  inset:3px 5px auto 31px;
-  min-height:20px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:0;
-  font-size:8.5px!important;
-  line-height:1.02;
-  letter-spacing:0;
-  white-space:nowrap;
-  overflow:hidden;
-}
-#game .enemy:not(.boss-enemy) .enemy-nameplate>span.split-name small{
-  display:block!important;
-  max-width:100%;
-  overflow:hidden;
-  color:inherit;
-  font:inherit;
-  line-height:1.02;
-  letter-spacing:inherit;
-  white-space:nowrap;
-}
-#game .enemy:not(.boss-enemy) .enemy-nameplate>span.split-name.dense-name{
-  font-size:7.75px!important;
-  letter-spacing:-.035em;
 }
 #game .enemy:not(.boss-enemy) .enemy-nameplate .enemy-statuses{
   position:absolute;
@@ -1504,37 +1464,38 @@
   flex-direction:column;
   align-items:center;
   justify-content:center;
+  gap:1px;
   overflow:hidden;
-  font-size:9.5px;
-  line-height:1.02;
-  letter-spacing:0;
-}
-#game .boss-enemy .enemy-nameplate>span.split-name small{
-  display:block!important;
-  max-width:100%;
-  overflow:hidden;
-  color:inherit;
-  font:inherit;
-  line-height:1.02;
-  white-space:nowrap;
 }
 
-/* Nameplate final fit: keep every name inside the supplied frame. */
-#game .enemy-nameplate>span{
-  overflow-wrap:anywhere;
-  word-break:normal;
+/* Nameplate final fit: 実測幅ベースのJS(fitTextToPlate)がここで定義した「標準サイズ」
+   から実際の描画幅に合わせてfont-sizeを縮小する。ここは各セグメントの標準サイズと
+   1行はみ出し禁止(nowrap+hidden)だけを定義し、文字数によるサイズ分岐は持たない。 */
+#game .enemy-nameplate>span,
+#game .enemy-nameplate>span *{
+  overflow:hidden;
+  white-space:nowrap;
   text-overflow:clip;
+  max-width:100%;
 }
-#game .enemy:not(.boss-enemy) .enemy-nameplate>span:not(.split-name){
+#game .enemy:not(.boss-enemy) .enemy-nameplate>span{
   font-size:clamp(8px,2.45vw,12px);
   letter-spacing:-.025em;
 }
-#game .boss-enemy .enemy-nameplate>span.split-name{
-  font-size:clamp(8px,2.5vw,11px);
-  padding-inline:32px;
-  white-space:normal;
+#game .boss-enemy .enemy-nameplate>span.split-name .enemy-name-title{
+  display:block;
+  font-size:clamp(7px,2vw,9px);
+  font-weight:600;
+  letter-spacing:.02em;
+  color:#d9bfff;
+  opacity:.85;
 }
-#game .boss-enemy .enemy-nameplate>span.split-name small{white-space:normal;overflow-wrap:anywhere}
+#game .boss-enemy .enemy-nameplate>span.split-name .enemy-name-main{
+  display:block;
+  font-size:clamp(9.5px,2.7vw,13px);
+  font-weight:800;
+  letter-spacing:-.01em;
+}
 #game .boss-enemy .enemy-visual{
   inset:24px -24px 27px;
 }
