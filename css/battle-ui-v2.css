@@ -53,7 +53,7 @@
 #game .enemy:nth-child(3){--enemy-scale:.91}
 #game .enemy[data-size="large"]{--enemy-scale:1.02}
 #game .enemy[data-size="boss"]{--enemy-scale:1;flex-basis:100%;width:100%}
-#game .enemy-visual{position:absolute;inset:34px 0 31px;transform:scale(var(--enemy-scale));transform-origin:center bottom;transition:filter .2s,transform .22s}
+#game .enemy-visual{position:absolute;inset:34px 0 31px;transform:scale(calc(var(--enemy-scale) * var(--boss-art-scale,1)));transform-origin:center bottom;transition:filter .2s,transform .22s}
 #game .enemy .slime{left:50%;bottom:4px;translate:-50% 0;width:min(31vw,142px);height:min(31vw,142px);transform:none}
 #game .enemy .slime-shadow{left:50%;bottom:0;translate:-50%;width:82%;height:13px}
 #game .boss-enemy .enemy-visual{inset:8px 0 29px;display:grid;place-items:end center}
@@ -67,7 +67,7 @@
 #game .enemy-hud label{grid-column:1;color:#ddd;font:900 7px Cinzel}
 #game .enemy-hud .enemy-hp-meter{grid-column:2;height:7px;margin:0;transform:skewX(-13deg);border:1px solid #493647;background:#03040a}
 #game .enemy-hud small{grid-column:1/-1;color:#e6e1e8;font:700 7px Cinzel;text-align:center;letter-spacing:.03em}
-#game .targetable::after{top:30px}.targetable:focus-visible{outline:1px solid #77e7ff;outline-offset:2px}.targetable:hover{transform:none}.targetable:hover .enemy-visual,.targetable:focus-visible .enemy-visual{transform:scale(calc(var(--enemy-scale) * 1.04));filter:brightness(1.25) drop-shadow(0 0 10px #45dfff)}
+#game .targetable::after{top:30px}.targetable:focus-visible{outline:1px solid #77e7ff;outline-offset:2px}.targetable:hover{transform:none}.targetable:hover .enemy-visual,.targetable:focus-visible .enemy-visual{transform:scale(calc(var(--enemy-scale) * var(--boss-art-scale,1) * 1.04));filter:brightness(1.25) drop-shadow(0 0 10px #45dfff)}
 
 #game .ren{position:absolute;z-index:3;left:-20px;bottom:0;width:252px;height:360px;margin:0;transform:none;transform-origin:center bottom}
 #game .ren-sprite{
@@ -1327,7 +1327,7 @@
   z-index:2;
   grid-row:1;
   min-width:0;
-  overflow:visible;
+  overflow:hidden;
   text-overflow:clip;
   white-space:nowrap;
   align-self:center;
@@ -1345,29 +1345,34 @@
   font-size:11px;
   letter-spacing:-.055em;
 }
+#game .enemy-nameplate>span.medium-name:not(.long-name){font-size:11.5px}
 #game .enemy-nameplate .enemy-statuses{
   position:relative;
   z-index:3;
   grid-row:2;
   min-width:0;
   width:100%;
-  height:9px;
-  min-height:9px;
+  height:11px;
+  min-height:11px;
   margin:0;
   display:flex;
   justify-content:center;
   align-items:center;
-  gap:1px;
+  gap:2px;
   overflow:visible;
 }
 #game .enemy-nameplate .status-chip{
-  width:9px;
-  min-width:9px;
-  max-width:9px;
-  height:9px;
-  padding:0;
-  font-size:0;
-  line-height:1;
+  width:auto;
+  min-width:0;
+  max-width:36px;
+  height:11px;
+  padding:0 3px;
+  overflow:hidden;
+  color:inherit;
+  font-size:5.5px;
+  line-height:9px;
+  text-overflow:clip;
+  white-space:nowrap;
   border-width:1px;
 }
 #game .enemy.targetable>.enemy-nameplate,
@@ -1411,6 +1416,9 @@
   inset:5px 5px auto 31px;
   width:auto;
   padding:0;
+  min-height:13px;
+  display:grid;
+  place-items:center;
   text-align:center;
   transform:none;
 }
@@ -1435,14 +1443,21 @@
   line-height:1.02;
   letter-spacing:0;
   white-space:nowrap;
+  overflow:hidden;
 }
 #game .enemy:not(.boss-enemy) .enemy-nameplate>span.split-name small{
   display:block!important;
+  max-width:100%;
+  overflow:hidden;
   color:inherit;
   font:inherit;
   line-height:1.02;
   letter-spacing:inherit;
   white-space:nowrap;
+}
+#game .enemy:not(.boss-enemy) .enemy-nameplate>span.split-name.dense-name{
+  font-size:7.75px!important;
+  letter-spacing:-.035em;
 }
 #game .enemy:not(.boss-enemy) .enemy-nameplate .enemy-statuses{
   position:absolute;
@@ -1476,6 +1491,28 @@
   width:100%;
   padding:0 34px;
   text-align:center;
+}
+#game .boss-enemy .enemy-nameplate>span.split-name{
+  inset:4px 0 auto;
+  min-height:22px;
+  padding:0 38px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  font-size:9.5px;
+  line-height:1.02;
+  letter-spacing:0;
+}
+#game .boss-enemy .enemy-nameplate>span.split-name small{
+  display:block!important;
+  max-width:100%;
+  overflow:hidden;
+  color:inherit;
+  font:inherit;
+  line-height:1.02;
+  white-space:nowrap;
 }
 #game .boss-enemy .enemy-visual{
   inset:24px -24px 27px;

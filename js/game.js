@@ -1697,21 +1697,54 @@
         const statuses = '<button type="button" class="status-strip enemy-statuses" aria-label="敵の状態と解析情報"></button>';
         const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : '';
         const displayName = String(e.name || '').trim(), accessibleName = `${displayName}${e.label || ''}`;
-        const nameLength = [...displayName].length;
-        const nameParts = displayName.split('・');
-        const splitName = e.kind !== 'boss' && nameLength >= 9 && nameParts.length > 1;
-        const nameClass = [nameLength > 10 ? 'long-name' : '', splitName ? 'split-name' : ''].filter(Boolean).join(' ');
-        const displayNameHtml = splitName ? `${nameParts.shift()}・<small>${nameParts.join('・')}</small>` : displayName;
+        const nameChars = [...displayName], nameLength = nameChars.length;
+        const splitThreshold = e.kind === 'boss' ? 13 : 8;
+        const splitName = nameLength >= splitThreshold;
+        let nameLines = [displayName];
+        if (splitName) {
+          const midpoint = Math.ceil(nameLength / 2);
+          let cut = -1;
+          // 固有名は「・」、異名付きボスは閉じ括弧、日本語名は「の」を優先して自然に改行する。
+          for (const marker of ['・', '》']) {
+            const markerIndex = nameChars.indexOf(marker);
+            if (markerIndex > 1 && markerIndex < nameLength - 2) { cut = markerIndex + 1; break; }
+          }
+          if (cut < 0) {
+            const candidates = nameChars
+              .map((character, index) => character === 'の' && index > 1 && index < nameLength - 2 ? index + 1 : -1)
+              .filter(index => index > 0)
+              .sort((a, b) => Math.abs(a - midpoint) - Math.abs(b - midpoint));
+            cut = candidates[0] || midpoint;
+          }
+          nameLines = [nameChars.slice(0, cut).join(''), nameChars.slice(cut).join('')];
+        }
+        const longestLine = Math.max(...nameLines.map(line => [...line].length));
+        const nameClass = [
+          nameLength >= 7 ? 'medium-name' : '',
+          nameLength >= 10 ? 'long-name' : '',
+          splitName ? 'split-name' : '',
+          longestLine >= 8 ? 'dense-name' : ''
+        ].filter(Boolean).join(' ');
+        const displayNameHtml = splitName ? `${nameLines[0]}<small>${nameLines[1]}</small>` : displayName;
         // Use a real image element for supplied enemy art.  Background sprites
         // were easy to hide behind the legacy slime styles, leaving some D3
         // enemies as an apparently empty silhouette.
         const artClass = e.kind === 'boss' ? `enemy-art-image boss-art${e.spriteClass ? ' ' + e.spriteClass : ''}` : `enemy-art-image${e.spriteClass ? ' ' + e.spriteClass : ''}`;
+        // 主ボス素材は縦横比と余白量が異なるため、同じCSSサイズだけでは
+        // キャラクター本体の見かけの大きさが揃わない。足元を基準に、主要4体を
+        // 同じ「画面を占める強敵感」へ補正する（名札・HPの寸法には影響させない）。
+        const bossArtScale = e.kind === 'boss' ? ({
+          zenakado: 1.54,
+          myrthi: 1.33,
+          seripes: 1.28,
+          astact: 1.34
+        }[e.id] || Math.max(1, Math.min(1.5, Number(e.battleScale) || 1))) : 1;
         const visual = e.sprite
           ? `<div class="slime-shadow${e.kind === 'boss' ? ' boss-shadow' : ''}"></div><img class="${artClass}" src="${e.sprite}" alt="" aria-hidden="true" decoding="async">`
           : (e.kind === 'boss'
             ? `<div class="slime-shadow boss-shadow"></div><div class="noel-sprite${e.spriteClass ? ' ' + e.spriteClass : ''}"></div>`
             : `<div class="slime-shadow"></div><div class="slime"></div>`);
-        return `<div role="button" tabindex="0" class="enemy ${e.kind === 'boss' ? 'boss-enemy' + bossClass : `enemy-${e.id}`} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" data-kind="${e.kind || 'normal'}" data-size="${e.kind === 'boss' ? 'boss' : e.kind === 'rare' ? 'large' : 'normal'}" aria-label="${accessibleName}を攻撃"><div class="enemy-nameplate"><b class="enemy-slot-label" aria-hidden="true">${String.fromCharCode(65 + i)}</b><span class="${nameClass}">${displayNameHtml}</span>${statuses}</div><div class="enemy-visual">${visual}</div><div class="enemy-hud${e.kind === 'boss' ? ' boss-hud' : ''}"><label>HP</label><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>${e.hp.toLocaleString('ja-JP')} / ${e.stats.maxHp.toLocaleString('ja-JP')}</small></div></div>`;
+        return `<div role="button" tabindex="0" class="enemy ${e.kind === 'boss' ? `boss-enemy enemy-${e.id}${bossClass}` : `enemy-${e.id}`} fighter idle delay-${i}" id="${e.uid}" data-enemy="${i}" data-enemy-id="${e.id}" data-kind="${e.kind || 'normal'}" data-size="${e.kind === 'boss' ? 'boss' : e.kind === 'rare' ? 'large' : 'normal'}" style="--boss-art-scale:${bossArtScale}" aria-label="${accessibleName}を攻撃"><div class="enemy-nameplate"><b class="enemy-slot-label" aria-hidden="true">${String.fromCharCode(65 + i)}</b><span class="${nameClass}">${displayNameHtml}</span>${statuses}</div><div class="enemy-visual">${visual}</div><div class="enemy-hud${e.kind === 'boss' ? ' boss-hud' : ''}"><label>HP</label><div class="enemy-hp-meter"><i style="width:100%"></i></div><small>${e.hp.toLocaleString('ja-JP')} / ${e.stats.maxHp.toLocaleString('ja-JP')}</small></div></div>`;
       }).join('');
       this.enemies.forEach((enemy, index) => this.bindEnemyTap(enemy, index));
     }
