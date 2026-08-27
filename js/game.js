@@ -3252,8 +3252,16 @@
         try { return build(); }
         catch (error) {
           console.error(`[JOB] ${label} の描画に失敗`, error);
+          // 原因を追えるように、メッセージと発生箇所をそのまま出す。
+          const where = String(error?.stack || '').split('\n').slice(1, 3)
+            .map(line => line.trim().replace(/^at\s+/, '').replace(/https?:\/\/[^/]+\//, ''))
+            .join(' / ');
           return `<div class="jdetail"><button class="jback-btn" data-job-back>← JOB一覧</button>
-            <p class="job-lock-notice">${label}の表示でエラーが発生しました。<br><small>${String(error?.message || error).slice(0, 160)}</small></p></div>`;
+            <div class="job-render-error">
+              <b>${label}の表示でエラーが発生しました</b>
+              <p>${String(error?.message || error)}</p>
+              ${where ? `<em>${where}</em>` : ''}
+            </div></div>`;
         }
       };
       if (ui.tab === 'job') { body = ui.detailId ? safeBody(() => this.jobDetailHtml(ui.detailId, unlocked, currentId), `JOB詳細（${D.jobs[ui.detailId]?.name || ui.detailId}）`) : safeBody(() => this.jobListHtml(unlocked, currentId), 'JOB一覧'); }

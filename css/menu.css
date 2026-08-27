@@ -499,3 +499,9 @@
   background:linear-gradient(135deg,#082c56,#06182d);
   box-shadow:0 0 10px #35cfff99,inset 0 0 12px #238fd655;
 }
+
+/* JOB画面の描画エラー表示。原因を追えるよう、本文と発生箇所を読める大きさで出す。 */
+.job-render-error{margin:14px 0;padding:14px;border:1px solid #ff5f7a80;background:#2a0a1288;color:#ffe3ea}
+.job-render-error b{display:block;margin-bottom:8px;color:#ff8fa3;font-size:13px}
+.job-render-error p{margin:0 0 8px;font-size:12px;line-height:1.7;word-break:break-all;user-select:text}
+.job-render-error em{display:block;font:400 10px/1.6 ui-monospace,monospace;color:#c79aa8;word-break:break-all;user-select:text}
