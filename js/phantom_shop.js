@@ -10,14 +10,14 @@
 (() => {
   'use strict';
 
-  // 裏ショップの品揃え。購入処理はまだ繋いでいないので、
-  // 押すとトーストが出るだけ（元HTMLと同じ挙動）。
+  // 裏ショップの品揃え。決済SDK接続前は、購入ボタンで効果だけを即時付与して
+  // セーブへ保存する（戦闘力や報酬量を直接増やす商品は置かない）。
   const ITEMS = [
     {
       id: 'time-complete-pass', no: '01', kicker: 'TOP RECOMMEND', name: '怪盗の時短パス COMPLETE',
       priceLabel: '¥1,500', accent: '#ffffff', featured: true,
-      description: '広告スキップ・AUTO×3・一掃をまとめて永久解放。発動条件や1日の利用回数、勝敗計算と報酬量は変わりません。',
-      stats: [['■ 広告スキップ', '永久'], ['■ AUTO SPEED', '×3.0 常設'], ['■ 一掃', '通常Dで常設']],
+      description: '広告スキップ・AUTO×3・一掃をまとめて永久解放。AUTOはAI操作と演出速度だけを変え、AUTO×3中は勝利後も次の戦闘へ自動で進みます。一掃は通常ダンジョンの通常戦闘だけを簡易判定します。どちらも能力を強化せず、敗北することがあります。',
+      stats: [['■ 広告スキップ', '永久'], ['■ AUTO SPEED', '×3.0 常設・連戦自動継続'], ['■ 一掃', '雑魚戦のみ／敗北あり']],
       cta: '¥1,500 で全部解放', action: '購入',
       ctaStyle: 'background:linear-gradient(90deg,#f1f5f9,#fff,#e2e8f0);color:#020617;border:1px solid #fff;box-shadow:0 0 15px #ffffff80'
     },
@@ -40,16 +40,16 @@
     {
       id: 'auto3-license', no: '04', kicker: 'BATTLE SPEED', name: 'AUTO×3 常設ライセンス',
       priceLabel: '¥480', accent: '#22d3ee',
-      description: '有料版限定のAUTO×3をいつでも使用できます。AUTO×2は従来どおり広告視聴で利用可能。行動順・ダメージ・敵の強さ・報酬は変化しません。',
-      stats: [['■ 最大AUTO速度', '×3.0'], ['■ AUTO×2', '広告で利用可'], ['■ 戦闘性能', '変更なし']],
+      description: '有料版限定のAUTO×3をいつでも使用できます。AUTOは通常戦闘をAIが実際に操作し、倍率は演出の待ち時間だけを短縮します。さらにAUTO×3が有効な間は、勝利画面の「次の戦闘へ」も自動で選ばれ、連戦がノータップで進みます。ダメージ・行動順・敵・報酬は変わらず、回復アイテムを消費することも敗北することもあります。',
+      stats: [['■ 最大AUTO速度', '×3.0'], ['■ 連戦', '勝利後に自動で次の戦闘へ'], ['■ AUTO×2', '広告で利用可'], ['■ AI行動', '技・回復・対象を自動選択'], ['■ 戦闘性能', '変更なし／敗北あり']],
       cta: '¥480 で永久解放', action: '購入',
       ctaStyle: 'background:linear-gradient(90deg,#22d3ee,#38bdf8,#3b82f6);color:#020617'
     },
     {
       id: 'sweep-license', no: '05', kicker: 'LAP SUPPORT', name: '一掃 常設ライセンス',
       priceLabel: '¥480', accent: '#6ee7b7',
-      description: '通常ダンジョンの一掃を広告なしで使用できます。対象範囲・勝敗計算・獲得報酬は通常の一掃と同じです。',
-      stats: [['■ 通常D一掃', '常設'], ['■ ボス・異世界', '対象外'], ['■ 獲得報酬', '変更なし']],
+      description: '通常ダンジョンの雑魚戦だけを広告なしで簡易決着します。現在の残HP・MP、装備/JOB込みの攻防、習得技と敵全員のHP・攻防から必要ターンと被ダメージを予測し、予測被ダメージが現在HP以上なら敗北します。戦闘力を上げる商品ではなく、回復アイテムも自動使用しません。',
+      stats: [['■ 対象', '通常ダンジョンの雑魚戦'], ['■ 対象外', 'エリート・レア・全ボス・異世界'], ['■ 勝利条件', '予測被ダメージ ＜ 現在HP'], ['■ 判定効率', '手動より低い78%'], ['■ アイテム', '使用しない'], ['■ EXP/GOLD/DROP', '通常抽選'], ['■ 武器学', '推定ターン分（1〜8）']],
       cta: '¥480 で永久解放', action: '購入',
       ctaStyle: 'background:linear-gradient(90deg,#6ee7b7,#2dd4bf,#22d3ee);color:#020617'
     },
@@ -176,7 +176,7 @@
         else if (action === 'back') this.backToPopup();
         else if (action === 'play') this.play();
         else if (action === 'toggle') this.toggleItem(button.closest('.pm-item'));
-        else if (action === 'buy') this.toast(button.dataset.name, button.dataset.action);
+        else if (action === 'buy') this.purchase(button.dataset.id);
         else if (action === 'track') this.playTrack(button.dataset.track);
       };
       popup.addEventListener('click', onClick);
@@ -194,6 +194,8 @@
     }
 
     itemHTML(item) {
+      const owned = this.isPermanentOwned(item.id), amount = this.consumableAmount(item.id);
+      const status = owned ? '購入済み' : amount != null ? `所持 ${amount}` : '';
       const head = `
         <button type="button" class="pm-item-head" data-pm="toggle">
           <span style="display:flex;align-items:center;gap:12px;min-width:0">
@@ -212,7 +214,8 @@
         <div class="pm-item-body"><div style="border-color:${tint(item.accent, '33')}">
           ${item.description ? `<p>${esc(item.description)}</p>` : ''}
           ${item.stats ? `<div class="pm-item-stats">${item.stats.map(([k, v]) => `<span>${esc(k)}<b>${esc(v)}</b></span>`).join('')}</div>` : ''}
-          <button type="button" class="pm-item-cta pm-cut-sm" style="${item.ctaStyle}" data-pm="buy" data-name="${esc(item.name)}" data-action="${esc(item.action)}">${esc(item.cta)}</button>
+          ${status ? `<small class="pm-item-owned">${esc(status)}</small>` : ''}
+          <button type="button" class="pm-item-cta pm-cut-sm" style="${item.ctaStyle}" data-pm="buy" data-id="${esc(item.id)}" ${owned ? 'disabled' : ''}>${owned ? '✓ 購入済み' : esc(item.cta)}</button>
         </div></div>`;
       return item.featured
         ? `<article class="pm-item pm-item-featured pm-cut" data-id="${item.id}"><div class="pm-item-inner pm-cut">${head}${body}</div></article>`
@@ -239,7 +242,81 @@
     // 音ゲー側が保存しているハイスコアをそのまま出す。
     highScore() { return Number(window.arseneGame?.profile?.flags?.kazuRhythmHighScore || 0); }
 
-    toggleItem(item) { if (item) item.classList.toggle('open'); }
+    premium() {
+      const g = window.arseneGame;
+      if (!g?.profile) return null;
+      return g.profile.premium ||= { adSkipLicense: false, adSkipTickets: 0, auto3License: false, sweepLicense: false, otherworldTickets: 0 };
+    }
+
+    isPermanentOwned(id) {
+      const p = this.premium(); if (!p) return false;
+      if (id === 'time-complete-pass') return !!(p.adSkipLicense && p.auto3License && p.sweepLicense);
+      if (id === 'ad-skip-license') return !!p.adSkipLicense;
+      if (id === 'auto3-license') return !!p.auto3License;
+      if (id === 'sweep-license') return !!p.sweepLicense;
+      return false;
+    }
+
+    consumableAmount(id) {
+      const g = window.arseneGame, p = this.premium(); if (!g?.profile || !p) return null;
+      if (id === 'ad-skip-tickets') return Math.max(0, Number(p.adSkipTickets) || 0);
+      if (id === 'otherworld-tickets') return Math.max(0, Number(p.otherworldTickets) || 0);
+      if (id === 'rebirth-arcana') return Math.max(0, Number(g.profile.inventory?.rebirthArcana) || 0);
+      return null;
+    }
+
+    refreshShopItems() {
+      const list = this.shop?.querySelector('.pm-shop-list');
+      if (list) list.innerHTML = ITEMS.map(item => this.itemHTML(item)).join('');
+    }
+
+    purchase(id) {
+      const g = window.arseneGame, p = this.premium(), item = ITEMS.find(entry => entry.id === id);
+      if (!g?.profile || !p || !item) { this.toast('購入できません', 'ゲームデータを読み込んでからお試しください'); return; }
+      if (this.isPermanentOwned(id)) { this.toast(item.name, '購入済みです'); return; }
+      let result = '効果を反映しました';
+      if (id === 'time-complete-pass') {
+        p.adSkipLicense = true; p.auto3License = true; p.sweepLicense = true;
+        result = '広告スキップ・AUTO×3・一掃を永久解放';
+      } else if (id === 'ad-skip-license') {
+        p.adSkipLicense = true; result = '広告スキップを永久解放';
+      } else if (id === 'ad-skip-tickets') {
+        p.adSkipTickets = Math.max(0, Number(p.adSkipTickets) || 0) + 10; result = `広告スキップ券 ${p.adSkipTickets}回分`;
+      } else if (id === 'auto3-license') {
+        p.auto3License = true; result = 'AUTO×3を永久解放';
+      } else if (id === 'sweep-license') {
+        p.sweepLicense = true; result = '通常ダンジョンの一掃を永久解放';
+      } else if (id === 'otherworld-tickets') {
+        p.otherworldTickets = Math.max(0, Number(p.otherworldTickets) || 0) + 5; result = `異世界探索券 ${p.otherworldTickets}回分`;
+      } else if (id === 'rebirth-arcana') {
+        g.profile.inventory ||= {};
+        g.profile.inventory.rebirthArcana = Math.max(0, Number(g.profile.inventory.rebirthArcana) || 0) + 1;
+        result = `輪廻のアルカナ 所持${g.profile.inventory.rebirthArcana}個`;
+      } else return;
+      g.saveProfile?.(); g.audio?.sfx?.('confirm');
+      g.renderBattleMenu?.(); g.showMainCommands?.(); g.renderMenuSummary?.();
+      if (document.querySelector('#menu-panel')?.dataset.panel === 'otherworld') g.renderOtherWorldPanel?.(document.querySelector('#menu-panel'));
+      this.refreshShopItems();
+      this.toast(item.name, result);
+    }
+
+    // 開いている間はmax-heightを一切掛けない(CSS側で.open時にnone/overflow:visible)。
+    // JSで高さを測って数値を当てはめる方式は実機Safariで中身が切れる事例が
+    // 複数確認されたため撤去した。開閉の見た目は opacity/transform だけで作り、
+    // 「絶対に切れない」という正しさをJSの計測に依存させない。
+    // 閉じるときだけ、フェードが見えるよう .closing を先に付けてから
+    // 少し遅れて実際にopenを外す(=max-heightが0へ戻る)。
+    toggleItem(item) {
+      const body = item?.querySelector('.pm-item-body');
+      if (!body) { item?.classList.toggle('open'); return; }
+      if (item.classList.contains('open')) {
+        body.classList.add('closing');
+        setTimeout(() => { item.classList.remove('open'); body.classList.remove('closing'); }, 240);
+      } else {
+        body.classList.remove('closing');
+        item.classList.add('open');
+      }
+    }
 
     // ── 開閉 ──
     open() {
@@ -255,6 +332,7 @@
     openShop() {
       this.popup.hidden = true;
       this.shop.hidden = false;
+      this.refreshShopItems();
       this.shop.querySelector('.pm-shop-list').scrollTop = 0;
       window.arseneGame?.audio?.sfx?.('ui');
     }

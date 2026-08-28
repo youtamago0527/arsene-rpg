@@ -6,6 +6,10 @@
   //   maxDur … 長いファイルを途中でフェードアウトさせる秒数
   //   rate   … 再生速度。同じ素材を流用して質感を変えるのに使う
   const SFX_FILES = {
+    critical:    { url: '音楽系/効果音/会心の一撃1.mp3', gain: .92, offset: .002, maxDur: 1.5 },
+    criticalHit: { url: '音楽系/効果音/会心の一撃1.mp3', gain: .92, offset: .002, maxDur: 1.5 },
+    evade:       { url: '音楽系/効果音/回避.mp3', gain: .86, offset: .002, maxDur: 1.2 },
+    playerHit:   { url: '音楽系/効果音/打撃6.mp3', gain: .90, offset: .002, maxDur: 1.2 },
     swordHit:    { url: '音楽系/効果音/剣で斬る2.mp3', gain: .90, offset: .050, maxDur: .9 },
     clawHit:     { url: '音楽系/効果音/爪通常.mp3',    gain: 1.10, offset: .100, maxDur: .9 },
     // ファイアボールは「飛んでいる最中」の音なので、着弾ではなく発射のタイミングで鳴らす
@@ -14,10 +18,9 @@
     heal:        { url: '音楽系/効果音/ヒール.mp3',    gain: .95, offset: .002, maxDur: 1.95 },
     escape:      { url: '音楽系/効果音/逃げる.mp3',    gain: .68, offset: .028, maxDur: 1.2 },
     passiveProc: { url: '音楽系/効果音/パッシブ発動音.mp3', gain: .78, offset: .018, maxDur: 1.9 }
-    // クリティカルは専用の録音が無いので、下の合成音をそのまま使う
   };
   // 武器種 → 効果音名。左手の追撃など、武器種から直接鳴らしたい場所で使う
-  const WEAPON_SFX = { sword: 'swordHit', martial: 'clawHit', staff: 'fireFlight', instrument: 'noteHit', shield: 'shieldHit' };
+  const WEAPON_SFX = { sword: 'swordHit', martial: 'clawHit', staff: 'fireFlight', instrument: 'noteHit', shield: 'playerHit' };
 
   class ArseneAudio {
     constructor(bgmPath) {
@@ -148,6 +151,7 @@
         case 'critical': this.tone(130,.28,'square',.22,.45); this.tone(1500,.22,'sine',.14,.6); this.noise(.25,.2,0,500); break;
         case 'enemyHit': this.tone(180,.18,'triangle',.15,.55); this.noise(.12,.09,0,350); break;
         case 'playerHit': this.tone(105,.24,'sawtooth',.18,.6); this.noise(.16,.12,0,250); break;
+        case 'evade': this.noiseX({ duration: .16, volume: .16, type: 'highpass', freq: 1800, freqTo: 5200, shape: 'flat' }); break;
         case 'dark': this.tone(120,.42,'sine',.13,3.2); this.tone(62,.45,'sawtooth',.08,1.8); break;
         case 'heal': chord([440,554,659,880]); break;
         // メニューの決定音。回復音（ヒール.mp3）をUI全般へ流用していたため、

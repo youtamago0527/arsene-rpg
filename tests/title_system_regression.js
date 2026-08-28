@@ -125,4 +125,46 @@ assert.equal(bossUnlock.first, true);
 assert.equal(bossUnlockGame.profile.titleSystem.collectionSlotUnlocked, true, 'ボス称号を先に得た場合は図鑑枠も解放する');
 assert.equal(bossUnlockGame.profile.titleSystem.bossSlotUnlocked, true, 'ボス称号枠を解放する');
 
+// ── D1〜D4 図鑑称号：effectType/effectValueの対応を固定する ──
+assert.deepEqual(
+  Object.fromEntries(['d1_collection_gold', 'd2_collection_exp', 'd3_collection_drop', 'd4_collection_rare']
+    .map(id => [window.ArseneTitleSystem.collectionTitles[id].dungeonId, window.ArseneTitleSystem.collectionTitles[id].effectType])),
+  { dungeon1: 'goldMultiplier', dungeon2: 'expMultiplier', dungeon3: 'dropMultiplier', dungeon4: 'rareEncounterMultiplier' },
+  'D1〜D4図鑑称号のダンジョンと効果種別の対応を固定する'
+);
+assert.equal(window.ArseneTitleSystem.collectionTitles.d3_collection_drop.effectValue, 1.10, 'D3図鑑称号のDROP倍率は1.10');
+assert.equal(window.ArseneTitleSystem.collectionTitles.d4_collection_rare.effectValue, 1.25, 'D4図鑑称号のレア遭遇倍率は1.25');
+
+// ── 図鑑称号の効果値取得（collectionTitleEffect）とボス称号との共存 ──
+const dualGame = new BattleGame();
+dualGame.profile.titleSystem = { unlocked: true, collectionSlotUnlocked: true, bossSlotUnlocked: true, acquired: [], acquiredBoss: [], acquiredCollection: [], equipped: { collection: null, boss: null }, bossProgress: {} };
+dualGame.acquireBossTitle('seripes');
+dualGame.acquireCollectionTitle('d3_collection_drop');
+dualGame.profile.titleSystem.equipped.boss = 'boss_reprise';
+dualGame.profile.titleSystem.equipped.collection = 'd3_collection_drop';
+assert.equal(dualGame.collectionTitleEffect('dropMultiplier'), 1.10, '装備中の図鑑称号のDROP倍率を取得できる');
+assert.equal(dualGame.collectionTitleEffect('goldMultiplier'), 1, '装備中の図鑑称号と一致しない効果種別はfallbackの1倍を返す');
+const dualJobResult = dualGame.grantJobExp(5);
+assert.ok(dualJobResult.titleGain, '図鑑称号を同時装備していてもボス称号のJOB成長ボーナスが正常に発動する');
+assert.equal(dualGame.profile.titleSystem.equipped.collection, 'd3_collection_drop', 'ボス称号の成長処理で図鑑称号の装備が外れない');
+assert.equal(dualGame.profile.titleSystem.equipped.boss, 'boss_reprise', '図鑑称号の効果参照でボス称号の装備が外れない');
+
+// ── 図鑑完成による図鑑称号の自動付与（checkCollectionTitleUnlocks） ──
+const unlockGame = new BattleGame();
+unlockGame.profile.titleSystem = { unlocked: false, collectionSlotUnlocked: false, bossSlotUnlocked: false, acquired: [], acquiredBoss: [], acquiredCollection: [], equipped: { collection: null, boss: null }, bossProgress: {} };
+let archivePct = 60, flashed = 0;
+unlockGame.archiveCompletionPct = () => archivePct;
+unlockGame.flashTitle = () => { flashed++; };
+unlockGame.checkCollectionTitleUnlocks('dungeon1');
+assert.equal(unlockGame.profile.titleSystem.acquiredCollection.length, 0, '図鑑完成率が100%未満なら図鑑称号を付与しない');
+archivePct = 100;
+unlockGame.checkCollectionTitleUnlocks('dungeon1');
+assert.deepEqual(unlockGame.profile.titleSystem.acquiredCollection, ['d1_collection_gold'], '対象ダンジョンの図鑑が100%になったら図鑑称号を自動付与する');
+assert.equal(flashed, 1, '初回取得時に通知を出す');
+unlockGame.checkCollectionTitleUnlocks('dungeon1');
+assert.equal(unlockGame.profile.titleSystem.acquiredCollection.length, 1, '既に取得済みの図鑑称号を重複付与しない');
+assert.equal(flashed, 1, '再チェックでは通知を出し直さない（旧セーブの100%到達も1回だけ自動付与される）');
+unlockGame.checkCollectionTitleUnlocks('dungeon2');
+assert.deepEqual(unlockGame.profile.titleSystem.acquiredCollection.sort(), ['d1_collection_gold', 'd2_collection_exp'].sort(), '別ダンジョンの図鑑称号は対応するダンジョンIDでのみ付与される');
+
 console.log('title_system_regression: PASS');

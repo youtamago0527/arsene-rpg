@@ -41,10 +41,11 @@
   font-family:"Cormorant Garamond","Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif!important;
 }
 .auto-speed-indicator.active{color:#ffdc75;opacity:1;text-shadow:0 0 7px #e7aa35,0 1px 3px #000}
-.battle-menu-popover{pointer-events:auto;position:absolute;right:0;top:46px;width:min(252px,calc(100vw - 24px));padding:10px;background:linear-gradient(150deg,#080913fa,#02030afa);border:1px solid #8a724e;box-shadow:inset 0 0 0 2px #181522,0 14px 34px #000;display:grid;gap:8px;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}.battle-menu-popover[hidden]{display:none}
+.battle-menu-popover{pointer-events:auto;position:fixed;z-index:40;right:max(10px,calc((100vw - 480px)/2 + 10px));top:max(54px,calc(env(safe-area-inset-top) + 46px));width:min(276px,calc(100vw - 20px));max-height:calc(100vh - 68px);max-height:calc(100dvh - 68px - env(safe-area-inset-bottom));min-height:0;padding:10px;background:linear-gradient(150deg,#080913fa,#02030afa);border:1px solid #8a724e;box-shadow:inset 0 0 0 2px #181522,0 14px 34px #000;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:8px;overflow:hidden;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}.battle-menu-popover[hidden]{display:none}
 .battle-menu-header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #443554;padding:0 0 7px}.battle-menu-header small{font:700 9px Cinzel;letter-spacing:.2em;color:#c5a0ff}.battle-menu-header button{width:28px;height:26px;padding:0!important;border-color:#67445c!important;background:#0a0910!important;color:#e9dfea;font-size:16px!important;box-shadow:inset 0 0 8px #4a173333}
+.battle-menu-scroll{min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;display:grid;align-content:start;gap:8px;padding-right:2px}
 .battle-audio-row{display:grid;grid-template-columns:42px minmax(0,1fr) 34px 39px;align-items:center;gap:5px;min-height:32px}.battle-audio-row>span{color:#e7e2eb;font:800 9px Cinzel;letter-spacing:.08em}.battle-audio-row input{width:100%;height:18px;margin:0;accent-color:#9b56dc}.battle-audio-row output{color:#bfc9dc;font:700 8px Cinzel;text-align:right}.battle-audio-row button{min-width:39px;padding:5px 3px!important;border:1px solid #397c9d!important;background:#081b28!important;color:#75ddff!important;font:800 8px Cinzel!important}.battle-audio-row button.off{border-color:#473c4b!important;background:#0a0910!important;color:#77717d!important}
-.battle-menu-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding-top:2px}.battle-menu-popover .battle-menu-actions>button{min-height:36px;padding:6px;border:1px solid #34425a;background:#0a1020;color:#eee;font-weight:800;font-size:10px}.battle-menu-popover .battle-menu-actions>.test-return{border-color:#725538;background:#171007;color:#e9c88d}.battle-menu-actions .test-return small{display:block;margin-top:1px;color:#9a7952;font:700 6px Cinzel;letter-spacing:.14em}
+.battle-menu-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding-top:7px;border-top:1px solid #443554}.battle-menu-popover .battle-menu-actions>button{min-height:36px;padding:6px;border:1px solid #34425a;background:#0a1020;color:#eee;font-weight:800;font-size:10px}.battle-menu-popover .battle-menu-actions>.test-return{border-color:#725538;background:#171007;color:#e9c88d}.battle-menu-actions .test-return small{display:block;margin-top:1px;color:#9a7952;font:700 6px Cinzel;letter-spacing:.14em}
 
 #game .combatants{z-index:2;inset:66px 0 0;display:block}
 #game .enemies{position:absolute;z-index:4;inset:18px 3% auto;width:94%;height:55%;padding:0;display:flex;align-items:flex-end;justify-content:space-around;gap:0;overflow:visible}
@@ -53,7 +54,7 @@
 #game .enemy:nth-child(3){--enemy-scale:.91}
 #game .enemy[data-size="large"]{--enemy-scale:1.02}
 #game .enemy[data-size="boss"]{--enemy-scale:1;flex-basis:100%;width:100%}
-#game .enemy-visual{position:absolute;inset:34px 0 31px;transform:scale(var(--enemy-scale));transform-origin:center bottom;transition:filter .2s,transform .22s}
+#game .enemy-visual{position:absolute;inset:34px 0 31px;transform:scale(calc(var(--enemy-scale) * var(--boss-art-scale,1)));transform-origin:center bottom;transition:filter .2s,transform .22s}
 #game .enemy .slime{left:50%;bottom:4px;translate:-50% 0;width:min(31vw,142px);height:min(31vw,142px);transform:none}
 #game .enemy .slime-shadow{left:50%;bottom:0;translate:-50%;width:82%;height:13px}
 #game .boss-enemy .enemy-visual{inset:8px 0 29px;display:grid;place-items:end center}
@@ -67,7 +68,7 @@
 #game .enemy-hud label{grid-column:1;color:#ddd;font:900 7px Cinzel}
 #game .enemy-hud .enemy-hp-meter{grid-column:2;height:7px;margin:0;transform:skewX(-13deg);border:1px solid #493647;background:#03040a}
 #game .enemy-hud small{grid-column:1/-1;color:#e6e1e8;font:700 7px Cinzel;text-align:center;letter-spacing:.03em}
-#game .targetable::after{top:30px}.targetable:focus-visible{outline:1px solid #77e7ff;outline-offset:2px}.targetable:hover{transform:none}.targetable:hover .enemy-visual,.targetable:focus-visible .enemy-visual{transform:scale(calc(var(--enemy-scale) * 1.04));filter:brightness(1.25) drop-shadow(0 0 10px #45dfff)}
+#game .targetable::after{top:30px}.targetable:focus-visible{outline:1px solid #77e7ff;outline-offset:2px}.targetable:hover{transform:none}.targetable:hover .enemy-visual,.targetable:focus-visible .enemy-visual{transform:scale(calc(var(--enemy-scale) * var(--boss-art-scale,1) * 1.04));filter:brightness(1.25) drop-shadow(0 0 10px #45dfff)}
 
 #game .ren{position:absolute;z-index:3;left:-20px;bottom:0;width:252px;height:360px;margin:0;transform:none;transform-origin:center bottom}
 #game .ren-sprite{
@@ -186,20 +187,20 @@
 #game .command-panel[data-layout="main"]>button[data-action="guard"]{background-image:url("../assets/ui/battle/lower-ui-v2/command-guard-v2.png")!important}
 #game .command-panel[data-layout="main"]>button[data-action="item"]{background-image:url("../assets/ui/battle/lower-ui-v2/command-item-v2.png")!important}
 #game .command-panel[data-layout="main"]>button[data-action="escape"]{background-image:url("../assets/ui/battle/lower-ui-v2/command-escape-v2.png")!important}
-#game .command-panel[data-layout="main"]>button[data-action="simpleBattle"]{background-image:url("../assets/ui/battle/lower-ui-v2/command-simple-v2.png")!important}
+#game .command-panel[data-layout="main"]>button[data-action="quick"]{background-image:url("../assets/ui/battle/lower-ui-v2/command-simple-v2.png")!important}
 #game .command-panel[data-layout="main"]>button[data-action="autoBattle"]{background-image:url("../assets/ui/battle/lower-ui-v2/command-auto-v2.png")!important}
 
 /* 固定絵のボタンは画像内ラベルを使用。ON/OFFだけライブ表示する。 */
 #game .command-panel[data-layout="main"]>button:not([data-action="weaponArts"])>i,
 #game .command-panel[data-layout="main"]>button:not([data-action="weaponArts"])>strong,
 #game .command-panel[data-layout="main"]>button:not([data-action="weaponArts"])>span{opacity:0}
-#game .command-panel[data-layout="main"]>button[data-action="simpleBattle"]::after,
 #game .command-panel[data-layout="main"]>button[data-action="autoBattle"]::after{
   content:"OFF";position:absolute;z-index:3;right:3px;top:3px;padding:2px 3px;color:#817d87;
   background:#03050bdc;border:1px solid #494757;font:800 5px/1 Cinzel;letter-spacing:.08em;
 }
-#game .command-panel[data-layout="main"]>button[data-action="simpleBattle"].active::after{content:"ON";color:#79e9ff;border-color:#4bc8e0;box-shadow:0 0 5px #36cbe0}
 #game .command-panel[data-layout="main"]>button[data-action="autoBattle"].active::after{content:"ON";color:#ffdc75;border-color:#d8ac4c;box-shadow:0 0 5px #d8a438}
+/* 一掃はON/OFFの切替ボタンではなく、広告・常設ライセンスで使えるかどうかのゲート。
+   バッジは付けず、使える間は.sweep-unlockedの発光、使えない間はdisabledの減光だけで表す。 */
 
 /* 武器学枠だけは内側をライブレイヤー化。装備変更時に既存JSが画像・名称を再描画する。 */
 #game .command-panel[data-layout="main"]>button[data-action="weaponArts"]::after{
@@ -1157,7 +1158,6 @@
 #game .enemy-nameplate::before{box-shadow:inset 0 0 14px color-mix(in srgb,var(--nameplate-accent) 24%,transparent)}
 #game .enemy-nameplate::after{left:8px;right:8px;top:20px;background:linear-gradient(90deg,transparent,var(--nameplate-accent) 16%,#fff 50%,var(--nameplate-accent) 84%,transparent);box-shadow:0 0 4px color-mix(in srgb,var(--nameplate-accent) 72%,transparent)}
 #game .enemy-nameplate>span{overflow:visible;text-overflow:clip;white-space:nowrap;font-size:13px;font-weight:700;line-height:1;text-align:center;text-shadow:0 1px 2px #0009,0 0 6px color-mix(in srgb,var(--nameplate-accent) 38%,transparent)}
-#game .enemy-nameplate>span.long-name{font-size:11px;letter-spacing:-.04em}
 #game .enemy-nameplate .enemy-statuses{height:10px;min-height:10px;margin:0;gap:1px}
 #game .enemy-nameplate .status-chip{width:10px;min-width:10px;max-width:10px;height:10px;padding:0;font-size:0;line-height:1;border-width:1px}
 #game .enemy[data-size="boss"]{flex-basis:100%;max-width:none;width:100%}
@@ -1166,14 +1166,14 @@
 
 /* 敵の待機は小さな上下動へ統一。旧モンスター固有の大揺れ・回転は戦闘画面では使わない。 */
 @keyframes battleEnemyGentleBob{0%,100%{translate:0 0}50%{translate:0 -3px}}
-@keyframes battleBossGentleBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes battleBossGentleBob{0%,100%{translate:0 0}50%{translate:0 -3px}}
 #game .enemy:not(.boss-enemy):not(.enemy-escaped) .slime[style*="background-image"]{animation:none!important}
 #game .enemy:not(.boss-enemy):not(.enemy-attacking):not(.hit):not(.defeated):not(.enemy-escaped) .enemy-visual{
   animation:battleEnemyGentleBob 2.8s ease-in-out infinite!important;
 }
 #game .enemy.delay-1:not(.enemy-attacking):not(.hit):not(.defeated):not(.enemy-escaped) .enemy-visual{animation-delay:-.8s!important}
 #game .enemy.delay-2:not(.enemy-attacking):not(.hit):not(.defeated):not(.enemy-escaped) .enemy-visual{animation-delay:-1.6s!important}
-#game .boss-enemy:not(.enemy-attacking):not(.hit):not(.defeated):not(.guitar-axe-windup):not(.silver-claw) .noel-sprite{
+#game .boss-enemy:not(.enemy-attacking):not(.hit):not(.defeated):not(.guitar-axe-windup):not(.silver-claw) .enemy-visual{
   animation:battleBossGentleBob 3.2s ease-in-out infinite!important;
 }
 
@@ -1223,7 +1223,6 @@
   padding-inline:4px;
 }
 #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span{font-size:11px}
-#game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{font-size:9.5px}
 
 /* Player HUD readability: スマホでもJOB／武器学名の上端を切らず、大きく読む。 */
 #game .player-card{
@@ -1327,7 +1326,7 @@
   z-index:2;
   grid-row:1;
   min-width:0;
-  overflow:visible;
+  overflow:hidden;
   text-overflow:clip;
   white-space:nowrap;
   align-self:center;
@@ -1340,34 +1339,33 @@
   text-align:center;
   text-shadow:0 1px 2px #000,0 0 5px #000;
 }
-#game .enemy-nameplate>span.long-name,
-#game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{
-  font-size:11px;
-  letter-spacing:-.055em;
-}
 #game .enemy-nameplate .enemy-statuses{
   position:relative;
   z-index:3;
   grid-row:2;
   min-width:0;
   width:100%;
-  height:9px;
-  min-height:9px;
+  height:11px;
+  min-height:11px;
   margin:0;
   display:flex;
   justify-content:center;
   align-items:center;
-  gap:1px;
+  gap:2px;
   overflow:visible;
 }
 #game .enemy-nameplate .status-chip{
-  width:9px;
-  min-width:9px;
-  max-width:9px;
-  height:9px;
-  padding:0;
-  font-size:0;
-  line-height:1;
+  width:auto;
+  min-width:0;
+  max-width:36px;
+  height:11px;
+  padding:0 3px;
+  overflow:hidden;
+  color:inherit;
+  font-size:5.5px;
+  line-height:9px;
+  text-overflow:clip;
+  white-space:nowrap;
   border-width:1px;
 }
 #game .enemy.targetable>.enemy-nameplate,
@@ -1387,8 +1385,6 @@
   #game .enemy-nameplate .enemy-slot-label{left:6px;width:24px;font-size:11px}
   #game .enemy-nameplate>span,
   #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span{font-size:10px}
-  #game .enemy-nameplate>span.long-name,
-  #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{font-size:8.5px}
 }
 
 /* 3体編成は戦場の左右余白を同値にして、敵本体・名札・HPを3等分で配置する。 */
@@ -1405,14 +1401,18 @@
   min-width:0;
 }
 #game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span{font-size:10px}
-#game .enemies[data-count="3"] .enemy:not(.boss-enemy) .enemy-nameplate>span.long-name{font-size:8.5px;letter-spacing:-.06em}
 #game .enemy:not(.boss-enemy) .enemy-nameplate>span{
-  position:absolute;
-  inset:5px 5px auto 31px;
-  width:auto;
+  position:relative;
+  inset:auto;
+  width:100%;
   padding:0;
+  min-height:14px;
+  display:grid;
+  place-items:center;
   text-align:center;
   transform:none;
+  white-space:nowrap;
+  line-height:1.05;
 }
 
 /* 長い固有名は中黒を自然な改行位置にする。短い名前は従来どおり中央1段。 */
@@ -1422,27 +1422,6 @@
   height:38px;
   min-height:38px;
   grid-template-rows:23px 9px;
-}
-#game .enemy:not(.boss-enemy) .enemy-nameplate>span.split-name{
-  inset:3px 5px auto 31px;
-  min-height:20px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:0;
-  font-size:8.5px!important;
-  line-height:1.02;
-  letter-spacing:0;
-  white-space:nowrap;
-}
-#game .enemy:not(.boss-enemy) .enemy-nameplate>span.split-name small{
-  display:block!important;
-  color:inherit;
-  font:inherit;
-  line-height:1.02;
-  letter-spacing:inherit;
-  white-space:nowrap;
 }
 #game .enemy:not(.boss-enemy) .enemy-nameplate .enemy-statuses{
   position:absolute;
@@ -1477,8 +1456,71 @@
   padding:0 34px;
   text-align:center;
 }
+#game .boss-enemy .enemy-nameplate>span.split-name{
+  inset:4px 0 auto;
+  min-height:22px;
+  padding:0 38px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:1px;
+  overflow:hidden;
+}
+
+/* Nameplate final fit: 実測幅ベースのJS(fitTextToPlate)がここで定義した「標準サイズ」
+   から実際の描画幅に合わせてfont-sizeを縮小する。ここは各セグメントの標準サイズと
+   1行はみ出し禁止(nowrap+hidden)だけを定義し、文字数によるサイズ分岐は持たない。 */
+#game .enemy-nameplate>span,
+#game .enemy-nameplate>span *{
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:clip;
+  max-width:100%;
+}
+#game .enemy:not(.boss-enemy) .enemy-nameplate>span{
+  font-size:clamp(8px,2.45vw,12px);
+  letter-spacing:-.025em;
+}
+#game .boss-enemy .enemy-nameplate>span.split-name .enemy-name-title{
+  display:block;
+  font-size:clamp(7px,2vw,9px);
+  font-weight:600;
+  letter-spacing:.02em;
+  color:#d9bfff;
+  opacity:.85;
+}
+#game .boss-enemy .enemy-nameplate>span.split-name .enemy-name-main{
+  display:block;
+  font-size:clamp(9.5px,2.7vw,13px);
+  font-weight:800;
+  letter-spacing:-.01em;
+}
 #game .boss-enemy .enemy-visual{
   inset:24px -24px 27px;
+}
+/* ゼナカドは顔が素材上端寄りなので、名札は固定したまま立ち絵だけを下げる。 */
+#game .boss-enemy.enemy-zenakado .enemy-art-image{
+  transform:translate(-50%,24px);
+}
+/* game.css の汎用モーションは transform:scale(1) を含み、拡大したボスだけ
+   攻撃・被弾中に縮んでいた。移動を translate で行い通常の拡大率を維持する。 */
+#game .boss-enemy.enemy-attacking .enemy-visual{
+  animation:battleBossVisualAttack .65s ease-in-out;
+}
+#game .boss-enemy.hit .enemy-visual{
+  animation:battleBossVisualHit .42s steps(2);
+}
+@keyframes battleBossVisualAttack{
+  0%,100%{translate:0 0}
+  42%{translate:-24px 0}
+  58%{translate:-32px 0}
+}
+@keyframes battleBossVisualHit{
+  0%,100%{translate:0 0;filter:none}
+  25%{translate:-4px 0;filter:brightness(1.8)}
+  50%{translate:4px 0;filter:brightness(.72)}
+  75%{translate:-2px 0;filter:brightness(1.5)}
 }
 #game .boss-enemy .noel-sprite{
   width:min(110vw,480px);
@@ -1615,3 +1657,33 @@
 }
 #game .command-panel[data-layout="main"]>button[data-action="repeat"]::before{display:none!important}
 #game .command-panel[data-layout="main"]>button[data-action="repeat"]>*{opacity:0!important}
+
+/* 一掃は広告・常設ライセンスの解放中に黒塗りを外し、利用可能状態を明示する。 */
+#game .command-panel button[data-action='quick'].sweep-unlocked:not(:disabled){filter:none;opacity:1;border-color:#bb72ff;background:linear-gradient(125deg,#17062d,#43146b 55%,#170a31);box-shadow:0 0 12px #a747ff88,inset 0 0 12px #7d2eb844}
+#game .command-panel button[data-action='quick'].sweep-unlocked:not(:disabled) strong,#game .command-panel button[data-action='quick'].sweep-unlocked:not(:disabled) span{color:#f1d7ff}
+
+/* iPhoneの動的ブラウザUIでもメニューの末尾まで確実に操作できる。 */
+@media(max-width:430px){.battle-menu-popover{top:max(50px,calc(env(safe-area-inset-top) + 42px));bottom:max(8px,env(safe-area-inset-bottom));max-height:none}.battle-menu-scroll{padding-bottom:6px}}
+/* プロフィールから選んだ写真も、戦闘では通常立ち絵と同じ左下の半身枠へ。
+   縦3:4画像を約1.8倍でトリミングし、頭〜腰を表示する。 */
+#game #ren[data-custom-portrait="true"]{
+  left:-20px!important;
+  bottom:-50px!important;
+  width:214px!important;
+  height:278px!important;
+  overflow:hidden;
+}
+#game #ren[data-custom-portrait="true"] .ren-sprite{
+  inset:auto 0 0!important;
+  width:100%!important;
+  height:100%!important;
+  background-size:auto 180%!important;
+  background-position:center 7%!important;
+  background-repeat:no-repeat!important;
+}
+@media(max-width:390px){
+  #game #ren[data-custom-portrait="true"]{left:-16px!important;bottom:-44px!important;width:204px!important;height:266px!important}
+}
+@media(max-height:720px){
+  #game #ren[data-custom-portrait="true"]{left:-16px!important;bottom:-40px!important;width:192px!important;height:248px!important}
+}

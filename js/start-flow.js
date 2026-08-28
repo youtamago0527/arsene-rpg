@@ -9,6 +9,24 @@
       this.root = $('#start-flow');
       this.metaKey = 'arsene-rpg-start-flow-v01';
       this.openingMusic = encodeURI('音楽系/OP/零時侵蝕.mp3');
+      this.openingDuration = 75;
+      this.openingStory = [
+        ['01-midnight-clock.png', '00:00 // MIDNIGHT EROSION', '午前零時。世界から、人が消える。'],
+        ['02-deserted-station.png', '00:00–03:00 // THE LOST HOURS', '《零時侵蝕》――午前0時から3時までの謎の時間。'],
+        ['03-city-erosion.png', 'THE CITY IS CHANGING', 'そして、零時を歩ける者も減っていった。'],
+        ['04-four-left-behind.png', 'THE ONES LEFT BEHIND', '狼牙・蓮・翔・静真――四人も、その世界に取り残された。'],
+        ['05-luna-blue-moon.png', 'TWIN MOON', 'やがて彼らは、双子のルナとソラに出会う。'],
+        ['06-boundary-rift.png', 'THE BOUNDARY BREAKS', '境界が裂け、夜は異世界へ繋がった。'],
+        ['07-noel-takes-luna.png', 'NOEL // THE COLLECTOR', 'ノエル「この娘は、もらっていく。」'],
+        ['08-sora-luna-gate.png', 'THE STOLEN TWIN', 'ソラ「お姉ちゃん！」'],
+        ['09-clock-0301.png', '03:01 // NEVER ENDED', 'その夜――零時侵蝕は、終わらなかった。'],
+        ['10-worlds-merge.png', 'TWO WORLDS', '二つの世界が、混ざり始める。'],
+        ['11-roga-sword-strike.png', 'CRIMSON BLADE', '世界を蝕む影を、狼牙が斬り裂く。'],
+        ['12-q-calling-card.png', 'Q // CALLING CARD', 'Q「奪われたなら――奪い返せ。」'],
+        ['13-six-phantoms.png', 'SIX COLORS // ONE HEIST', '六つの意志が、夜を盗り返す。'],
+        ['14-hideout-ramen-v2.png', 'OKU NO HOSOMICHI', '六人は、ここを拠点とした。'],
+        ['15-final-dungeon-v2.png', 'PHANTOM THIEF', 'ルナを奪い返し、世界を取り戻すために。']
+      ];
       this.prologue = [];
       this.characters = [];
       this.prologueIndex = 0;
@@ -77,16 +95,7 @@
           <div class="flow-frame">
             <button class="op-skip" data-op-skip>OP SKIP</button>
             <div class="opening-movie" aria-hidden="true">
-              <figure data-op-frame="0" style="--op-bg:url('assets/op/op-private-01-roga-ramen.webp')"><img src="assets/op/op-private-01-roga-ramen.webp" alt=""><figcaption><small>ROGA // AFTER HOURS</small><b>湯気の向こうで、夜を支える。</b></figcaption></figure>
-              <figure data-op-frame="1" style="--op-bg:url('assets/op/op-private-02-ren-music-shop.webp')"><img src="assets/op/op-private-02-ren-music-shop.webp" alt=""><figcaption><small>REN // MUSIC SHOP</small><b>音の中で、まだ知らない声を待つ。</b></figcaption></figure>
-              <figure data-op-frame="2" style="--op-bg:url('assets/op/op-private-03-sho-bookstore.webp')"><img src="assets/op/op-private-03-sho-bookstore.webp" alt=""><figcaption><small>SHO // BOOKSTORE</small><b>物語の隙間に、真実を探す。</b></figcaption></figure>
-              <figure data-op-frame="3" style="--op-bg:url('assets/op/op-private-04-shizuma-childcare.webp')"><img src="assets/op/op-private-04-shizuma-childcare.webp" alt=""><figcaption><small>SHIZUMA // DAYCARE</small><b>小さな未来を、静かに守る。</b></figcaption></figure>
-              <figure data-op-frame="4" style="--op-bg:url('assets/op/op-private-05-luna-student.webp')"><img src="assets/op/op-private-05-luna-student.webp" alt=""><figcaption><small>LUNA // AFTER SCHOOL</small><b>誰にも言えない夜を抱えて。</b></figcaption></figure>
-              <figure data-op-frame="5" style="--op-bg:url('assets/op/op-01-luna-prison.webp')"><img src="assets/op/op-01-luna-prison.webp" alt=""><figcaption><small>THE STOLEN VOICE</small><b>その声は、境界の向こうから。</b></figcaption></figure>
-              <figure data-op-frame="6" style="--op-bg:url('assets/op/op-02-ren-signal.webp')"><img src="assets/op/op-02-ren-signal.webp" alt=""><figcaption><small>SIGNAL AT 00:00</small><b>午前零時。蓮は彼女の声を聴く。</b></figcaption></figure>
-              <figure data-op-frame="7" style="--op-bg:url('assets/op/op-03-phantoms-assemble.webp')"><img src="assets/op/op-03-phantoms-assemble.webp" alt=""><figcaption><small>STEAL IT BACK</small><b>奪われた未来を、盗り返す。</b></figcaption></figure>
-              <figure data-op-frame="8" style="--op-bg:url('assets/op/op-04-boundary-rescue.webp')"><img src="assets/op/op-04-boundary-rescue.webp" alt=""><figcaption><small>BREAK THE BOUNDARY</small><b>夜を駆け、ルナのもとへ。</b></figcaption></figure>
-              <figure data-op-frame="9" style="--op-bg:url('assets/op/op-05-dawn-reunion.webp')"><img src="assets/op/op-05-dawn-reunion.webp" alt=""><figcaption><small>OUR PARADISE</small><b>その夜明けを、もう一度。</b></figcaption></figure>
+              ${this.openingStory.map(([file, tag, text], index) => `<figure data-op-frame="${index}" style="--op-bg:url('assets/op/midnight/${file}')"><img src="assets/op/midnight/${file}" alt=""><figcaption><small>${tag}</small><b>${text}</b></figcaption></figure>`).join('')}
               <div class="opening-title-card"><div class="flow-emblem"></div><small>OPENING // 零時侵蝕</small><strong>或世盗&nbsp;<span class="nowrap">-ARSÈNE-</span></strong><span>PHANTOM THIEF RPG</span></div>
               <div class="opening-flash"></div><div class="opening-grain"></div><div class="opening-progress"><i></i></div>
             </div>
@@ -194,10 +203,10 @@
       $('.opening-live', this.root).classList.remove('active');
       $('.opening-movie', this.root).classList.add('active');
       await this.game.audio.unlock();
-      await this.game.audio.playTimedLoop(this.openingMusic, 100, 5);
+      await this.game.audio.playTimedLoop(this.openingMusic, this.openingDuration, 5);
       this.lastOpeningFrame = null; this.updateOpeningMovie();
       clearInterval(this.openingSyncTimer); this.openingSyncTimer = setInterval(() => this.updateOpeningMovie(), 120);
-      clearTimeout(this.openingTimer); this.openingTimer = setTimeout(() => this.finishOpening(), 100000);
+      clearTimeout(this.openingTimer); this.openingTimer = setTimeout(() => this.finishOpening(), this.openingDuration * 1000);
     }
 
     async finishOpening() {
@@ -210,24 +219,22 @@
 
     updateOpeningMovie() {
       const time = this.game.audio.music.currentTime || 0;
-      const frame = time < 3 ? -1
-        : time < 11 ? 0
-        : time < 19 ? 1
-        : time < 27 ? 2
-        : time < 35 ? 3
-        : time < 44 ? 4
-        : time < 55 ? 5
-        : time < 66 ? 6
-        : time < 76 ? 7
-        : time < 88 ? 8
-        : time < 96 ? 9
-        : -2;
+      const frame = time < 1.5 ? -1
+        : time >= this.openingDuration - 3 ? -2
+        : Math.min(this.openingStory.length - 1, Math.floor((time / this.openingDuration) * this.openingStory.length));
       this.root.querySelectorAll('[data-op-frame]').forEach(item => item.classList.toggle('active', Number(item.dataset.opFrame) === frame));
-      const card = $('.opening-title-card', this.root); card.classList.toggle('active', frame < 0); card.classList.toggle('ending', frame === -2);
-      $('.opening-progress i', this.root).style.width = `${Math.min(100, time)}%`;
-      if (frame !== this.lastOpeningFrame) { const movie = $('.opening-movie', this.root); movie.classList.remove('glitch'); void movie.offsetWidth; movie.classList.add('glitch'); this.lastOpeningFrame = frame; }
+      const card = $('.opening-title-card', this.root);
+      card.classList.toggle('active', frame < 0);
+      card.classList.toggle('ending', frame === -2);
+      $('.opening-progress i', this.root).style.width = String(Math.min(100, (time / this.openingDuration) * 100)) + '%';
+      if (frame !== this.lastOpeningFrame) {
+        const movie = $('.opening-movie', this.root);
+        movie.classList.remove('glitch');
+        void movie.offsetWidth;
+        movie.classList.add('glitch');
+        this.lastOpeningFrame = frame;
+      }
     }
-
     showTitle() {
       this.setScreen('title');
       const continueButton = $('[data-title-continue]', this.root);
@@ -235,7 +242,7 @@
     }
 
     async beginNewGame() {
-      this.game.audio.unlock().then(() => this.game.audio.playTimedLoop(this.openingMusic, 100, 5)).catch(error => console.warn('Opening BGM could not start.', error));
+      this.game.audio.unlock().then(() => this.game.audio.playTimedLoop(this.openingMusic, this.openingDuration, 5)).catch(error => console.warn('Opening BGM could not start.', error));
       const current = $('[data-flow-screen="title"]', this.root);
       current.classList.add('leaving');
       await sleep(520);
@@ -433,3 +440,7 @@
     boot();
   });
 })();
+
+
+
+

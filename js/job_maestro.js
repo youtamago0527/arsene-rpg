@@ -45,7 +45,7 @@
     return true;
   };
   // ダメージへ掛ける倍率（1.0 が等倍）
-  P.songBuffRate = function (kind) { return this.songStacks(kind) * CFG().buffRate; };
+  P.songBuffRate = function (kind) { const passive = this.activePassives().find(p => p.passiveEffect?.type === 'turnStartBuff' && p.passiveEffect?.buff === kind); const rate = passive ? this.passiveRate(passive) : CFG().buffRate; return this.songStacks(kind) * rate; };
 
   // アンサンブル中かどうか
   P.isEnsembleActive = function () {
@@ -75,15 +75,12 @@
       const kind = p.passiveEffect.buff;
       // ソロ（2回行動）は影響が大きいので専用の発動率を持てる。
       // アンサンブル中は同じ比率で底上げする。
-      let myChance = chance;
-      if (kind === 'regen' && cfg.nocturneChance != null) {
+      const passiveChance = this.passiveValue(p, 'chance');
+      let myChance = passiveChance || chance;
+      if (kind === 'regen' || kind === 'doubleAct') {
         myChance = this.isEnsembleActive()
-          ? Math.min(1, cfg.nocturneChance * (cfg.ensembleChance / cfg.procChance))
-          : cfg.nocturneChance;
-      } else if (kind === 'doubleAct' && cfg.soloChance != null) {
-        myChance = this.isEnsembleActive()
-          ? Math.min(1, cfg.soloChance * (cfg.ensembleChance / cfg.procChance))
-          : cfg.soloChance;
+          ? Math.min(1, myChance * (cfg.ensembleChance / cfg.procChance))
+          : myChance;
       }
       if (Math.random() >= myChance) continue;
       let label;
@@ -136,14 +133,9 @@
       const need = p.passiveEffect.requiresWeaponType;
       if (need && this.equippedWeaponType() !== need) continue;
       const kind = p.passiveEffect.buff;
-      let myChance = chance;
-      if (kind === 'regen' && cfg.nocturneChance != null) {
-        myChance = this.isEnsembleActive()
-          ? Math.min(1, cfg.nocturneChance * (cfg.ensembleChance / cfg.procChance))
-          : cfg.nocturneChance;
-      } else if (kind === 'doubleAct' && cfg.soloChance != null) {
-        myChance = this.isEnsembleActive() ? Math.min(1, cfg.soloChance * (cfg.ensembleChance / cfg.procChance)) : cfg.soloChance;
-      }
+      const passiveChance = this.passiveValue(p, 'chance');
+      let myChance = passiveChance || chance;
+      if (kind === 'regen' || kind === 'doubleAct') myChance = this.isEnsembleActive() ? Math.min(1, myChance * (cfg.ensembleChance / cfg.procChance)) : myChance;
       if (Math.random() >= myChance) continue;
       if (kind === 'regen') this.player.buffs.regenerate = Math.max(this.player.buffs.regenerate || 0, cfg.nocturneTurns + 1);
       else if (kind === 'doubleAct') { if (!this.isDoubleActActive()) this.player.buffs.doubleActUntil = this.turn + Math.max(1, cfg.soloTurns) - 1; }

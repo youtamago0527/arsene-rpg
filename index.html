@@ -35,21 +35,22 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <link rel="stylesheet" href="css/game.css?v=0.5.7">
-  <link rel="stylesheet" href="css/menu.css?v=0.8.7">
+  <link rel="stylesheet" href="css/menu.css?v=0.8.8">
   <link rel="stylesheet" href="css/otherworld.css?v=0.3.6">
-  <link rel="stylesheet" href="css/q-offer.css?v=0.1.4">
+  <link rel="stylesheet" href="css/q-offer.css?v=0.1.6">
+  <link rel="stylesheet" href="css/q-reward-effects.css?v=0.1.1">
   <link rel="stylesheet" href="css/q-offer-defeat.css?v=0.1.1">
-  <link rel="stylesheet" href="css/title-system.css?v=0.1.0">
+  <link rel="stylesheet" href="css/title-system.css?v=0.1.1">
   <link rel="stylesheet" href="css/infinite-score.css?v=0.3.1">
   <link rel="stylesheet" href="css/fixes.css?v=0.6.7">
-  <link rel="stylesheet" href="css/battle-fx.css?v=0.2.0">
-  <link rel="stylesheet" href="css/battle-ui-v2.css?v=0.1.62">
+  <link rel="stylesheet" href="css/battle-fx.css?v=0.2.2">
+  <link rel="stylesheet" href="css/battle-ui-v2.css?v=0.1.67">
   <link rel="stylesheet" href="css/hideout.css?v=0.3.8">
   <link rel="stylesheet" href="css/settings.css?v=0.2.5">
   <link rel="stylesheet" href="css/hideout-art.css?v=0.6.26">
   <style>@media(max-width:520px){.hideout-art-shell{height:100svh}.hideout-art-shell .hideout-full-art{height:100%;object-fit:fill}}</style>
   <link rel="stylesheet" href="css/kazu-minigame.css?v=0.2.0">
-  <link rel="stylesheet" href="css/phantom-shop.css?v=0.2.0">
+  <link rel="stylesheet" href="css/phantom-shop.css?v=0.2.5">
   <link rel="stylesheet" href="css/start-flow.css?v=0.4.5">
   <link rel="stylesheet" href="css/op-movie.css?v=0.3.2">
   <link rel="stylesheet" href="css/op-responsive.css?v=0.3.1">
@@ -79,8 +80,10 @@
           <button id="battle-menu-button" class="battle-menu-button" type="button" aria-expanded="false" aria-controls="battle-menu-popover"><i></i> MENU</button>
           <div id="auto-speed-indicator" class="auto-speed-indicator" aria-label="オート戦闘速度 1.5倍"><small>AUTO SPEED</small><strong>×1.5</strong></div>
         </div>
-        <div id="battle-menu-popover" class="battle-menu-popover" hidden></div>
       </div>
+      <!-- battle-topbarの外に置く：topbarにはtransformが掛かっており、position:fixedの
+           基準(containing block)がtopbar自身(高さ数十px)になってメニューが潰れて見えるため -->
+      <div id="battle-menu-popover" class="battle-menu-popover" hidden></div>
 
       <div class="player-ui-stack">
         <div id="log" class="battle-log" role="button" tabindex="0" aria-label="戦闘ログ。タップで全履歴を表示" aria-live="polite"><small>COMBAT LOG // TAP</small><div class="battle-log-lines"><p>闇の気配が近づいてくる……</p></div></div>
@@ -145,29 +148,29 @@
       <footer class="hideout-footer">STEAL IT ALL. <i></i> FOR OUR PARADISE.</footer>
     </div>
   </section>
-  <script src="js/data.js?v=3.8.1"></script>
+  <script src="js/data.js?v=3.8.4"></script>
   <script src="js/future_data.js?v=0.1.2"></script>
-  <script src="js/release_content.js?v=0.1.2"></script>
+  <script src="js/release_content.js?v=0.1.3"></script>
   <script src="js/d4_extra_enemies.js?v=0.1.2"></script>
   <script src="js/equipment_progression.js?v=1.3.0"></script>
-  <script src="js/audio.js?v=0.8.0"></script>
+  <script src="js/audio.js?v=0.8.1"></script>
   <script src="js/kazu_dialogues.js?v=0.1.2"></script>
   <script src="js/help_data.js?v=0.6.0"></script>
-  <script src="js/otherworld_data.js?v=1.5.3"></script>
+  <script src="js/otherworld_data.js?v=1.5.4"></script>
   <script src="js/infinite_score_data.js?v=0.2.0"></script>
-  <script src="js/debug_room.js?v=0.4.5"></script>
+  <script src="js/debug_room.js?v=0.4.6"></script>
   <script src="js/job_audit.js?v=0.1.2"></script>
   <script src="js/job_balance_tool.js?v=0.3.2"></script>
-  <script src="js/game.js?v=4.5.5"></script>
-  <script src="js/battle_fx.js?v=0.1.2"></script>
+  <script src="js/game.js?v=4.6.2"></script>
+  <script src="js/battle_fx.js?v=0.1.4"></script>
   <script src="js/job_maestro.js?v=0.3.3"></script>
-  <script src="js/otherworld.js?v=0.3.0"></script>
+  <script src="js/otherworld.js?v=0.3.1"></script>
   <script src="js/infinite_score.js?v=0.3.4"></script>
   <script src="js/start-flow.js?v=0.4.32"></script>
   <script src="js/kazu_minigame.js?v=0.3.3"></script>
   <script src="js/q_dialogue.js?v=0.1.0"></script>
-  <script src="js/q_offer.js?v=0.2.1"></script>
-  <script src="js/title_system.js?v=0.1.1"></script>
-  <script src="js/phantom_shop.js?v=0.3.3"></script>
+  <script src="js/q_offer.js?v=0.2.4"></script>
+  <script src="js/title_system.js?v=0.1.2"></script>
+  <script src="js/phantom_shop.js?v=0.3.8"></script>
 </body>
 </html>

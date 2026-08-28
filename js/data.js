@@ -3,7 +3,14 @@ window.ARSENE_DATA = {
   // debugPassword：拠点の狐を長押しで開くデバッグルームのパスワード
   settings: { healOnBattleStart: false, saveKey: 'arsene-rpg-save-v01', bossRematchWins: 5, dungeon2BossWins: 100, dungeon3MidBossWins: 28, dungeon3TargetWins: 60, debugPassword: '1229', mealGoldRate: 0.3, counterPowerRate: 0.7, battleMenuTestReturn: true, autoBattleSpeed: 1.5, autoBattleSpeedSteps: [1.5, 2] },
   guardianBalance: {
-    shieldDefRate: 0.5, shieldMdefRate: 0.5, resonanceGainPerDamage: 0.05,
+    shieldDefRate: 0.5, shieldMdefRate: 0.5,
+    // RESONANCE は軽減後の実ダメージを参照する。転生補正は守護士のみ全量、
+    // PHANTOM THIEF が ACTION として盗んだ場合は補正分だけ半量にする。
+    resonanceBaseRate: 0.05, resonanceRebirthBonus: 0.01, resonanceRebirthCap: 0.15,
+    phantomRebirthBonusRate: 0.50, resonanceGainPerDamage: 0.05,
+    echoAttackRate: 0.05, echoResonanceBonus: 0.10,
+    steadfastThreshold: 0.30, steadfastReduction: 0.10,
+    guardStatusResist: 0.20, guardResonanceBonus: 0.20,
     fortressReduction: 0.30, resonanceMax: 100,
     resonanceTiers: [{ min: 100, multiplier: 2.0 }, { min: 75, multiplier: 1.75 }, { min: 50, multiplier: 1.5 }, { min: 25, multiplier: 1.25 }, { min: 1, multiplier: 1.0 }]
   },
@@ -23,7 +30,7 @@ window.ARSENE_DATA = {
     { id: 'shield', name: '盾', nameEn: 'SHIELD', description: '防御性能を攻撃へ転換する守護士の武器。', damageStats: ['vit', 'mnd'], starterWeaponId: 'guardianAegis', unlockFlag: 'shieldUnlocked' }
   ],
   // 武器種ごとの通常攻撃。未定義の武器種は 'attack'（剣と同じ物理攻撃）にフォールバック。
-  basicAttackByWeaponType: { sword: 'attack', staff: 'staffFireball', martial: 'martialStrike', instrument: 'resonantNote', shield: 'shieldBash' },
+  basicAttackByWeaponType: { sword: 'attack', staff: 'staffFireball', martial: 'martialStrike', instrument: 'resonantNote', shield: 'shieldStrike' },
   // ══════════════════════════════════════════════════════════════
   // 武器種ごとの攻撃性能スケーリング。新武器種はここへ1行足すだけ。
   //   scaling      : 基礎能力をどの割合で攻撃性能へ変換するか
@@ -138,7 +145,9 @@ window.ARSENE_DATA = {
     mpGrowthAmount: { min: 1, max: 3 },
     // 最大HPが100増えるごとに、HP成長へ必要な敵Spark Lvも10上がる。
     // HP 0～99: 全敵 / 100～199: Spark Lv.10以上 / 200～299: Lv.20以上…
+    // MPも同じ考え方（最大MPの区切りごとにSpark Lv要求が上がる）。
     vitalGrowthHpTierSize: 100,
+    vitalGrowthMpTierSize: 100,
     vitalGrowthSparkPerTier: 10,
     jobHpGrowthBonus: { warrior: 0.10, martialArtist: 0.07, mage: 0.00, priest: 0.05, guardian: 0.12 },
     jobMpGrowthBonus: { warrior: 0.00, martialArtist: 0.02, mage: 0.10, priest: 0.08, guardian: 0.03 },
@@ -226,8 +235,18 @@ window.ARSENE_DATA = {
   // 1面クリア目安30分：通常戦17回（1戦約50秒）＋ボス2戦＋拠点操作
   battleProgression: { noelEncounterWins: 8, zenakadoEncounterWins: 17 },
   expTable: { 1: 50, 2: 120, 3: 220 },
-  jobExpTable: { 1: 25, 2: 45, 3: 70, 4: 100, 5: 135, 6: 175, 7: 220, 8: 270, 9: 330, 10: 400, 11: 480, 12: 570, 13: 670, 14: 780, 15: 900, 16: 1040, 17: 1190, 18: 1360, 19: 1550 },
+  jobExpTable: {
+    1: 25, 2: 45, 3: 70, 4: 100, 5: 135, 6: 175, 7: 220, 8: 270, 9: 330, 10: 400,
+    11: 480, 12: 570, 13: 670, 14: 780, 15: 900, 16: 1040, 17: 1190, 18: 1360, 19: 1550,
+    // Lv20〜39（セリペス撃破で解放される限界突破帯）。既存カーブの平均上昇率(約1.147倍/Lv)を
+    // そのまま延長した上で、Lv1〜20より少し上がりづらくなるよう全体を1.5倍にしてある。
+    20: 2667, 21: 3060, 22: 3511, 23: 4028, 24: 4621, 25: 5301, 26: 6081, 27: 6977, 28: 8004, 29: 9183,
+    30: 10535, 31: 12086, 32: 13865, 33: 15907, 34: 18249, 35: 20936, 36: 24018, 37: 27555, 38: 31612, 39: 36266
+  },
   jobLevelCap: 20,
+  // セリペス撃破で解放される限界突破後の上限。canRebirth側は従来通りjobLevelCap(20)を
+  // 転生可能ラインとして参照し続けるため、Lv20〜40のどのタイミングでも転生を選べる。
+  jobLevelCapExtended: 40,
   // 強化は「その装備自身の戦闘値・能力補正・特殊効果」を割合で伸ばす（+1ごとに powerRate）。
   //   弱い装備を強化しても強い装備を追い越さないのが狙い。
   //   旧 statBonus（基礎能力+5/Lv）は廃止。基礎能力はJOBとキャラだけが伸ばす。
@@ -303,8 +322,8 @@ window.ARSENE_DATA = {
     },
     guardian: {
       id: 'guardian', name: '守護士', nameEn: 'GUARDIAN', description: '受けた痛みを共鳴へ変え、盾と反奏で格上を打ち破る基本JOB。',
-      signatureSkillId: 'resonanceBreak', passiveUnlocks: {}, growthStats: ['vit', 'mnd'],
-      featureText: '右手に盾を武器として装備可能。実ダメージの5%をRESONANCEへ蓄積し、無属性の反撃へ転換する。',
+      signatureSkillId: 'resonanceBreak', passiveUnlocks: { 1: 'p_resonantGuard', 5: 'p_indomitable', 10: 'p_guardStance', 15: 'p_unfallen' }, growthStats: ['vit', 'mnd'],
+      featureText: '右手に盾を武器として装備可能。軽減後の実ダメージをRESONANCEへ蓄積し、無属性の反撃へ転換する。転生ごとに蓄積率+1%（最大15%）。',
       unlockCondition: { bossDefeated: 'seripes' },
       skillUnlocks: {}
     },
@@ -606,17 +625,14 @@ window.ARSENE_DATA = {
     buffs: {
       makanai: { id: 'makanai', name: '店主特製・怪盗まかない', priceType: 'goldRate', goldRate: .30, maxHpRate: .03, description: 'HP・MPを全回復し、潜入中は最大HPが3%上昇する。拠点帰還・敗北で消滅。' },
       sapporoMiso: { id: 'sapporoMiso', name: '札幌味噌ラーメン', price: 100, unlockBoss: 'zenacad', goldRate: .10, description: '潜入中、獲得GOLDが10%増加する。拠点帰還・敗北で消滅。' },
-      // EXP強化案は予約として保持。現段階の裏メニュー効果はGOLD +20%のみ。
-      taiwanMazesoba: { id: 'taiwanMazesoba', name: '台湾まぜそば', price: 150, unlockFlag: 'taiwanMazesobaUnlocked', secretMenu: true, goldRate: .20, reservedBuff: { expRate: .10 }, description: '潜入中、獲得GOLDが20%増加する。拠点帰還・敗北で消滅。', unlockByMeal: { mealId: 'sapporoMiso', chance: .01 } }
+      // 裏メニュー効果はGOLD +20%。EXP強化は広告料理《強昆布ラーメン》へ分離する。
+      taiwanMazesoba: { id: 'taiwanMazesoba', name: '台湾まぜそば', price: 150, unlockFlag: 'taiwanMazesobaUnlocked', secretMenu: true, goldRate: .20, description: '潜入中、獲得GOLDが20%増加する。拠点帰還・敗北で消滅。', unlockByMeal: { mealId: 'sapporoMiso', chance: .01 } }
     },
     comingSoon: [
       { id: 'asahikawaShoyu', name: '旭川醤油ラーメン' },
       { id: 'hakodateShio', name: '函館塩ラーメン' }
     ],
-    // デバッグ用の常設枠。料理バフではなく、所持品へ直接追加する。
-    testItems: [
-      { id: 'rebirthArcana', price: 100, label: 'REBIRTH TEST', description: 'JOB Lv20からの転生に必要な特別なアルカナ。テスト用に100 GOLDで用意した。' }
-    ]
+    testItems: []
   },
   musicScores: {
     cadenzaLoot: { id: 'cadenzaLoot', title: 'CADENZA', subtitle: '絶望の戦利品', artist: 'ZENAKADO', use: 'privateMode', unlockBoss: 'zenacad', description: '独奏卿ゼナカドから盗み出した禁断の楽譜。プライベートモードで演奏可能。' },
@@ -820,18 +836,23 @@ window.ARSENE_DATA = {
     p_spellBoost:  { id: 'p_spellBoost', name: '魔法増幅', nameEn: 'SPELL BOOST', type: 'PASSIVE', jobId: 'mage', passiveEffect: { type: 'magicDamageUp', rate: .10, rebirthStep: .03, max: .30 }, effectText: '攻撃魔法ダメージ +10%', description: '攻撃魔法の威力を高める。' },
     // 僧侶Lv1：長く潜って稼ぐ役どころ。戦闘で得るGOLDが増える。
     p_tithe:       { id: 'p_tithe', name: '施しの祈り', nameEn: 'TITHE', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'goldUp', rate: .60, rebirthStep: .08, max: 1.00 }, effectText: '獲得GOLD +60%', description: '僧侶で敵を倒して得るGOLDを増やす。転職だけでは利益は発生せず、実際に戦って稼ぐための能力。' },
-    p_spirit:      { id: 'p_spirit', name: '祈祷', nameEn: 'PRAYER', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'heavyHitRegenerate', thresholdRate: .10, chance: .40, healRate: .15, turns: 3 }, effectText: '最大HP10%以上の実被ダメージ時、1ラウンド1回40%で3T再生', description: '大きな痛みを受けたときだけ祈りが応える。1回の実被ダメージが最大HPの10%以上なら、そのラウンドの最初の1回だけ40%で判定し、3ターンの再生を得る。発動中の再発動は効果を重ねず、残り時間だけを更新する。自傷では発動しない。' },
+    p_spirit:      { id: 'p_spirit', name: '祈祷', nameEn: 'PRAYER', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'heavyHitRegenerate', thresholdRate: .10, chance: .40, healRate: .15, turns: 3, rebirthSteps: { chance: .04, healRate: .02 }, rebirthMax: { chance: .60, healRate: .25 } }, effectText: '最大HP10%以上の実被ダメージ時、1ラウンド1回40%で3T再生', description: '大きな痛みを受けたときだけ祈りが応える。1回の実被ダメージが最大HPの10%以上なら、そのラウンドの最初の1回だけ40%で判定し、3ターンの再生を得る。発動中の再発動は効果を重ねず、残り時間だけを更新する。自傷では発動しない。' },
     p_healArt:     { id: 'p_healArt', name: '治癒術', nameEn: 'HEALING ART', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'healUp', rate: .25, rebirthStep: .05, max: .50 }, effectText: 'HP回復量 +25%', description: '癒やしの術を高め、ヒールと継続回復の効果を大きくする。' },
     p_wardBarrier: { id: 'p_wardBarrier', name: '魔法障壁', nameEn: 'WARD BARRIER', type: 'PASSIVE', jobId: 'priest', passiveEffect: { type: 'magicResist', rate: .10, rebirthStep: .03, max: .30 }, effectText: '被魔法ダメージ -10%', description: '魔を退ける薄い障壁を常に纏う。' },
-    p_spellBlade:  { id: 'p_spellBlade', name: '魔剣適性', nameEn: 'SPELL BLADE', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'multiStatPercent', stats: { str: .03, mag: .03 } }, effectText: '力 +3% / 魔力 +3%', description: '刃と魔を同時に扱う適性。' },
+    // ══ 守護士PASSIVE（RE:MIX可能） ════════════════════════════
+    p_resonantGuard: { id: 'p_resonantGuard', name: '受響', nameEn: 'ECHO GUARD', type: 'PASSIVE', jobId: 'guardian', passiveEffect: { type: 'damageEcho', rate: .05, resonanceGainRate: .10, rebirthStep: .01, max: .15 }, effectText: '被弾後、次の攻撃ダメージ +5%／RESONANCE装備中は蓄積量 +10%', description: '痛みを一度だけ攻勢へ変える。複数回受けても重ならず、次に与える攻撃で消費する。' },
+    p_indomitable: { id: 'p_indomitable', name: '不屈', nameEn: 'INDOMITABLE', type: 'PASSIVE', jobId: 'guardian', passiveEffect: { type: 'lowHpDamageReduction', rate: .10, hpThreshold: .30, rebirthStep: .02, max: .25 }, effectText: 'HP30%以下の間、被ダメージ -10%', description: '追い詰められてなお耐え抜く。HPが30%を超えると効果は止まる。' },
+    p_guardStance: { id: 'p_guardStance', name: '守勢', nameEn: 'GUARD STANCE', type: 'PASSIVE', jobId: 'guardian', passiveEffect: { type: 'guardStance', rate: .20, statusResist: .20, resonanceGainRate: .20, rebirthStep: .02, max: .35 }, effectText: '防御中、状態異常耐性 +20%／RESONANCE装備中は蓄積量 +20%', description: '守りを固めたとき、状態異常にも揺らがず、受けた衝撃をより多く共鳴へ変える。' },
+    p_unfallen: { id: 'p_unfallen', name: '不落', nameEn: 'UNFALLEN', type: 'PASSIVE', jobId: 'guardian', passiveEffect: { type: 'lastStand', hpFloor: 1, maxUsesPerBattle: 1 }, effectText: '戦闘中1回だけ、致死ダメージをHP1で耐える', description: '一度だけ、倒れるはずの一撃をHP1で受け止める。' },
+    p_spellBlade:  { id: 'p_spellBlade', name: '魔剣適性', nameEn: 'SPELL BLADE', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'multiStatPercent', stats: { str: .03, mag: .03 }, rebirthStatSteps: { str: .012, mag: .012 }, rebirthStatMax: { str: .09, mag: .09 } }, effectText: '力 +3% / 魔力 +3%', description: '刃と魔を同時に扱う適性。' },
     p_manaFlow:    { id: 'p_manaFlow', name: '魔力循環', nameEn: 'MANA FLOW', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'statPercent', stat: 'maxMp', rate: .05 }, effectText: '最大MP +5%', description: '魔力を絶えず巡らせる。最大MPが5%上昇する。' },
     p_elemental:   { id: 'p_elemental', name: '属性増幅', nameEn: 'ELEMENTAL BOOST', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'elementDamageUp', rate: .08 }, effectText: '属性攻撃ダメージ +8%', description: '属性を帯びた攻撃の威力を高める。' },
 
     // ══ 双刃士PASSIVE（双刃は体術武器学を共有）════════════════
     p_dualWield: { id: 'p_dualWield', name: '二刀の型', nameEn: 'DUAL WIELD', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'dualWield', rate: .25, rebirthTable: { 0: .25, 1: .30, 2: .35, 3: .40, 4: .45, 5: .50, 6: .55, 7: .60, 8: .65, 9: .70, 10: .75, 11: .80, 12: .85, 13: .90, 14: .95, 15: 1.00 }, max: 1.00 }, effectText: '左手にも双刃を装備可能／右手命中後に左手追撃25%', description: '左右の双刃を一つの型として操る。左手は独立した命中・会心判定を行い、武器効果と体術武器学も適用される。' },
-    p_comboDance: { id: 'p_comboDance', name: '連舞', nameEn: 'CHAIN DANCE', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'comboDance', damagePerStack: .02, maxStacks: 5, maxCriticalBonus: .10 }, effectText: '命中ごとに連舞+1（最大5）／1段階ごと与ダメ+2%／MAXで会心+10%', description: '右手・左手・多段攻撃の各Hitで加速する。MISSすると連舞は0へ戻る。' },
-    p_pursuitBlade: { id: 'p_pursuitBlade', name: '追刃', nameEn: 'PURSUIT BLADE', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'offHandCritical', rate: .15, comboBonusOnCritical: 1 }, effectText: '左手追撃の会心率+15%／左手会心時に連舞+1追加', description: '追撃の刃を急所へ滑り込ませ、舞の速度を一気に引き上げる。' },
-    p_danceForm: { id: 'p_danceForm', name: '舞踏', nameEn: 'WAR DANCE', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'comboMaxBoost', agiRate: .20, offHandRate: .10 }, effectText: '連舞MAX中 AGI+20%／左手追撃倍率+10%', description: '連舞が頂点に達したときだけ完成する双刃士の戦闘舞踏。MISSすれば即座に失われる。' },
+    p_comboDance: { id: 'p_comboDance', name: '連舞', nameEn: 'CHAIN DANCE', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'comboDance', damagePerStack: .02, maxStacks: 5, maxCriticalBonus: .10, rebirthSteps: { damagePerStack: .005, maxCriticalBonus: .02 }, rebirthMax: { damagePerStack: .05, maxCriticalBonus: .20 } }, effectText: '命中ごとに連舞+1（最大5）／1段階ごと与ダメ+2%／MAXで会心+10%', description: '右手・左手・多段攻撃の各Hitで加速する。MISSすると連舞は0へ戻る。' },
+    p_pursuitBlade: { id: 'p_pursuitBlade', name: '追刃', nameEn: 'PURSUIT BLADE', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'offHandCritical', rate: .15, comboBonusOnCritical: 1, rebirthSteps: { comboBonusOnCritical: 1 }, rebirthMax: { comboBonusOnCritical: 3 } }, effectText: '左手追撃の会心率+15%／左手会心時に連舞+1追加', description: '追撃の刃を急所へ滑り込ませ、舞の速度を一気に引き上げる。' },
+    p_danceForm: { id: 'p_danceForm', name: '舞踏', nameEn: 'WAR DANCE', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'comboMaxBoost', agiRate: .20, offHandRate: .10, rebirthSteps: { agiRate: .05, offHandRate: .025 }, rebirthMax: { agiRate: .40, offHandRate: .20 } }, effectText: '連舞MAX中 AGI+20%／左手追撃倍率+10%', description: '連舞が頂点に達したときだけ完成する双刃士の戦闘舞踏。MISSすれば即座に失われる。' },
 
     // ══ 魔奏士 固有スキル ═════════════════════════════════════
     // アンサンブル：3ターンのあいだ魔奏士パッシブの発動率を引き上げる。
@@ -844,10 +865,10 @@ window.ARSENE_DATA = {
     sforzando:  { id: 'sforzando',  name: 'スフォルツァンド', nameEn: 'SFORZANDO',  source: 'job', jobId: 'magicKnight', type: 'ACTIVE', kind: 'physical', target: 'single', mp: 5, power: 1.5, agiScale: 0, requiresBuff: 'atkUp',  damageType: 'physical', powerText: '攻撃性能×1.5', effectText: '敵単体／《フォルテ》発動中のみ使用可能', description: '強奏の勢いをそのまま刃に乗せる。フォルテが鳴っているあいだだけ放てる渾身の一撃。' },
     fortissimo: { id: 'fortissimo', name: 'フォルティッシモ', nameEn: 'FORTISSIMO', source: 'job', jobId: 'magicKnight', type: 'ACTIVE', kind: 'magical',  target: 'all',    mp: 7, power: 1.0, agiScale: 0, requiresBuff: 'matkUp', damageType: 'magical',  powerText: '魔法攻撃性能×1.0', effectText: '敵全体／《クレッシェンド》発動中のみ使用可能', description: '高まりきった旋律を戦場ぜんぶへ叩きつける。クレッシェンドが鳴っているあいだだけ放てる総奏。' },
     // ── 魔奏士パッシブ（自ターン開始時に抽選で発動）──
-    p_solo:      { id: 'p_solo',      name: 'ソロ',         nameEn: 'SOLO',      type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'doubleAct', requiresWeaponType: 'instrument' }, effectText: '楽器装備時のみ。自ターン開始時に抽選で2ターン2回行動', description: '独奏に入る。楽器を手にしているときだけ、一定確率で一度に二度動けるようになる。' },
+    p_solo:      { id: 'p_solo',      name: 'ソロ',         nameEn: 'SOLO',      type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'doubleAct', requiresWeaponType: 'instrument', chance: .35, rebirthSteps: { chance: .03 }, rebirthMax: { chance: .55 } }, effectText: '楽器装備時のみ。自ターン開始時35%で2ターン2回行動', description: '独奏に入る。楽器を手にしているときだけ、一定確率で一度に二度動けるようになる。' },
     p_forte:     { id: 'p_forte',     name: 'フォルテ',     nameEn: 'FORTE',     type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'atkUp',  rate: .10 }, effectText: '自ターン開始時に抽選。攻撃力+10%／専用技が解放', description: '強奏が刃に乗る。自分のターン開始時、一定確率で攻撃力が上がり、専用技が使えるようになる。' },
     p_crescendo: { id: 'p_crescendo', name: 'クレッシェンド', nameEn: 'CRESCENDO', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'matkUp', rate: .10 }, effectText: '自ターン開始時に抽選。魔法攻撃力+10%', description: '高まりゆく旋律が魔を押し上げる。自分のターン開始時、一定確率で魔法攻撃力が上がる。' },
-    p_nocturne:  { id: 'p_nocturne',  name: 'ノクターン',   nameEn: 'NOCTURNE',  type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'regen' }, effectText: '自ターン開始時30%で発動。3ターン自然回復', description: '夜想曲が傷を癒やす。自分のターン開始時、30%の確率で3ターンの継続回復を得る。' },
+    p_nocturne:  { id: 'p_nocturne',  name: 'ノクターン',   nameEn: 'NOCTURNE',  type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'regen', chance: .30, rebirthSteps: { chance: .03 }, rebirthMax: { chance: .50 } }, effectText: '自ターン開始時30%で発動。3ターン自然回復', description: '夜想曲が傷を癒やす。自分のターン開始時、30%の確率で3ターンの継続回復を得る。' },
     magicCharge: { id: 'magicCharge', name: '魔力装填', nameEn: 'MAGIC CHARGE', source: 'job', jobId: 'magicKnight', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 4, cooldown: 3, powerText: '次の物理攻撃に MAG×0.5 を追加', effect: { type: 'selfMagicCharge' }, effectText: '次に使う物理攻撃・武器技へ魔力依存の追加ダメージ／CT3', description: '刃に魔力を装填する。次の物理攻撃へ魔力分のダメージを上乗せする。' },
 
     // ══ 閃き技（対応する攻撃の使用中に閃く）═══════════════════
@@ -987,7 +1008,7 @@ window.ARSENE_DATA = {
     fireball: { id: 'fireball', name: 'ファイアボール', mp: 5, kind: 'magical', target: 'single', power: 1.4, agiScale: 0, elementId: 'fire' },
     blueNote: { id: 'blueNote', name: 'ブルーノート', nameEn: 'BLUE NOTE', source: 'character', unlockLevel: 1, type: 'ACTIVE', kind: 'hybrid', target: 'single', mp: 5, power: 1, strScale: 1.7, magScale: 1.7, agiScale: 0, powerText: 'ATK×1.7＋MAG×1.7', effectText: '物理攻撃力と魔力の双方を参照', description: '青い魔力を武器へ纏わせて敵を攻撃する。物理攻撃力と魔力の双方を参照してダメージを与える。' },
     blueEcho: { id: 'blueEcho', name: '蒼の残響', nameEn: 'BLUE ECHO', source: 'character', unlockLevel: 3, type: 'PASSIVE', kind: 'passive', target: 'self', mp: 0, powerText: '－', effectText: 'ターン開始時20%でMAG +10%／2ターン。重複せず残り時間を更新', description: '戦いの中で魔力の波長を捉え、自らの魔力を高める。' },
-    meditation: { id: 'meditation', name: '精神集中', nameEn: 'MEDITATION', source: 'character', unlockLevel: 5, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 3, powerText: '最大MPの10%', effect: { type: 'mpRecover', maxMpRate: .10 }, effectText: '最大MPの10%回復／クールタイム3ターン', description: '呼吸を整え、乱れた魔力を収束させる。自身のMPを回復する。' },
+    meditation: { id: 'meditation', name: '精神集中', nameEn: 'MEDITATION', source: 'character', unlockLevel: 5, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 3, powerText: '次の魔法攻撃 ×2.5', effect: { type: 'selfMagCharge', rate: 1.5 }, effectText: '次に使う魔法攻撃の威力+150%／クールタイム3ターン', description: '呼吸を整え、魔力を一点へ収束させる。次に使用する魔法攻撃の威力を2.5倍にする。' },
     powerCharge: { id: 'powerCharge', name: 'ちからため', nameEn: 'POWER CHARGE', source: 'job', jobId: 'warrior', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 3, powerText: '次の物理攻撃 ×3.5', effect: { type: 'selfAtkCharge', rate: 2.5 }, effectText: '次に使う物理攻撃の威力+250%／クールタイム3ターン', description: '全身に力を溜める。次に使用する物理攻撃の威力を大きく高める。' },
     // 武道家の固有技。体術武器技（会心・先制・速度妨害）とは役割を分ける純粋な多段攻撃。
     burstFist: { id: 'burstFist', name: 'ばくれつけん', nameEn: 'BURST FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 1, type: 'ACTIVE', kind: 'physical', target: 'single', randomTarget: true, mp: 6, power: 0.5, hits: 4, agiScale: 0, powerText: 'ATK×0.5×4回', effectText: '生存敵からランダムに4回連続攻撃／各撃で個別クリティカル判定', description: '目にも留まらぬ拳の連打を叩き込む。武道家だけが扱える固有技。' },
@@ -1027,13 +1048,13 @@ window.ARSENE_DATA = {
     battleDance: { id: 'battleDance', name: '戦姫乱舞', nameEn: 'WAR PRINCESS DANCE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 1, type: 'ACTIVE', kind: 'physical', damageType: 'physical', weaponType: 'martial', requiresWeaponSubtype: 'dualBlade', target: 'single', mp: 16, power: .5, hits: 5, hitPowersDual: [.45, .45, .50, .50, .85], hitPowersSingle: [.50, .55, .85], agiScale: 0, powerText: '二刀時 0.45+0.45+0.50+0.50+0.85（計×2.75）', effectText: '各Hit独立命中・会心／片手時3Hit／連舞MAXなら最終Hit×1.5後に連舞0', description: 'ミルティから盗んだ双刃士の象徴技。二刀で真価を発揮し、連舞MAXでは《戦姫乱舞・極》へ変化する。' },
 
     // ── 盾学：防御性能を攻撃へ転換する守護士の武器技 ──
-    shieldBash: { id: 'shieldBash', name: 'シールドバッシュ', nameEn: 'SHIELD BASH', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', mp: 0, kind: 'weapon', damageType: 'physical', target: 'single', power: 1.0, powerText: '盾攻撃性能×1.0', effectText: 'DEF×0.5＋MDEF×0.5を攻撃へ転換', description: '盾の防御性能を乗せて敵を打ち据える基本攻撃。' },
-    guardImpact: { id: 'guardImpact', name: 'ガードインパクト', nameEn: 'GUARD IMPACT', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'shieldBash', requiredWeaponLevel: 3, sparkRate: null, mp: 4, kind: 'physical', damageType: 'physical', target: 'single', power: 1.3, effect: { type: 'selfDefUpAfterHit', rate: .10, turns: 1 }, powerText: '盾攻撃性能×1.3', effectText: '攻撃後DEF +10%／1ターン', description: '衝撃を返し、次の攻撃を受け止める構えへ繋ぐ。' },
-    magicRepulse: { id: 'magicRepulse', name: 'マジックリパルス', nameEn: 'MAGIC REPULSE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'guardImpact', requiredWeaponLevel: 7, sparkRate: null, mp: 7, kind: 'magical', damageType: 'magical', shieldFormula: 'magicRepulse', target: 'single', power: 1.0, powerText: 'MDEF×1.2＋DEF×0.3', effectText: '魔法防御寄りの盾技', description: '魔力を盾面で反転させ、魔法防御性能から衝撃を生む。' },
-    fortress: { id: 'fortress', name: 'フォートレス', nameEn: 'FORTRESS', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'magicRepulse', requiredWeaponLevel: 12, sparkRate: null, mp: 8, kind: 'support', target: 'self', effect: { type: 'fortress', reduction: .30, turns: 1 }, powerText: '被ダメージ -30%', effectText: '1ターン防御。軽減後ダメージはRESONANCEへ蓄積', description: '盾を大地へ固定し、攻撃を真正面から受け止める。' },
-    revengeForce: { id: 'revengeForce', name: 'リベンジ・フォース', nameEn: 'REVENGE FORCE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'fortress', requiredWeaponLevel: 18, sparkRate: null, mp: 12, kind: 'physical', damageType: 'physical', shieldFormula: 'revenge', target: 'single', power: 1.65, powerText: '直前の被弾タイプに応じDEF/MDEF参照', effectText: '物理被弾ならDEF、魔法被弾ならMDEFを強く参照', description: '直前に受けた攻撃の性質を読み、最適な防御性能で打ち返す盾学奥義。' },
-    resonanceBreak: { id: 'resonanceBreak', name: 'RESONANCE BREAK', nameEn: 'RESONANCE BREAK', source: 'job', jobId: 'guardian', unlockJobLevel: 1, type: 'ACTIVE', kind: 'neutral', damageType: 'neutral', target: 'single', mp: 0, power: 1.0, ignoreDef: 1, unavoidable: true, powerText: '現在武器の攻撃性能×共鳴倍率', effectText: '全RESONANCE消費／DEF・MDEF・物理魔法耐性を無視／必中', description: '受けた痛みを共鳴へ変え、現在の武器性能から無属性の一撃を放つ。' },
-    preciousSky: { id: 'preciousSky', name: 'プレシャススカイ', nameEn: 'PRECIOUS SKY', source: 'weapon', type: 'ACTIVE', weaponType: 'instrument', prerequisiteSkill: 'resonantNote', requiredWeaponLevel: 8, sparkRate: .035, guitarTreeId: 'versicrellGuitar', requiredWeaponId: 'parentGiftGuitar', mp: 12, kind: 'magical', damageType: 'magical', element: 'sound', target: 'all', power: 1.65, selfHealRate: .08, powerText: 'DEX参照×1.65（敵全体）', effectText: '敵全体へ音属性攻撃／与ダメージ後に最大HPの8%回復', description: '人として残った最初の音を、青空のような音圧へ変える。リコーダー系とは異なるギター専用武器技。' }
+    shieldStrike: { id: 'shieldStrike', name: '盾撃', nameEn: 'SHIELD STRIKE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', mp: 0, kind: 'weapon', damageType: 'physical', target: 'single', power: 1.0, powerText: '盾攻撃性能×1.0', effectText: 'DEF×0.5＋MDEF×0.5を攻撃へ転換', description: '盾の防御性能を乗せて敵を打ち据える通常攻撃。' },
+    shieldBash: { id: 'shieldBash', name: 'シールドバッシュ', nameEn: 'SHIELD BASH', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'shieldStrike', mp: 3, kind: 'physical', damageType: 'physical', target: 'single', power: .85, effect: { type: 'enemyStun', chance: .55, bossChance: .18, overdriveChance: .08, turns: 1 }, powerText: '盾攻撃性能×0.85', effectText: '低ダメージ／一定確率で1行動スタン（BOSS・OVERDRIVEは低確率）', description: '大きく盾を叩きつけ、敵の動きを止める低難度の閃き技。BOSSにも完全耐性はなく、わずかに通る。' },
+    guardImpact: { id: 'guardImpact', name: 'ガードインパクト', nameEn: 'GUARD IMPACT', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'shieldBash', mp: 4, kind: 'physical', damageType: 'physical', target: 'single', power: 1.3, effect: { type: 'selfDefUpAfterHit', rate: .10, turns: 1 }, powerText: '盾攻撃性能×1.3', effectText: '攻撃後DEF +10%／1ターン', description: '衝撃を返し、次の攻撃を受け止める構えへ繋ぐ。' },
+    magicRepulse: { id: 'magicRepulse', name: 'マジックリパルス', nameEn: 'MAGIC REPULSE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'guardImpact', mp: 7, kind: 'magical', damageType: 'magical', shieldFormula: 'magicRepulse', target: 'single', power: 1.0, powerText: 'MDEF×1.2＋DEF×0.3', effectText: '魔法防御寄りの盾技', description: '魔力を盾面で反転させ、魔法防御性能から衝撃を生む。' },
+    fortress: { id: 'fortress', name: 'フォートレス', nameEn: 'FORTRESS', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'magicRepulse', mp: 8, kind: 'support', target: 'self', effect: { type: 'fortress', reduction: .30, turns: 1 }, powerText: '被ダメージ -30%', effectText: '1ターン防御。軽減後ダメージはRESONANCEへ蓄積', description: '盾を大地へ固定し、攻撃を真正面から受け止める。' },
+    revengeForce: { id: 'revengeForce', name: 'リベンジ・フォース', nameEn: 'REVENGE FORCE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'fortress', mp: 12, kind: 'physical', damageType: 'physical', shieldFormula: 'revenge', target: 'single', power: 1.65, powerText: '直前の被弾タイプに応じDEF/MDEF参照', effectText: '物理被弾ならDEF、魔法被弾ならMDEFを強く参照', description: '直前に受けた攻撃の性質を読み、最適な防御性能で打ち返す盾学奥義。' },
+    resonanceBreak: { id: 'resonanceBreak', name: 'RESONANCE BREAK', nameEn: 'RESONANCE BREAK', remixName: 'RESONANCE', source: 'job', jobId: 'guardian', unlockJobLevel: 1, type: 'ACTIVE', kind: 'neutral', damageType: 'neutral', target: 'single', mp: 0, power: 1.0, ignoreDef: 1, unavoidable: true, powerText: '現在武器の攻撃性能×共鳴倍率', effectText: '全RESONANCE消費／DEF・MDEF・物理魔法耐性を無視／必中', description: '受けた痛みを共鳴へ変え、現在の武器性能から無属性の一撃を放つ。RE:MIXではACTION「RESONANCE」として装備中だけ共鳴が有効。' },    preciousSky: { id: 'preciousSky', name: 'プレシャススカイ', nameEn: 'PRECIOUS SKY', source: 'weapon', type: 'ACTIVE', weaponType: 'instrument', prerequisiteSkill: 'resonantNote', requiredWeaponLevel: 8, sparkRate: .035, guitarTreeId: 'versicrellGuitar', requiredWeaponId: 'parentGiftGuitar', mp: 12, kind: 'magical', damageType: 'magical', element: 'sound', target: 'all', power: 1.65, selfHealRate: .08, powerText: 'DEX参照×1.65（敵全体）', effectText: '敵全体へ音属性攻撃／与ダメージ後に最大HPの8%回復', description: '人として残った最初の音を、青空のような音圧へ変える。リコーダー系とは異なるギター専用武器技。' }
   },
   guitarSkillTrees: {
     versicrellGuitar: { id: 'versicrellGuitar', weaponId: 'parentGiftGuitar', name: 'SILVER CIRCLE GUITAR', skills: ['preciousSky', null, null, null] }
@@ -1960,7 +1981,7 @@ window.ARSENE_DATA = {
     fireStorm: { sparkRank: 8 }, fireLance: { sparkRank: 12 }, inferno: { sparkRank: 24, sparkFrom: { fireStorm: 2, fireLance: .5 } }, meteor: { sparkRank: 42 },
     recorderChoking: { sparkRank: 7 }, guitarGigRecorder: { sparkRank: 15 }, whoseRecorder: { sparkRank: 22 }, cleaningRodStrike: { sparkRank: 40 },
     preciousSky: { sparkRank: 28 },
-    guardImpact: { sparkRank: 7 }, magicRepulse: { sparkRank: 12 }, fortress: { sparkRank: 22 }, revengeForce: { sparkRank: 36 }
+    shieldBash: { sparkRank: 4 }, guardImpact: { sparkRank: 7 }, magicRepulse: { sparkRank: 12 }, fortress: { sparkRank: 22 }, revengeForce: { sparkRank: 36 }
   };
   D.weaponSparkDefinitions = weaponSparkDefinitions;
   Object.entries(weaponSparkDefinitions).forEach(([id, definition]) => {

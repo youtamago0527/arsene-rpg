@@ -17,6 +17,14 @@ assert.match(otherworld, /arseneQOffer\?\.otherworldHTML/, '異世界画面に�
 assert.match(otherworld, /arseneQOffer\?\.bonus\?\.\('otherworld'\)/, '異界干渉回数へ広告ボーナスを加算する');
 assert.match(game, /arseneQOffer\?\.battleHTML/, '戦闘MENUへAUTO×2・一掃を表示する');
 assert.match(offer, /q-battle-offers[\s\S]*AUTO ×2[\s\S]*一掃/, '戦闘MENU用の2操作を同じブロックへ置く');
+assert.match(game, /arseneQOffer\?\.foodHTML/, 'カズのまかないへ広告料理メニューを表示する');
+assert.match(offer, /強昆布ラーメン[\s\S]*海老味噌ラーメン[\s\S]*ホタテ塩バターラーメン[\s\S]*カニ味噌ラーメン/, '広告料理4品を指定順で表示する');
+assert.match(offer, /exp2Uses[\s\S]*gold2Uses/, 'EXP・GOLD広告料理の日次回数を別々に保存する');
+assert.match(game, /rewardExpMultiplier\(\)[\s\S]*isActive\?\.\('exp2'\)/, '強昆布ラーメンを通常ダンジョンEXPへ接続する');
+assert.match(game, /rewardGoldMultiplier\(\)[\s\S]*isActive\?\.\('gold2'\)/, '海老味噌ラーメンを通常ダンジョンGOLDへ接続する');
+assert.match(game, /id: 'ad-effects'[\s\S]*adEffectsHTML/, '拠点設定へ広告効果タブを追加する');
+assert.match(offer, /battleHTML\(\)[\s\S]*adEffectsHTML\(true\)/, '戦闘MENUへ広告効果状況を表示する');
+assert.match(offer, /q-offer-indicator'\)\?\.remove/, '広告効果の固定右上表示を撤去する');
 
 assert.match(game, /showGameOverOrRevive[\s\S]{0,500}showReviveOfferIfAvailable/, '復活オファーはGAME OVER経路から呼ぶ');
 assert.equal((game.match(/show\('revive'/g) || []).length, 1, '復活オファーの直接呼び出しは死亡時の1箇所だけ');
