@@ -90,6 +90,7 @@
   ];
   D.dungeons.push({
     id: 'dungeon4', name: '断月の楼閣', nameEn: 'STACCATO MOON KEEP', background: d4bg[0], thumbnail: d4bg[0], recommendedLevel: 28,
+    music: '音楽系/戦闘用/D4通常戦闘.mp3',
     description: '瞬断の奏刃が支配する月楼。命中・速度・耐久の穴を装備更新で埋めて進む。', unlockCondition: 'dungeon3Clear', bossId: 'astact', midBossId: 'd4MidBoss', midBossAfterFloor: 2,
     floors: [
       floor('d4f1', '残月の回廊', '1F WANING GALLERY', 6, d4bg[0], ['flashSteel'], { hp: 1, atk: 1, mag: 1, def: 1, mnd: 1, spd: 1, rewards: 1 }, [{ id: 'flashHound', weight: 4 }, { id: 'mapleOni', weight: 2 }, { id: 'lanternMask', weight: 2 }, { id: 'toriiFox', weight: 2 }, { id: 'moonEdgeKnight', weight: 2 }]),
