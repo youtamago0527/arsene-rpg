@@ -340,7 +340,7 @@
   });
   Object.assign(D.weapons.seripes_aegis, { defensePower: 54, magicDefensePower: 46, damageType: 'physical', damageStat: 'vit' });
   addWeapon('seripes_blade', {
-    name: '白鉄の反奏剣', nameEn: 'REPRISE IRON SWORD', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3',
+    name: '聖剣グランド・リプライズ', nameEn: 'GRAND REPRISE BLADE', dungeonId: 'dungeon3', catalogDungeon: 'dungeon3',
     weaponType: 'sword', stars: 5, rarity: 'legendary', seriesId: 'seripes', source: 'boss', power: 3.15,
     attackPower: 46, defensePower: 16, magicDefensePower: 10, recommendedJobs: ['warrior'],
     bonuses: { str: 6, vit: 7, maxHp: 12 }, effects: { physicalDamageReductionPercent: .04 },
@@ -382,14 +382,111 @@
 
   Object.assign(D.bossEquipmentSeries.zenacad, { primaryJob: 'magicKnight', recommendedJobs: ['magicKnight', 'mage'], concept: '魔奏士を主軸に、魔導士も扱える器用さ・魔力型シリーズ。' });
 
+  // ══ D4ボス：アスタクト / STACCATO ══════════════════════════
+  // 見切り・カウンター・DEX/AGI がテーマ（§29/§39）。
+  // 新しい「回避率」ステータスは作らず、AGI/DEX を伸ばして
+  // 既存の命中/回避判定の上で avoid させる。
+  D.items.astact_core = { id: 'astact_core', name: '瞬断の奏核', nameEn: 'STACCATO CORE', category: 'material', rarity: 'legendary', bossId: 'astact', description: 'アスタクトの断ち切る一瞬が固着した奏核。' };
+  D.items.staccato_fragment = { id: 'staccato_fragment', name: '断奏の刃片', nameEn: 'STACCATO SHARD', category: 'material', rarity: 'epic', bossId: 'astact', description: '斬撃の残響だけが残った、薄く鋭い刃の欠片。' };
+  for (const id of ['astact_core', 'staccato_fragment']) if (!D.workshop.materialIds.includes(id)) D.workshop.materialIds.push(id);
+
+  const A4 = { dungeonId: 'dungeon4', catalogDungeon: 'dungeon4', stars: 5, rarity: 'legendary', seriesId: 'astact', source: 'boss' };
+  addWeapon('astact_katana', { ...A4, name: '暮月一閃', nameEn: 'STACCATO EDGE', weaponType: 'sword', power: 3.75,
+    attackPower: 401, bonuses: { agi: 16, dex: 14, str: 10 },
+    description: '振り抜いた音だけが遅れて届く打刀。速さそのものを刃にした第四奏卿の得物。' });
+  addWeapon('astact_tekko', { ...A4, name: '瞬影鉄甲', nameEn: 'AFTERIMAGE TEKKO', weaponType: 'martial', power: 3.60,
+    attackPower: 281, bonuses: { agi: 18, dex: 12, str: 8 },
+    description: '拳が像を置き去りにする鉄甲。武道家・双刃士の手数へ噛み合う。' });
+  addArmor('astact_hachigane', { ...A4, name: '宵紅の鉢金', nameEn: 'STACCATO HACHIGANE', slot: 'head', defensePower: 0, magicDefensePower: 172, bonuses: { dex: 12, mnd: 8, maxMp: 22 }, description: '一瞬先を読むための静けさを保つ鉢金。' });
+  addArmor('astact_haori', { ...A4, name: '散華の羽織', nameEn: 'SCATTER HAORI', slot: 'body', defensePower: 220, magicDefensePower: 0, bonuses: { agi: 14, maxHp: 60, dex: 8 }, description: '斬られた紅葉が舞うだけで、身は既にそこに無い。' });
+  addArmor('astact_kote', { ...A4, name: '月影の籠手', nameEn: 'MOONSHADOW KOTE', slot: 'arms', defensePower: 52, magicDefensePower: 0, attackPower: 118, bonuses: { dex: 14, str: 10 }, description: '返す刃の軌道を整える籠手。' });
+  addArmor('astact_tabi', { ...A4, name: '紅葉踏み', nameEn: 'CRIMSON TREAD', slot: 'feet', defensePower: 58, magicDefensePower: 58, bonuses: { agi: 20, dex: 10 }, description: '落葉を鳴らさずに間合いを詰める足袋。' });
+  addArmor('astact_magatama', { ...A4, name: '暮月の勾玉', nameEn: 'DUSKMOON MAGATAMA', slot: 'accessory', defensePower: 0, magicDefensePower: 0, bonuses: { agi: 12, dex: 12, luk: 2 }, description: '欠けた月の形に削られた勾玉。見切りの呼吸を整える。' });
+
+  const astactRecipes = {
+    astact_katana_recipe:   ['astact_katana',   4200, [['astact_core', 2], ['staccato_fragment', 10], ['moonEdgeOre', 12]]],
+    astact_tekko_recipe:    ['astact_tekko',    4000, [['astact_core', 2], ['staccato_fragment', 10], ['flashSteel', 12]]],
+    astact_hachigane_recipe:['astact_hachigane',3000, [['astact_core', 1], ['staccato_fragment', 7],  ['moonEdgeOre', 8]]],
+    astact_haori_recipe:    ['astact_haori',    3800, [['astact_core', 2], ['staccato_fragment', 9],  ['flashSteel', 10]]],
+    astact_kote_recipe:     ['astact_kote',     3200, [['astact_core', 1], ['staccato_fragment', 8],  ['flashSteel', 8]]],
+    astact_tabi_recipe:     ['astact_tabi',     3000, [['astact_core', 1], ['staccato_fragment', 7],  ['moonEdgeOre', 7]]],
+    astact_magatama_recipe: ['astact_magatama', 3400, [['astact_core', 2], ['staccato_fragment', 8],  ['moonEdgeOre', 9]]]
+  };
+  Object.entries(astactRecipes).forEach(([id, [resultItemId, gold, mats]]) => addRecipe(id, { seriesId: 'astact', craftCategory: 'boss', dungeonId: 'dungeon4', resultItemId, gold, materials: mats.map(([itemId, count]) => ({ itemId, count })) }));
+
+  D.bossEquipmentSeries.astact = {
+    id: 'astact', name: 'STACCATO SERIES', nameJa: 'アスタクトシリーズ', stars: 5,
+    unlockCondition: { bossDefeated: 'astact' },
+    equipment: ['astact_katana', 'astact_tekko', 'astact_hachigane', 'astact_haori', 'astact_kote', 'astact_tabi', 'astact_magatama'],
+    recipes: Object.keys(astactRecipes),
+    dismantle: { materialId: 'staccato_fragment', count: 3 },
+    primaryJob: null, recommendedJobs: ['dualBlade', 'martialArtist', 'warrior'],
+    concept: '見切りと反撃。AGI/DEXを伸ばして既存の命中判定の上で避け、外させた隙を斬り返す。',
+    setBonuses: {
+      2: { id: 'sight', name: 'SIGHT', description: '器用さ +5%', effect: { dexPercent: 5 } },
+      4: { id: 'afterimage', name: 'AFTERIMAGE', description: '素早さ +5%', effect: { agiPercent: 5 } },
+      7: { id: 'staccato', name: 'STACCATO', description: '回避に成功したとき25%で反撃', effect: { evadeCounterChance: .25 } }
+    }
+  };
+  const astactEnemy = D.enemies.astact;
+  if (astactEnemy) for (const id of ['astact_core', 'staccato_fragment']) if (!astactEnemy.dropTable.some(d => d.itemId === id)) astactEnemy.dropTable.push({ itemId: id, chance: 1 });
+
+  // ══ ★5の正規化 ════════════════════════════════════════════
+  // ★5 = そのDungeonの★3 × 3.71（★3+5 ×1.10 ×1.75 ×1.10 の帰結）。
+  // 手書きの旧値のままだとD1〜D3の★5が新しい★3/★4に追い抜かれるため、
+  // シリーズ単位で「最大の攻撃力」を目標値へ合わせ、同じ倍率を
+  // そのシリーズの全装備の攻撃・防御へ掛けて相対関係を保つ。
+  // ★3 × 3.90。★4+6（★3×3.67）をわずかに上回る位置に置き、
+  // 「+6まで鍛えても★5がまだ上、でも集めるのは大変」という拮抗を作る。
+  const star5Attack = { dungeon1: 47, dungeon2: 70, dungeon3: 140, dungeon4: 421 };
+  // ★5防具の予算（def+mdef）。そのDungeonの★3仕上げ品 × 3.90。
+  // ゼナカド・ミルティの防具は元々 bonuses しか持たず防御力が0で、
+  // D3/D4の★5と比較すらできなかったため、ここで部位別に配分する。
+  const star5ArmorBudget = { dungeon1: 43, dungeon2: 90, dungeon3: 179, dungeon4: 538 };
+  // 配分は★3工房と同じ役割分担（盾＝物理、頭＝魔防、体＝物理、腕・足＝薄め、アクセ＝0）。
+  const star5SlotSplit = {
+    leftHand: [.85, .20], head: [0, .65], body: [.85, 0],
+    arms: [.20, 0], feet: [.20, .20], accessory: [0, 0]
+  };
+  const seriesDungeon = { zenacad: 'dungeon1', myrthi: 'dungeon2', seripes: 'dungeon3', astact: 'dungeon4' };
+  const powerKeys = ['attackPower', 'magicAttackPower', 'defensePower', 'magicDefensePower'];
+  const gearOf = id => D.weapons[id] || D.armors?.[id] || D.accessories?.[id] || D.equipment?.[id];
+  for (const [seriesId, dungeonId] of Object.entries(seriesDungeon)) {
+    const series = D.bossEquipmentSeries[seriesId]; if (!series) continue;
+    const gears = (series.equipment || []).map(gearOf).filter(Boolean);
+    // 基準は「そのシリーズで最も攻撃力の高い武器」。剣なら等倍、爪なら0.70で読み替える。
+    let best = 0;
+    for (const gear of gears) {
+      const raw = Math.max(gear.attackPower || 0, gear.magicAttackPower || 0);
+      if (!raw) continue;
+      const rate = weaponAttackRate[gear.weaponType] ?? 1;
+      best = Math.max(best, raw / rate);
+    }
+    if (best) {
+      const factor = (star5Attack[dungeonId] || best) / best;
+      if (Math.abs(factor - 1) >= 0.01)
+        for (const gear of gears) for (const key of powerKeys) if (gear[key]) gear[key] = Math.max(1, Math.round(gear[key] * factor));
+    }
+    // 防具は部位ごとに予算を配り直す。武器（weaponType持ち）には触れない。
+    const budget = star5ArmorBudget[dungeonId];
+    if (!budget) continue;
+    for (const gear of gears) {
+      if (gear.weaponType) continue;
+      const split = star5SlotSplit[gear.slot]; if (!split) continue;
+      gear.defensePower = Math.round(budget * split[0]);
+      gear.magicDefensePower = Math.round(budget * split[1]);
+    }
+  }
+
   // すべてのボス装備を★5として統一する。
   Object.values(D.bossEquipmentSeries || {}).forEach(series => (series.equipment || []).forEach(id => {
-    if (D.items[id]) Object.assign(D.items[id], { stars: 5, rarity: 'legendary', source: 'boss', catalogDungeon: D.items[id].catalogDungeon || (series.id === 'zenacad' ? 'dungeon1' : series.id === 'myrthi' ? 'dungeon2' : 'dungeon3') });
+    if (D.items[id]) Object.assign(D.items[id], { stars: 5, rarity: 'legendary', source: 'boss', catalogDungeon: D.items[id].catalogDungeon || seriesDungeon[series.id] || 'dungeon3' });
   }));
 
   D.equipmentBalanceTargets = {
-    dungeon1: { targetMinutes: '25〜40', craftStars: [2], dropStars: [4], bossStars: [5] },
-    dungeon2: { targetMinutes: '120〜180', craftStars: [2, 3], dropStars: [4], bossStars: [5] },
-    dungeon3: { targetMinutes: '360〜480', craftStars: [3], dropStars: [4], bossStars: [5] }
+    dungeon1: { targetMinutes: '25〜40', craftStars: [3], dropStars: [4], bossStars: [5] },
+    dungeon2: { targetMinutes: '120〜180', craftStars: [3], dropStars: [4], bossStars: [5] },
+    dungeon3: { targetMinutes: '360〜480', craftStars: [3], dropStars: [4], bossStars: [5] },
+    dungeon4: { targetMinutes: '600〜900', craftStars: [3], dropStars: [4], bossStars: [5] }
   };
 })();
