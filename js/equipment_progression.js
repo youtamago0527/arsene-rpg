@@ -265,7 +265,9 @@
         const rated = Math.round(base * (weaponAttackRate[wt] ?? 1) * (isTwin ? .92 : 1));
         addWeapon(id, {
           ...common, weaponType: wt,
-          ...(isTwin ? { slot: 'leftHand', offHandOnly: true, weaponSubtype: 'dualBlade' } : {}),
+          // 双刃は左右を区別しない。slot は rightHand のままにして、
+          // 左手へは isLeftHandItemAllowed() が双刃かどうかで判定する。
+          ...(isTwin ? { weaponSubtype: 'dualBlade' } : {}),
           attackPower: ['sword', 'martial'].includes(wt) ? rated : 0,
           magicAttackPower: ['staff', 'instrument'].includes(wt) ? rated : 0, power: 2.7 + rank * .2
         });
@@ -322,7 +324,7 @@
   Object.assign(D.weapons.myrthi_blade, { name: '黒紅双刃・赫牙', nameEn: 'CRIMSON FANG', attackPower: 48, bonuses: { str: 9, agi: 8 } });
   addWeapon('myrthi_blade_noctis', {
     name: '黒紅双刃・影牙', nameEn: 'SHADOW FANG', dungeonId: 'dungeon2', catalogDungeon: 'dungeon2',
-    slot: 'leftHand', weaponType: 'martial', weaponSubtype: 'dualBlade', offHandOnly: true, stars: 5, rarity: 'legendary', seriesId: 'myrthi', source: 'boss',
+    weaponType: 'martial', weaponSubtype: 'dualBlade', stars: 5, rarity: 'legendary', seriesId: 'myrthi', source: 'boss',
     attackPower: 45, power: 3.05, bonuses: { str: 7, agi: 10 },
     description: '赫牙と対を成す左の黒刃。双刃士が左手へ装備した時、黒紅の軌跡が完成する。'
   });
