@@ -172,11 +172,6 @@ window.ARSENE_DATA = {
     rebirthStatRetentionRate: 0.20,
     // 転生1回につき、次のLvアップで得られるJOB成長量を10%増やす。
     rebirthGrowthPerCycle: 0.10,
-    // JOB成長テーブルの critBonus だけに掛ける圧縮率。
-    // 会心率は「率」なので、力や素早さと同じ量で積むと天井へ一瞬で張り付く。
-    // 双刃士がLv20・転生0で約30%（DQ3武闘家のLv77相当）から始まり、
-    // 転生5回で上限40%へ届く曲線になる値。テーブル自体は変更していない。
-    jobGrowthCritBonusScale: 0.35,
     // キャラクター固有特性 "small" が何倍になるか（characters.json 側は記号のみ保持）
     traitBonusScale: { small: { weaponExp: 1.2, spark: 1.5, mpGrowth: 1.3, heal: 1.3, critical: 0.03 } },
 
@@ -258,14 +253,22 @@ window.ARSENE_DATA = {
   enchantTable: { successRates: [1.00, 1.00, 1.00, 0.97, 0.93, 0.88, 0.82, 0.75, 0.66, 0.55], goldCosts: [100, 200, 300, 500, 700, 1000, 1400, 1800, 2500, 3500], maxLevel: 10, powerRate: 0.15 },
   combatBalance: {
     playerVariance: { min: -2, max: 2 },
-    // max は「LUKだけで到達できる上限」。会心率ボーナスを持つと持ち上がる仕様のため、
-    // 実質の天井として hardMax を別に置く。ここだけは何を積んでも超えられない。
+    // 会心率はLUK一本で伸ばす。JOB成長で「率」を配ると、率どうしが複利で
+    // 噛み合って一瞬で天井へ張り付くため、レベルアップはLUKだけを上げる。
+    // 装備の会心率だけが率としてこの上に乗る。
     //
-    // 基準はドラクエ。DQ3の武闘家とDQ4のアリーナはどちらも会心率 Lv/256 で、
-    // 一般キャラは 1/64 = 6.25%（うちの base .06 とほぼ同じ）。
-    // 会心特化の天井は DQ4アリーナが 1/4 = 25%固定、DQ3武闘家がLv99で38.6%。
-    // hardMax .40 はその上端に合わせた値。
-    critical: { base: .06, luckRate: .008, max: .28, hardMax: .40, multiplier: 1.65 },
+    // luckRate .0022 は「LUK 400 で約94%」から逆算した値。
+    // LUKはLv21以降の2倍帯と転生倍率(+10%/回)で伸び続け、
+    // 武道家 Lv40・転生50 で LUK 386（＝約91%）が実測の到達点。
+    // やり込み切ってようやく hardMax .95 へ届く配分になっている。
+    //
+    // 参考：DQ3武闘家とDQ4アリーナはどちらも Lv/256、一般キャラは 1/64 = 6.25%
+    // （base .06 とほぼ同じ）。特化の天井はアリーナ25%固定、武闘家Lv99で38.6%。
+    // うちはやり込みRPGなので、その先を長い時間で登らせる形にしている。
+    //
+    // max は旧「LUKだけで到達できる上限」。上限撤廃にともない廃止した。
+    // hardMax .95 だけが天井で、100%にはしない（必ず会心は作らない）。
+    critical: { base: .06, luckRate: .0022, hardMax: .95, multiplier: 1.65 },
     // 共通コマンド《防御》は物理・魔法を問わず、そのラウンドの最終被ダメージを半減する。
     guardReduction: .50,
     // 敵→プレイヤーのダメージは比率型：atk × attackScale × defenseK/(defenseK+防御)
@@ -368,7 +371,10 @@ window.ARSENE_DATA = {
       // JOB特性ではなくPASSIVEへ分離したため、PHANTOM THIEFも枠を使えば二刀を再現できる。
       traits: {},
       unlockCondition: { bossDefeated: 'myrthi' },
-      growth: { 1: { str: 3, agi: 2 }, 2: { critBonus: .02 }, 3: { str: 3, agi: 2 }, 4: { critBonus: .02 }, 5: { str: 4, agi: 3 }, 6: { critBonus: .03 }, 7: { str: 3, agi: 3 }, 8: { critBonus: .03 }, 9: { str: 4, agi: 3 }, 10: { critBonus: .05, str: 5, agi: 3 }, 11: { str: 4, agi: 3 }, 12: { critBonus: .03, str: 4 }, 13: { agi: 4, str: 3 }, 14: { critBonus: .03, agi: 4 }, 15: { str: 5, agi: 5 }, 16: { critBonus: .04 }, 17: { str: 5, agi: 4 }, 18: { critBonus: .04, str: 4 }, 19: { str: 6, agi: 5 }, 20: { critBonus: .08, str: 7, agi: 6, maxHp: 15 } },
+      // 会心率(critBonus)を直接配っていた枠はLUKへ置換した。率を配ると
+      // 転生倍率と20%保持が複利で乗って天井に張り付くため、会心はLUK経由で伸ばす。
+      // 旧 critBonus の値をそのまま100倍したLUKを入れてあり、伸びの形は変えていない。
+      growth: { 1: { str: 3, agi: 2 }, 2: { luk: 2 }, 3: { str: 3, agi: 2 }, 4: { luk: 2 }, 5: { str: 4, agi: 3 }, 6: { luk: 3 }, 7: { str: 3, agi: 3 }, 8: { luk: 3 }, 9: { str: 4, agi: 3 }, 10: { luk: 5, str: 5, agi: 3 }, 11: { str: 4, agi: 3 }, 12: { luk: 3, str: 4 }, 13: { agi: 4, str: 3 }, 14: { luk: 3, agi: 4 }, 15: { str: 5, agi: 5 }, 16: { luk: 4 }, 17: { str: 5, agi: 4 }, 18: { luk: 4, str: 4 }, 19: { str: 6, agi: 5 }, 20: { luk: 8, str: 7, agi: 6, maxHp: 15 } },
       growthStats: ['str', 'agi'], featureText: '命中するたび《連舞》が高まり、二刀追撃と会心で一気に加速する。防御・魔防・自己回復は低い。',
       skillUnlocks: {}
     }

@@ -478,14 +478,13 @@
             for (const [k, v] of Object.entries(profile.jobGrowthGained[jobId])) record[k] = Math.max(Number(record[k]) || 0, v);
           }
         }
-        // 上の復元は jobGrowthCritBonusScale 導入前の値なので、同じ圧縮率へそろえ直す。
-        if (!profile.flags.legacyRebirthCritRescaled) {
-          profile.flags.legacyRebirthCritRescaled = true;
-          const scale = this.gb().jobGrowthCritBonusScale ?? 1;
-          if (scale !== 1) for (const jobId of this.gb().phantomLegacyGrowthJobs || []) {
-            for (const table of [profile.jobGrowthGained?.[jobId], profile.phantomGrowthRecords?.[jobId]]) {
-              if (table?.critBonus) table.critBonus = Number((table.critBonus * scale).toFixed(4));
-            }
+        // 会心率をJOB成長テーブルからLUKへ移したため、旧セーブに率として
+        // 溜まっている critBonus を取り除く。残すと新旧が二重に乗ってしまう。
+        // 装備由来の会心率は equipmentBonuses() 側なので、ここでは触れない。
+        if (!profile.flags.jobCritBonusMovedToLuk) {
+          profile.flags.jobCritBonusMovedToLuk = true;
+          for (const table of [...Object.values(profile.jobGrowthGained || {}), ...Object.values(profile.phantomGrowthRecords || {})]) {
+            if (table && typeof table === 'object') delete table.critBonus;
           }
         }
         // v16：武器学を行動EXP＋無制限Lv、閃きをRank/敵Spark Lv方式へ移行。
@@ -759,14 +758,14 @@
     }
     criticalChanceFor(skill, stats = this.player?.stats || this.totalStats()) {
       if (skill?.kind === 'neutral' || skill?.damageType === 'neutral') return 0;
-      const c = D.combatBalance?.critical || { base: .06, luckRate: .008, max: .28 };
+      const c = D.combatBalance?.critical || { base: .06, luckRate: .0022, hardMax: .95 };
       const comboPassive = this.activePassiveByType('comboDance'), comboCrit = this.comboDanceStacks() >= this.comboDanceMax() ? this.passiveValue(comboPassive, 'maxCriticalBonus') : 0;
       const extra = (Number(skill?.criticalModifier) || 0) + this.traitCriticalBonus() + this.equipmentEffectRate('criticalRateBonus') + comboCrit;
       const statBonus = Number(stats?.critBonus) || 0;
-      // c.max は statBonus/extra ぶん持ち上がるため、それ自体は天井にならない。
-      // hardMax だけが実際の天井で、装備・JOB成長・パッシブを何積んでも超えない。
-      const rate = clamp(c.base + (Number(stats?.luk) || 0) * c.luckRate + statBonus + extra, c.base, c.max + statBonus + extra);
-      return Math.min(c.hardMax ?? 1, rate);
+      // LUKで伸ばし、装備の会心率だけが率として上に乗る。
+      // 上限は hardMax の一段だけ。100%にはしないので、必ず会心にはならない。
+      const rate = c.base + (Number(stats?.luk) || 0) * c.luckRate + statBonus + extra;
+      return clamp(rate, c.base, c.hardMax ?? 1);
     }
     rollAttackOutcome(attackerStats, defenderStats, options = {}) {
       const skill = options.skill || {};
@@ -1528,11 +1527,6 @@
         const scale = direct ? 1 : 2;
         Object.entries(entry || {}).forEach(([key, value]) => bonuses[key] = (bonuses[key] || 0) + value * scale);
       }
-      // 会心率だけは「率」なので、力や素早さと同じ量で積むと天井へ張り付いてしまう。
-      // テーブルは触らず、ここで圧縮率を掛ける。
-      // doRebirth() はこの結果を jobGrowthGained へ畳み込むので、
-      // 保持ぶんも圧縮後の値になり、二重に掛かることはない。
-      if (bonuses.critBonus) bonuses.critBonus *= this.gb().jobGrowthCritBonusScale ?? 1;
       const mult = this.rebirthGrowthMultiplier(jobId);
       for (const key of Object.keys(bonuses)) bonuses[key] = key === 'critBonus'
         ? Number((bonuses[key] * mult).toFixed(4))
