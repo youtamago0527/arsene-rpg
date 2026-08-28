@@ -443,6 +443,41 @@
         if (!saved.phantomGrowthRecords) {
           for (const id of profile.jobMastered || []) profile.phantomGrowthRecords[id] = { ...(profile.jobGrowthGained?.[id] || {}) };
         }
+        // 旧growthテーブル方式のJOB（双刃士）の、過去の転生ぶんの20%保持を遡って復元する。
+        //
+        // このJOBの補正は activeJobBonuses() が JOB Lvから毎回導出していたため、
+        // 転生でLvを1へ戻した時点で補正が丸ごと消え、保持率が実質0%になっていた。
+        // 転生はJOB Lvが上限に達していないと実行できないので、
+        // 「上限Lvでの補正 → 20%保持」を転生回数ぶん積み上げれば当時の値を再現できる。
+        // 当時の上限は20（40解放は後の実装）なので、旧テーブルが値を持つLv20を基準にする。
+        if (!profile.flags.legacyRebirthRetentionRestored) {
+          profile.flags.legacyRebirthRetentionRestored = true;
+          const retention = Math.max(0, Math.min(1, this.gb().rebirthStatRetentionRate ?? .20));
+          const perCycle = this.gb().rebirthGrowthPerCycle ?? .10;
+          for (const jobId of this.gb().phantomLegacyGrowthJobs || []) {
+            const cycles = Number(profile.jobRebirths?.[jobId]) || 0;
+            const table = D.jobs[jobId]?.growth; if (!cycles || !table) continue;
+            const atCap = {};
+            for (let lv = 1; lv <= 20; lv++) Object.entries(table[lv] || {}).forEach(([k, v]) => atCap[k] = (atCap[k] || 0) + v);
+            const carried = {};
+            for (let i = 0; i < cycles; i++) {
+              const mult = 1 + i * perCycle;
+              for (const [k, v] of Object.entries(atCap)) {
+                const total = (carried[k] || 0) + v * mult;
+                carried[k] = k === 'critBonus' ? Number((total * retention).toFixed(4)) : Math.floor(total * retention);
+              }
+            }
+            profile.jobGrowthGained[jobId] ||= {};
+            for (const [k, v] of Object.entries(carried)) {
+              if (!v) continue;
+              const cur = Number(profile.jobGrowthGained[jobId][k]) || 0;
+              profile.jobGrowthGained[jobId][k] = k === 'critBonus' ? Number((cur + v).toFixed(4)) : cur + v;
+            }
+            // PHANTOM THIEFの盗奪済み最高値にも同じ復元を反映する。
+            const record = profile.phantomGrowthRecords[jobId] ||= {};
+            for (const [k, v] of Object.entries(profile.jobGrowthGained[jobId])) record[k] = Math.max(Number(record[k]) || 0, v);
+          }
+        }
         // v16：武器学を行動EXP＋無制限Lv、閃きをRank/敵Spark Lv方式へ移行。
         // 旧Lv/EXP/習得技はそのまま保持し、破壊的な再計算は行わない。
         profile.version = 19;
