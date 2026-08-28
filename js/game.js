@@ -1537,6 +1537,23 @@
     freshBattlePlayer(stats, hp, mp) { this.usedMpThisBattle = false; return { stats, hp, mp, inventory: this.profile.inventory, buffs: {}, cooldowns: {}, skillUses: {}, resonance: 0, lastReceivedType: null }; }
     persistVitals() { if (!this.player) return; this.profile.currentVitals = { hp: clamp(this.player.hp, 0, this.player.stats.maxHp), mp: clamp(this.player.mp, 0, this.player.stats.maxMp) }; this.saveProfile(); }
     expNeeded(level = this.profile.level) { return D.expTable[level] || Math.round(220 * Math.pow(1.48, level - 3)); }
+    // 強化に上限は無い。表(+10まで)を超えた分は data.js の係数で外挿する。
+    // 表の範囲外で undefined を返すと Math.random() < undefined が常に false になり
+    // 「必ず失敗＝必ず破壊」になってしまうため、必ず数値を返す。
+    enchantSuccessRate(level) {
+      const et = D.enchantTable || {}, table = et.successRates || [];
+      if (level < table.length) return table[level];
+      const last = table[table.length - 1] ?? 0.55;
+      const steps = level - (table.length - 1);
+      return Math.max(et.successFloor ?? 0.05, last * Math.pow(et.successFalloff ?? 0.92, steps));
+    }
+    enchantGoldCost(level) {
+      const et = D.enchantTable || {}, table = et.goldCosts || [];
+      if (level < table.length) return table[level];
+      const last = table[table.length - 1] ?? 3500;
+      const steps = level - (table.length - 1);
+      return Math.round(last * Math.pow(et.goldGrowth ?? 1.4, steps));
+    }
     equipmentDefinition(id) { return D.weapons[id] || D.accessories[id] || D.armors?.[id] || D.equipment?.[id] || null; }
     equipmentBonuses(equipment = this.profile.equipment) {
       const result = {}; const add = (source, rate = 1) => Object.entries(source?.bonuses || {}).forEach(([k, v]) => {
@@ -4070,8 +4087,7 @@
       const cardFor = w => {
         const level = enchants[w.id] || 0, isEquipped = this.profile.equipment.rightHand === w.id;
         const invCount = this.profile.inventory[w.id] || 0, hasSpare = invCount >= 2;
-        if (level >= et.maxLevel) return `<article class="enchant-card max"><b>${w.name}</b><span>+${level} MAX</span><small>最大強化達成</small></article>`;
-        const nextLevel = level + 1, rate = et.successRates[level], cost = et.goldCosts[level], rateText = `${Math.round(rate * 100)}%`, canAfford = this.profile.gold >= cost;
+        const nextLevel = level + 1, rate = this.enchantSuccessRate(level), cost = this.enchantGoldCost(level), rateText = `${Math.round(rate * 100)}%`, canAfford = this.profile.gold >= cost;
         const canEnchant = hasSpare && canAfford;
         const spareText = isEquipped ? `所持 ×${invCount}（うち1個装備中） / 予備 ${Math.max(0, invCount - 1)}` : `所持 ×${invCount}`;
         return `<article class="enchant-card${level > 0 ? ' enhanced' : ''}"><div class="enchant-card-header"><b>${w.name}</b><strong>+${level} → +${nextLevel}</strong></div>${this.enchantGainHTML(w, level)}<div class="enchant-card-body"><span>成功率 <b>${rateText}</b></span><span>費用 <b>${cost} GOLD</b></span><small class="enchant-owned-count">${spareText}</small>${!hasSpare ? '<small class="enchant-warn">同じ武器が追加で必要</small>' : ''}${!canAfford ? '<small class="enchant-warn">GOLD不足</small>' : ''}</div><button data-enchant="${w.id}" ${canEnchant ? '' : 'disabled'}>強化する</button></article>`;
@@ -4122,13 +4138,12 @@
     enchantWeapon(weaponId, anchorTop = null) {
       const w = D.weapons[weaponId]; if (!w) return;
       const enchants = this.profile.weaponEnchants || {}, level = enchants[weaponId] || 0, et = D.enchantTable;
-      if (level >= et.maxLevel) return;
       const equippedSlots = Object.keys(this.profile.equipment).filter(slot => this.profile.equipment[slot] === weaponId);
-      const isEquipped = equippedSlots.length > 0, invCount = this.profile.inventory[weaponId] || 0, hasSpare = invCount >= 2, cost = et.goldCosts[level];
+      const isEquipped = equippedSlots.length > 0, invCount = this.profile.inventory[weaponId] || 0, hasSpare = invCount >= 2, cost = this.enchantGoldCost(level);
       if (!hasSpare || this.profile.gold < cost) return;
       this.profile.gold -= cost;
       this.profile.inventory[weaponId] = (this.profile.inventory[weaponId] || 0) - 1;
-      const success = Math.random() < et.successRates[level];
+      const success = Math.random() < this.enchantSuccessRate(level);
       if (success) {
         this.profile.weaponEnchants[weaponId] = level + 1;
         this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-enchant', weaponId, anchorTop);
@@ -4428,8 +4443,7 @@
         const id = item.id, level = enchants[id] || 0;
         const isEquipped = Object.values(this.profile.equipment).includes(id);
         const invCount = this.profile.inventory[id] || 0, hasSpare = invCount >= 2;
-        if (level >= et.maxLevel) return `<article class="enchant-card max"><b>${item.name}</b><span>+${level} MAX</span><small>最大強化達成</small></article>`;
-        const nextLevel = level + 1, rate = et.successRates[level], cost = et.goldCosts[level], rateText = `${Math.round(rate * 100)}%`, canAfford = this.profile.gold >= cost;
+        const nextLevel = level + 1, rate = this.enchantSuccessRate(level), cost = this.enchantGoldCost(level), rateText = `${Math.round(rate * 100)}%`, canAfford = this.profile.gold >= cost;
         const canEnchant = hasSpare && canAfford;
         const spareText = isEquipped ? `所持 ×${invCount}（うち1個装備中） / 予備 ${Math.max(0, invCount - 1)}` : `所持 ×${invCount}`;
         const stats = this.equipmentDefinition(id) || item;
@@ -4444,13 +4458,12 @@
     enchantArmor(itemId, anchorTop = null) {
       const item = D.items[itemId]; if (!item) return;
       const enchants = this.profile.armorEnchants || {}, level = enchants[itemId] || 0, et = D.enchantTable;
-      if (level >= et.maxLevel) return;
       const equippedSlots = Object.keys(this.profile.equipment).filter(slot => this.profile.equipment[slot] === itemId);
-      const isEquipped = equippedSlots.length > 0, invCount = this.profile.inventory[itemId] || 0, hasSpare = invCount >= 2, cost = et.goldCosts[level];
+      const isEquipped = equippedSlots.length > 0, invCount = this.profile.inventory[itemId] || 0, hasSpare = invCount >= 2, cost = this.enchantGoldCost(level);
       if (!hasSpare || this.profile.gold < cost) return;
       this.profile.gold -= cost;
       this.profile.inventory[itemId] = (this.profile.inventory[itemId] || 0) - 1;
-      const success = Math.random() < et.successRates[level];
+      const success = Math.random() < this.enchantSuccessRate(level);
       if (success) {
         this.profile.armorEnchants[itemId] = level + 1;
         this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-armor-enchant', itemId, anchorTop);

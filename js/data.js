@@ -257,7 +257,20 @@ window.ARSENE_DATA = {
   // 強化は「その装備自身の戦闘値・能力補正・特殊効果」を割合で伸ばす（+1ごとに powerRate）。
   //   弱い装備を強化しても強い装備を追い越さないのが狙い。
   //   旧 statBonus（基礎能力+5/Lv）は廃止。基礎能力はJOBとキャラだけが伸ばす。
-  enchantTable: { successRates: [1.00, 1.00, 1.00, 0.97, 0.93, 0.88, 0.82, 0.75, 0.66, 0.55], goldCosts: [100, 200, 300, 500, 700, 1000, 1400, 1800, 2500, 3500], maxLevel: 10, powerRate: 0.15 },
+  // 強化に上限は無い。失敗すると装備そのものが壊れるので、
+  // 「どこで止めるか」をプレイヤーが決めるギャンブルとして機能させる。
+  //
+  // successRates / goldCosts は +10 までの手作り値。それ以降は
+  // successFalloff / goldGrowth で外挿する（表の外に出た瞬間に
+  // undefined となり必ず破壊される事故を防ぐため、必ず両方を用意する）。
+  //   成功率  = 表の最終値 × successFalloff^(Lv-表の最終index)   下限 successFloor
+  //   費用    = 表の最終値 × goldGrowth^(Lv-表の最終index)
+  enchantTable: {
+    successRates: [1.00, 1.00, 1.00, 0.97, 0.93, 0.88, 0.82, 0.75, 0.66, 0.55],
+    goldCosts: [100, 200, 300, 500, 700, 1000, 1400, 1800, 2500, 3500],
+    successFalloff: 0.92, successFloor: 0.05, goldGrowth: 1.40,
+    powerRate: 0.15
+  },
   combatBalance: {
     playerVariance: { min: -2, max: 2 },
     // 会心率はLUK一本で伸ばす。JOB成長で「率」を配ると、率どうしが複利で
