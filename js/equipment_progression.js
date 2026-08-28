@@ -216,7 +216,10 @@
   const suffixes = {
     sword: ['怪異剣', 'MONSTER BLADE'], staff: ['秘杖', 'ARCANE RELIC'], martial: ['魔装拳', 'FIEND FIST'],
     instrument: ['禁奏器', 'FORBIDDEN SCORE'], head: ['異貌', 'FIEND VISAGE'], body: ['怪装', 'MONSTER GARB'],
-    arms: ['魔骸手', 'FIEND ARMS'], feet: ['夜渡靴', 'NIGHTWALKER'], accessory: ['怪異核', 'MONSTER CORE']
+    arms: ['魔骸手', 'FIEND ARMS'], feet: ['夜渡靴', 'NIGHTWALKER'], accessory: ['怪異核', 'MONSTER CORE'],
+    // 左手枠。盾は全JOBが左手へ、守護士・ファントムシーフは右手へも構えられる。
+    // 双牙は offHandOnly の双刃で、《二刀の型》を持つ双刃士だけが左手に持てる。
+    shield: ['怪盾', 'MONSTER AEGIS'], dualBlade: ['双牙', 'FIEND TWINFANG']
   };
   const monsterGearByDungeon = { dungeon1: [], dungeon2: [], dungeon3: [], dungeon4: [] };
   const normalEnemies = Object.values(D.enemies || {}).filter(e => ['dungeon1', 'dungeon2', 'dungeon3', 'dungeon4'].includes(e.dungeonId || (() => {
@@ -226,7 +229,7 @@
     }
     return null;
   })()) && e.kind !== 'boss' && !['zenakado', 'myrthi', 'noelFirstEncounter', 'astact', 'd4MidBoss'].includes(e.id));
-  const typeCycle = ['sword', 'staff', 'martial', 'head', 'body', 'arms', 'feet', 'accessory', 'instrument'];
+  const typeCycle = ['sword', 'staff', 'martial', 'head', 'body', 'arms', 'feet', 'accessory', 'instrument', 'shield', 'dualBlade'];
   // ★4の基礎DROP率（§4）。図鑑称号などの倍率は rollDrops() 側でこの値へ乗算される。
   const dungeonChance = { dungeon1: .010, dungeon2: .010, dungeon3: .009, dungeon4: .008 };
   const dungeonRank = { dungeon1: 1, dungeon2: 2, dungeon3: 3, dungeon4: 4 };
@@ -243,11 +246,12 @@
       const existing = D.items[id];
       if (existing?.slot && existing.slot !== 'rightHand') kind = existing.slot;
       else if (D.weapons[id]) kind = D.weapons[id].weaponType;
-      const weaponKind = ['sword', 'staff', 'martial', 'instrument'].includes(kind);
+      const weaponKind = ['sword', 'staff', 'martial', 'instrument', 'dualBlade'].includes(kind);
       const [prefix, enPrefix] = suffixes[kind], displayName = existing?.name || `${prefix}《${enemy.name}》`;
       const rank = dungeonRank[dungeonId], bonusValue = 2 + rank * 2;
       const bonuses = weaponKind
         ? (kind === 'staff' ? { mag: bonusValue, dex: Math.max(2, bonusValue - 2) } : kind === 'instrument' ? { dex: bonusValue, mag: Math.max(2, bonusValue - 2) } : kind === 'martial' ? { agi: bonusValue, str: Math.max(2, bonusValue - 2) } : { str: bonusValue, dex: Math.max(2, bonusValue - 2) })
+        : kind === 'shield' ? { vit: bonusValue, mnd: Math.max(2, bonusValue - 2) }
         : kind === 'body' ? { vit: bonusValue, maxHp: 8 * rank } : kind === 'head' ? { mnd: bonusValue, dex: Math.max(2, bonusValue - 2) } : kind === 'arms' ? { str: bonusValue, dex: bonusValue } : kind === 'feet' ? { agi: bonusValue, dex: Math.max(2, bonusValue - 2) } : { luk: bonusValue, mnd: Math.max(2, bonusValue - 2) };
       const common = {
         name: displayName, nameEn: existing?.nameEn || `${enPrefix} // ${enemy.enName || enemy.id.toUpperCase()}`,
@@ -255,22 +259,31 @@
         bonuses, description: `${enemy.name}の怪異性が凝固した一点物。基本能力まで引き上げる、工房では再現できない遺装。`
       };
       if (weaponKind || existing?.slot === 'rightHand') {
-        const base = star4Attack[dungeonId] || 23, wt = weaponKind ? kind : 'staff';
-        const rated = Math.round(base * (weaponAttackRate[wt] ?? 1));
-        addWeapon(id, { ...common, weaponType: wt, attackPower: ['sword', 'martial'].includes(wt) ? rated : 0, magicAttackPower: ['staff', 'instrument'].includes(wt) ? rated : 0, power: 2.7 + rank * .2 });
+        const base = star4Attack[dungeonId] || 23;
+        // 双牙は体術武器として扱い、左手専用の双刃にする。
+        const isTwin = kind === 'dualBlade', wt = isTwin ? 'martial' : (weaponKind ? kind : 'staff');
+        const rated = Math.round(base * (weaponAttackRate[wt] ?? 1) * (isTwin ? .92 : 1));
+        addWeapon(id, {
+          ...common, weaponType: wt,
+          ...(isTwin ? { slot: 'leftHand', offHandOnly: true, weaponSubtype: 'dualBlade' } : {}),
+          attackPower: ['sword', 'martial'].includes(wt) ? rated : 0,
+          magicAttackPower: ['staff', 'instrument'].includes(wt) ? rated : 0, power: 2.7 + rank * .2
+        });
       } else {
         // ★4も部位ごとに役割を分ける。以前は頭も体も足もアクセまで
         // def/mdef を両方同じだけ持っていて、一式そろえると無条件に固くなった。
         // ランクごとの総量は据え置き、配分だけ変える。
         const ab = star4ArmorBudget[dungeonId] || (17 + rank * 10), ar = n => Math.round(ab * n);
         const armorProfile =
-          kind === 'head' ? { defensePower: 0, magicDefensePower: ar(.70) }
+          // 盾は物理に寄せる。★3工房の盾と同じ役割分担にそろえる。
+          kind === 'shield' ? { defensePower: ar(.85), magicDefensePower: ar(.20) }
+          : kind === 'head' ? { defensePower: 0, magicDefensePower: ar(.70) }
           : kind === 'body' ? { defensePower: ar(.70), magicDefensePower: 0 }
           : kind === 'arms' ? { defensePower: ar(.20), magicDefensePower: 0, attackPower: ar(.45) }
           : kind === 'feet' ? { defensePower: ar(.22), magicDefensePower: ar(.22) }
           // アクセは防御を持たない。素の能力で個性を出す枠にする。
           : { defensePower: 0, magicDefensePower: 0 };
-        addArmor(id, { ...common, slot: kind, ...armorProfile });
+        addArmor(id, { ...common, slot: kind === 'shield' ? 'leftHand' : kind, ...armorProfile });
       }
       const uniqueDrop = enemy.dropTable.find(drop => drop.itemId === id);
       if (uniqueDrop) uniqueDrop.chance = dungeonChance[dungeonId];
