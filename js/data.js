@@ -27,7 +27,11 @@ window.ARSENE_DATA = {
     { id: 'martial', name: '体術', nameEn: 'MARTIAL', description: '爪や籠手を使う徒手格闘。速さで手数を稼ぐ。', damageStats: ['str', 'agi'], starterWeaponId: 'ironClaw' },
     // 楽器：魔奏士の証を入手するまでロック。器用さを火力へ変換する。
     { id: 'instrument', name: '楽器', nameEn: 'INSTRUMENT', description: '音に魔を乗せて放つ。器用さがそのまま威力になる。', damageStats: ['dex'], starterWeaponId: null, unlockFlag: 'instrumentUnlocked' },
-    { id: 'shield', name: '盾', nameEn: 'SHIELD', description: '防御性能を攻撃へ転換する守護士の武器。', damageStats: ['vit', 'mnd'], starterWeaponId: 'guardianAegis', unlockFlag: 'shieldUnlocked' }
+    // 盾武器は両手占有。右手に構えると左手が塞がる（isTwoHandedWeapon）。
+    // equipJobs を持つ武器種はそのJOBだけが右手に装備できる。
+    // 盾は守護士の戦い方そのものなので専用とし、全JOBの能力を借りる
+    // ファントムシーフにだけ例外を認める。
+    { id: 'shield', name: '盾', nameEn: 'SHIELD', description: '防御性能を攻撃へ転換する守護士の武器。両手で構えるため左手は空かない。', damageStats: ['vit', 'mnd'], starterWeaponId: 'guardianAegis', unlockFlag: 'shieldUnlocked', equipJobs: ['guardian', 'phantomThief'] }
   ],
   // 武器種ごとの通常攻撃。未定義の武器種は 'attack'（剣と同じ物理攻撃）にフォールバック。
   basicAttackByWeaponType: { sword: 'attack', staff: 'staffFireball', martial: 'martialStrike', instrument: 'resonantNote', shield: 'shieldStrike' },

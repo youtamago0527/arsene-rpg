@@ -810,7 +810,14 @@
       const rule = (D.defenseScaling || {})[kind] || { stat: 'vit', powerKey: 'defensePower' };
       return (s[rule.stat] || 0) + (this.equipmentCombatStats(equipment)[rule.powerKey] || 0);
     }
-    canEquipRightHand(id, jobId = this.profile.currentJob) { const w = D.weapons[id]; return !!w && (w.weaponType !== 'shield' || jobId === 'guardian'); }
+    // 武器種に equipJobs があれば、そのJOBだけが右手に装備できる。
+    // 以前は盾＝守護士をここへ直接書いていたため、他の武器種へ
+    // 制限を足すたびに条件が増えていく形だった。
+    canEquipRightHand(id, jobId = this.profile.currentJob) {
+      const w = D.weapons[id]; if (!w) return false;
+      const jobs = this.weaponTypeDef(w.weaponType)?.equipJobs;
+      return !jobs || jobs.includes(jobId);
+    }
     // ══ 敵→プレイヤーのダメージ ════════════════════════════════
     // 比率型：atk × attackScale × K/(K+防御)。
     // 引き算型だと装備更新のたびにダメージが 0 か即死かの両極端に振れるため、
