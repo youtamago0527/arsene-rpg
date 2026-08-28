@@ -373,8 +373,10 @@ window.ARSENE_DATA = {
       unlockCondition: { bossDefeated: 'myrthi' },
       // 会心率(critBonus)を直接配っていた枠はLUKへ置換した。率を配ると
       // 転生倍率と20%保持が複利で乗って天井に張り付くため、会心はLUK経由で伸ばす。
-      // 旧 critBonus の値をそのまま100倍したLUKを入れてあり、伸びの形は変えていない。
-      growth: { 1: { str: 3, agi: 2 }, 2: { luk: 2 }, 3: { str: 3, agi: 2 }, 4: { luk: 2 }, 5: { str: 4, agi: 3 }, 6: { luk: 3 }, 7: { str: 3, agi: 3 }, 8: { luk: 3 }, 9: { str: 4, agi: 3 }, 10: { luk: 5, str: 5, agi: 3 }, 11: { str: 4, agi: 3 }, 12: { luk: 3, str: 4 }, 13: { agi: 4, str: 3 }, 14: { luk: 3, agi: 4 }, 15: { str: 5, agi: 5 }, 16: { luk: 4 }, 17: { str: 5, agi: 4 }, 18: { luk: 4, str: 4 }, 19: { str: 6, agi: 5 }, 20: { luk: 8, str: 7, agi: 6, maxHp: 15 } },
+      // LUKは武道家と同じ 1/Lv。双刃士の会心らしさは素のLUKではなく
+      // 《追刃》(左手追撃の会心+15%)と《連舞》MAX(+10%)のパッシブ側に置いてある。
+      // 両方盛ると二重取りになるため、LUKは横並びにしている。
+      growth: { 1: { luk: 1, str: 3, agi: 2 }, 2: { luk: 1 }, 3: { luk: 1, str: 3, agi: 2 }, 4: { luk: 1 }, 5: { luk: 1, str: 4, agi: 3 }, 6: { luk: 1 }, 7: { luk: 1, str: 3, agi: 3 }, 8: { luk: 1 }, 9: { luk: 1, str: 4, agi: 3 }, 10: { luk: 1, str: 5, agi: 3 }, 11: { luk: 1, str: 4, agi: 3 }, 12: { luk: 1, str: 4 }, 13: { luk: 1, agi: 4, str: 3 }, 14: { luk: 1, agi: 4 }, 15: { luk: 1, str: 5, agi: 5 }, 16: { luk: 1 }, 17: { luk: 1, str: 5, agi: 4 }, 18: { luk: 1, str: 4 }, 19: { luk: 1, str: 6, agi: 5 }, 20: { luk: 1, str: 7, agi: 6, maxHp: 15 } },
       growthStats: ['str', 'agi'], featureText: '命中するたび《連舞》が高まり、二刀追撃と会心で一気に加速する。防御・魔防・自己回復は低い。',
       skillUnlocks: {}
     }
