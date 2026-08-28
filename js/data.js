@@ -253,7 +253,11 @@ window.ARSENE_DATA = {
   enchantTable: { successRates: [1.00, 1.00, 1.00, 0.97, 0.93, 0.88, 0.82, 0.75, 0.66, 0.55], goldCosts: [100, 200, 300, 500, 700, 1000, 1400, 1800, 2500, 3500], maxLevel: 10, powerRate: 0.15 },
   combatBalance: {
     playerVariance: { min: -2, max: 2 },
-    critical: { base: .06, luckRate: .008, max: .28, multiplier: 1.65 },
+    // max は「LUKだけで到達できる上限」。会心率ボーナスを持つと持ち上がる仕様のため、
+    // 実質の天井として hardMax を別に置く。ここだけは何を積んでも超えられない。
+    // 他JOBはLv20で17〜34%、双刃士は転生0でも54%。60%は双刃士の会心職という
+    // 個性を残しつつ、転生で85%まで伸びて会心しか出なくなる状態を止める値。
+    critical: { base: .06, luckRate: .008, max: .28, hardMax: .60, multiplier: 1.65 },
     // 共通コマンド《防御》は物理・魔法を問わず、そのラウンドの最終被ダメージを半減する。
     guardReduction: .50,
     // 敵→プレイヤーのダメージは比率型：atk × attackScale × defenseK/(defenseK+防御)

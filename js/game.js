@@ -753,7 +753,10 @@
       const comboPassive = this.activePassiveByType('comboDance'), comboCrit = this.comboDanceStacks() >= this.comboDanceMax() ? this.passiveValue(comboPassive, 'maxCriticalBonus') : 0;
       const extra = (Number(skill?.criticalModifier) || 0) + this.traitCriticalBonus() + this.equipmentEffectRate('criticalRateBonus') + comboCrit;
       const statBonus = Number(stats?.critBonus) || 0;
-      return clamp(c.base + (Number(stats?.luk) || 0) * c.luckRate + statBonus + extra, c.base, c.max + statBonus + extra);
+      // c.max は statBonus/extra ぶん持ち上がるため、それ自体は天井にならない。
+      // hardMax だけが実際の天井で、装備・JOB成長・パッシブを何積んでも超えない。
+      const rate = clamp(c.base + (Number(stats?.luk) || 0) * c.luckRate + statBonus + extra, c.base, c.max + statBonus + extra);
+      return Math.min(c.hardMax ?? 1, rate);
     }
     rollAttackOutcome(attackerStats, defenderStats, options = {}) {
       const skill = options.skill || {};
@@ -768,7 +771,10 @@
       const weapon = options.weapon || this.equippedWeapon();
       const weaponType = options.weaponType || skill?.weaponType || weapon?.weaponType || this.equippedWeaponType();
       const stats = this.playerCombatStats(), offHandPassive = this.activePassiveByType('offHandCritical'), offHandCrit = options.offHand ? this.passiveRate(offHandPassive) : 0;
-      return this.rollAttackOutcome(stats, enemy?.stats || {}, { ...options, skill, weapon, weaponType, criticalChance: this.criticalChanceFor(skill, stats) + offHandCrit });
+      // 左手追撃の会心上乗せも天井の内側に収める。外で足すと《追刃》のぶんだけ上限を超えていた。
+      const hardMax = D.combatBalance?.critical?.hardMax ?? 1;
+      const criticalChance = Math.min(hardMax, this.criticalChanceFor(skill, stats) + offHandCrit);
+      return this.rollAttackOutcome(stats, enemy?.stats || {}, { ...options, skill, weapon, weaponType, criticalChance });
     }
     rollEnemyAttackOutcome(enemy, action = {}, options = {}) {
       return this.rollAttackOutcome(enemy?.stats || {}, this.playerCombatStats(), { ...options, skill: action, weaponType: action.weaponType || null, criticalChance: options.criticalChance || 0 });
