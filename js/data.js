@@ -40,6 +40,13 @@ window.ARSENE_DATA = {
   // 命中率（隠しステータス／画面には出さない）。攻撃側DEXと防御側AGIで共通判定する。
   // 数値は小数（0.05 = 5%）。既存敵にDEX/AGIが無い場合は戦闘側でSPDへフォールバックする。
   accuracy: { base: 0.90, dexRate: 0.006, defenderAgiRate: 0.005, min: 0.05, max: 1.0 },
+  // 盾（左手）のトレードオフ。防御性能はアイテム側の defensePower で伸ばし、
+  // 素早さの低下率だけをここで管理する。ランクが上がっても上限を超えない（§15）。
+  shieldBalance: {
+    agiPenaltyByStars: { 2: 6, 3: 8, 4: 10, 5: 12 },
+    defaultPenaltyPercent: 8,
+    maxPenaltyPercent: 15
+  },
   weaponScaling: {
     sword:   { scaling: { str: 1.0 },            powerKey: 'attackPower',      damageType: 'physical', accuracyModifier:  0.00 },
     martial: { scaling: { str: 0.5, agi: 0.5 },  powerKey: 'attackPower',      damageType: 'physical', accuracyModifier:  0.05 },

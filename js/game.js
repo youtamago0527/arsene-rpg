@@ -1573,7 +1573,7 @@
     equippedSeriesCount(seriesId, equipment = this.profile.equipment) { return Object.values(equipment).filter(id => id && (D.items[id]?.seriesId === seriesId || this.equipmentDefinition(id)?.seriesId === seriesId)).length; }
     activeSetEffects(equipment = this.profile.equipment) { const effects = {}; this.unlockedBossSeries().forEach(series => { const count = this.equippedSeriesCount(series.id, equipment); Object.entries(series.setBonuses || {}).forEach(([needed, bonus]) => { if (count >= Number(needed)) Object.assign(effects, bonus.effect || {}); }); }); return effects; }
     totalStats(equipment = this.profile.equipment) {
-      const total = clone(this.profile.baseStats), bonuses = this.equipmentBonuses(equipment), jobBonuses = this.activeJobBonuses(), jobGrowth = this.jobStatBonuses(); Object.entries(bonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobBonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobGrowth).forEach(([k, v]) => total[k] = (total[k] || 0) + v); const setEffects = this.activeSetEffects(equipment); for (const key of ['str', 'vit', 'mag', 'mnd', 'agi', 'dex', 'luk']) { const pct = setEffects[`${key}Percent`] || 0; if (pct) total[key] = Math.max(total[key] + 1, Math.floor(total[key] * (1 + pct / 100))); } if (setEffects.critBonusFlat) total.critBonus = (total.critBonus || 0) + setEffects.critBonusFlat; if (this.activeMealBuffType() === 'makanai') total.maxHp = Math.ceil(total.maxHp * (1 + (D.foodMenu?.buffs?.makanai?.maxHpRate || .03))); total.critBonus ||= 0; this.applyPassiveStats(total); total.def = total.vit; /* 旧互換：def は体力と同義。装備防御力は defensePowerFor() 側で加算する */ /* 強化済みの能力補正は equipmentBonuses()、戦闘値は equipmentCombatStats() で加算する */ return total;
+      const total = clone(this.profile.baseStats), bonuses = this.equipmentBonuses(equipment), jobBonuses = this.activeJobBonuses(), jobGrowth = this.jobStatBonuses(); Object.entries(bonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobBonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobGrowth).forEach(([k, v]) => total[k] = (total[k] || 0) + v); const setEffects = this.activeSetEffects(equipment); for (const key of ['str', 'vit', 'mag', 'mnd', 'agi', 'dex', 'luk']) { const pct = setEffects[`${key}Percent`] || 0; if (pct) total[key] = Math.max(total[key] + 1, Math.floor(total[key] * (1 + pct / 100))); } const shieldPenalty = this.shieldAgiPenaltyRate(); if (shieldPenalty) total.agi = Math.max(1, Math.floor(total.agi * (1 - shieldPenalty))); if (setEffects.critBonusFlat) total.critBonus = (total.critBonus || 0) + setEffects.critBonusFlat; if (this.activeMealBuffType() === 'makanai') total.maxHp = Math.ceil(total.maxHp * (1 + (D.foodMenu?.buffs?.makanai?.maxHpRate || .03))); total.critBonus ||= 0; this.applyPassiveStats(total); total.def = total.vit; /* 旧互換：def は体力と同義。装備防御力は defensePowerFor() 側で加算する */ /* 強化済みの能力補正は equipmentBonuses()、戦闘値は equipmentCombatStats() で加算する */ return total;
     }
     getDungeon(id = this.currentDungeonId) { return (D.dungeons || []).find(d => d.id === id) || (D.dungeons || [])[0]; }
     isDungeonUnlocked(id) { const d = this.getDungeon(id); if (!d) return false; if (!d.unlockCondition) return true; const previousBoss = { dungeon1Clear: 'zenacad', dungeon2Clear: 'myrthi', dungeon3Clear: 'seripes', dungeon4Clear: 'astact', dungeon5Clear: 'ostina' }[d.unlockCondition]; return previousBoss ? this.isBossDefeated(previousBoss) : false; }
@@ -4579,10 +4579,10 @@
       if (this.equipTab === 'title' && this.titlePanelHtml) { this.titlePanelSource = 'equipment'; panel.innerHTML = `<small>BOSS TITLE</small><h2>称号装備</h2>${this.equipTabsHtml()}${this.titlePanelHtml()}`; return; }
       const slots = D.equipmentSlots || [], owned = Object.entries(this.profile.inventory).filter(([id, n]) => n > 0 && this.isPlayerContentVisible(D.items[id]) && D.items[id]?.category === 'equipment');
       if (this.selectedEquipmentId && !(this.profile.inventory[this.selectedEquipmentId] > 0)) this.selectedEquipmentId = null;
-      const isDualBlade = this.dualWieldEnabled(), canUseLeft = this.profile.currentJob === 'warrior' || this.hasPassiveType('dualWield');
+      const isDualBlade = this.dualWieldEnabled(), canUseLeft = true; // 盾は全JOBが装備できる
       const activeSlot = this.equipSlot && slots.some(s => s.id === this.equipSlot) ? this.equipSlot : null;
       const fists = this.usesBareFists(); // 武道家が素手なら両手を「拳」と表示する
-      const slotHtml = slots.map(slot => { const id = this.profile.equipment[slot.id], item = D.items[id]; const rate = isDualBlade && slot.id === 'leftHand' && D.weapons[id] ? ` ×${Math.round(this.offHandRate() * 100)}%` : ''; const disabled = slot.id === 'leftHand' && !canUseLeft; const count = this.candidatesForSlot(slot.id).length; const leftRule = slot.id === 'leftHand' ? (this.hasPassiveType('dualWield') ? '<small>双刃のみ</small>' : this.profile.currentJob === 'warrior' ? '<small>盾のみ</small>' : '') : ''; return `<button type="button" data-equip-slot-pick="${slot.id}" class="equipment-slot ${id ? 'filled' : 'empty'} ${disabled ? 'slot-disabled' : ''} ${activeSlot === slot.id ? 'slot-active' : ''}" ${disabled ? 'disabled' : ''}><span>${slot.name}<small>${slot.enName}</small>${leftRule}</span><b>${item?.name || (fists && (slot.id === 'rightHand' || slot.id === 'leftHand') ? '拳' : 'なし')}${id ? this.enchantSuffix(id) : ''}${rate}</b>${count && !disabled ? `<i class="slot-count">${count}</i>` : ''}</button>`; }).join('');
+      const slotHtml = slots.map(slot => { const id = this.profile.equipment[slot.id], item = D.items[id]; const rate = isDualBlade && slot.id === 'leftHand' && D.weapons[id] ? ` ×${Math.round(this.offHandRate() * 100)}%` : ''; const disabled = slot.id === 'leftHand' && !canUseLeft; const count = this.candidatesForSlot(slot.id).length; const leftRule = slot.id === 'leftHand' ? (this.hasPassiveType('dualWield') ? '<small>盾／双刃</small>' : '<small>盾</small>') : ''; return `<button type="button" data-equip-slot-pick="${slot.id}" class="equipment-slot ${id ? 'filled' : 'empty'} ${disabled ? 'slot-disabled' : ''} ${activeSlot === slot.id ? 'slot-active' : ''}" ${disabled ? 'disabled' : ''}><span>${slot.name}<small>${slot.enName}</small>${leftRule}</span><b>${item?.name || (fists && (slot.id === 'rightHand' || slot.id === 'leftHand') ? '拳' : 'なし')}${id ? this.enchantSuffix(id) : ''}${rate}</b>${count && !disabled ? `<i class="slot-count">${count}</i>` : ''}</button>`; }).join('');
       let workbench;
       if (!activeSlot) {
         workbench = `<div class="equip-hint"><b>装備部位を選んでください</b><span>上の部位をタップすると、そこに装備できるアイテムだけが表示されます。</span></div>`;
@@ -4618,7 +4618,25 @@
     }
     isOffHandOnlyWeapon(id) { return !!D.weapons[id] && !!(D.weapons[id].offHandOnly || D.items[id]?.offHandOnly); }
     isShield(id) { return !!id && !D.weapons[id] && D.items[id]?.slot === 'leftHand'; }
-    isLeftHandItemAllowed(id, jobId = this.profile.currentJob) { if (!id) return true; if (jobId === 'warrior') return this.isShield(id); if (this.hasPassiveType('dualWield')) return this.isDualBladeWeapon(this.profile.equipment?.rightHand) && this.isDualBladeWeapon(id) && this.isOffHandOnlyWeapon(id); return false; }
+    // 左手の盾は全JOBが装備できる（守護士専用にはしない）。
+    // 二刀（双刃）は従来どおり《二刀の型》を持つ双刃士だけの特権で、
+    // その双刃士も盾を選べば防御へ寄せられる。
+    // ※ weaponType:'shield' の「盾武器」は右手・盾学の対象で別系統。ここでは扱わない。
+    isLeftHandItemAllowed(id, jobId = this.profile.currentJob) {
+      if (!id) return true;
+      if (this.isShield(id)) return true;
+      if (this.hasPassiveType('dualWield')) return this.isDualBladeWeapon(this.profile.equipment?.rightHand) && this.isDualBladeWeapon(id) && this.isOffHandOnlyWeapon(id);
+      return false;
+    }
+    // 盾は防御を得る代わりに素早さを落とす。低下率はデータ側で管理し、
+    // 上限を設けてランクが上がっても速度が潰れきらないようにする。
+    shieldAgiPenaltyRate() {
+      const id = this.profile?.equipment?.leftHand;
+      if (!id || !this.isShield(id)) return 0;
+      const sb = D.shieldBalance || {}, item = D.items[id] || {};
+      const pct = item.agiPenaltyPercent ?? (sb.agiPenaltyByStars || {})[item.stars] ?? sb.defaultPenaltyPercent ?? 0;
+      return Math.min(sb.maxPenaltyPercent ?? 15, Math.max(0, pct)) / 100;
+    }
     sanitizeLeftHandEquipment() { const id = this.profile?.equipment?.leftHand; if (id && !this.isLeftHandItemAllowed(id, this.profile.currentJob)) this.profile.equipment.leftHand = null; }
     sanitizeRightHandEquipment() { const id = this.profile?.equipment?.rightHand; if (!id || this.canEquipRightHand(id)) return; const preferred = this.weaponTypeDef(this.profile.preferredWeaponType)?.starterWeaponId, fallback = [preferred, 'mageStaff', 'phantomSword', 'ironClaw'].find(wid => wid && (this.profile.inventory[wid] || 0) > 0 && this.canEquipRightHand(wid)); this.profile.equipment.rightHand = fallback || 'mageStaff'; }
     equipSortValue(id, key) { const before = this.totalStats(), item = D.items[id]; if (!item) return 0; const slot = this.equipSlot || item.slot; const after = this.totalStats({ ...this.profile.equipment, [slot]: id }); return after[key] - before[key]; }
