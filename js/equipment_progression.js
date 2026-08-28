@@ -56,82 +56,111 @@
     if (D.items[recipe.resultItemId]) D.items[recipe.resultItemId].legacy = true;
   });
 
+  // ★3＝各Dungeonの工房装備。名前はDungeonが進むほど格を上げる。
+  //   D1 普通 → D2 ファンタジー → D3 聖堂/反奏 → D4 和風/紅葉
+  // 各Dungeonは「導入品」と「仕上げ品(e)」の2段だが、どちらも★3。
+  // 比較表の基準になるのは各Dungeonの仕上げ品のほう。
   const weaponLines = {
     sword: {
-      d1: ['forge_d1_sword', '黒鉄剣グレイヴ', 'IRON GRAVE'],
-      d2: ['forge_d2_sword', '静音剣サイレン', 'SILENT SIREN'],
-      d2e: ['forge_d2e_sword', '月蝕剣ノクターン', 'NOCTURNE ECLIPSE'],
-      d3: ['forge_d3_sword', '虚界剣アビスレイ', 'ABYSS RAY'],
-      d3e: ['forge_d3e_sword', '断界剣エクリプス', 'WORLDREND ECLIPSE']
+      d1:  ['forge_d1_sword',  '鉄の剣',       'IRON SWORD'],
+      d2:  ['forge_d2_sword',  '鋼の剣',       'STEEL SWORD'],
+      d2e: ['forge_d2e_sword', '銀装剣',       'SILVERCLAD BLADE'],
+      d3:  ['forge_d3_sword',  '聖堂騎士の剣', 'CATHEDRAL BLADE'],
+      d3e: ['forge_d3e_sword', '反奏の長剣',   'REPRISE LONGSWORD'],
+      d4:  ['forge_d4_sword',  '打刀',         'UCHIGATANA']
     },
     martial: {
-      d1: ['forge_d1_martial', '鉄牙拳ヴァイス', 'IRON FANG VICE'],
-      d2: ['forge_d2_martial', '無響拳サイファ', 'SILENT CYPHER'],
-      d2e: ['forge_d2e_martial', '羅刹爪テンペスト', 'RASETSU TEMPEST'],
-      d3: ['forge_d3_martial', '虚獣拳ネメシス', 'VOID BEAST NEMESIS'],
-      d3e: ['forge_d3e_martial', '崩星拳ラグナロク', 'STARBREAK RAGNAROK']
+      d1:  ['forge_d1_martial',  '鉄爪',       'IRON CLAW'],
+      d2:  ['forge_d2_martial',  '鋼爪',       'STEEL CLAW'],
+      d2e: ['forge_d2e_martial', '銀爪',       'SILVER CLAW'],
+      d3:  ['forge_d3_martial',  '破戒の爪',   'APOSTATE CLAW'],
+      d3e: ['forge_d3e_martial', '鉄鎖の爪',   'IRONCHAIN CLAW'],
+      d4:  ['forge_d4_martial',  '鉄甲',       'TEKKO GAUNTLET']
     },
     staff: {
-      d1: ['forge_d1_staff', '青燐杖ルーメン', 'AZURE LUMEN'],
-      d2: ['forge_d2_staff', '静謐杖エコー', 'SERENE ECHO'],
-      d2e: ['forge_d2e_staff', '冥奏杖レクイエム', 'REQUIEM ROD'],
-      d3: ['forge_d3_staff', '虚天杖オブリビオン', 'OBLIVION STAFF'],
-      d3e: ['forge_d3e_staff', '終界杖アポカリプス', 'APOCALYPSE STAFF']
+      d1:  ['forge_d1_staff',  '樫の杖',       'OAK STAFF'],
+      d2:  ['forge_d2_staff',  '魔銀の杖',     'MITHRIL STAFF'],
+      d2e: ['forge_d2e_staff', '蒼星の杖',     'AZURE STAR STAFF'],
+      d3:  ['forge_d3_staff',  '司祭の杖',     'PRIEST STAFF'],
+      d3e: ['forge_d3e_staff', '聖堂の錫杖',   'CATHEDRAL CROSIER'],
+      d4:  ['forge_d4_staff',  '紅木の杖',     'CRIMSONWOOD STAFF']
     },
     instrument: {
-      d2: ['forge_d2_instrument', '沈黙の調律笛', 'HUSH TUNING PIPE'],
-      d2e: ['forge_d2e_instrument', '夜想楽器ノクテュルヌ', 'NOCTURNE INSTRUMENT'],
-      d3: ['forge_d3_instrument', '虚奏器ヴォイドハープ', 'VOID HARP'],
-      d3e: ['forge_d3e_instrument', '終焉楽章アルマゲドン', 'ARMAGEDDON SCORE']
+      d2:  ['forge_d2_instrument',  '調べの横笛',   'TUNING FLUTE'],
+      d2e: ['forge_d2e_instrument', '双月の竪琴',   'TWIN MOON LYRE'],
+      d3:  ['forge_d3_instrument',  '聖堂の聖歌琴', 'CATHEDRAL PSALTERY'],
+      d3e: ['forge_d3e_instrument', '祈響の弦',     'PRAYER RESONATOR'],
+      d4:  ['forge_d4_instrument',  '紅葉の琵琶',   'CRIMSON BIWA']
     }
   };
+  // ★3の基準値（剣ATK）。Dungeonが進むごとに同レアリティ同士で
+  //   D1=12 → D2=18(×1.5) → D3=36(×2.0) → D4=108(×3.0)
+  // 各Dungeonの「仕上げ品(e)」がその段の基準。導入品はその手前に置く。
   const weaponPower = {
-    d1: { stars: 2, attack: 11, magic: 12, power: 2.25 },
-    d2: { stars: 2, attack: 19, magic: 20, power: 2.55 },
-    d2e: { stars: 3, attack: 27, magic: 29, power: 2.85 },
-    d3: { stars: 3, attack: 36, magic: 39, power: 3.05 },
-    d3e: { stars: 3, attack: 41, magic: 44, power: 3.2 }
+    d1:  { stars: 3, attack: 12,  power: 2.25 },
+    d2:  { stars: 3, attack: 15,  power: 2.55 },
+    d2e: { stars: 3, attack: 18,  power: 2.70 },
+    d3:  { stars: 3, attack: 29,  power: 3.05 },
+    d3e: { stars: 3, attack: 36,  power: 3.20 },
+    d4:  { stars: 3, attack: 108, power: 3.60 }
   };
-  const dungeonForStage = stage => stage.startsWith('d1') ? 'dungeon1' : stage.startsWith('d2') ? 'dungeon2' : 'dungeon3';
+  // 武器種ごとの基礎攻撃力の比。爪は手数・追撃・連舞・会心・AGIが乗るため
+  // 単発を明確に低くする（§11：剣の65〜75%）。杖/楽器は魔法攻撃力として使う。
+  const weaponAttackRate = { sword: 1.00, martial: 0.70, staff: 1.08, instrument: 1.08 };
+  const dungeonForStage = stage => stage.startsWith('d1') ? 'dungeon1' : stage.startsWith('d2') ? 'dungeon2' : stage.startsWith('d4') ? 'dungeon4' : 'dungeon3';
   const weaponMaterials = {
     d1: [{ itemId: 'rustedKnife', count: 3 }, { itemId: 'manaDrop', count: 3 }, { itemId: 'batFang', count: 2 }],
     d2: [{ itemId: 'echoShard', count: 4 }, { itemId: 'reverbJelly', count: 3 }, { itemId: 'violinString', count: 2 }],
-    d3: [{ itemId: 'voidShard', count: 5 }, { itemId: 'darkIron', count: 4 }, { itemId: 'chaosDust', count: 3 }]
+    d3: [{ itemId: 'voidShard', count: 5 }, { itemId: 'darkIron', count: 4 }, { itemId: 'chaosDust', count: 3 }],
+    // D4は「そのDungeonで通常DROPする素材」だけで作れること（§84）。
+    // 瞬鋼片・月刃鉱はD4雑魚が55%前後で落とす通常素材。
+    d4: [{ itemId: 'flashSteel', count: 6 }, { itemId: 'moonEdgeOre', count: 5 }]
   };
-  const previousStage = { d2e: 'd1', d3e: 'd2' };
+  const previousStage = { d2e: 'd2', d3e: 'd3' };
+  const stageMaterials = stage => stage.startsWith('d1') ? weaponMaterials.d1
+    : stage.startsWith('d2') ? weaponMaterials.d2
+    : stage.startsWith('d4') ? weaponMaterials.d4 : weaponMaterials.d3;
+  const stageGold = { d1: 180, d2: 420, d2e: 760, d3: 980, d3e: 1320, d4: 3200 };
+  const armorGold = { d1: 130, d2: 320, d2e: 590, d3: 760, d3e: 1080, d4: 2600 };
   for (const [type, stages] of Object.entries(weaponLines)) {
     for (const [stage, [id, name, nameEn]] of Object.entries(stages)) {
       const p = weaponPower[stage], dungeonId = dungeonForStage(stage), magical = type === 'staff' || type === 'instrument';
+      const rated = Math.round(p.attack * (weaponAttackRate[type] ?? 1));
       addWeapon(id, {
         name, nameEn, dungeonId, catalogDungeon: dungeonId, weaponType: type, stars: p.stars,
-        rarity: rarityFor(p.stars), source: 'workshop', attackPower: magical ? 0 : p.attack,
-        magicAttackPower: magical ? p.magic : 0, power: p.power, bonuses: {},
+        rarity: rarityFor(p.stars), source: 'workshop', attackPower: magical ? 0 : rated,
+        magicAttackPower: magical ? rated : 0, power: p.power, bonuses: {},
         scaling: type === 'instrument' ? { dex: .65, mag: .35 } : null,
         powerKey: magical ? 'magicAttackPower' : 'attackPower', damageType: magical ? 'magical' : 'physical',
         description: `${dungeonId.toUpperCase().replace('UNGEON', '')}工房規格。基本能力を変えず、${magical ? '術式出力' : '武器攻撃力'}だけを高める。`
       });
       const prior = previousStage[stage] ? weaponLines[type][previousStage[stage]]?.[0] : null;
-      const mats = stage === 'd1' ? weaponMaterials.d1 : stage.startsWith('d2') ? weaponMaterials.d2 : weaponMaterials.d3;
+      const mats = stageMaterials(stage);
       addRecipe(`${id}_recipe`, {
         name, craftCategory: 'weapon', dungeonId, resultItemId: id,
-        gold: stage === 'd1' ? 180 : stage === 'd2' ? 420 : stage === 'd2e' ? 760 : stage === 'd3' ? 980 : 1320,
+        gold: stageGold[stage] ?? 980,
         materials: [...(prior ? [{ itemId: prior, count: 1 }] : []), ...mats.map(m => ({ ...m, count: m.count + (stage.endsWith('e') ? 2 : 0) }))]
       });
     }
   }
 
   const armorSlots = ['leftHand', 'head', 'body', 'arms', 'feet', 'accessory'];
+  // 並びは armorSlots と同じ [左手(盾), 頭, 体, 腕, 足, アクセ]
   const armorNames = {
-    d1: ['黒鉄の小盾', '宵鉄の面頬', '夜路の外套', '影縫いの手甲', '月踏みの靴', '青燐の護符'],
-    d2: ['静寂の円盾', '無響の仮面', '残響なき礼装', '沈黙の篭手', '消音の戦靴', '無音の耳飾り'],
-    d2e: ['月蝕の鏡盾', '夜奏の冠', '冥奏の黒衣', '葬律の手甲', '夜想の舞踏靴', '鎮魂のペンダント'],
-    d3: ['虚界障壁イージス', '虚星冠アストラ', '深淵装アビサル', '幻壊手ヴォイド', '断空靴ゼロ', '混沌核カオス'],
-    d3e: ['終界盾ラストウォール', '崩天冠カタストロフ', '終焉衣アポカリプス', '滅界手ラグナ', '星葬靴エンドロール', '輪廻環ウロボロス']
+    d1:  ['木盾',       '革の帽子',     '冒険者の服',   '革の手袋',   '革のブーツ',   '古びた護符'],
+    d2:  ['鋼の盾',     '鋼の兜',       '強化革鎧',     '魔銀の腕輪', '軽業の靴',     '魔除けの首飾り'],
+    d2e: ['双月盾',     '紅影の頭巾',   '双月の軽装',   '連撃の籠手', '風走りの靴',   '双星の護符'],
+    d3:  ['聖堂盾',     '聖堂騎士の兜', '聖堂装束',     '鉄鎖の籠手', '巡礼者の靴',   '聖印'],
+    d3e: ['反奏の大盾', '不落の兜',     '反奏の法衣',   '受響の籠手', '聖域の脚甲',   '反響石'],
+    d4:  ['和鉄の盾',   '鉢金',         '紅染めの胴衣', '武者籠手',   '草履',         '紅葉守']
   };
   const armorPower = {
-    d1: { stars: 2, def: 6, mdef: 5 }, d2: { stars: 2, def: 10, mdef: 9 },
-    d2e: { stars: 3, def: 14, mdef: 14 }, d3: { stars: 3, def: 19, mdef: 18 },
-    d3e: { stars: 3, def: 22, mdef: 22 }
+    d1:  { stars: 3, def: 6,  mdef: 5 },
+    d2:  { stars: 3, def: 9,  mdef: 8 },
+    d2e: { stars: 3, def: 12, mdef: 11 },
+    d3:  { stars: 3, def: 19, mdef: 18 },
+    d3e: { stars: 3, def: 24, mdef: 22 },
+    d4:  { stars: 3, def: 72, mdef: 66 }
   };
   for (const [stage, names] of Object.entries(armorNames)) {
     names.forEach((name, index) => {
@@ -170,10 +199,10 @@
         description: `${dungeonId.toUpperCase().replace('UNGEON', '')}工房規格。${profile.role}に寄せた装備。`
       });
       const priorStage = previousStage[stage], prior = priorStage ? `forge_${priorStage}_${slot}` : null;
-      const mats = stage === 'd1' ? weaponMaterials.d1 : stage.startsWith('d2') ? weaponMaterials.d2 : weaponMaterials.d3;
+      const mats = stageMaterials(stage);
       addRecipe(`${id}_recipe`, {
         name, craftCategory: 'armor', dungeonId, resultItemId: id,
-        gold: stage === 'd1' ? 130 : stage === 'd2' ? 320 : stage === 'd2e' ? 590 : stage === 'd3' ? 760 : 1080,
+        gold: armorGold[stage] ?? 760,
         materials: [...(prior ? [{ itemId: prior, count: 1 }] : []), ...mats.slice(0, 2).map(m => ({ ...m, count: Math.max(2, m.count - 1) + (stage.endsWith('e') ? 2 : 0) }))]
       });
     });
@@ -189,17 +218,22 @@
     instrument: ['禁奏器', 'FORBIDDEN SCORE'], head: ['異貌', 'FIEND VISAGE'], body: ['怪装', 'MONSTER GARB'],
     arms: ['魔骸手', 'FIEND ARMS'], feet: ['夜渡靴', 'NIGHTWALKER'], accessory: ['怪異核', 'MONSTER CORE']
   };
-  const monsterGearByDungeon = { dungeon1: [], dungeon2: [], dungeon3: [] };
-  const normalEnemies = Object.values(D.enemies || {}).filter(e => ['dungeon1', 'dungeon2', 'dungeon3'].includes(e.dungeonId || (() => {
+  const monsterGearByDungeon = { dungeon1: [], dungeon2: [], dungeon3: [], dungeon4: [] };
+  const normalEnemies = Object.values(D.enemies || {}).filter(e => ['dungeon1', 'dungeon2', 'dungeon3', 'dungeon4'].includes(e.dungeonId || (() => {
     for (const d of D.dungeons || []) {
       const tiers = [...(d.encounterProgression || []), ...(d.floors || []).flatMap(f => f.encounterProgression || [])];
       if (tiers.some(t => (t.pool || []).some(p => p.id === e.id))) return d.id;
     }
     return null;
-  })()) && e.kind !== 'boss' && !['zenakado', 'myrthi', 'noelFirstEncounter'].includes(e.id));
+  })()) && e.kind !== 'boss' && !['zenakado', 'myrthi', 'noelFirstEncounter', 'astact', 'd4MidBoss'].includes(e.id));
   const typeCycle = ['sword', 'staff', 'martial', 'head', 'body', 'arms', 'feet', 'accessory', 'instrument'];
-  const dungeonChance = { dungeon1: .04, dungeon2: .018, dungeon3: .008 };
-  const dungeonRank = { dungeon1: 1, dungeon2: 2, dungeon3: 3 };
+  // ★4の基礎DROP率（§4）。図鑑称号などの倍率は rollDrops() 側でこの値へ乗算される。
+  const dungeonChance = { dungeon1: .010, dungeon2: .010, dungeon3: .009, dungeon4: .008 };
+  const dungeonRank = { dungeon1: 1, dungeon2: 2, dungeon3: 3, dungeon4: 4 };
+  // ★4の基礎性能。★3の仕上げ品 +5(×1.75) をさらに1.10倍した値＝★3の1.93倍。
+  // 「★3を+5まで鍛えた人が、拾った瞬間に乗り換えたくなる」水準（§65）。
+  const star4Attack = { dungeon1: 23, dungeon2: 35, dungeon3: 69, dungeon4: 208 };
+  const star4ArmorBudget = { dungeon1: 21, dungeon2: 32, dungeon3: 63, dungeon4: 190 };
   normalEnemies.forEach((enemy, index) => {
     const dungeonId = enemy.dungeonId || (D.dungeons || []).find(d => [...(d.encounterProgression || []), ...(d.floors || []).flatMap(f => f.encounterProgression || [])].some(t => (t.pool || []).some(p => p.id === enemy.id)))?.id;
     if (!dungeonId) return;
@@ -221,12 +255,14 @@
         bonuses, description: `${enemy.name}の怪異性が凝固した一点物。基本能力まで引き上げる、工房では再現できない遺装。`
       };
       if (weaponKind || existing?.slot === 'rightHand') {
-        addWeapon(id, { ...common, weaponType: weaponKind ? kind : 'staff', attackPower: ['sword', 'martial'].includes(kind) ? 22 + rank * 12 : 0, magicAttackPower: ['staff', 'instrument'].includes(kind) ? 23 + rank * 12 : 0, power: 2.7 + rank * .2 });
+        const base = star4Attack[dungeonId] || 23, wt = weaponKind ? kind : 'staff';
+        const rated = Math.round(base * (weaponAttackRate[wt] ?? 1));
+        addWeapon(id, { ...common, weaponType: wt, attackPower: ['sword', 'martial'].includes(wt) ? rated : 0, magicAttackPower: ['staff', 'instrument'].includes(wt) ? rated : 0, power: 2.7 + rank * .2 });
       } else {
         // ★4も部位ごとに役割を分ける。以前は頭も体も足もアクセまで
         // def/mdef を両方同じだけ持っていて、一式そろえると無条件に固くなった。
         // ランクごとの総量は据え置き、配分だけ変える。
-        const ab = 17 + rank * 10, ar = n => Math.round(ab * n);
+        const ab = star4ArmorBudget[dungeonId] || (17 + rank * 10), ar = n => Math.round(ab * n);
         const armorProfile =
           kind === 'head' ? { defensePower: 0, magicDefensePower: ar(.70) }
           : kind === 'body' ? { defensePower: ar(.70), magicDefensePower: 0 }
