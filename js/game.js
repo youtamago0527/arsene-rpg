@@ -4579,10 +4579,10 @@
       if (this.equipTab === 'title' && this.titlePanelHtml) { this.titlePanelSource = 'equipment'; panel.innerHTML = `<small>BOSS TITLE</small><h2>称号装備</h2>${this.equipTabsHtml()}${this.titlePanelHtml()}`; return; }
       const slots = D.equipmentSlots || [], owned = Object.entries(this.profile.inventory).filter(([id, n]) => n > 0 && this.isPlayerContentVisible(D.items[id]) && D.items[id]?.category === 'equipment');
       if (this.selectedEquipmentId && !(this.profile.inventory[this.selectedEquipmentId] > 0)) this.selectedEquipmentId = null;
-      const isDualBlade = this.dualWieldEnabled(), canUseLeft = true; // 盾は全JOBが装備できる
+      const isDualBlade = this.dualWieldEnabled(), canUseLeft = !this.isTwoHandedWeapon(this.profile.equipment.rightHand); // 盾は全JOB可。両手武器のときだけ塞ぐ
       const activeSlot = this.equipSlot && slots.some(s => s.id === this.equipSlot) ? this.equipSlot : null;
       const fists = this.usesBareFists(); // 武道家が素手なら両手を「拳」と表示する
-      const slotHtml = slots.map(slot => { const id = this.profile.equipment[slot.id], item = D.items[id]; const rate = isDualBlade && slot.id === 'leftHand' && D.weapons[id] ? ` ×${Math.round(this.offHandRate() * 100)}%` : ''; const disabled = slot.id === 'leftHand' && !canUseLeft; const count = this.candidatesForSlot(slot.id).length; const leftRule = slot.id === 'leftHand' ? (this.hasPassiveType('dualWield') ? '<small>盾／双刃</small>' : '<small>盾</small>') : ''; return `<button type="button" data-equip-slot-pick="${slot.id}" class="equipment-slot ${id ? 'filled' : 'empty'} ${disabled ? 'slot-disabled' : ''} ${activeSlot === slot.id ? 'slot-active' : ''}" ${disabled ? 'disabled' : ''}><span>${slot.name}<small>${slot.enName}</small>${leftRule}</span><b>${item?.name || (fists && (slot.id === 'rightHand' || slot.id === 'leftHand') ? '拳' : 'なし')}${id ? this.enchantSuffix(id) : ''}${rate}</b>${count && !disabled ? `<i class="slot-count">${count}</i>` : ''}</button>`; }).join('');
+      const slotHtml = slots.map(slot => { const id = this.profile.equipment[slot.id], item = D.items[id]; const rate = isDualBlade && slot.id === 'leftHand' && D.weapons[id] ? ` ×${Math.round(this.offHandRate() * 100)}%` : ''; const disabled = slot.id === 'leftHand' && !canUseLeft; const count = this.candidatesForSlot(slot.id).length; const leftRule = slot.id === 'leftHand' ? (this.isTwoHandedWeapon(this.profile.equipment.rightHand) ? '<small>両手武器で使用不可</small>' : this.hasPassiveType('dualWield') ? '<small>盾／双刃</small>' : '<small>盾</small>') : ''; return `<button type="button" data-equip-slot-pick="${slot.id}" class="equipment-slot ${id ? 'filled' : 'empty'} ${disabled ? 'slot-disabled' : ''} ${activeSlot === slot.id ? 'slot-active' : ''}" ${disabled ? 'disabled' : ''}><span>${slot.name}<small>${slot.enName}</small>${leftRule}</span><b>${item?.name || (fists && (slot.id === 'rightHand' || slot.id === 'leftHand') ? '拳' : 'なし')}${id ? this.enchantSuffix(id) : ''}${rate}</b>${count && !disabled ? `<i class="slot-count">${count}</i>` : ''}</button>`; }).join('');
       let workbench;
       if (!activeSlot) {
         workbench = `<div class="equip-hint"><b>装備部位を選んでください</b><span>上の部位をタップすると、そこに装備できるアイテムだけが表示されます。</span></div>`;
@@ -4622,8 +4622,18 @@
     // 二刀（双刃）は従来どおり《二刀の型》を持つ双刃士だけの特権で、
     // その双刃士も盾を選べば防御へ寄せられる。
     // ※ weaponType:'shield' の「盾武器」は右手・盾学の対象で別系統。ここでは扱わない。
+    // 両手武器。twoHanded フラグは刀・大剣が既に持っていたが、どこでも
+    // 判定されておらず左手と併用できてしまっていた。
+    // 盾武器（weaponType:'shield'）も両手扱いにする。右手に盾を構えたまま
+    // 左手にもう一枚盾を持てると、守護士だけ防御が二重に乗ってしまうため。
+    isTwoHandedWeapon(id) {
+      const w = D.weapons[id];
+      if (!w) return false;
+      return !!(w.twoHanded || D.items[id]?.twoHanded) || w.weaponType === 'shield';
+    }
     isLeftHandItemAllowed(id, jobId = this.profile.currentJob) {
       if (!id) return true;
+      if (this.isTwoHandedWeapon(this.profile?.equipment?.rightHand)) return false;
       if (this.isShield(id)) return true;
       if (this.hasPassiveType('dualWield')) return this.isDualBladeWeapon(this.profile.equipment?.rightHand) && this.isDualBladeWeapon(id) && this.isOffHandOnlyWeapon(id);
       return false;
