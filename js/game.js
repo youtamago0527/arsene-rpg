@@ -800,7 +800,44 @@
       return event;
     }
     onEvade(_event) { /* D4以降の回避時カウンター・回復・ゲージ処理用フック */ }
-    triggerEvade(attacker, defender, skill, context = {}) { this.audio?.sfx?.('evade'); return this.emitBattleEvent('evade', { attacker, defender, skillId: skill?.id || null, ...context }); }
+    // CADENZA FULL SET：本家《ソロ》を持たないJOBへ弱化版を貸す。
+    // 本家を持つ魔奏士へは重ねず、発動率へ soloChanceBonus を上乗せする（§31/§43）。
+    setGrantedTurnStartPassives() {
+      const chance = Number(this.activeSetEffects().soloChance) || 0;
+      if (!chance) return [];
+      if (this.activePassives().some(p => p.passiveEffect?.buff === 'doubleAct')) return [];
+      return [{ id: 'set_solo_cadenza', name: 'SOLO // CADENZA', passiveEffect: { type: 'turnStartBuff', buff: 'doubleAct', chance } }];
+    }
+    triggerEvade(attacker, defender, skill, context = {}) {
+      this.audio?.sfx?.('evade');
+      if (defender === 'player') this.rollStaccatoCounter(attacker);
+      return this.emitBattleEvent('evade', { attacker, defender, skillId: skill?.id || null, ...context });
+    }
+    // STACCATO FULL SET：既存の命中判定でMISS/回避になった瞬間だけ反撃する。
+    // 独立した回避率ステータスは作らない（§39）。
+    // 反撃から反撃・追撃・連舞・ACTIONが再帰しないよう、通常の攻撃処理は通さず
+    // ダメージだけを直接与える（§40）。
+    rollStaccatoCounter(enemy) {
+      if (this.staccatoCountering || !this.player) return;
+      const chance = Number(this.activeSetEffects().evadeCounterChance) || 0;
+      if (!chance || !enemy || enemy === 'player' || !enemy.alive || enemy.hp <= 0) return;
+      if (Math.random() >= chance) return;
+      this.staccatoCountering = true;
+      try {
+        const rate = D.combatBalance?.staccatoCounterRate ?? .55;
+        const basic = this.basicAttackSkill ? this.basicAttackSkill() : { id: 'attack', kind: 'physical', power: 1 };
+        const result = this.damageFor(basic, enemy, { hit: true, critical: false });
+        const dmg = Math.max(1, Math.round((result?.value || 1) * rate));
+        enemy.hp = Math.max(0, enemy.hp - dmg);
+        const el = this.enemyElement ? this.enemyElement(enemy) : null;
+        if (el) this.floating(el, dmg, 'damage');
+        this.setLog(`見切りざまの反撃！ ${enemy.name}${enemy.label || ''}へ${dmg}ダメージ！`);
+        if (enemy.hp <= 0) { enemy.alive = false; el?.classList.add('defeated'); }
+        this.updateHUD();
+      } catch (error) {
+        console.error('[STACCATO] 反撃の処理に失敗', error);
+      } finally { this.staccatoCountering = false; }
+    }
     // 楽器は魔奏士の証を入手するまで使用不可
     isWeaponTypeUnlocked(id) { const raw = (D.weaponTypes || []).find(t => t.id === id); if (!this.isPlayerContentVisible(raw)) return false; if (!raw.unlockFlag) return true; return !!this.profile.flags[raw.unlockFlag]; }
     unlockedWeaponTypes() { return this.weaponTypeList().filter(t => this.isWeaponTypeUnlocked(t.id)); }
@@ -923,11 +960,15 @@
     activePassives() { return [...new Map([...this.currentJobPassives(), ...this.equippedPassiveList()].map(s => [s.id, s])).values()]; }
     activePassiveByType(type) { return this.activePassives().find(p => p.passiveEffect?.type === type) || null; }
     hasPassiveType(type) { return !!this.activePassiveByType(type); }
-    comboDanceMax() { return Number(this.activePassiveByType('comboDance')?.passiveEffect?.maxStacks) || 5; }
+    // ミルティFULL SETは弱化版《連舞》を貸す。本家を持つ双刃士には
+    // 別スタックを作らず、本家の1段あたりの伸びへ上乗せする（§33/§34）。
+    comboDanceSetRate() { return Number(this.activeSetEffects().comboDancePerStack) || 0; }
+    comboDanceActive() { return this.hasPassiveType('comboDance') || this.comboDanceSetRate() > 0; }
+    comboDanceMax() { return Number(this.activePassiveByType('comboDance')?.passiveEffect?.maxStacks) || Number(this.activeSetEffects().comboDanceMaxStacks) || 5; }
     comboDanceStacks() { return Math.max(0, Math.min(this.comboDanceMax(), Number(this.player?.comboDance || 0))); }
-    comboDanceHit(extra = 0) { if (!this.player || !this.hasPassiveType('comboDance')) return; this.player.comboDance = Math.min(this.comboDanceMax(), this.comboDanceStacks() + 1 + extra); this.updateHUD(); }
-    comboDanceMiss() { if (!this.player || !this.hasPassiveType('comboDance') || !this.comboDanceStacks()) return; this.player.comboDance = 0; this.floating($('#ren'), '連舞 BREAK', 'miss'); this.updateHUD(); }
-    comboDanceDamageRate() { const p = this.activePassiveByType('comboDance'); return p ? this.comboDanceStacks() * this.passiveValue(p, 'damagePerStack') : 0; }
+    comboDanceHit(extra = 0) { if (!this.player || !this.comboDanceActive()) return; this.player.comboDance = Math.min(this.comboDanceMax(), this.comboDanceStacks() + 1 + extra); this.updateHUD(); }
+    comboDanceMiss() { if (!this.player || !this.comboDanceActive() || !this.comboDanceStacks()) return; this.player.comboDance = 0; this.floating($('#ren'), '連舞 BREAK', 'miss'); this.updateHUD(); }
+    comboDanceDamageRate() { const p = this.activePassiveByType('comboDance'); const per = (p ? this.passiveValue(p, 'damagePerStack') : 0) + this.comboDanceSetRate(); return per ? this.comboDanceStacks() * per : 0; }
     comboMaxBoost() { const p = this.activePassiveByType('comboMaxBoost'); return p && this.comboDanceStacks() >= this.comboDanceMax() ? { ...p.passiveEffect, agiRate: this.passiveValue(p, 'agiRate'), offHandRate: this.passiveValue(p, 'offHandRate') } : null; }
     playerCombatStats() { const stats = { ...(this.player?.stats || this.totalStats()) }, boost = this.comboMaxBoost(); if (boost?.agiRate) stats.agi = Math.round((stats.agi || 0) * (1 + boost.agiRate)); return stats; }
     dualWieldRate() { const p = this.activePassiveByType('dualWield'); return p ? this.passiveRate(p) : 0; }
@@ -1578,7 +1619,7 @@
     isBossSeriesUnlocked(series) { if (!this.isPlayerContentVisible(series)) return false; const bossId = series?.unlockCondition?.bossDefeated; return !!bossId && this.isBossDefeated(bossId); }
     unlockedBossSeries() { return Object.values(D.bossEquipmentSeries || {}).filter(series => this.isBossSeriesUnlocked(series)); }
     equippedSeriesCount(seriesId, equipment = this.profile.equipment) { return Object.values(equipment).filter(id => id && (D.items[id]?.seriesId === seriesId || this.equipmentDefinition(id)?.seriesId === seriesId)).length; }
-    activeSetEffects(equipment = this.profile.equipment) { const effects = {}; this.unlockedBossSeries().forEach(series => { const count = this.equippedSeriesCount(series.id, equipment); Object.entries(series.setBonuses || {}).forEach(([needed, bonus]) => { if (count >= Number(needed)) Object.assign(effects, bonus.effect || {}); }); }); return effects; }
+    activeSetEffects(equipment = this.profile.equipment) { const effects = {}; this.unlockedBossSeries().forEach(series => { const count = this.equippedSeriesCount(series.id, equipment); Object.entries(series.setBonuses || {}).forEach(([needed, bonus]) => { if (count < Number(needed)) return; Object.assign(effects, bonus.effect || {}); /* 本家JOBだけの追加恩恵（§38/§41） */ Object.assign(effects, bonus.jobEffects?.[this.profile.currentJob] || {}); }); }); return effects; }
     totalStats(equipment = this.profile.equipment) {
       const total = clone(this.profile.baseStats), bonuses = this.equipmentBonuses(equipment), jobBonuses = this.activeJobBonuses(), jobGrowth = this.jobStatBonuses(); Object.entries(bonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobBonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobGrowth).forEach(([k, v]) => total[k] = (total[k] || 0) + v); const setEffects = this.activeSetEffects(equipment); for (const key of ['str', 'vit', 'mag', 'mnd', 'agi', 'dex', 'luk']) { const pct = setEffects[`${key}Percent`] || 0; if (pct) total[key] = Math.max(total[key] + 1, Math.floor(total[key] * (1 + pct / 100))); } const shieldPenalty = this.shieldAgiPenaltyRate(); if (shieldPenalty) total.agi = Math.max(1, Math.floor(total.agi * (1 - shieldPenalty))); if (setEffects.critBonusFlat) total.critBonus = (total.critBonus || 0) + setEffects.critBonusFlat; if (this.activeMealBuffType() === 'makanai') total.maxHp = Math.ceil(total.maxHp * (1 + (D.foodMenu?.buffs?.makanai?.maxHpRate || .03))); total.critBonus ||= 0; this.applyPassiveStats(total); total.def = total.vit; /* 旧互換：def は体力と同義。装備防御力は defensePowerFor() 側で加算する */ /* 強化済みの能力補正は equipmentBonuses()、戦闘値は equipmentCombatStats() で加算する */ return total;
     }
@@ -3012,9 +3053,14 @@
       const lowHpSkill = this.activePassives().find(p => p.passiveEffect?.type === 'lowHpDamageReduction');
       const lowHpPassive = lowHpSkill?.passiveEffect;
       if (lowHpPassive && before / Math.max(1, this.player.stats.maxHp) <= (lowHpPassive.hpThreshold ?? .30)) damage = Math.max(0, Math.round(damage * (1 - this.passiveRate(lowHpSkill))));
-      const lastStand = this.activePassives().find(p => p.passiveEffect?.type === 'lastStand')?.passiveEffect;
+      // REPRISE FULL SET は既存の《不落》(lastStand) をそのまま借りる。
+      // 守護士は素で《不落》を持つためセットを着ても何も増えない。
+      // 本家適性として「HPが減らずに耐える」へ格上げする（回数は1回のまま）。
+      const setLastStand = setEffects.lastStand ? { hpFloor: 1 } : null;
+      const lastStand = this.activePassives().find(p => p.passiveEffect?.type === 'lastStand')?.passiveEffect || setLastStand;
+      const noDamageStand = !!setEffects.lastStandNoDamage;
       if (lastStand && !this.player.lastStandUsed && before > 1 && damage >= before) {
-        damage = Math.max(0, before - (lastStand.hpFloor ?? 1)); this.player.lastStandUsed = true;
+        damage = noDamageStand ? 0 : Math.max(0, before - (lastStand.hpFloor ?? 1)); this.player.lastStandUsed = true;
         this.flashTitle('UNFALLEN', 'HP 1'); this.floating($('#ren'), '不落', 'heal'); this.setLog('《不落》が致命傷を受け止めた！');
       }
       this.player.hp = Math.max(0, before - damage); const actual = before - this.player.hp;

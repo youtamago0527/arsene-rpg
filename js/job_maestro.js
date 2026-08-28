@@ -65,7 +65,8 @@
 
   // ── 自ターン開始時の抽選 ───────────────────────────────────
   P.rollMaestroPassives = async function () {
-    const passives = this.activePassives().filter(p => p.passiveEffect?.type === 'turnStartBuff');
+    // CADENZA FULL SET が貸す弱化版《ソロ》も同じ抽選に載せる。
+    const passives = [...this.activePassives().filter(p => p.passiveEffect?.type === 'turnStartBuff'), ...(this.setGrantedTurnStartPassives?.() || [])];
     if (!passives.length) return;
     const cfg = CFG(), chance = this.maestroProcChance();
     for (const p of passives) {
@@ -77,6 +78,9 @@
       // アンサンブル中は同じ比率で底上げする。
       const passiveChance = this.passiveValue(p, 'chance');
       let myChance = passiveChance || chance;
+      // 魔奏士が本家《ソロ》を持ったまま CADENZA FULL SET を着たときの上乗せ。
+      // 本家適性として恩恵は大きくしてよいが、100%発動にはしない（§31）。
+      if (kind === 'doubleAct' && p.id !== 'set_solo_cadenza') myChance = Math.min(.85, myChance + (Number(this.activeSetEffects().soloChanceBonus) || 0));
       if (kind === 'regen' || kind === 'doubleAct') {
         myChance = this.isEnsembleActive()
           ? Math.min(1, myChance * (cfg.ensembleChance / cfg.procChance))

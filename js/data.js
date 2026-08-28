@@ -302,6 +302,8 @@ window.ARSENE_DATA = {
     critical: { base: .06, luckRate: .0022, hardMax: .95, multiplier: 1.65 },
     // 共通コマンド《防御》は物理・魔法を問わず、そのラウンドの最終被ダメージを半減する。
     guardReduction: .50,
+    // STACCATO FULL SET の反撃威力（通常攻撃に対する倍率）。過剰にしない（§40）。
+    staccatoCounterRate: .55,
     // 敵→プレイヤーのダメージは比率型：atk × attackScale × defenseK/(defenseK+防御)
     // 引き算型だと工房で装備を更新した瞬間にダメージが 0 か即死かの両極端に振れるため、
     // 防御が上がるほど緩やかに減衰する比率型へ統一している。

@@ -295,7 +295,7 @@
   Object.assign(D.bossEquipmentSeries.zenacad.setBonuses, {
     2: { id: 'prelude', name: 'PRELUDE', description: '器用さ +10%', effect: { dexPercent: 10 } },
     4: { id: 'orchestrator', name: 'ORCHESTRATOR', description: '魔力 +8% / 魔法使用時12%でMP消費なし', effect: { magPercent: 8, freeMagicMpChance: .12 } },
-    6: { id: 'cadenza', name: 'CADENZA', description: '魔法使用時8%で追加発動（MP再消費なし）', effect: { magicRepeatChance: .08 } }
+    6: { id: 'cadenza', name: 'CADENZA', description: '魔法使用時8%で追加発動／弱化版《ソロ》15%（魔奏士は本家へ+12%）', effect: { magicRepeatChance: .08, soloChance: .15, soloChanceBonus: .12 } }
   });
   Object.assign(D.weapons.cadenza_staff, { magicAttackPower: 46, scaling: { dex: .7, mag: .3 }, powerKey: 'magicAttackPower', damageType: 'magical', bonuses: { dex: 9, mag: 6, maxMp: 6 } });
   Object.assign(D.armors.soloist_mask, { bonuses: { dex: 7, mag: 4, mnd: 2 } });
@@ -319,7 +319,10 @@
   D.bossEquipmentSeries.myrthi.setBonuses = {
     2: { id: 'crossBeat', name: 'CROSS BEAT', description: '素早さ +8% / 力 +5%', effect: { agiPercent: 8, strPercent: 5 } },
     4: { id: 'accelerando', name: 'ACCELERANDO', description: 'クリティカル率 +7% / 素早さ +5%', effect: { critBonusFlat: .07, agiPercent: 5 } },
-    7: { id: 'twinRiot', name: 'TWIN RIOT', description: '物理攻撃後12%で追加発動', effect: { physicalRepeatChance: .12 } }
+    // 7部位目の《影牙》は双刃士しか左手に持てないため、閾値を7にすると
+    // 他JOBはFULL SETへ到達できず弱化版《連舞》が一生発動しない。
+    // 実際に着られる最大数（右手＋防具5＝6）を閾値にする。
+    6: { id: 'twinRiot', name: 'TWIN RIOT', description: '物理攻撃後12%で追加発動／弱化版《連舞》1段+1%（双刃士は本家へ上乗せ）', effect: { physicalRepeatChance: .12, comboDancePerStack: .01 } }
   };
   Object.assign(D.bossEquipmentSeries.myrthi, {
     primaryJob: 'dualBlade', recommendedJobs: ['dualBlade', 'martialArtist'],
@@ -371,7 +374,10 @@
     setBonuses: {
       2: { id: 'antiphon', name: 'ANTIPHON', description: '体力 +8% / 精神 +8%', effect: { vitPercent: 8, mndPercent: 8 } },
       4: { id: 'bastion', name: 'BASTION', description: '被ダメージ10%軽減 / RESONANCE獲得量 +50%', effect: { damageReductionPercent: 10, resonanceGainMultiplier: 1.5 } },
-      6: { id: 'grandReprise', name: 'GRAND REPRISE', description: '反撃率 +15% / 反撃威力 +50%', effect: { counterRateFlat: .15, counterPowerPercent: 50 } }
+      // 致死をHP1で耐える能力は既存の《不落》(lastStand) をそのまま借りる（§36）。
+      // 守護士は素で《不落》を持つため、本家適性として
+      // 「HPが減らずに耐える」へ格上げする。回数は1戦闘1回のまま（§37/§38）。
+      6: { id: 'grandReprise', name: 'GRAND REPRISE', description: '反撃率 +15% / 反撃威力 +50% ／ 戦闘中1回、致死ダメージをHP1で耐える（守護士はHPが減らない）', effect: { counterRateFlat: .15, counterPowerPercent: 50, lastStand: true }, jobEffects: { guardian: { lastStandNoDamage: true } } }
     }
   };
   const seripesEnemy = D.enemies.seripes;
@@ -425,7 +431,9 @@
     setBonuses: {
       2: { id: 'sight', name: 'SIGHT', description: '器用さ +5%', effect: { dexPercent: 5 } },
       4: { id: 'afterimage', name: 'AFTERIMAGE', description: '素早さ +5%', effect: { agiPercent: 5 } },
-      7: { id: 'staccato', name: 'STACCATO', description: '回避に成功したとき25%で反撃', effect: { evadeCounterChance: .25 } }
+      // 暮月一閃(剣)と瞬影鉄甲(爪)はどちらも右手なので、実際に着られるのは
+      // 右手＋防具5の6部位が上限。閾値7では永久に発動しなかった。
+      6: { id: 'staccato', name: 'STACCATO', description: '回避に成功したとき25%で反撃', effect: { evadeCounterChance: .25 } }
     }
   };
   const astactEnemy = D.enemies.astact;
