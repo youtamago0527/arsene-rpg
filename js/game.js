@@ -162,6 +162,8 @@
         if (craft) { if (!craft.disabled) this.craftItem(craft.dataset.craft, craft.getBoundingClientRect().top); return; }
         const dismantle = e.target.closest('[data-disassemble]');
         if (dismantle) { if (!dismantle.disabled) this.dismantleItem(dismantle.dataset.disassemble, dismantle.getBoundingClientRect().top); return; }
+        const lockToggle = e.target.closest('[data-toggle-lock]');
+        if (lockToggle) { this.toggleEquipmentLock(lockToggle.dataset.toggleLock, lockToggle.getBoundingClientRect().top); return; }
         const enchant = e.target.closest('[data-enchant]');
         if (enchant) { if (!enchant.disabled) this.enchantWeapon(enchant.dataset.enchant, enchant.getBoundingClientRect().top); return; }
         const armorEnchant = e.target.closest('[data-armor-enchant]');
@@ -258,7 +260,7 @@
     }
 
     freshProfile() {
-      const p = D.player; return { version: 19, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), shopPurchases: {}, premium: { adSkipLicense: false, adSkipTickets: 0, auto3License: false, sweepLicense: false, otherworldTickets: 0 }, musicScores: {}, bossDefeated: { zenacad: false, myrthi: false, versicrell: false, seripes: false }, currentJob: 'mage', lastNormalJob: 'mage', otherWorldReturnJob: null, jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, guardian: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, unlockedJobs: ['mage'], initialJob: 'mage', jobGrowthGained: {}, phantomGrowthRecords: {}, jobRebirths: {}, jobMastered: [], growthFraction: {}, learnedPassives: [], passiveEnhancements: {}, passiveEnhancedAtRebirth: {}, equippedPassives: [null], ptActionSlots: [null, null], ptPassiveSlots: [null, null], weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 }, shield: { level: 1, exp: 0 } }, learnedWeaponSkills: [], seenEnemies: [], equipmentArchive: [], collectionRewards: {}, playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0, instrument: 0, shield: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0 }, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, taiwanMazesobaUnlocked: false, taiwanMazesobaNew: false, foodSecretMenuUnlocked: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, floorWins: {}, dungeon3BattleWins: 0, dungeon3NewSeen: false, guardianUnlocked: false, shieldUnlocked: false, lastBattleResult: null, consecutiveDefeats: 0, owRestoreJobPending: false }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
+      const p = D.player; return { version: 19, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), shopPurchases: {}, premium: { adSkipLicense: false, adSkipTickets: 0, auto3License: false, sweepLicense: false, otherworldTickets: 0 }, musicScores: {}, bossDefeated: { zenacad: false, myrthi: false, versicrell: false, seripes: false }, currentJob: 'mage', lastNormalJob: 'mage', otherWorldReturnJob: null, jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, guardian: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, unlockedJobs: ['mage'], initialJob: 'mage', jobGrowthGained: {}, phantomGrowthRecords: {}, jobRebirths: {}, jobMastered: [], growthFraction: {}, learnedPassives: [], passiveEnhancements: {}, passiveEnhancedAtRebirth: {}, equippedPassives: [null], ptActionSlots: [null, null], ptPassiveSlots: [null, null], weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 }, shield: { level: 1, exp: 0 } }, learnedWeaponSkills: [], seenEnemies: [], equipmentArchive: [], lockedEquipment: [], collectionRewards: {}, playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0, instrument: 0, shield: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0 }, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, taiwanMazesobaUnlocked: false, taiwanMazesobaNew: false, foodSecretMenuUnlocked: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, floorWins: {}, dungeon3BattleWins: 0, dungeon3NewSeen: false, guardianUnlocked: false, shieldUnlocked: false, lastBattleResult: null, consecutiveDefeats: 0, owRestoreJobPending: false }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
     }
     loadProfile() {
       try {
@@ -426,6 +428,8 @@
         // D3希少怪異の正式命名に伴う図鑑ID移行。旧セーブの遭遇記録を失わない。
         if (profile.seenEnemies.includes('astralMercuryCore')) profile.seenEnemies = [...new Set(profile.seenEnemies.map(id => id === 'astralMercuryCore' ? 'merox' : id))];
         if (!Array.isArray(profile.equipmentArchive)) profile.equipmentArchive = [];
+        // 分解から守る装備のID。旧セーブには無いので必ず補完する。
+        if (!Array.isArray(profile.lockedEquipment)) profile.lockedEquipment = [];
         if (!profile.collectionRewards || typeof profile.collectionRewards !== 'object') profile.collectionRewards = {};
         const knownEquipment = [...Object.entries(profile.inventory || {}).filter(([id, n]) => n > 0 && D.items[id]?.category === 'equipment' && !D.items[id]?.devOnly && !D.items[id]?.futureOnly).map(([id]) => id), ...Object.values(profile.equipment || {}).filter(id => D.items[id]?.category === 'equipment' && !D.items[id]?.devOnly && !D.items[id]?.futureOnly)];
         profile.equipmentArchive = [...new Set([...profile.equipmentArchive, ...knownEquipment])];
@@ -4048,8 +4052,24 @@
         return `<div class="workshop-section-title"><b>素材一覧</b><span>MATERIALS</span></div><div class="workshop-materials">${materialRows || '<p>素材を所持していません。</p>'}</div>`;
       }
       if (tab === 'disassemble') {
-        const gear = Object.entries(this.profile.inventory).filter(([id,n]) => n > 0 && this.isPlayerContentVisible(D.items[id]) && D.items[id]?.category === 'equipment').map(([id,n]) => { const item = D.items[id], series = D.bossEquipmentSeries?.[item.seriesId], equipped = Object.values(this.profile.equipment).includes(id), spare = n - (equipped ? 1 : 0), can = !!series && spare > 0, output = series?.dismantle, material = D.items[output?.materialId]; return `<article class="${series ? 'boss-dismantle' : ''}"><div><b>${item.name}</b><span>${this.bonusText(id)} // 所持 ×${n}${equipped ? '（1個装備中）' : ''}</span>${series ? `<small>→ ${material?.name || output.materialId} ×${output.count}</small>` : ''}</div><button data-disassemble="${id}" ${can ? '' : 'disabled'}>${series ? (can ? '分解する' : '予備なし') : '対象外'}</button></article>`; }).join('');
-        return `<div class="workshop-section-title"><b>装備分解</b><span>DISASSEMBLE</span></div><p class="workshop-warning">ボス装備の予備を分解し、シリーズ素材へ変換できます。装備中の最後の1個は保護されます。</p><div class="workshop-disassemble">${gear || '<p>分解可能な装備がありません。</p>'}</div>`;
+        const gold = this.dismantleGold();
+        const gear = Object.entries(this.profile.inventory)
+          .filter(([id, n]) => n > 0 && this.isPlayerContentVisible(D.items[id]) && D.items[id]?.category === 'equipment')
+          // ★の高いものほど誤爆すると痛いので、上に並べて目に入りやすくする。
+          .sort((a, b) => (D.items[b[0]].stars || 0) - (D.items[a[0]].stars || 0))
+          .map(([id, n]) => {
+            const item = D.items[id], stars = Number(item.stars) || 0;
+            const locked = this.isEquipmentLocked(id), blocked = this.dismantleBlockReason(id);
+            const equipped = Object.values(this.profile.equipment).includes(id);
+            return `<article class="dismantle-row stars-${stars}${locked ? ' is-locked' : ''}">
+              <div><b>${item.name}${stars ? `<em class="ds-stars">${'★'.repeat(stars)}</em>` : ''}${locked ? '<mark class="lock-badge">ロック</mark>' : ''}</b>
+              <span>${this.bonusText(id)} // 所持 ×${n}${equipped ? '（1個装備中）' : ''}</span></div>
+              <div class="dismantle-actions">
+                <button class="lock-btn" data-toggle-lock="${id}" aria-pressed="${locked}">${locked ? '🔒' : '🔓'}</button>
+                <button data-disassemble="${id}" ${blocked ? 'disabled' : ''}>${blocked || `分解 +${gold}G`}</button>
+              </div></article>`;
+          }).join('');
+        return `<div class="workshop-section-title"><b>装備分解</b><span>DISASSEMBLE</span></div><p class="workshop-warning">不要な装備を ${gold} GOLD へ変えます。★・強化値にかかわらず一律で、素材は戻りません。ロック中と装備中の最後の1個は分解できません。</p><div class="workshop-disassemble">${gear || '<p>分解可能な装備がありません。</p>'}</div>`;
       }
       if (tab === 'enhance') {
         const kind = this.enhanceKind === 'armor' ? 'armor' : 'weapon';
@@ -4129,7 +4149,78 @@
       this.recordEquipmentDiscovery([recipe.resultItemId]);
       this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-craft', recipe.id, anchorTop);
     }
-    dismantleItem(id, anchorTop = null) { const item = D.items[id], series = D.bossEquipmentSeries?.[item?.seriesId], output = series?.dismantle, equipped = Object.values(this.profile.equipment).includes(id), spare = (this.profile.inventory[id] || 0) - (equipped ? 1 : 0); if (!item || !series || !output || spare <= 0) return; this.profile.inventory[id]--; this.profile.inventory[output.materialId] = (this.profile.inventory[output.materialId] || 0) + output.count; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-disassemble', id, anchorTop); }
+    // ══ 装備の分解 ══════════════════════════════════════════
+    // 旧仕様：ボス装備の予備だけをシリーズ素材へ変換していた。
+    // 新仕様：どの装備でも分解でき、素材は返さず一律のGOLDだけ返す（§52/§53）。
+    // 金策コンテンツにしないため、★・強化値・ボス装備で額を変えない（§54）。
+    isEquipmentLocked(id) { return (this.profile.lockedEquipment || []).includes(id); }
+    toggleEquipmentLock(id, anchorTop = null) {
+      if (D.items[id]?.category !== 'equipment') return false;
+      this.profile.lockedEquipment ||= [];
+      const at = this.profile.lockedEquipment.indexOf(id);
+      if (at >= 0) this.profile.lockedEquipment.splice(at, 1); else this.profile.lockedEquipment.push(id);
+      this.saveProfile(); this.audio.sfx('ui');
+      this.renderWorkshopKeepingAnchor('data-disassemble', id, anchorTop);
+      return this.isEquipmentLocked(id);
+    }
+    dismantleGold() { return D.dismantleBalance?.goldPerItem ?? 100; }
+    // 分解できない理由を返す。できるなら null。
+    dismantleBlockReason(id) {
+      const item = D.items[id];
+      if (!item || item.category !== 'equipment') return '装備ではありません';
+      const owned = this.profile.inventory[id] || 0;
+      if (owned <= 0) return '所持していません';
+      if (this.isEquipmentLocked(id)) return 'ロック中';
+      // 装備中の最後の1個は守る。勝手に外してステータス不整合を起こさない（§57）。
+      const equipped = Object.values(this.profile.equipment).includes(id);
+      if (equipped && owned - 1 <= 0) return '装備中';
+      return null;
+    }
+    dismantleItem(id, anchorTop = null) {
+      if (this.dismantleBlockReason(id)) return;
+      const item = D.items[id], stars = Number(item.stars) || 0, cfg = D.dismantleBalance || {};
+      if (stars >= (cfg.confirmFromStars ?? 4)) { this.confirmDismantle(id, anchorTop); return; }
+      this.finishDismantle(id, anchorTop);
+    }
+    // ★4以上は確認、★5はさらに強い警告（§55）。既存のモーダル様式を流用する。
+    confirmDismantle(id, anchorTop = null) {
+      const item = D.items[id], stars = Number(item.stars) || 0;
+      const strong = stars >= (D.dismantleBalance?.strongWarnFromStars ?? 5);
+      document.querySelector('.dismantle-modal')?.remove();
+      const modal = document.createElement('div');
+      modal.className = `q-offer-modal q-offer-defeat dismantle-modal${strong ? ' dismantle-strong' : ''}`;
+      modal.innerHTML = `<div class="q-offer-card q-revive-card" role="dialog" aria-label="装備の分解">
+        <small class="q-revive-tag"><i></i>${strong ? 'BOSS EQUIPMENT' : 'RARE EQUIPMENT'}</small>
+        <h2>${strong ? 'BOSS装備を分解します' : 'レア装備を分解します'}</h2>
+        <p class="dismantle-target">《${item.name}》${'★'.repeat(stars)}</p>
+        <p>${strong ? '同じものを揃え直すには、もう一度ボスを倒す必要があります。本当に実行しますか？' : '素材は戻りません。本当に実行しますか？'}</p>
+        <div class="q-revive-details"><div><span><i></i>入手</span><b>${this.dismantleGold()} GOLD</b></div><div><span><i></i>戻る素材</span><b>なし</b></div></div>
+        <button class="q-offer-watch" data-dismantle-ok="${id}"><span>${strong ? 'それでも分解する' : '分解する'}</span></button>
+        <button class="q-offer-close" data-dismantle-cancel>やめる</button>
+      </div>`;
+      document.body.appendChild(modal);
+      modal.addEventListener('click', event => {
+        if (event.target.closest('[data-dismantle-cancel]')) { modal.remove(); return; }
+        const ok = event.target.closest('[data-dismantle-ok]');
+        if (!ok) return;
+        modal.remove(); this.finishDismantle(ok.dataset.dismantleOk, anchorTop);
+      });
+    }
+    finishDismantle(id, anchorTop = null) {
+      if (this.dismantleBlockReason(id)) return;
+      const item = D.items[id], gold = this.dismantleGold();
+      this.profile.inventory[id] = Math.max(0, (this.profile.inventory[id] || 0) - 1);
+      if (!(this.profile.inventory[id] > 0)) {
+        delete this.profile.inventory[id];
+        // 強化値はそのIDの装備すべてに掛かる値なので、在庫が尽きた時だけ捨てる。
+        if (this.profile.weaponEnchants) delete this.profile.weaponEnchants[id];
+        if (this.profile.armorEnchants) delete this.profile.armorEnchants[id];
+      }
+      this.profile.gold += gold;
+      this.saveProfile(); this.audio.sfx('confirm');
+      window.arseneStartFlow?.toast(`《${item.name}》を分解 → ${gold} GOLD`);
+      this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-disassemble', id, anchorTop);
+    }
     renderWorkshop(panel) {
       if ((this.profile.newlyUnlockedRecipes || []).length) { this.profile.newlyUnlockedRecipes = []; this.saveProfile(); }
       if (!this.profile.flags.noelFirstEncounterCleared) { panel.innerHTML = '<button class="panel-home" data-menu="home">拠点へ戻る</button><small>PHANTOM WORKSHOP</small><h2>工房</h2><div class="workshop-unlock"><b>LOCKED</b><strong>まだ工房は利用できません</strong><span>通常戦を3回制し、永遠の裁定者ノエルと遭遇すると解放されます。</span></div>'; return; }

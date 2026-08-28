@@ -44,6 +44,14 @@ window.ARSENE_DATA = {
   // 命中率（隠しステータス／画面には出さない）。攻撃側DEXと防御側AGIで共通判定する。
   // 数値は小数（0.05 = 5%）。既存敵にDEX/AGIが無い場合は戦闘側でSPDへフォールバックする。
   accuracy: { base: 0.90, dexRate: 0.006, defenderAgiRate: 0.005, min: 0.05, max: 1.0 },
+  // 装備の分解。素材へは戻さず一律のGOLDだけ返す（§53）。
+  // 金策コンテンツにはしない。目的はバッグ整理なので★・強化値・ボス装備で
+  // 額を変えず、BOSS周回→★5大量分解→大量GOLD のループを作らない（§54）。
+  dismantleBalance: { goldPerItem: 100, confirmFromStars: 4, strongWarnFromStars: 5 },
+  // 装備の分解。素材へは戻さず一律のGOLDだけ返す（§53）。
+  // 金策コンテンツにはしない。目的はバッグ整理なので、★・強化値・ボス装備で
+  // 額を変えず、BOSS周回→★5大量分解→大量GOLD のループを作らない（§54）。
+  dismantleBalance: { goldPerItem: 100, confirmFromStars: 4, strongWarnFromStars: 5 },
   // 盾（左手）のトレードオフ。防御性能はアイテム側の defensePower で伸ばし、
   // 素早さの低下率だけをここで管理する。ランクが上がっても上限を超えない（§15）。
   shieldBalance: {
