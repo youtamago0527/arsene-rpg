@@ -375,9 +375,11 @@
       2: { id: 'antiphon', name: 'ANTIPHON', description: '体力 +8% / 精神 +8%', effect: { vitPercent: 8, mndPercent: 8 } },
       4: { id: 'bastion', name: 'BASTION', description: '被ダメージ10%軽減 / RESONANCE獲得量 +50%', effect: { damageReductionPercent: 10, resonanceGainMultiplier: 1.5 } },
       // 致死をHP1で耐える能力は既存の《不落》(lastStand) をそのまま借りる（§36）。
-      // 守護士は素で《不落》を持つため、本家適性として
-      // 「HPが減らずに耐える」へ格上げする。回数は1戦闘1回のまま（§37/§38）。
-      6: { id: 'grandReprise', name: 'GRAND REPRISE', description: '反撃率 +15% / 反撃威力 +50% ／ 戦闘中1回、致死ダメージをHP1で耐える（守護士はHPが減らない）', effect: { counterRateFlat: .15, counterPowerPercent: 50, lastStand: true }, jobEffects: { guardian: { lastStandNoDamage: true } } }
+      // 守護士は素で《不落》を持ちセットを着ても何も増えないため、本家適性として
+      // 「耐えた瞬間にRESONANCEが最大になる」を与える（§38の例示に沿う）。
+      // HPは1のままなので耐久はほぼ増えず、必中の《RESONANCE BREAK》を
+      // 最大倍率で撃てるかどうかの一回勝負になる。回数は1戦闘1回のまま（§37）。
+      6: { id: 'grandReprise', name: 'GRAND REPRISE', description: '反撃率 +15% / 反撃威力 +50% ／ 戦闘中1回、致死ダメージをHP1で耐える（守護士は耐えた瞬間にRESONANCE最大）', effect: { counterRateFlat: .15, counterPowerPercent: 50, lastStand: true }, jobEffects: { guardian: { lastStandResonanceFull: true } } }
     }
   };
   const seripesEnemy = D.enemies.seripes;

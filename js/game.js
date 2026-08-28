@@ -3058,9 +3058,19 @@
       // 本家適性として「HPが減らずに耐える」へ格上げする（回数は1回のまま）。
       const setLastStand = setEffects.lastStand ? { hpFloor: 1 } : null;
       const lastStand = this.activePassives().find(p => p.passiveEffect?.type === 'lastStand')?.passiveEffect || setLastStand;
-      const noDamageStand = !!setEffects.lastStandNoDamage;
+      const resonanceStand = !!setEffects.lastStandResonanceFull;
       if (lastStand && !this.player.lastStandUsed && before > 1 && damage >= before) {
-        damage = noDamageStand ? 0 : Math.max(0, before - (lastStand.hpFloor ?? 1)); this.player.lastStandUsed = true;
+        damage = Math.max(0, before - (lastStand.hpFloor ?? 1)); this.player.lastStandUsed = true;
+        // 守護士＋REPRISE FULL：耐えた瞬間にRESONANCEを最大まで満たす。
+        // HP1のままなので「次の一撃で死ぬか、必中の最大倍率で殺しきるか」の
+        // 二択になる。HPを守る方向にすると、ただ硬いだけになって緊張が消える。
+        if (resonanceStand && this.resonanceEnabled?.()) {
+          const max = D.guardianBalance?.resonanceMax || 100;
+          if ((this.player.resonance || 0) < max) {
+            this.player.resonance = max;
+            this.flashTitle?.('RESONANCE MAX', 'GRAND REPRISE');
+          }
+        }
         this.flashTitle('UNFALLEN', 'HP 1'); this.floating($('#ren'), '不落', 'heal'); this.setLog('《不落》が致命傷を受け止めた！');
       }
       this.player.hp = Math.max(0, before - damage); const actual = before - this.player.hp;
