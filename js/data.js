@@ -160,6 +160,10 @@ window.ARSENE_DATA = {
     vitalGrowthHpTierSize: 100,
     vitalGrowthMpTierSize: 100,
     vitalGrowthSparkPerTier: 10,
+    // HPは戦闘ごとの抽選で伸びる（JOB Lvでは増えない）。基礎15%＋JOB補正。
+    // 守護士は27%で全JOB中トップ。500戦でHP485、1000戦で890に達する。
+    // VITは防御力にしか変換されないため一見HPが薄く見えるが、
+    // 実際の到達値はこの成長率で決まる。
     jobHpGrowthBonus: { warrior: 0.10, martialArtist: 0.07, mage: 0.00, priest: 0.05, guardian: 0.12 },
     jobMpGrowthBonus: { warrior: 0.00, martialArtist: 0.02, mage: 0.10, priest: 0.08, guardian: 0.03 },
 
