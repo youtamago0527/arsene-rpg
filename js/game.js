@@ -814,8 +814,8 @@
     // 以前は盾＝守護士をここへ直接書いていたため、他の武器種へ
     // 制限を足すたびに条件が増えていく形だった。
     canEquipRightHand(id, jobId = this.profile.currentJob) {
-      const w = D.weapons[id]; if (!w) return false;
-      const jobs = this.weaponTypeDef(w.weaponType)?.equipJobs;
+      const type = this.weaponTypeOf(id); if (!type) return false;
+      const jobs = this.weaponTypeDef(type)?.equipJobs;
       return !jobs || jobs.includes(jobId);
     }
     // ══ 敵→プレイヤーのダメージ ════════════════════════════════
@@ -1591,7 +1591,10 @@
     jobHasTrait(key, jobId = this.profile.currentJob) { return !!D.jobs[jobId]?.traits?.[key]; }
     isDualBladeWeapon(value) { const w = typeof value === 'string' ? D.weapons[value] : value; return w?.weaponSubtype === 'dualBlade'; }
     dualWieldEnabled() { return this.hasPassiveType('dualWield') && this.isDualBladeWeapon(this.profile.equipment?.rightHand); }
-    equippedWeapon() { return D.weapons[this.profile.equipment.rightHand] || (this.usesBareFists() ? D.weapons.bareFist : D.weapons.mageStaff); }
+    equippedWeapon() {
+      const id = this.profile.equipment.rightHand;
+      return D.weapons[id] || (this.isShield(id) ? this.shieldAsWeapon(id) : null) || (this.usesBareFists() ? D.weapons.bareFist : D.weapons.mageStaff);
+    }
     // 左手が殴れるか＝双刃士のオフハンド武器、または武道家の素手。返り値は左手側の武器定義。
     offHandWeapon() {
       if (this.usesBareFists()) return D.weapons.bareFist;
@@ -4597,10 +4600,10 @@
         const slotDef = slots.find(s => s.id === activeSlot);
         let list = this.candidatesForSlot(activeSlot);
         // 武器が増えても一覧が縦に伸びないよう、武器学（武器種）ごとに切り替える。
-        const weaponTypes = this.unlockedWeaponTypes().filter(type => list.some(id => D.weapons[id]?.weaponType === type.id));
+        const weaponTypes = activeSlot === 'rightHand' ? this.unlockedWeaponTypes().filter(type => list.some(id => this.weaponTypeOf(id) === type.id)) : [];
         if (weaponTypes.length) {
           if (!weaponTypes.some(type => type.id === this.equipWeaponType)) this.equipWeaponType = weaponTypes[0].id;
-          list = list.filter(id => D.weapons[id]?.weaponType === this.equipWeaponType);
+          list = list.filter(id => this.weaponTypeOf(id) === this.equipWeaponType);
         } else this.equipWeaponType = null;
         const sortKey = this.equipSort || 'default';
         if (sortKey !== 'default') list = [...list].sort((a, b) => this.equipSortValue(b, sortKey) - this.equipSortValue(a, sortKey) || (D.items[a]?.name || '').localeCompare(D.items[b]?.name || ''));
@@ -4619,12 +4622,26 @@
       return Object.entries(this.profile.inventory).filter(([id, n]) => {
         if (!(n > 0)) return false; const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment') return false;
         if (slotId === 'leftHand') return this.isLeftHandItemAllowed(id);
-        if (slotId === 'rightHand' && (this.isOffHandOnlyWeapon(id) || !this.canEquipRightHand(id))) return false;
+        if (slotId === 'rightHand') return !this.isOffHandOnlyWeapon(id) && this.canEquipRightHand(id);
         return item.slot === slotId;
       }).map(([id]) => id);
     }
     isOffHandOnlyWeapon(id) { return !!D.weapons[id] && !!(D.weapons[id].offHandOnly || D.items[id]?.offHandOnly); }
     isShield(id) { return !!id && !D.weapons[id] && D.items[id]?.slot === 'leftHand'; }
+    // 防具の盾を右手に構えたときは盾武器として扱う。攻撃力は
+    // equipmentCombatStats() の defensePower 合計から出るので、
+    // ここでは武器種と見た目を持つ器を返せば足りる。
+    shieldAsWeapon(id) {
+      const item = D.items[id]; if (!item) return null;
+      const gear = D.armors?.[id] || D.equipment?.[id] || D.accessories?.[id] || {};
+      return {
+        id, name: item.name, weaponType: 'shield', attackMotion: 'shieldBash',
+        weaponSprite: gear.weaponSprite || 'shield_reprise', battleSprite: null,
+        damageType: 'physical', damageStat: 'vit',
+        defensePower: gear.defensePower || 0, magicDefensePower: gear.magicDefensePower || 0
+      };
+    }
+    weaponTypeOf(id) { return D.weapons[id]?.weaponType || (this.isShield(id) ? 'shield' : null); }
     // 左手の盾は全JOBが装備できる（守護士専用にはしない）。
     // 二刀（双刃）は従来どおり《二刀の型》を持つ双刃士だけの特権で、
     // その双刃士も盾を選べば防御へ寄せられる。
@@ -4634,8 +4651,11 @@
     // 盾武器（weaponType:'shield'）も両手扱いにする。右手に盾を構えたまま
     // 左手にもう一枚盾を持てると、守護士だけ防御が二重に乗ってしまうため。
     isTwoHandedWeapon(id) {
-      const w = D.weapons[id];
-      if (!w) return false;
+      if (!id) return false;
+      // 右手に構えた盾（防具・盾武器のどちらでも）は両手占有。
+      // 左手にもう一枚盾を持てると防御が二重に乗ってしまう。
+      if (this.isShield(id)) return true;
+      const w = D.weapons[id]; if (!w) return false;
       return !!(w.twoHanded || D.items[id]?.twoHanded) || w.weaponType === 'shield';
     }
     isLeftHandItemAllowed(id, jobId = this.profile.currentJob) {
