@@ -152,9 +152,13 @@ window.ARSENE_DATA = {
     ],
     sparkSourceMultipliers: { basic: .25, related: .5, direct: 2.0 },
     sparkInitialCastFree: true,
-    // パッシブは転生1回ごとに「基本値 × この割合」ずつ強くなる。
-    // 個別に rebirthStep / max を書けばそちらが優先される。
-    passiveRebirthStepRate: 0.4,
+    // パッシブは転生1回ごとに、全JOB共通でこの値ぶん強くなる（絶対値の+2%）。
+    // 旧仕様の「基本値×40%」は、基本値が小さいパッシブほど伸びず
+    // 転生しても上がった気がしない、という問題があったため一律へ変更した。
+    // 個別に rebirthStep / rebirthTable / max を書けばそちらが優先される。
+    passiveRebirthStepFlat: 0.02,
+    // JOB特性（そのJOBに就いている間だけの効果）は従来どおり基本値比で伸ばす。
+    jobTraitRebirthStepRate: 0.4,
     // 転生時、直前までにそのJOBのLvアップで得た能力のうち残す割合。
     rebirthStatRetentionRate: 0.20,
     // 転生1回につき、次のLvアップで得られるJOB成長量を10%増やす。

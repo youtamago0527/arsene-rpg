@@ -675,7 +675,8 @@
     criticalChanceFor(skill, stats = this.player?.stats || this.totalStats()) {
       if (skill?.kind === 'neutral' || skill?.damageType === 'neutral') return 0;
       const c = D.combatBalance?.critical || { base: .06, luckRate: .008, max: .28 };
-      const comboCrit = this.comboDanceStacks() >= this.comboDanceMax() ? (this.activePassiveByType('comboDance')?.passiveEffect?.maxCriticalBonus || 0) : 0;
+      const comboPassive = this.activePassiveByType('comboDance');
+      const comboCrit = comboPassive && this.comboDanceStacks() >= this.comboDanceMax() ? this.passiveRate(comboPassive, 'maxCriticalBonus') : 0;
       const extra = (Number(skill?.criticalModifier) || 0) + this.traitCriticalBonus() + this.equipmentEffectRate('criticalRateBonus') + comboCrit;
       const statBonus = Number(stats?.critBonus) || 0;
       return clamp(c.base + (Number(stats?.luk) || 0) * c.luckRate + statBonus + extra, c.base, c.max + statBonus + extra);
@@ -775,8 +776,11 @@
         return keys.length ? Number(e.rebirthTable[keys[0]]) : base;
       }
       if (!n) return base;
-      const step = e.rebirthStep != null ? e.rebirthStep : base * (this.gb().passiveRebirthStepRate ?? 0.4);
-      const grown = base + n * step;
+      // 転生1回につき一律 +2%（絶対値）。
+      // 以前は base の40%だったため、rateが小さいパッシブほど伸び幅も小さく、
+      // 「転生してもパッシブが上がっていない」体感になっていた。
+      const step = e.rebirthStep != null ? e.rebirthStep : (this.gb().passiveRebirthStepFlat ?? 0.02);
+      const grown = Number((base + n * step).toFixed(4));
       return e.max != null ? Math.min(e.max, grown) : grown;
     }
     // 表示用：効果テキストの数値を、転生で伸びた現在値に差し替える。
@@ -822,8 +826,14 @@
     comboDanceStacks() { return Math.max(0, Math.min(this.comboDanceMax(), Number(this.player?.comboDance || 0))); }
     comboDanceHit(extra = 0) { if (!this.player || !this.hasPassiveType('comboDance')) return; this.player.comboDance = Math.min(this.comboDanceMax(), this.comboDanceStacks() + 1 + extra); this.updateHUD(); }
     comboDanceMiss() { if (!this.player || !this.hasPassiveType('comboDance') || !this.comboDanceStacks()) return; this.player.comboDance = 0; this.floating($('#ren'), '連舞 BREAK', 'miss'); this.updateHUD(); }
-    comboDanceDamageRate() { const e = this.activePassiveByType('comboDance')?.passiveEffect; return e ? this.comboDanceStacks() * (e.damagePerStack || 0) : 0; }
-    comboMaxBoost() { return this.comboDanceStacks() >= this.comboDanceMax() ? this.activePassiveByType('comboMaxBoost')?.passiveEffect || null : null; }
+    comboDanceDamageRate() { const p = this.activePassiveByType('comboDance'); return p ? this.comboDanceStacks() * this.passiveRate(p, 'damagePerStack') : 0; }
+    // 連舞MAXの効果値も passiveRate() を通し、転生ぶんの上乗せを反映させる。
+    // 生の passiveEffect を返していたため、舞踏だけ転生強化が一切乗っていなかった。
+    comboMaxBoost() {
+      if (this.comboDanceStacks() < this.comboDanceMax()) return null;
+      const p = this.activePassiveByType('comboMaxBoost'); if (!p) return null;
+      return { ...p.passiveEffect, agiRate: this.passiveRate(p, 'agiRate'), offHandRate: this.passiveRate(p, 'offHandRate') };
+    }
     playerCombatStats() { const stats = { ...(this.player?.stats || this.totalStats()) }, boost = this.comboMaxBoost(); if (boost?.agiRate) stats.agi = Math.round((stats.agi || 0) * (1 + boost.agiRate)); return stats; }
     dualWieldRate() { const p = this.activePassiveByType('dualWield'); return p ? this.passiveRate(p) : 0; }
     // ══ JOB特性 ═══════════════════════════════════════════════
@@ -835,7 +845,7 @@
       const base = typeof t === 'number' ? t : (t.rate || 0);
       if (!base) return 0;
       const n = this.rebirthCount(jobId); if (!n) return base;
-      const step = t.rebirthStep != null ? t.rebirthStep : base * (this.gb().passiveRebirthStepRate ?? 0.4);
+      const step = t.rebirthStep != null ? t.rebirthStep : base * (this.gb().jobTraitRebirthStepRate ?? 0.4);
       const grown = base + n * step;
       return t.max != null ? Math.min(t.max, grown) : grown;
     }
@@ -1381,7 +1391,21 @@
     learnedActiveSkillIds() { return [...new Set(['quickSlash', ...(this.profile.learnedCharacterSkills || []), ...(this.profile.learnedJobSkills || [])])].filter(id => D.skills[id]?.type !== 'PASSIVE'); }
     characterHasSkill(id) { return (this.profile.learnedCharacterSkills || []).includes(id) || (D.characterSkillProgression || []).some(entry => entry.skillId === id && this.profile.level >= entry.level); }
     jobExpNeeded(level) { return D.jobExpTable[level] || null; }
-    activeJobBonuses(jobId = this.profile.currentJob) { if ((this.gb().jobGrowthPerLevel || {})[jobId]) return {}; const job = D.jobs[jobId], level = this.profile.jobs?.[jobId]?.level || 1, bonuses = {}; for (let lv = 1; lv <= level; lv++) Object.entries(job?.growth?.[lv] || {}).forEach(([key, value]) => bonuses[key] = (bonuses[key] || 0) + value); return bonuses; }
+    // 旧growthテーブル方式のJOB（双刃士）の補正。JOB Lvから毎回導出する。
+    // 転生成長ボーナスは applyJobLevelGrowth() 側にしか掛かっておらず、
+    // このテーブル方式のJOBだけ転生しても成長量が一切増えていなかったため、
+    // ここでも同じ倍率を掛ける。
+    activeJobBonuses(jobId = this.profile.currentJob) {
+      if ((this.gb().jobGrowthPerLevel || {})[jobId]) return {};
+      const job = D.jobs[jobId], level = this.profile.jobs?.[jobId]?.level || 1, bonuses = {};
+      for (let lv = 1; lv <= level; lv++) Object.entries(job?.growth?.[lv] || {}).forEach(([key, value]) => bonuses[key] = (bonuses[key] || 0) + value);
+      const mult = this.rebirthGrowthMultiplier(jobId);
+      if (mult === 1) return bonuses;
+      for (const key of Object.keys(bonuses)) bonuses[key] = key === 'critBonus'
+        ? Number((bonuses[key] * mult).toFixed(4))
+        : Math.floor(bonuses[key] * mult);
+      return bonuses;
+    }
     storedVitals(stats = this.totalStats()) { const v = this.profile.currentVitals || {}; return { hp: clamp(Number.isFinite(v.hp) ? v.hp : stats.maxHp, 0, stats.maxHp), mp: clamp(Number.isFinite(v.mp) ? v.mp : stats.maxMp, 0, stats.maxMp) }; }
     freshBattlePlayer(stats, hp, mp) { return { stats, hp, mp, inventory: this.profile.inventory, buffs: {}, cooldowns: {}, skillUses: {}, resonance: 0, lastReceivedType: null }; }
     persistVitals() { if (!this.player) return; this.profile.currentVitals = { hp: clamp(this.player.hp, 0, this.player.stats.maxHp), mp: clamp(this.player.mp, 0, this.player.stats.maxMp) }; this.saveProfile(); }
@@ -3330,7 +3354,7 @@
         // どのJOBから来ているかの内訳。JOBごとに育てた合計を出す（引継ぎは全JOB合算後に一括で計算される）
         const gainedAll = this.phantomGrowthSources();
         const srcRows = Object.entries(gainedAll).map(([id, table]) => {
-          const sum = Object.values(table || {}).reduce((a, b) => a + (b || 0), 0);
+          const sum = Math.floor(Object.values(table || {}).reduce((a, b) => a + (Number(b) || 0), 0));
           return sum ? `<div class="jsteal-row"><span>${D.jobs[id]?.name || id}</span><b>+${sum}</b></div>` : '';
         }).filter(Boolean).join('');
         stealHtml = `<div class="jbonus"><h4>他のJOBから盗んだ能力</h4><div class="jbn-grid">${grid}</div>${srcRows ? `<div class="jsteal"><small>盗奪元（各JOBで育てた合計）</small><div class="jsteal-list">${srcRows}</div></div>` : ''}<p class="jbn-note">全JOBで育てた成長を合算し、その${rate}%を常に引き継いでいます。JOBを育てるほどこの数値が伸びます。</p></div>`;
@@ -4053,7 +4077,7 @@
       if (this.isPhantomThief()) {
         const gained = this.phantomGrowthSources();
         const srcRows = Object.entries(gained).map(([id, table]) => {
-          const sum = Object.values(table || {}).reduce((a, b) => a + (b || 0), 0);
+          const sum = Math.floor(Object.values(table || {}).reduce((a, b) => a + (Number(b) || 0), 0));
           return sum ? `<div class="st-pt-row"><span>${D.jobs[id]?.name || id}</span><b>合計 +${sum}</b></div>` : '';
         }).filter(Boolean).join('');
         jobNote = `<div class="st-pt"><p>全JOBで育てた成長をすべて合算し、その <b>${inheritRate}%</b> をファントムシーフが引き継いでいます。</p>${srcRows ? `<div class="st-pt-list">${srcRows}</div>` : '<p class="item-empty">まだ引き継げる成長がありません。</p>'}</div>`;
