@@ -39,25 +39,34 @@
       { day: 3, id: 'arcanaMagic',  stat: 'mag',    name: '魔導のアルカナ', background: 'assets/bg/otherworld/wednesday.png' },
       { day: 4, id: 'arcanaSpirit', stat: 'mnd',    name: '精神のアルカナ', background: 'assets/bg/otherworld/thursday-v2.png' },
       { day: 5, id: 'arcanaGale',   stat: 'agi',    name: '疾風のアルカナ', background: 'assets/bg/otherworld/friday.png' },
-      { day: 6, id: 'arcanaLuck',   stat: 'luk',    name: '幸運のアルカナ', background: 'assets/bg/otherworld/saturday.png' }
+      { day: 6, id: 'arcanaDext',   stat: 'dex',    name: '巧緻のアルカナ', background: 'assets/bg/otherworld/saturday.png' }
     ],
-    randomStats: ['str', 'vit', 'mag', 'mnd', 'agi', 'luk']
+    // 運は曜日固定では配らず、混沌（日曜）のランダムからのみ出す。
+    // 会心率が運の一本道になったため、土曜に運を置くと通うだけで
+    // 会心ビルドが完成してしまう。器用さは命中の唯一の伸ばし方なので
+    // 土曜に固定で置き、こちらは狙って通えるようにしてある。
+    randomStats: ['str', 'vit', 'mag', 'mnd', 'agi', 'luk', 'dex']
   };
 
-  const arcanaItem = (id, name, statText) => ({
+  // arcanaStat には対象の能力キーを入れる。曜日表(weekly)から外したアルカナでも
+  // アイテム単体で何が上がるか決まるようにしておく（旧セーブの所持ぶん対策）。
+  const arcanaItem = (id, name, statText, statKey) => ({
     id, name, nameEn: 'ARCANA', category: 'consumable', rarity: 'epic',
     description: '魂に刻まれた力の欠片。使用すると基礎《' + statText + '》が永久に1上昇する。JOB変更後も残り、PHANTOM THIEFにも100%反映。',
-    arcanaStat: true
+    arcanaStat: statKey
   });
   Object.assign(D.items, {
-    arcanaMight:  arcanaItem('arcanaMight',  '剛力のアルカナ', '力'),
-    arcanaGuard:  arcanaItem('arcanaGuard',  '堅牢のアルカナ', '体力'),
-    arcanaMagic:  arcanaItem('arcanaMagic',  '魔導のアルカナ', '魔力'),
-    arcanaSpirit: arcanaItem('arcanaSpirit', '精神のアルカナ', '精神'),
-    arcanaGale:   arcanaItem('arcanaGale',   '疾風のアルカナ', '素早さ'),
-    arcanaLuck:   arcanaItem('arcanaLuck',   '幸運のアルカナ', '運'),
+    arcanaMight:  arcanaItem('arcanaMight',  '剛力のアルカナ', '力', 'str'),
+    arcanaGuard:  arcanaItem('arcanaGuard',  '堅牢のアルカナ', '体力', 'vit'),
+    arcanaMagic:  arcanaItem('arcanaMagic',  '魔導のアルカナ', '魔力', 'mag'),
+    arcanaSpirit: arcanaItem('arcanaSpirit', '精神のアルカナ', '精神', 'mnd'),
+    arcanaGale:   arcanaItem('arcanaGale',   '疾風のアルカナ', '素早さ', 'agi'),
+    // 幸運のアルカナは曜日報酬から外したが、旧セーブの所持ぶんが
+    // 使えなくならないよう定義は残す。
+    arcanaLuck:   arcanaItem('arcanaLuck',   '幸運のアルカナ', '運', 'luk'),
+    arcanaDext:   arcanaItem('arcanaDext',   '巧緻のアルカナ', '器用さ', 'dex'),
     arcanaChaos:  { id: 'arcanaChaos', name: '混沌のアルカナ', nameEn: 'ARCANA OF CHAOS', category: 'consumable', rarity: 'epic',
-      description: '定まらぬ力の欠片。使用すると6つの基礎能力のうちひとつが永久に1上昇する。JOB変更後も残り、PHANTOM THIEFにも100%反映。', arcanaStat: true },
+      description: '定まらぬ力の欠片。使用すると7つの基礎能力のうちひとつが永久に1上昇する。JOB変更後も残り、PHANTOM THIEFにも100%反映。', arcanaStat: 'random' },
     otherworldShard: { id: 'otherworldShard', name: '異界の欠片', nameEn: 'RIFT SHARD', category: 'material', rarity: 'rare',
       description: '異世界からこぼれ落ちた結晶片。向こう側の気配を帯びている。' },
     otherworldCore: { id: 'otherworldCore', name: '異界の核', nameEn: 'RIFT CORE', category: 'material', rarity: 'legendary',
