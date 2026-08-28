@@ -478,6 +478,16 @@
             for (const [k, v] of Object.entries(profile.jobGrowthGained[jobId])) record[k] = Math.max(Number(record[k]) || 0, v);
           }
         }
+        // 上の復元は jobGrowthCritBonusScale 導入前の値なので、同じ圧縮率へそろえ直す。
+        if (!profile.flags.legacyRebirthCritRescaled) {
+          profile.flags.legacyRebirthCritRescaled = true;
+          const scale = this.gb().jobGrowthCritBonusScale ?? 1;
+          if (scale !== 1) for (const jobId of this.gb().phantomLegacyGrowthJobs || []) {
+            for (const table of [profile.jobGrowthGained?.[jobId], profile.phantomGrowthRecords?.[jobId]]) {
+              if (table?.critBonus) table.critBonus = Number((table.critBonus * scale).toFixed(4));
+            }
+          }
+        }
         // v16：武器学を行動EXP＋無制限Lv、閃きをRank/敵Spark Lv方式へ移行。
         // 旧Lv/EXP/習得技はそのまま保持し、破壊的な再計算は行わない。
         profile.version = 19;
@@ -1518,8 +1528,13 @@
         const scale = direct ? 1 : 2;
         Object.entries(entry || {}).forEach(([key, value]) => bonuses[key] = (bonuses[key] || 0) + value * scale);
       }
+      // 会心率だけは「率」なので、力や素早さと同じ量で積むと天井へ張り付いてしまう。
+      // テーブルは触らず、ここで圧縮率を掛ける。
+      // doRebirth() はこの結果を jobGrowthGained へ畳み込むので、
+      // 保持ぶんも圧縮後の値になり、二重に掛かることはない。
+      if (bonuses.critBonus) bonuses.critBonus *= this.gb().jobGrowthCritBonusScale ?? 1;
       const mult = this.rebirthGrowthMultiplier(jobId);
-      if (mult !== 1) for (const key of Object.keys(bonuses)) bonuses[key] = key === 'critBonus'
+      for (const key of Object.keys(bonuses)) bonuses[key] = key === 'critBonus'
         ? Number((bonuses[key] * mult).toFixed(4))
         : Math.floor(bonuses[key] * mult);
       return bonuses;

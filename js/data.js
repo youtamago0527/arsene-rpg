@@ -172,6 +172,11 @@ window.ARSENE_DATA = {
     rebirthStatRetentionRate: 0.20,
     // 転生1回につき、次のLvアップで得られるJOB成長量を10%増やす。
     rebirthGrowthPerCycle: 0.10,
+    // JOB成長テーブルの critBonus だけに掛ける圧縮率。
+    // 会心率は「率」なので、力や素早さと同じ量で積むと天井へ一瞬で張り付く。
+    // 双刃士がLv20・転生0で約30%（DQ3武闘家のLv77相当）から始まり、
+    // 転生5回で上限40%へ届く曲線になる値。テーブル自体は変更していない。
+    jobGrowthCritBonusScale: 0.35,
     // キャラクター固有特性 "small" が何倍になるか（characters.json 側は記号のみ保持）
     traitBonusScale: { small: { weaponExp: 1.2, spark: 1.5, mpGrowth: 1.3, heal: 1.3, critical: 0.03 } },
 
@@ -255,9 +260,12 @@ window.ARSENE_DATA = {
     playerVariance: { min: -2, max: 2 },
     // max は「LUKだけで到達できる上限」。会心率ボーナスを持つと持ち上がる仕様のため、
     // 実質の天井として hardMax を別に置く。ここだけは何を積んでも超えられない。
-    // 他JOBはLv20で17〜34%、双刃士は転生0でも54%。60%は双刃士の会心職という
-    // 個性を残しつつ、転生で85%まで伸びて会心しか出なくなる状態を止める値。
-    critical: { base: .06, luckRate: .008, max: .28, hardMax: .60, multiplier: 1.65 },
+    //
+    // 基準はドラクエ。DQ3の武闘家とDQ4のアリーナはどちらも会心率 Lv/256 で、
+    // 一般キャラは 1/64 = 6.25%（うちの base .06 とほぼ同じ）。
+    // 会心特化の天井は DQ4アリーナが 1/4 = 25%固定、DQ3武闘家がLv99で38.6%。
+    // hardMax .40 はその上端に合わせた値。
+    critical: { base: .06, luckRate: .008, max: .28, hardMax: .40, multiplier: 1.65 },
     // 共通コマンド《防御》は物理・魔法を問わず、そのラウンドの最終被ダメージを半減する。
     guardReduction: .50,
     // 敵→プレイヤーのダメージは比率型：atk × attackScale × defenseK/(defenseK+防御)
