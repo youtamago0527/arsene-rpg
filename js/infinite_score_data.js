@@ -26,7 +26,7 @@
       str: [1, 2, 3, 5], vit: [1, 2, 3, 5], mag: [1, 2, 3, 5], mnd: [1, 2, 3, 5], agi: [1, 2, 3, 5], dex: [1, 2, 3, 5], luk: [1, 2, 3, 5],
       maxHp: [8, 14, 22, 34], maxMp: [4, 7, 11, 16], critBonus: [.02, .04, .06, .08]
     },
-    opLabels: { attackPower: 'ATK', defensePower: 'DEF', magicAttackPower: 'MAG ATK', magicDefensePower: 'MDEF', str: 'STR', vit: 'VIT', mag: 'MAG', mnd: 'MND', agi: 'AGI', dex: 'DEX', luk: 'LUK', maxHp: '最大HP', maxMp: '最大MP', critBonus: '会心率' },
+    opLabels: { attackPower: '攻撃力', defensePower: '防御力', magicAttackPower: '魔法攻撃力', magicDefensePower: '魔法防御力', str: '力', vit: '体力', mag: '魔力', mnd: '精神', agi: '素早さ', dex: '器用さ', luk: '運', maxHp: '最大HP', maxMp: '最大MP', critBonus: '会心率' },
     eventWeights: { encounter: 34, treasure: 18, trap: 10, item: 10, gold: 10, shop: 7, rare: 3, card: 8 },
     hints: {
       metal: { text: '鉄の匂いがする……', events: ['treasure', 'encounter', 'trap'] },

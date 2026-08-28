@@ -15,7 +15,7 @@ window.KAZU_DIALOGUES = [
   { id:'zenakado_cleared_01', condition:'zenakado_cleared', priority:40, once:false, dialogues:['ジョブも増えたし、戦い方の幅が広がったなぁ。','次の迷宮は準備してから行き。無茶もほどほどにな。'] },
   { id:'dungeon2_available_01', condition:'dungeon2_available', priority:52, once:true, dialogues:['新しいダンジョンが開いたで。何がおるか分からへん、気ぃつけや。','おいでやす、ダンジョン2へ。……京都ちゃうけどな。'] },
   { id:'dungeon2_first_return', condition:'dungeon2_first_return', priority:48, once:false, dialogues:['ダンジョン2の感触はどうや。慣れるまで無理したらあかん。','素材も変わってくる。集めながらゆっくり攻略し。'] },
-  { id:'myrthi_available_01', condition:'myrthi_available', priority:56, once:false, dialogues:['ミルティは速いで。AGIで負けたら、なんも出来ひんかもしれん。','行くなら今の実力、ちゃんと測ってからにし。'] },
+  { id:'myrthi_available_01', condition:'myrthi_available', priority:56, once:false, dialogues:['ミルティは速いで。素早さで負けたら、なんも出来ひんかもしれん。','行くなら今の実力、ちゃんと測ってからにし。'] },
   { id:'myrthi_cleared_first_01', condition:'myrthi_cleared_first', priority:83, once:true, dialogues:['ミルティを倒したんか。あの速さを超えたなら、たいした怪盗や。','双刃戦姫を落とすとはなぁ。うち、ちょっと感心してもうたわ。'] },
   { id:'myrthi_cleared_01', condition:'myrthi_cleared', priority:38, once:false, dialogues:['双刃士も使えるようになったな。いろいろ試してみ。','MYRTHIシリーズ、ええ仕上がりやろ。使い倒しや。'] },
   { id:'job_unlocked', condition:'job_unlocked', priority:42, once:true, dialogues:['JOBが使えるようになったで。組み合わせで化けるさかい、よう考えや。','得意なことは職ごとにちゃう。食わず嫌いせんと試し。'] },

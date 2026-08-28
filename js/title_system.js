@@ -5,15 +5,16 @@
   // 称号成長を持つJOBの詳細を開くと ReferenceError で描画ごと落ちていた。
   const D = window.ARSENE_DATA;
 
-  const STAT_LABELS = { str: 'STR', vit: 'VIT', mag: 'MAG', mnd: 'MND', agi: 'AGI', dex: 'DEX', luk: 'LUK' };
+  // 表記は game.js の statLabels に合わせて日本語で統一する。
+  const STAT_LABELS = { str: '力', vit: '体力', mag: '魔力', mnd: '精神', agi: '素早さ', dex: '器用さ', luk: '運' };
   const BOSS_TITLES = {
-    zenakado: { id: 'boss_cadenza', bossId: 'zenakado', defeatedId: 'zenacad', bossName: '独奏卿ゼナカド', origin: 'CADENZA', name: '《超越・CADENZA》', stat: 'mag', statLabel: 'MAG' },
-    myrthi: { id: 'boss_rhythm', bossId: 'myrthi', defeatedId: 'myrthi', bossName: '黒紅の双刃戦姫ミルティ', origin: 'RHYTHM', name: '《超越・RHYTHM》', stat: 'agi', statLabel: 'AGI' },
-    seripes: { id: 'boss_reprise', bossId: 'seripes', defeatedId: 'seripes', bossName: '不落の反奏騎士セリペス', origin: 'REPRISE', name: '《超越・REPRISE》', stat: 'vit', statLabel: 'VIT' },
-    astact: { id: 'boss_staccato', bossId: 'astact', defeatedId: 'astact', bossName: '断奏のアスタクト', origin: 'STACCATO', name: '《超越・STACCATO》', stat: 'luk', statLabel: 'LUK' },
-    ostina: { id: 'boss_ostinato', bossId: 'ostina', defeatedId: 'ostina', bossName: '月影のオスティナ', origin: 'OSTINATO', name: '《超越・OSTINATO》', stat: 'dex', statLabel: 'DEX' },
-    chromatia: { id: 'boss_chromatic', bossId: 'chromatia', defeatedId: 'chromatia', bossName: '星彩のクロマティア', origin: 'CHROMATIC', name: '《超越・CHROMATIC》', stat: 'mnd', statLabel: 'MND' },
-    eclaim: { id: 'boss_requiem', bossId: 'eclaim', defeatedId: 'eclaim', bossName: '終奏のエクレイム', origin: 'REQUIEM', name: '《超越・REQUIEM》', stat: 'str', statLabel: 'STR' }
+    zenakado: { id: 'boss_cadenza', bossId: 'zenakado', defeatedId: 'zenacad', bossName: '独奏卿ゼナカド', origin: 'CADENZA', name: '《超越・CADENZA》', stat: 'mag', statLabel: '魔力' },
+    myrthi: { id: 'boss_rhythm', bossId: 'myrthi', defeatedId: 'myrthi', bossName: '黒紅の双刃戦姫ミルティ', origin: 'RHYTHM', name: '《超越・RHYTHM》', stat: 'agi', statLabel: '素早さ' },
+    seripes: { id: 'boss_reprise', bossId: 'seripes', defeatedId: 'seripes', bossName: '不落の反奏騎士セリペス', origin: 'REPRISE', name: '《超越・REPRISE》', stat: 'vit', statLabel: '体力' },
+    astact: { id: 'boss_staccato', bossId: 'astact', defeatedId: 'astact', bossName: '断奏のアスタクト', origin: 'STACCATO', name: '《超越・STACCATO》', stat: 'luk', statLabel: '運' },
+    ostina: { id: 'boss_ostinato', bossId: 'ostina', defeatedId: 'ostina', bossName: '月影のオスティナ', origin: 'OSTINATO', name: '《超越・OSTINATO》', stat: 'dex', statLabel: '器用さ' },
+    chromatia: { id: 'boss_chromatic', bossId: 'chromatia', defeatedId: 'chromatia', bossName: '星彩のクロマティア', origin: 'CHROMATIC', name: '《超越・CHROMATIC》', stat: 'mnd', statLabel: '精神' },
+    eclaim: { id: 'boss_requiem', bossId: 'eclaim', defeatedId: 'eclaim', bossName: '終奏のエクレイム', origin: 'REQUIEM', name: '《超越・REQUIEM》', stat: 'str', statLabel: '力' }
   };
   const TITLE_BY_ID = Object.fromEntries(Object.values(BOSS_TITLES).map(row => [row.id, row]));
   // 図鑑称号は取得条件と効果が確定した時に registerCollectionTitle() で追加する。
@@ -194,7 +195,7 @@
     const bossCards = system.acquiredBoss.map(id => {
       const title = TITLE_BY_ID[id]; if (!title) return '';
       const equipped = id === system.equipped.boss;
-      return `<article class="title-card${equipped ? ' equipped' : ''}"><div><small>BOSS TITLE // ${title.statLabel} GROWTH</small><strong>${title.name}</strong><p>${title.bossName} OVERDRIVE II撃破の証。装備中に実際のJOB Lvが1上がるたび、そのJOBへ${title.statLabel}+1。</p></div><button data-title-${equipped ? 'unequip' : 'equip'}="${id}">${equipped ? 'EQUIPPED / 外す' : '装備する'}</button></article>`;
+      return `<article class="title-card${equipped ? ' equipped' : ''}"><div><small>BOSS TITLE // ${title.statLabel}成長</small><strong>${title.name}</strong><p>${title.bossName} OVERDRIVE II撃破の証。装備中に実際のJOB Lvが1上がるたび、そのJOBへ${title.statLabel}+1。</p></div><button data-title-${equipped ? 'unequip' : 'equip'}="${id}">${equipped ? 'EQUIPPED / 外す' : '装備する'}</button></article>`;
     }).join('');
     const collectionCards = system.acquiredCollection.map(id => {
       const title = COLLECTION_TITLES[id] || { id, name: id, description: '探索・収集を支援する図鑑称号。', effectText: '効果準備中' };

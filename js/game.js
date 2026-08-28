@@ -1692,8 +1692,8 @@
     }
     async applyVersicrellMovement(enemy, mode) {
       enemy.movement = mode; enemy.defBuffUntil = 0; enemy.mdefBuffUntil = 0; enemy.defBuffRate = 0; enemy.mdefBuffRate = 0;
-      if (mode === 'first') { enemy.defBuffUntil = 99999; enemy.defBuffRate = .50; enemy.movementActionsLeft = 3; this.flashTitle('FIRST MOVEMENT', '《銀環奏・剛》 DEF +50%'); this.setLog('銀環が肉体を包み、物理防御を高めた！'); }
-      if (mode === 'second') { enemy.mdefBuffUntil = 99999; enemy.mdefBuffRate = .50; enemy.movementActionsLeft = 3; this.flashTitle('SECOND MOVEMENT', '《銀環奏・魔》 MDEF +50%'); this.setLog('銀環が魔力へ同調し、魔法防御を高めた！'); }
+      if (mode === 'first') { enemy.defBuffUntil = 99999; enemy.defBuffRate = .50; enemy.movementActionsLeft = 3; this.flashTitle('FIRST MOVEMENT', '《銀環奏・剛》 防御力 +50%'); this.setLog('銀環が肉体を包み、物理防御を高めた！'); }
+      if (mode === 'second') { enemy.mdefBuffUntil = 99999; enemy.mdefBuffRate = .50; enemy.movementActionsLeft = 3; this.flashTitle('SECOND MOVEMENT', '《銀環奏・魔》 魔法防御力 +50%'); this.setLog('銀環が魔力へ同調し、魔法防御を高めた！'); }
       if (mode === 'double') { enemy.defBuffUntil = enemy.mdefBuffUntil = 99999; enemy.defBuffRate = enemy.mdefBuffRate = .30; enemy.movementActionsLeft = 2; this.flashTitle('DOUBLE CIRCLE', 'DEF +30% // MDEF +30%'); this.setLog('二重銀環が物理と魔法の双方を拒む！'); }
       if (mode === 'break') { enemy.movementActionsLeft = 1; this.flashTitle('BREAK', 'MAXIMUM ATTACK CHANCE'); this.setLog('ヴェルシクレル「……息継ぎ。」'); }
       this.updateHUD(); await this.battleSleep(650);
@@ -2028,7 +2028,7 @@
       let defRate = b.defUp && this.turn <= b.defUp.until ? (b.defUp.rate || 0) : 0; if (this.player.defDownUntil >= this.turn) defRate -= .20;
       const pDefNow = Math.max(0, Math.round(pDefBase * (1 + defRate)));
       const row = (name, base, now = base, suffix = '') => { const delta = now - base, changed = delta !== 0; return `<div class="battle-stat-row${changed ? delta > 0 ? ' up' : ' down' : ''}"><span>${name}</span><b>${changed ? `${base} → ${now}` : now}</b><em>${changed ? `${delta > 0 ? '+' : ''}${delta}${suffix}` : '－'}</em></div>`; };
-      return `<section class="battle-stat-debug"><header><b>LIVE BATTLE STATUS</b><span>バフ込み実効値</span></header><div class="battle-vitals"><span>HP <b>${this.player.hp} / ${s.maxHp}</b></span><span>MP <b>${this.player.mp} / ${s.maxMp}</b></span></div><div class="battle-stat-grid">${row(`${this.weaponTypeName(wType)}攻撃性能`, atkBase, atkNow, atkRate ? ` / ${Math.round(atkRate * 100)}%` : '')}${row('物理防御', pDefBase, pDefNow, defRate ? ` / ${Math.round(defRate * 100)}%` : '')}${row('魔法防御', mDefBase)}${row('力 STR', s.str)}${row('魔力 MAG', s.mag, Math.round(this.effectivePlayerStat('mag')))}${row('体力 VIT', s.vit)}${row('精神 MND', s.mnd)}${row('素早さ AGI', s.agi, live.agi)}${row('器用さ DEX', s.dex)}${row('運 LUK', s.luk)}</div></section>`;
+      return `<section class="battle-stat-debug"><header><b>LIVE BATTLE STATUS</b><span>バフ込み実効値</span></header><div class="battle-vitals"><span>HP <b>${this.player.hp} / ${s.maxHp}</b></span><span>MP <b>${this.player.mp} / ${s.maxMp}</b></span></div><div class="battle-stat-grid">${row(`${this.weaponTypeName(wType)}攻撃性能`, atkBase, atkNow, atkRate ? ` / ${Math.round(atkRate * 100)}%` : '')}${row('物理防御', pDefBase, pDefNow, defRate ? ` / ${Math.round(defRate * 100)}%` : '')}${row('魔法防御', mDefBase)}${row('力', s.str)}${row('魔力', s.mag, Math.round(this.effectivePlayerStat('mag')))}${row('体力', s.vit)}${row('精神', s.mnd)}${row('素早さ', s.agi, live.agi)}${row('器用さ', s.dex)}${row('運', s.luk)}</div></section>`;
     }
     canInspectEnemyStats(enemy) { return !!enemy?.statsVisible || (this.profile.enemyStatInsights || []).includes(enemy?.id); }
     enemyBattleStatsHTML(enemy) { const visible = this.canInspectEnemyStats(enemy), value = key => visible ? (enemy?.stats?.[key] ?? '－') : '???', hp = visible ? `${enemy.hp} / ${enemy.stats.maxHp}` : '??? / ???'; return `<section class="battle-stat-debug enemy-analysis${visible ? ' revealed' : ' locked'}"><header><b>ENEMY ANALYSIS</b><span>${visible ? '解析完了' : 'ANALYSIS LOCKED'}</span></header><div class="battle-vitals"><span>HP <b>${hp}</b></span><span>属性 <b>${visible ? (enemy.element || '－') : '???'}</b></span></div><div class="battle-stat-grid"><div class="battle-stat-row"><span>攻撃 ATK</span><b>${value('atk')}</b><em>－</em></div><div class="battle-stat-row"><span>防御 DEF</span><b>${value('def')}</b><em>－</em></div><div class="battle-stat-row"><span>魔力 MAG</span><b>${value('mag')}</b><em>－</em></div><div class="battle-stat-row"><span>精神 MND</span><b>${value('mnd')}</b><em>－</em></div><div class="battle-stat-row"><span>速度 SPD</span><b>${value('spd')}</b><em>－</em></div><div class="battle-stat-row"><span>弱点</span><b>${visible ? ((enemy.weaknesses || []).join(' / ') || '－') : '???'}</b><em>－</em></div></div>${visible ? '' : '<p class="analysis-note">称号・解析スキルなどの獲得で開示される予定です。</p>'}</section>`; }
@@ -2052,7 +2052,7 @@
         const combo = this.comboDanceStacks(), comboMax = this.comboDanceMax();
         if (combo > 0) {
           const maxed = combo >= comboMax, damage = Math.round(this.comboDanceDamageRate() * 100);
-          chips.push(this.statusChip(`連舞 ${combo}/${comboMax}`, 'buff', `与ダメージ+${damage}%${maxed ? '、会心率+10%、《舞踏》装備中はAGI+20%・左手追撃倍率+10%' : ''}。MISSすると0へ戻ります。`));
+          chips.push(this.statusChip(`連舞 ${combo}/${comboMax}`, 'buff', `与ダメージ+${damage}%${maxed ? '、会心率+10%、《舞踏》装備中は素早さ+20%・左手追撃倍率+10%' : ''}。MISSすると0へ戻ります。`));
         }
         if (b.atkCharge) chips.push(this.statusChip('ATK↑'));
         if (b.magicCharge) chips.push(this.statusChip('魔力装填'));
@@ -2678,7 +2678,7 @@
       const hitNames = Object.keys(perHit).map(uid => { const e = this.enemies.find(x => x.uid === uid); return e ? `${e.name}${e.label}` : ''; }).filter(Boolean); const targetLabel = skill.randomTarget && hitNames.length > 1 ? hitNames.join('・') : `${target.name}${target.label}`; this.setLog(`${criticals ? `CRITICAL ×${criticals}! ` : ''}${targetLabel}に${total}ダメージ！${hits > 1 ? `（${hits}HIT）` : ''}`); if (skill.kind === 'physical' || skill.kind === 'weapon') { delete this.player.buffs.atkCharge; delete this.player.buffs.magicCharge; } if (skill.kind === 'magical' || skill.damageType === 'magical') delete this.player.buffs.magFocus; ren.classList.remove('attacking', 'casting');
       this.applySkillDebuff(skill, target);
       if (skill.effect?.type === 'selfDefUpAfterHit') this.player.buffs.defUp = { rate: skill.effect.rate, until: this.turn + (skill.effect.turns || 1) };
-      if (skill.effect?.type === 'selfDefDown') { this.player.defDownUntil = this.turn + skill.effect.turns - 1; this.setLog(`捨て身斬りの反動で${this.playerName()}のDEFが20%低下！`); }
+      if (skill.effect?.type === 'selfDefDown') { this.player.defDownUntil = this.turn + skill.effect.turns - 1; this.setLog(`捨て身斬りの反動で${this.playerName()}の防御力が20%低下！`); }
       // このターンに攻撃した敵のうち、倒れたものをまとめて処理する（最終targetも含む）
       const defeated = [];
       for (const uid of Object.keys(perHit)) { const t = this.enemies.find(x => x.uid === uid); if (!t || t.hp > 0 || t.rolledDrops) continue; defeated.push(t); }
@@ -2719,7 +2719,7 @@
       if (effect.type === 'selfMagicCharge') { this.player.buffs.magicCharge = true; this.audio.sfx('magic'); this.floating(ren, 'MAGIC CHARGE', 'heal'); this.setLog('魔力装填！ 次の物理攻撃に魔力が乗る。'); }
       if (effect.type === 'selfAtkCharge') { this.player.buffs.atkCharge = { rate: effect.rate }; this.audio.sfx('buff'); this.floating(ren, `ATK +${Math.round(effect.rate * 100)}%`, 'heal'); this.setLog('ちからため！ 次の物理攻撃の威力が上がる。'); }
       if (effect.type === 'selfMagCharge') { this.player.buffs.magFocus = { rate: effect.rate }; this.audio.sfx('buff'); this.floating(ren, 'MAG ×2.5', 'heal'); this.setLog('精神集中！ 次の魔法攻撃の威力が2.5倍になる。'); }
-      if (effect.type === 'selfDefUp') { this.player.buffs.defUp = { rate: effect.rate, until: this.turn + effect.turns }; this.audio.sfx('buff'); this.floating(ren, `DEF +${Math.round(effect.rate * 100)}%`, 'heal'); this.setLog(`雄叫びでDEFが${Math.round(effect.rate * 100)}%上昇！ ${effect.turns}ターン持続。`); }
+      if (effect.type === 'selfDefUp') { this.player.buffs.defUp = { rate: effect.rate, until: this.turn + effect.turns }; this.audio.sfx('buff'); this.floating(ren, `DEF +${Math.round(effect.rate * 100)}%`, 'heal'); this.setLog(`雄叫びで防御力が${Math.round(effect.rate * 100)}%上昇！ ${effect.turns}ターン持続。`); }
       if (effect.type === 'fortress') { this.player.buffs.fortressUntil = this.turn; this.player.buffs.fortressReduction = effect.reduction ?? D.guardianBalance?.fortressReduction ?? .30; this.audio.sfx('buff'); this.floating(ren, 'FORTRESS', 'heal'); this.setLog('フォートレス！ このターンの被ダメージを30%軽減する。'); }
       this.persistVitals(); this.updateHUD(); await this.battleSleep(350); ren.classList.remove('casting');
     }
@@ -4084,7 +4084,7 @@
         '魔防': Number(item?.magicDefensePower || 0)
       };
       const format = value => { const rounded = Math.round(value * 10) / 10; return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1); };
-      const statNames = { maxHp: 'HP', maxMp: 'MP', str: 'STR', vit: 'VIT', mag: 'MAG', mnd: 'MND', agi: 'AGI', dex: 'DEX', luk: 'LUK', critBonus: '会心' };
+      const statNames = { maxHp: 'HP', maxMp: 'MP', str: '力', vit: '体力', mag: '魔力', mnd: '精神', agi: '素早さ', dex: '器用さ', luk: '運', critBonus: '会心率' };
       const effectNames = { physicalDamagePercent: '物理与ダメ', magicDamagePercent: '魔法与ダメ', criticalRateBonus: '会心率', fireDamagePercent: '炎与ダメ', healingPowerPercent: '回復量', magicDamageReductionPercent: '魔法軽減', physicalDamageReductionPercent: '物理軽減', resonanceGainPercent: '共鳴量' };
       const entries = [...Object.entries(values).filter(([, base]) => base !== 0).map(([label, base]) => [label, base, false]), ...Object.entries(item?.bonuses || {}).filter(([key, base]) => key !== 'def' && Number(base)).map(([key, base]) => [statNames[key] || key.toUpperCase(), Number(base), key === 'critBonus']), ...Object.entries(item?.effects || {}).filter(([, base]) => Number(base)).map(([key, base]) => [effectNames[key] || key, Number(base), true])];
       const rows = entries.map(([label, base, percent]) => {

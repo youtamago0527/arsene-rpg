@@ -20,8 +20,8 @@
   ['staccato', 'ostinato'].forEach(id => publish(D.musicScores?.[id]));
   D.jobUnlockTutorials ||= {};
   Object.assign(D.jobUnlockTutorials, {
-    ronin: { proofItemId: 'roninProof', role: '刀で一瞬を見切り、会心と反撃で主導権を奪うJOB。', build: 'DEX・AGIを伸ばし、刀技と回避反撃を組み合わせる。', tips: ['刀は剣武器学を共有する', '長期戦より好機への集中火力が得意'] },
-    hunter: { proofItemId: 'hunterProof', role: '弓で弱った敵を追い込み、反復攻撃で仕留める後列JOB。', build: 'DEXを中心に、命中・会心・追撃を整える。', tips: ['弓武器学はD5で解放される', '毒や継続損耗と短期決着を使い分ける'] }
+    ronin: { proofItemId: 'roninProof', role: '刀で一瞬を見切り、会心と反撃で主導権を奪うJOB。', build: '器用さ・素早さを伸ばし、刀技と回避反撃を組み合わせる。', tips: ['刀は剣武器学を共有する', '長期戦より好機への集中火力が得意'] },
+    hunter: { proofItemId: 'hunterProof', role: '弓で弱った敵を追い込み、反復攻撃で仕留める後列JOB。', build: '器用さを中心に、命中・会心・追撃を整える。', tips: ['弓武器学はD5で解放される', '毒や継続損耗と短期決着を使い分ける'] }
   });
 
   Object.assign(D.items, {
