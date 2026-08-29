@@ -410,7 +410,7 @@
           profile[key] = slots ? values : values.filter(id => id != null);
         }
         Object.entries(profile.equipment || {}).forEach(([slot, id]) => {
-          if (D.items[id]?.devOnly || D.items[id]?.futureOnly || D.weapons[id]?.devOnly || D.weapons[id]?.futureOnly) profile.equipment[slot] = slot === 'rightHand' ? 'mageStaff' : null;
+          if (D.items[id]?.devOnly || D.items[id]?.futureOnly || D.weapons[id]?.devOnly || D.weapons[id]?.futureOnly) profile.equipment[slot] = slot === 'rightHand' ? (D.weaponTypes || []).find(t => t.id === 'staff')?.starterWeaponId || 'forge_d1_staff' : null;
         });
         if (!d1Cleared && profile.currentJob === 'magicKnight') profile.currentJob = profile.initialJob || 'mage';
         if (!d2Cleared && profile.currentJob === 'dualBlade') profile.currentJob = profile.initialJob || 'mage';
@@ -430,6 +430,26 @@
         if (!Array.isArray(profile.equipmentArchive)) profile.equipmentArchive = [];
         // 分解から守る装備のID。旧セーブには無いので必ず補完する。
         if (!Array.isArray(profile.lockedEquipment)) profile.lockedEquipment = [];
+        // 初期装備専用アイテムを廃止し、D1★3工房装備へ統合する（§48〜§51）。
+        // 所持品・装備中・強化値・ロック・図鑑をまとめて付け替える。
+        // 二重取得を避けるため、所持数は「旧＋新」の合算にする（§80）。
+        for (const [oldId, newId] of Object.entries(D.starterWeaponMigration || {})) {
+          if (!D.items[newId]) continue;
+          const owned = profile.inventory?.[oldId] || 0;
+          if (owned > 0) { profile.inventory[newId] = (profile.inventory[newId] || 0) + owned; delete profile.inventory[oldId]; }
+          for (const slot of Object.keys(profile.equipment || {}))
+            if (profile.equipment[slot] === oldId) profile.equipment[slot] = newId;
+          // 強化値は高いほうを残す。新IDを既に鍛えていた場合を壊さない。
+          for (const table of [profile.weaponEnchants, profile.armorEnchants]) {
+            if (!table || table[oldId] === undefined) continue;
+            table[newId] = Math.max(Number(table[newId]) || 0, Number(table[oldId]) || 0);
+            delete table[oldId];
+          }
+          if (profile.lockedEquipment?.includes(oldId))
+            profile.lockedEquipment = [...new Set(profile.lockedEquipment.filter(id => id !== oldId).concat(newId))];
+          if (profile.equipmentArchive?.includes(oldId))
+            profile.equipmentArchive = [...new Set(profile.equipmentArchive.filter(id => id !== oldId).concat(newId))];
+        }
         if (!profile.collectionRewards || typeof profile.collectionRewards !== 'object') profile.collectionRewards = {};
         const knownEquipment = [...Object.entries(profile.inventory || {}).filter(([id, n]) => n > 0 && D.items[id]?.category === 'equipment' && !D.items[id]?.devOnly && !D.items[id]?.futureOnly).map(([id]) => id), ...Object.values(profile.equipment || {}).filter(id => D.items[id]?.category === 'equipment' && !D.items[id]?.devOnly && !D.items[id]?.futureOnly)];
         profile.equipmentArchive = [...new Set([...profile.equipmentArchive, ...knownEquipment])];
@@ -1633,12 +1653,19 @@
     // 武道家が素手のときは拳を握る（JOB特性《無手の型》）。他JOBは従来どおり杖にフォールバック。
     isBareHanded(hand = 'rightHand') { return !D.weapons[this.profile.equipment?.[hand]]; }
     usesBareFists() { return this.jobHasTrait('bareFists') && this.isBareHanded('rightHand'); }
+    // 右手が空になったときの受け皿。初期装備専用アイテムを廃止したので
+    // 'mageStaff' を直書きせず、選んだ武器種のD1★3工房装備へ落とす。
+    defaultWeaponId() {
+      const preferred = this.weaponTypeDef(this.profile?.preferredWeaponType)?.starterWeaponId;
+      const fallback = (D.weaponTypes || []).find(t => t.id === 'staff')?.starterWeaponId;
+      return [preferred, fallback, 'forge_d1_staff'].find(id => id && D.weapons[id]) || 'forge_d1_staff';
+    }
     jobHasTrait(key, jobId = this.profile.currentJob) { return !!D.jobs[jobId]?.traits?.[key]; }
     isDualBladeWeapon(value) { const w = typeof value === 'string' ? D.weapons[value] : value; return w?.weaponSubtype === 'dualBlade'; }
     dualWieldEnabled() { return this.hasPassiveType('dualWield') && this.isDualBladeWeapon(this.profile.equipment?.rightHand); }
     equippedWeapon() {
       const id = this.profile.equipment.rightHand;
-      return D.weapons[id] || (this.isShield(id) ? this.shieldAsWeapon(id) : null) || (this.usesBareFists() ? D.weapons.bareFist : D.weapons.mageStaff);
+      return D.weapons[id] || (this.isShield(id) ? this.shieldAsWeapon(id) : null) || (this.usesBareFists() ? D.weapons.bareFist : D.weapons[this.defaultWeaponId()]);
     }
     // 左手が殴れるか＝双刃士のオフハンド武器、または武道家の素手。返り値は左手側の武器定義。
     offHandWeapon() {
@@ -4307,7 +4334,7 @@
       } else {
         delete this.profile.weaponEnchants[weaponId];
         this.profile.inventory[weaponId] = Math.max(0, (this.profile.inventory[weaponId] || 0) - 1);
-        if (!(this.profile.inventory[weaponId] > 0)) { if (this.profile.equipment.rightHand === weaponId) this.profile.equipment.rightHand = 'mageStaff'; if (this.profile.equipment.leftHand === weaponId) this.profile.equipment.leftHand = null; }
+        if (!(this.profile.inventory[weaponId] > 0)) { if (this.profile.equipment.rightHand === weaponId) this.profile.equipment.rightHand = this.defaultWeaponId(); if (this.profile.equipment.leftHand === weaponId) this.profile.equipment.leftHand = null; }
         this.saveProfile(); this.audio.sfx('defeat'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-enchant', weaponId, anchorTop);
         this.offerDestroyedEquipmentRestore({ itemId: weaponId, itemName: w.name, kind: 'weapon', equippedSlots, anchorTop });
       }
@@ -4833,7 +4860,7 @@
       return Math.min(sb.maxPenaltyPercent ?? 15, Math.max(0, pct)) / 100;
     }
     sanitizeLeftHandEquipment() { const id = this.profile?.equipment?.leftHand; if (id && !this.isLeftHandItemAllowed(id, this.profile.currentJob)) this.profile.equipment.leftHand = null; }
-    sanitizeRightHandEquipment() { const id = this.profile?.equipment?.rightHand; if (!id || this.canEquipRightHand(id)) return; const preferred = this.weaponTypeDef(this.profile.preferredWeaponType)?.starterWeaponId, fallback = [preferred, 'mageStaff', 'phantomSword', 'ironClaw'].find(wid => wid && (this.profile.inventory[wid] || 0) > 0 && this.canEquipRightHand(wid)); this.profile.equipment.rightHand = fallback || 'mageStaff'; }
+    sanitizeRightHandEquipment() { const id = this.profile?.equipment?.rightHand; if (!id || this.canEquipRightHand(id)) return; const preferred = this.weaponTypeDef(this.profile.preferredWeaponType)?.starterWeaponId, fallback = [preferred, this.defaultWeaponId()].find(wid => wid && (this.profile.inventory[wid] || 0) > 0 && this.canEquipRightHand(wid)); this.profile.equipment.rightHand = fallback || this.defaultWeaponId(); }
     equipSortValue(id, key) { const before = this.totalStats(), item = D.items[id]; if (!item) return 0; const slot = this.equipSlot || item.slot; const after = this.totalStats({ ...this.profile.equipment, [slot]: id }); return after[key] - before[key]; }
     equipDeltaSummary(id, slotId) {
       const before = this.totalStats(), after = this.totalStats({ ...this.profile.equipment, [slotId]: id });
@@ -4842,7 +4869,7 @@
     }
     previewEquipment(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; this.selectedEquipmentId = id; this.renderMenuPanel('equipment'); }
     equipItem(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; const slot = (this.equipSlot && this.candidatesForSlot(this.equipSlot).includes(id)) ? this.equipSlot : item.slot; if (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) return; if (slot === 'rightHand' && (this.isOffHandOnlyWeapon(id) || !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
-    unequipSlot(slotId) { if (!slotId || !(slotId in this.profile.equipment)) return; this.profile.equipment[slotId] = slotId === 'rightHand' ? 'mageStaff' : null; this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('ui'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
+    unequipSlot(slotId) { if (!slotId || !(slotId in this.profile.equipment)) return; this.profile.equipment[slotId] = slotId === 'rightHand' ? this.defaultWeaponId() : null; this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('ui'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
     equipFromInventory(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || !(this.profile.inventory[id] > 0)) return; const slot = this.isOffHandOnlyWeapon(id) ? 'leftHand' : D.weapons[id] ? 'rightHand' : item.slot; if (!slot || (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) || (slot === 'rightHand' && !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('items'); }
     equipLeftHandWeapon(id) { if (!(this.profile.inventory[id] > 0) || !this.isLeftHandItemAllowed(id)) return; this.profile.equipment.leftHand = id; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
 

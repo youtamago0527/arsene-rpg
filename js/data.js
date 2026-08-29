@@ -22,9 +22,9 @@ window.ARSENE_DATA = {
   // 武器種マスタ。ここに追記すれば得意武器選択・アイテム欄のタブへ自動反映される。
   // damageStats は将来の体術ダメージ計算（力＋素早さ）用の予約情報。
   weaponTypes: [
-    { id: 'sword', name: '剣', nameEn: 'SWORD', description: '力で斬り込む近接武器。素直な物理攻撃。', damageStats: ['str'], starterWeaponId: 'phantomSword' },
-    { id: 'staff', name: '杖', nameEn: 'STAFF', description: '魔力を導く杖。魔法主体で戦う。', damageStats: ['mag'], starterWeaponId: 'mageStaff' },
-    { id: 'martial', name: '体術', nameEn: 'MARTIAL', description: '爪や籠手を使う徒手格闘。速さで手数を稼ぐ。', damageStats: ['str', 'agi'], starterWeaponId: 'ironClaw' },
+    { id: 'sword', name: '剣', nameEn: 'SWORD', description: '力で斬り込む近接武器。素直な物理攻撃。', damageStats: ['str'], starterWeaponId: 'forge_d1_sword' },
+    { id: 'staff', name: '杖', nameEn: 'STAFF', description: '魔力を導く杖。魔法主体で戦う。', damageStats: ['mag'], starterWeaponId: 'forge_d1_staff' },
+    { id: 'martial', name: '体術', nameEn: 'MARTIAL', description: '爪や籠手を使う徒手格闘。速さで手数を稼ぐ。', damageStats: ['str', 'agi'], starterWeaponId: 'forge_d1_martial' },
     // 楽器：魔奏士の証を入手するまでロック。器用さを火力へ変換する。
     { id: 'instrument', name: '楽器', nameEn: 'INSTRUMENT', description: '音に魔を乗せて放つ。器用さがそのまま威力になる。', damageStats: ['dex'], starterWeaponId: null, unlockFlag: 'instrumentUnlocked' },
     // 盾武器は両手占有。右手に構えると左手が塞がる（isTwoHandedWeapon）。
@@ -45,13 +45,12 @@ window.ARSENE_DATA = {
   // 数値は小数（0.05 = 5%）。既存敵にDEX/AGIが無い場合は戦闘側でSPDへフォールバックする。
   accuracy: { base: 0.90, dexRate: 0.006, defenderAgiRate: 0.005, min: 0.05, max: 1.0 },
   // 装備の分解。素材へは戻さず一律のGOLDだけ返す（§53）。
-  // 金策コンテンツにはしない。目的はバッグ整理なので★・強化値・ボス装備で
-  // 額を変えず、BOSS周回→★5大量分解→大量GOLD のループを作らない（§54）。
-  dismantleBalance: { goldPerItem: 100, confirmFromStars: 4, strongWarnFromStars: 5 },
-  // 装備の分解。素材へは戻さず一律のGOLDだけ返す（§53）。
   // 金策コンテンツにはしない。目的はバッグ整理なので、★・強化値・ボス装備で
   // 額を変えず、BOSS周回→★5大量分解→大量GOLD のループを作らない（§54）。
   dismantleBalance: { goldPerItem: 100, confirmFromStars: 4, strongWarnFromStars: 5 },
+  // 旧「初期装備専用」アイテムから D1★3工房装備への対応表。
+  // ロード時にこの表で変換し、旧セーブの所持品・装備・強化値を引き継ぐ（§50/§70）。
+  starterWeaponMigration: { mageStaff: 'forge_d1_staff', phantomSword: 'forge_d1_sword', ironClaw: 'forge_d1_martial' },
   // 盾（左手）のトレードオフ。防御性能はアイテム側の defensePower で伸ばし、
   // 素早さの低下率だけをここで管理する。ランクが上がっても上限を超えない（§15）。
   shieldBalance: {
@@ -347,8 +346,10 @@ window.ARSENE_DATA = {
     id: 'ren', name: '蓮', shortName: 'REN', level: 1, exp: 0, gold: 0,
     baseStats: { maxHp: 80, maxMp: 40, str: 12, vit: 10, mag: 10, mnd: 14, agi: 18, dex: 12, luk: 14 },
     growth: { maxHp: 8, maxMp: 5, str: 0, vit: 0, mag: 0, mnd: 0, agi: 0, dex: 0, luk: 0 },
-    skills: ['quickSlash'], inventory: { potion: 3, manaPotion: 2, mageStaff: 1, phantomSword: 1 },
-    equipment: { rightHand: 'mageStaff', leftHand: null, head: null, body: null, arms: null, feet: null, accessory: null }
+    // 初期装備は専用アイテムを作らず、D1★3工房装備をそのまま1個持たせる（§48/§51）。
+    // 武器選択で選んだ種類の starterWeaponId が開始処理で上書きする。
+    skills: ['quickSlash'], inventory: { potion: 3, manaPotion: 2, forge_d1_staff: 1 },
+    equipment: { rightHand: 'forge_d1_staff', leftHand: null, head: null, body: null, arms: null, feet: null, accessory: null }
   },
   characterSkillProgression: [
     { level: 1, skillId: 'blueNote' },
