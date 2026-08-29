@@ -22,12 +22,16 @@ window.ARSENE_DATA = {
   // 武器種マスタ。ここに追記すれば得意武器選択・アイテム欄のタブへ自動反映される。
   // damageStats は将来の体術ダメージ計算（力＋素早さ）用の予約情報。
   weaponTypes: [
-    { id: 'sword', name: '剣', nameEn: 'SWORD', description: '力で斬り込む近接武器。素直な物理攻撃。', damageStats: ['str'], starterWeaponId: 'phantomSword' },
-    { id: 'staff', name: '杖', nameEn: 'STAFF', description: '魔力を導く杖。魔法主体で戦う。', damageStats: ['mag'], starterWeaponId: 'mageStaff' },
-    { id: 'martial', name: '体術', nameEn: 'MARTIAL', description: '爪や籠手を使う徒手格闘。速さで手数を稼ぐ。', damageStats: ['str', 'agi'], starterWeaponId: 'ironClaw' },
+    { id: 'sword', name: '剣', nameEn: 'SWORD', description: '力で斬り込む近接武器。素直な物理攻撃。', damageStats: ['str'], starterWeaponId: 'forge_d1_sword' },
+    { id: 'staff', name: '杖', nameEn: 'STAFF', description: '魔力を導く杖。魔法主体で戦う。', damageStats: ['mag'], starterWeaponId: 'forge_d1_staff' },
+    { id: 'martial', name: '体術', nameEn: 'MARTIAL', description: '爪や籠手を使う徒手格闘。速さで手数を稼ぐ。', damageStats: ['str', 'agi'], starterWeaponId: 'forge_d1_martial' },
     // 楽器：魔奏士の証を入手するまでロック。器用さを火力へ変換する。
     { id: 'instrument', name: '楽器', nameEn: 'INSTRUMENT', description: '音に魔を乗せて放つ。器用さがそのまま威力になる。', damageStats: ['dex'], starterWeaponId: null, unlockFlag: 'instrumentUnlocked' },
-    { id: 'shield', name: '盾', nameEn: 'SHIELD', description: '防御性能を攻撃へ転換する守護士の武器。', damageStats: ['vit', 'mnd'], starterWeaponId: 'guardianAegis', unlockFlag: 'shieldUnlocked' }
+    // 盾武器は両手占有。右手に構えると左手が塞がる（isTwoHandedWeapon）。
+    // equipJobs を持つ武器種はそのJOBだけが右手に装備できる。
+    // 盾は守護士の戦い方そのものなので専用とし、全JOBの能力を借りる
+    // ファントムシーフにだけ例外を認める。
+    { id: 'shield', name: '盾', nameEn: 'SHIELD', description: '防御性能を攻撃へ転換する守護士の武器。両手で構えるため左手は空かない。', damageStats: ['vit', 'mnd'], starterWeaponId: 'guardianAegis', unlockFlag: 'shieldUnlocked', equipJobs: ['guardian', 'phantomThief'] }
   ],
   // 武器種ごとの通常攻撃。未定義の武器種は 'attack'（剣と同じ物理攻撃）にフォールバック。
   basicAttackByWeaponType: { sword: 'attack', staff: 'staffFireball', martial: 'martialStrike', instrument: 'resonantNote', shield: 'shieldStrike' },
@@ -40,6 +44,20 @@ window.ARSENE_DATA = {
   // 命中率（隠しステータス／画面には出さない）。攻撃側DEXと防御側AGIで共通判定する。
   // 数値は小数（0.05 = 5%）。既存敵にDEX/AGIが無い場合は戦闘側でSPDへフォールバックする。
   accuracy: { base: 0.90, dexRate: 0.006, defenderAgiRate: 0.005, min: 0.05, max: 1.0 },
+  // 装備の分解。素材へは戻さず一律のGOLDだけ返す（§53）。
+  // 金策コンテンツにはしない。目的はバッグ整理なので、★・強化値・ボス装備で
+  // 額を変えず、BOSS周回→★5大量分解→大量GOLD のループを作らない（§54）。
+  dismantleBalance: { goldPerItem: 100, confirmFromStars: 4, strongWarnFromStars: 5 },
+  // 旧「初期装備専用」アイテムから D1★3工房装備への対応表。
+  // ロード時にこの表で変換し、旧セーブの所持品・装備・強化値を引き継ぐ（§50/§70）。
+  starterWeaponMigration: { mageStaff: 'forge_d1_staff', phantomSword: 'forge_d1_sword', ironClaw: 'forge_d1_martial' },
+  // 盾（左手）のトレードオフ。防御性能はアイテム側の defensePower で伸ばし、
+  // 素早さの低下率だけをここで管理する。ランクが上がっても上限を超えない（§15）。
+  shieldBalance: {
+    agiPenaltyByStars: { 2: 6, 3: 8, 4: 10, 5: 12 },
+    defaultPenaltyPercent: 8,
+    maxPenaltyPercent: 15
+  },
   weaponScaling: {
     sword:   { scaling: { str: 1.0 },            powerKey: 'attackPower',      damageType: 'physical', accuracyModifier:  0.00 },
     martial: { scaling: { str: 0.5, agi: 0.5 },  powerKey: 'attackPower',      damageType: 'physical', accuracyModifier:  0.05 },
@@ -149,6 +167,10 @@ window.ARSENE_DATA = {
     vitalGrowthHpTierSize: 100,
     vitalGrowthMpTierSize: 100,
     vitalGrowthSparkPerTier: 10,
+    // HPは戦闘ごとの抽選で伸びる（JOB Lvでは増えない）。基礎15%＋JOB補正。
+    // 守護士は27%で全JOB中トップ。500戦でHP485、1000戦で890に達する。
+    // VITは防御力にしか変換されないため一見HPが薄く見えるが、
+    // 実際の到達値はこの成長率で決まる。
     jobHpGrowthBonus: { warrior: 0.10, martialArtist: 0.07, mage: 0.00, priest: 0.05, guardian: 0.12 },
     jobMpGrowthBonus: { warrior: 0.00, martialArtist: 0.02, mage: 0.10, priest: 0.08, guardian: 0.03 },
 
@@ -257,7 +279,20 @@ window.ARSENE_DATA = {
   // 強化は「その装備自身の戦闘値・能力補正・特殊効果」を割合で伸ばす（+1ごとに powerRate）。
   //   弱い装備を強化しても強い装備を追い越さないのが狙い。
   //   旧 statBonus（基礎能力+5/Lv）は廃止。基礎能力はJOBとキャラだけが伸ばす。
-  enchantTable: { successRates: [1.00, 1.00, 1.00, 0.97, 0.93, 0.88, 0.82, 0.75, 0.66, 0.55], goldCosts: [100, 200, 300, 500, 700, 1000, 1400, 1800, 2500, 3500], maxLevel: 10, powerRate: 0.15 },
+  // 強化に上限は無い。失敗すると装備そのものが壊れるので、
+  // 「どこで止めるか」をプレイヤーが決めるギャンブルとして機能させる。
+  //
+  // successRates / goldCosts は +10 までの手作り値。それ以降は
+  // successFalloff / goldGrowth で外挿する（表の外に出た瞬間に
+  // undefined となり必ず破壊される事故を防ぐため、必ず両方を用意する）。
+  //   成功率  = 表の最終値 × successFalloff^(Lv-表の最終index)   下限 successFloor
+  //   費用    = 表の最終値 × goldGrowth^(Lv-表の最終index)
+  enchantTable: {
+    successRates: [1.00, 1.00, 1.00, 0.97, 0.93, 0.88, 0.82, 0.75, 0.66, 0.55],
+    goldCosts: [100, 200, 300, 500, 700, 1000, 1400, 1800, 2500, 3500],
+    successFalloff: 0.92, successFloor: 0.05, goldGrowth: 1.40,
+    powerRate: 0.15
+  },
   combatBalance: {
     playerVariance: { min: -2, max: 2 },
     // 会心率はLUK一本で伸ばす。JOB成長で「率」を配ると、率どうしが複利で
@@ -278,6 +313,8 @@ window.ARSENE_DATA = {
     critical: { base: .06, luckRate: .0022, hardMax: .95, multiplier: 1.65 },
     // 共通コマンド《防御》は物理・魔法を問わず、そのラウンドの最終被ダメージを半減する。
     guardReduction: .50,
+    // STACCATO FULL SET の反撃威力（通常攻撃に対する倍率）。過剰にしない（§40）。
+    staccatoCounterRate: .55,
     // 敵→プレイヤーのダメージは比率型：atk × attackScale × defenseK/(defenseK+防御)
     // 引き算型だと工房で装備を更新した瞬間にダメージが 0 か即死かの両極端に振れるため、
     // 防御が上がるほど緩やかに減衰する比率型へ統一している。
@@ -309,8 +346,10 @@ window.ARSENE_DATA = {
     id: 'ren', name: '蓮', shortName: 'REN', level: 1, exp: 0, gold: 0,
     baseStats: { maxHp: 80, maxMp: 40, str: 12, vit: 10, mag: 10, mnd: 14, agi: 18, dex: 12, luk: 14 },
     growth: { maxHp: 8, maxMp: 5, str: 0, vit: 0, mag: 0, mnd: 0, agi: 0, dex: 0, luk: 0 },
-    skills: ['quickSlash'], inventory: { potion: 3, manaPotion: 2, mageStaff: 1, phantomSword: 1 },
-    equipment: { rightHand: 'mageStaff', leftHand: null, head: null, body: null, arms: null, feet: null, accessory: null }
+    // 初期装備は専用アイテムを作らず、D1★3工房装備をそのまま1個持たせる（§48/§51）。
+    // 武器選択で選んだ種類の starterWeaponId が開始処理で上書きする。
+    skills: ['quickSlash'], inventory: { potion: 3, manaPotion: 2, forge_d1_staff: 1 },
+    equipment: { rightHand: 'forge_d1_staff', leftHand: null, head: null, body: null, arms: null, feet: null, accessory: null }
   },
   characterSkillProgression: [
     { level: 1, skillId: 'blueNote' },
@@ -340,7 +379,7 @@ window.ARSENE_DATA = {
     priest: {
       id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。長く潜り続け、稼いで帰るのが得意。', signatureSkillId: 'heal', passiveUnlocks: { 1: 'p_tithe', 5: 'p_spirit', 10: 'p_healArt', 15: 'p_wardBarrier' }, traits: {}, growthStats: ['mnd', 'vit'], featureText: '獲得GOLDを増やし、確率再生と一戦一度のHP→MP変換で長く潜れる。弱い敵を残して待つだけでは資源を永久回復できない。',
       growth: { 1: { mnd: 2 }, 2: { maxMp: 5 }, 3: { mnd: 2 }, 4: { maxMp: 6 }, 5: { mnd: 2, maxHp: 5 }, 6: { maxMp: 8 }, 7: { mnd: 3 }, 8: { maxMp: 8 }, 9: { mnd: 3 }, 10: { mnd: 4, maxMp: 12 }, 11: { mnd: 3 }, 12: { maxMp: 14, maxHp: 5 }, 13: { mnd: 4 }, 14: { maxMp: 12 }, 15: { mnd: 4 }, 16: { maxMp: 16 }, 17: { mnd: 5 }, 18: { maxMp: 14 }, 19: { mnd: 5 }, 20: { mnd: 6, maxMp: 20, maxHp: 8 } },
-      skillUnlocks: { 3: 'regenerate', 5: 'bodyToMind', 6: 'holyLight', 12: 'greatHeal', 15: 'soulPassage', 16: 'divineSmite' }
+      skillUnlocks: { 5: 'bodyToMind', 15: 'soulPassage' }
     },
     guardian: {
       id: 'guardian', name: '守護士', nameEn: 'GUARDIAN', description: '受けた痛みを共鳴へ変え、盾と反奏で格上を打ち破る基本JOB。',
@@ -1049,18 +1088,14 @@ window.ARSENE_DATA = {
     breakFist: { id: 'breakFist', name: '崩拳', nameEn: 'BREAK FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 8, power: 3.8, ignoreDef: .40, agiScale: 0, powerText: '攻撃力×3.8', effectText: '敵防御力を40%無視', description: '防御の隙間へ衝撃を通し、敵防御力の一部を無視する。' },
     shadowRush: { id: 'shadowRush', name: '無影連舞', nameEn: 'SHADOW RUSH', source: 'job', jobId: 'martialArtist', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 3, agiScale: 0, powerText: '攻撃力×2.0×3回', effectText: '3回攻撃／各攻撃で個別クリティカル判定', description: '影すら残さない三連撃。' },
     heal: { id: 'heal', name: 'ヒール', nameEn: 'HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 6, powerText: '精神×2.0＋30', effect: { type: 'hpRecover', baseHeal: 30, spiritScaling: 2.0 }, effectText: '精神を参照して自身のHPを大きく回復', description: '精神力を癒やしの力へ変え、自身のHPを回復する。' },
-    holyLight: { id: 'holyLight', name: 'ホーリーライト', nameEn: 'HOLY LIGHT', source: 'job', jobId: 'priest', unlockJobLevel: 6, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 8, power: 4.0, agiScale: 0, elementId: 'light', powerText: '魔力×4.0', effectText: '敵単体へ光属性魔法攻撃', description: '聖なる光を放ち、敵単体へ魔法ダメージを与える。' },
-    regenerate: { id: 'regenerate', name: 'リジェネレート', nameEn: 'REGENERATE', source: 'job', jobId: 'priest', unlockJobLevel: 3, type: 'ACTIVE', kind: 'support', target: 'self', mp: 8, powerText: '各ターン35%で最大HP15%×3T', effect: { type: 'regenerate', maxHpRate: .15, triggerChance: .35, turns: 3 }, effectText: '3ターン、各ターン35%で最大HPの15%回復', description: '3ターン祈りを保ち、ターン開始ごとに35%で傷を癒やす。運良く3回すべて成功すれば最大HPの45%（回復強化込みではさらに増加）を取り戻す。' },
-    bodyToMind: { id: 'bodyToMind', name: 'ボディ・トゥ・マインド', nameEn: 'BODY TO MIND', source: 'job', jobId: 'priest', unlockJobLevel: 5, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, maxUsesPerBattle: 1, powerText: '最大HP20% → 最大MP25%', effect: { type: 'hpToMp', hpCostRate: .20, mpRecoverRate: .25 }, effectText: '最大HP20%を消費し最大MP25%回復／1戦1回／HP不足時不可', description: '肉体に宿る生命力を魔力へ転換する、一戦一度の循環術。リジェネレートが連続成功すれば傷を補えるが、同じ敵を残して変換を繰り返すことはできない。' },
+    bodyToMind: { id: 'bodyToMind', name: 'ボディ・トゥ・マインド', nameEn: 'BODY TO MIND', source: 'job', jobId: 'priest', unlockJobLevel: 5, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, maxUsesPerBattle: 1, powerText: '最大HP20% → 最大MP25%', effect: { type: 'hpToMp', hpCostRate: .20, mpRecoverRate: .25 }, effectText: '最大HP20%を消費し最大MP25%回復／1戦1回／HP不足時不可', description: '肉体に宿る生命力を魔力へ転換する、一戦一度の循環術。削った体力はヒールで補えるが、同じ敵を残して変換を繰り返すことはできない。' },
     warCry: { id: 'warCry', name: '雄叫び', nameEn: 'WAR CRY', source: 'job', jobId: 'warrior', unlockJobLevel: 12, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 4, powerText: '自身防御力 +35%／3T', effect: { type: 'selfDefUp', rate: .35, turns: 3 }, effectText: '自身の防御力 +35%／3ターン、CT4', description: '魂の底から放つ雄叫び。一時的に防御力を大幅に高める。' },
     titanBlow: { id: 'titanBlow', name: '天地崩拳', nameEn: 'TITAN BLOW', source: 'job', jobId: 'warrior', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 14, power: 8.0, agiScale: 0, powerText: '攻撃力×8.0', effectText: '極大物理ダメージ', description: '全身の力を一点に凝縮した、天地を砕く究極の一撃。' },
     arcaneExplosion: { id: 'arcaneExplosion', name: '魔力爆発', nameEn: 'ARCANE EXPLOSION', source: 'job', jobId: 'mage', unlockJobLevel: 12, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 16, power: 3.8, agiScale: 0, powerText: '魔力×3.8', effectText: '敵全体へ高威力魔法攻撃', description: '体内に蓄えた魔力を一気に爆発させ、周囲の敵すべてを薙ぎ払う。' },
     voidNova: { id: 'voidNova', name: '虚空の星霊', nameEn: 'VOID NOVA', source: 'job', jobId: 'mage', unlockJobLevel: 16, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 20, power: 9.0, agiScale: 0, powerText: '魔力×9.0', effectText: '敵単体へ極大魔法攻撃', description: '虚空から星霊の力を引き出した究極魔法。魔導士の到達点。' },
     swiftBarrage: { id: 'swiftBarrage', name: '迅雷四連撃', nameEn: 'SWIFT BARRAGE', source: 'job', jobId: 'martialArtist', unlockJobLevel: 12, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 4, agiScale: 0, powerText: '攻撃力×2.0×4回', effectText: '4回攻撃／各攻撃で個別クリティカル判定', description: '稲妻のような四連撃。体術の極みが生み出す怒涛の連打。' },
     shadowSeven: { id: 'shadowSeven', name: '幻影七閃', nameEn: 'SHADOW SEVEN', source: 'job', jobId: 'martialArtist', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 18, power: 2.5, hits: 5, agiScale: 0, powerText: '攻撃力×2.5×5回', effectText: '5回攻撃／各攻撃で個別クリティカル判定', description: '影を七つに見せる五連閃。武道家の至高の多段技。' },
-    greatHeal: { id: 'greatHeal', name: 'グレートヒール', nameEn: 'GREAT HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 12, type: 'ACTIVE', kind: 'support', target: 'self', mp: 12, powerText: '精神×5.0＋40', effect: { type: 'hpRecover', mndScale: 5, base: 40 }, effectText: '精神参照で大量HP回復', description: '精神力のすべてを傾けた大回復術。大きく傷を癒やし、戦場への帰還を可能にする。' },
     soulPassage: { id: 'soulPassage', name: '魂送の祈り', nameEn: 'SOUL PASSAGE', source: 'job', jobId: 'priest', unlockJobLevel: 15, type: 'ACTIVE', kind: 'magical', damageType: 'magical', target: 'single', mp: 14, powerText: '即死確率 5～60%', effect: { type: 'instantDeath', baseChance: .20, statEdgeRate: .008, minChance: .05, maxChance: .60 }, effectText: '20%＋（魔力＋精神－敵精神）×0.8%／BOSS無効', description: '魂を静かに彼方へ送る祈り。魔力と精神を鍛えた僧侶ほど成功しやすいが、強い魔法防御には阻まれる。' },
-    divineSmite: { id: 'divineSmite', name: '神裁の一閃', nameEn: 'DIVINE SMITE', source: 'job', jobId: 'priest', unlockJobLevel: 16, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 22, power: 7.0, agiScale: 0, elementId: 'light', powerText: '魔力×7.0', effectText: '敵単体へ極大光属性魔法攻撃', description: '神の裁定を下す一閃。光を凝縮した究極の聖魔法。' },
     // ↓ここから5つは魔奏聖の専用技だった。魔奏聖の削除にともない、現在どのJOBからも習得できない。
     //   別JOBへ割り当て直すか、不要なら丸ごと削除してよい。
     resonantSpell: { id: 'resonantSpell', name: '共鳴魔法', nameEn: 'RESONANT SPELL', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 3, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 14, power: 3.2, agiScale: 0, powerText: '魔力×3.2', effectText: '敵全体へ魔法攻撃', description: '魔奏士の共鳴する魔力を解き放ち、敵全体を攻撃する。' },
@@ -1318,7 +1353,7 @@ window.ARSENE_DATA = {
     d3MartialClaw: { id: 'd3MartialClaw', name: '裂界の爪', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 24, bonuses: {}, effects: { criticalRateBonus: .02 } },
     d3MaestroInstrument: { id: 'd3MaestroInstrument', name: '星銀の弦琴', weaponType: 'instrument', battlePose: 'guitar', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', magicAttackPower: 36, bonuses: {}, effects: { criticalRateBonus: .03, magicDamagePercent: .03 } },
     d3TwinRight: { id: 'd3TwinRight', name: '裂界の双刃・右', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 22, bonuses: {}, effects: { criticalRateBonus: .02 } },
-    d3TwinLeft: { id: 'd3TwinLeft', name: '裂界の双刃・左', weaponType: 'martial', weaponSubtype: 'dualBlade', offHandOnly: true, weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 18, bonuses: {}, effects: { criticalRateBonus: .01 } },
+    d3TwinLeft: { id: 'd3TwinLeft', name: '裂界の双刃・左', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 18, bonuses: {}, effects: { criticalRateBonus: .01 } },
     d3GuardianAegis: { id: 'd3GuardianAegis', name: '城塞核の盾', weaponType: 'shield', weaponSprite: 'shield_reprise', battleSprite: null, attackMotion: 'shieldBash', damageType: 'physical', defensePower: 42, magicDefensePower: 38, bonuses: {}, effects: { magicDamageReductionPercent: .08, physicalDamageReductionPercent: .06, resonanceGainPercent: .25 } },
     parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', dungeonId: 'dungeon3', weaponType: 'instrument', battlePose: 'guitar', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', damageStat: 'dex', power: 4.0, guitarSkillTree: 'versicrellGuitar', bonuses: { dex: 10, mag: 5, critBonus: 0.04 } },
     myrthi_blade: { id: 'myrthi_blade', name: '黒紅刃ミルティア', nameEn: 'MYRTHI BLADE', seriesId: 'myrthi', dungeonId: 'dungeon2', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_myrthi', battleSprite: null, attackMotion: 'slash', attackPower: 32, bonuses: { str: 16, agi: 8, critBonus: .06 } }

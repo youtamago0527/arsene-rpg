@@ -513,3 +513,28 @@
 .job-render-error b{display:block;margin-bottom:8px;color:#ff8fa3;font-size:13px}
 .job-render-error p{margin:0 0 8px;font-size:12px;line-height:1.7;word-break:break-all;user-select:text}
 .job-render-error em{display:block;font:400 10px/1.6 ui-monospace,monospace;color:#c79aa8;word-break:break-all;user-select:text}
+
+/* ── 装備分解（工房） ────────────────────────────────── */
+.workshop-disassemble .dismantle-row {
+  display: flex; align-items: center; gap: 10px; justify-content: space-between;
+  padding: 10px 12px; border-radius: 10px; margin-bottom: 6px;
+  background: #10141f; border: 1px solid #222a3a;
+}
+.workshop-disassemble .dismantle-row.stars-4 { border-color: #6b4fa8; }
+.workshop-disassemble .dismantle-row.stars-5 { border-color: #b8892f; background: #171220; }
+.workshop-disassemble .dismantle-row.is-locked { opacity: .72; }
+.workshop-disassemble .dismantle-row b { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.workshop-disassemble .ds-stars { color: #d7a63f; font-style: normal; font-size: .82em; letter-spacing: -1px; }
+.workshop-disassemble .lock-badge {
+  background: #2b3346; color: #9fb0cc; border-radius: 4px;
+  padding: 1px 6px; font-size: .72em;
+}
+.dismantle-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.dismantle-actions .lock-btn {
+  min-width: 40px; padding: 6px 8px; font-size: 1em; line-height: 1;
+  background: #1a2030; border: 1px solid #2b3346;
+}
+.dismantle-actions .lock-btn[aria-pressed="true"] { background: #2b3346; border-color: #4a5878; }
+.dismantle-modal .dismantle-target { font-size: 1.05em; font-weight: 700; }
+.dismantle-modal.dismantle-strong .q-revive-card { border-color: #b8892f; }
+.dismantle-modal.dismantle-strong h2 { color: #e0b458; }
