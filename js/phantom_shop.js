@@ -68,6 +68,22 @@
       stats: [['■ 獲得数', '1個'], ['■ 使用条件', 'JOB Lv20'], ['■ 直接能力上昇', 'なし']],
       cta: '¥200 で1個購入', action: '購入',
       ctaStyle: 'background:linear-gradient(90deg,#f0abfc,#f472b6,#c084fc);color:#020617'
+    },
+    {
+      id: 'protection-arcana', no: '08', kicker: 'ENCHANT PROTECTION', name: '保護のアルカナ ×1',
+      priceLabel: '¥200', accent: '#60a5fa',
+      description: '武器強化前に使用します。失敗時も武器とOPを残しますが、強化値は3段階低下します（最低+0）。成功・失敗を問わず1個消費し、素材武器とGOLDも消費されます。',
+      stats: [['■ 失敗時', '武器維持／強化値−3'], ['■ 使用時', '抽選前に1個消費']],
+      cta: '¥200 で1個購入', action: '購入',
+      ctaStyle: 'background:linear-gradient(90deg,#60a5fa,#38bdf8,#818cf8);color:#020617'
+    },
+    {
+      id: 'blessed-protection-arcana', no: '09', kicker: 'BLESSED PROTECTION', name: '祝福された保護のアルカナ ×1',
+      priceLabel: '¥500', accent: '#fbbf24',
+      description: '武器強化前に使用します。失敗時も武器・OP・現在の強化値を維持します。成功・失敗を問わず1個消費し、素材武器とGOLDも消費されます。',
+      stats: [['■ 失敗時', '武器・強化値を維持'], ['■ 使用時', '抽選前に1個消費']],
+      cta: '¥500 で1個購入', action: '購入',
+      ctaStyle: 'background:linear-gradient(90deg,#fde68a,#fbbf24,#f59e0b);color:#1c1100'
     }
   ];
 
@@ -262,6 +278,8 @@
       if (id === 'ad-skip-tickets') return Math.max(0, Number(p.adSkipTickets) || 0);
       if (id === 'otherworld-tickets') return Math.max(0, Number(p.otherworldTickets) || 0);
       if (id === 'rebirth-arcana') return Math.max(0, Number(g.profile.inventory?.rebirthArcana) || 0);
+      if (id === 'protection-arcana') return Math.max(0, Number(g.profile.inventory?.protectionArcana) || 0);
+      if (id === 'blessed-protection-arcana') return Math.max(0, Number(g.profile.inventory?.blessedProtectionArcana) || 0);
       return null;
     }
 
@@ -292,6 +310,14 @@
         g.profile.inventory ||= {};
         g.profile.inventory.rebirthArcana = Math.max(0, Number(g.profile.inventory.rebirthArcana) || 0) + 1;
         result = `輪廻のアルカナ 所持${g.profile.inventory.rebirthArcana}個`;
+      } else if (id === 'protection-arcana') {
+        g.profile.inventory ||= {};
+        g.profile.inventory.protectionArcana = Math.max(0, Number(g.profile.inventory.protectionArcana) || 0) + 1;
+        result = '保護のアルカナ 所持' + g.profile.inventory.protectionArcana + '個';
+      } else if (id === 'blessed-protection-arcana') {
+        g.profile.inventory ||= {};
+        g.profile.inventory.blessedProtectionArcana = Math.max(0, Number(g.profile.inventory.blessedProtectionArcana) || 0) + 1;
+        result = '祝福された保護のアルカナ 所持' + g.profile.inventory.blessedProtectionArcana + '個';
       } else return;
       g.saveProfile?.(); g.audio?.sfx?.('confirm');
       g.renderBattleMenu?.(); g.showMainCommands?.(); g.renderMenuSummary?.();

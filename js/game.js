@@ -4047,6 +4047,25 @@
       });
       if (!shown) alert(`${isWeapon ? '武器' : '防具'}強化FAILED！\n${itemName}は粉砕された……`);
     }
+    selectWeaponProtection(level, successRate) {
+      if (successRate >= 1) return null;
+      const inventory = this.profile.inventory ||= {};
+      const normal = Math.max(0, Number(inventory.protectionArcana) || 0);
+      const blessed = Math.max(0, Number(inventory.blessedProtectionArcana) || 0);
+      if (!normal && !blessed) return null;
+      if (normal && blessed) {
+        const answer = prompt(
+          '使用する保護を選んでください。\n\n1：保護のアルカナ（所持' + normal + '）\n　失敗時は武器・OPを維持、強化値−3\n\n2：祝福された保護のアルカナ（所持' + blessed + '）\n　失敗時も武器・OP・強化値+' + level + 'を維持\n\n0：使わない\n\n※選択したアイテムは強化前に1個消費します。',
+          '0'
+        );
+        if (answer === '1') return 'normal';
+        if (answer === '2') return 'blessed';
+        return null;
+      }
+      if (blessed && confirm('祝福された保護のアルカナを使用しますか？（所持' + blessed + '個）\n\n失敗しても武器・OP・強化値+' + level + 'を維持します。\n強化前に1個消費します。')) return 'blessed';
+      if (normal && confirm('保護のアルカナを使用しますか？（所持' + normal + '個）\n\n失敗しても武器・OPを維持しますが、強化値は3段階低下します。\n強化前に1個消費します。')) return 'normal';
+      return null;
+    }
     enchantWeapon(weaponId, anchorTop = null) {
       const w = D.weapons[weaponId]; if (!w) return;
       const enchants = this.profile.weaponEnchants || {}, level = enchants[weaponId] || 0, et = D.enchantTable;
@@ -4054,6 +4073,11 @@
       const equippedSlots = Object.keys(this.profile.equipment).filter(slot => this.profile.equipment[slot] === weaponId);
       const isEquipped = equippedSlots.length > 0, invCount = this.profile.inventory[weaponId] || 0, hasSpare = invCount >= 2, cost = et.goldCosts[level];
       if (!hasSpare || this.profile.gold < cost) return;
+      const protection = this.selectWeaponProtection(level, et.successRates[level]);
+      if (protection) {
+        const key = protection === 'blessed' ? 'blessedProtectionArcana' : 'protectionArcana';
+        this.profile.inventory[key] = Math.max(0, Number(this.profile.inventory[key]) - 1);
+      }
       this.profile.gold -= cost;
       this.profile.inventory[weaponId] = (this.profile.inventory[weaponId] || 0) - 1;
       const success = Math.random() < et.successRates[level];
@@ -4061,6 +4085,17 @@
         this.profile.weaponEnchants[weaponId] = level + 1;
         this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-enchant', weaponId, anchorTop);
       } else {
+        if (protection) {
+          const blessed = protection === 'blessed';
+          const nextLevel = blessed ? level : Math.max(0, level - 3);
+          if (nextLevel > 0) this.profile.weaponEnchants[weaponId] = nextLevel;
+          else delete this.profile.weaponEnchants[weaponId];
+          this.saveProfile(); this.audio.sfx('defeat'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-enchant', weaponId, anchorTop);
+          window.arseneStartFlow?.toast?.(blessed
+            ? '祝福の加護が' + w.name + 'を強化値+' + level + 'のまま守った'
+            : '加護が' + w.name + 'を守った（+' + level + ' → +' + nextLevel + '）');
+          return;
+        }
         delete this.profile.weaponEnchants[weaponId];
         this.profile.inventory[weaponId] = Math.max(0, (this.profile.inventory[weaponId] || 0) - 1);
         if (!(this.profile.inventory[weaponId] > 0)) { if (this.profile.equipment.rightHand === weaponId) this.profile.equipment.rightHand = 'mageStaff'; if (this.profile.equipment.leftHand === weaponId) this.profile.equipment.leftHand = null; }
