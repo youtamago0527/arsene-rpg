@@ -379,7 +379,7 @@ window.ARSENE_DATA = {
     priest: {
       id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。長く潜り続け、稼いで帰るのが得意。', signatureSkillId: 'heal', passiveUnlocks: { 1: 'p_tithe', 5: 'p_spirit', 10: 'p_healArt', 15: 'p_wardBarrier' }, traits: {}, growthStats: ['mnd', 'vit'], featureText: '獲得GOLDを増やし、確率再生と一戦一度のHP→MP変換で長く潜れる。弱い敵を残して待つだけでは資源を永久回復できない。',
       growth: { 1: { mnd: 2 }, 2: { maxMp: 5 }, 3: { mnd: 2 }, 4: { maxMp: 6 }, 5: { mnd: 2, maxHp: 5 }, 6: { maxMp: 8 }, 7: { mnd: 3 }, 8: { maxMp: 8 }, 9: { mnd: 3 }, 10: { mnd: 4, maxMp: 12 }, 11: { mnd: 3 }, 12: { maxMp: 14, maxHp: 5 }, 13: { mnd: 4 }, 14: { maxMp: 12 }, 15: { mnd: 4 }, 16: { maxMp: 16 }, 17: { mnd: 5 }, 18: { maxMp: 14 }, 19: { mnd: 5 }, 20: { mnd: 6, maxMp: 20, maxHp: 8 } },
-      skillUnlocks: { 3: 'regenerate', 5: 'bodyToMind', 12: 'greatHeal', 15: 'soulPassage', 16: 'divineSmite' }
+      skillUnlocks: { 3: 'regenerate', 5: 'bodyToMind', 12: 'greatHeal', 15: 'soulPassage' }
     },
     guardian: {
       id: 'guardian', name: '守護士', nameEn: 'GUARDIAN', description: '受けた痛みを共鳴へ変え、盾と反奏で格上を打ち破る基本JOB。',
@@ -1098,7 +1098,6 @@ window.ARSENE_DATA = {
     shadowSeven: { id: 'shadowSeven', name: '幻影七閃', nameEn: 'SHADOW SEVEN', source: 'job', jobId: 'martialArtist', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 18, power: 2.5, hits: 5, agiScale: 0, powerText: '攻撃力×2.5×5回', effectText: '5回攻撃／各攻撃で個別クリティカル判定', description: '影を七つに見せる五連閃。武道家の至高の多段技。' },
     greatHeal: { id: 'greatHeal', name: 'グレートヒール', nameEn: 'GREAT HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 12, type: 'ACTIVE', kind: 'support', target: 'self', mp: 12, powerText: '精神×5.0＋40', effect: { type: 'hpRecover', mndScale: 5, base: 40 }, effectText: '精神参照で大量HP回復', description: '精神力のすべてを傾けた大回復術。大きく傷を癒やし、戦場への帰還を可能にする。' },
     soulPassage: { id: 'soulPassage', name: '魂送の祈り', nameEn: 'SOUL PASSAGE', source: 'job', jobId: 'priest', unlockJobLevel: 15, type: 'ACTIVE', kind: 'magical', damageType: 'magical', target: 'single', mp: 14, powerText: '即死確率 5～60%', effect: { type: 'instantDeath', baseChance: .20, statEdgeRate: .008, minChance: .05, maxChance: .60 }, effectText: '20%＋（魔力＋精神－敵精神）×0.8%／BOSS無効', description: '魂を静かに彼方へ送る祈り。魔力と精神を鍛えた僧侶ほど成功しやすいが、強い魔法防御には阻まれる。' },
-    divineSmite: { id: 'divineSmite', name: '神裁の一閃', nameEn: 'DIVINE SMITE', source: 'job', jobId: 'priest', unlockJobLevel: 16, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 22, power: 7.0, agiScale: 0, elementId: 'light', powerText: '魔力×7.0', effectText: '敵単体へ極大光属性魔法攻撃', description: '神の裁定を下す一閃。光を凝縮した究極の聖魔法。' },
     // ↓ここから5つは魔奏聖の専用技だった。魔奏聖の削除にともない、現在どのJOBからも習得できない。
     //   別JOBへ割り当て直すか、不要なら丸ごと削除してよい。
     resonantSpell: { id: 'resonantSpell', name: '共鳴魔法', nameEn: 'RESONANT SPELL', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 3, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 14, power: 3.2, agiScale: 0, powerText: '魔力×3.2', effectText: '敵全体へ魔法攻撃', description: '魔奏士の共鳴する魔力を解き放ち、敵全体を攻撃する。' },
