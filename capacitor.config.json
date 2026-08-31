@@ -1,8 +1,0 @@
-{
-  "appId": "com.arsene.remix",
-  "appName": "ARSÈNE REMIX",
-  "webDir": "dist",
-  "server": {
-    "iosScheme": "https"
-  }
-}

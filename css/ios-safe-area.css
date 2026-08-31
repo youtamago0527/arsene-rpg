@@ -34,23 +34,24 @@ html.capacitor-native .hideout-art-shell{
 
 /* 戦闘は固定590pxの戦場を廃止し、上Safe Areaから下Safe Area直前までを使う。
    上部HUD・敵名・戦場・コマンドが同じ座標系で下がり、メニュー表示時と下端が揃う。 */
-#game.game-shell{min-height:var(--app-viewport-height)}
-#game .battle-topbar{top:calc(var(--safe-top) + 8px)!important;right:calc(var(--safe-right) + 8px)!important;left:calc(var(--safe-left) + 8px)!important;transform:none!important}
-#game .battle-console{padding-right:max(8px,var(--safe-right))!important;padding-bottom:max(7px,var(--safe-bottom))!important;padding-left:max(8px,var(--safe-left))!important}
-#game .command-drawer{right:calc(var(--safe-right) + 4px)!important;bottom:calc(var(--safe-bottom) + 4px)!important}
-html.capacitor-native #game.game-shell{
+#game.game-shell{
   height:var(--app-viewport-height);
   min-height:var(--app-viewport-height);
   max-height:var(--app-viewport-height);
-  padding-top:var(--native-screen-top);
   grid-template-rows:minmax(0,1fr) auto;
   align-content:stretch;
   overflow:hidden;
 }
-html.capacitor-native #game .battlefield{
+#game .battlefield{
   height:auto!important;
   min-height:0!important;
   max-height:none!important;
+}
+#game .battle-topbar{top:calc(var(--safe-top) + 8px)!important;right:calc(var(--safe-right) + 8px)!important;left:calc(var(--safe-left) + 8px)!important;transform:none!important}
+#game .battle-console{padding-right:max(8px,var(--safe-right))!important;padding-bottom:max(7px,var(--safe-bottom))!important;padding-left:max(8px,var(--safe-left))!important}
+#game .command-drawer{right:calc(var(--safe-right) + 4px)!important;bottom:calc(var(--safe-bottom) + 4px)!important}
+html.capacitor-native #game.game-shell{
+  padding-top:var(--native-screen-top);
 }
 html.capacitor-native #game .battle-topbar{
   top:8px!important;

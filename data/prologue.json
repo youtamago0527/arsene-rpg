@@ -1,9 +1,0 @@
-[
-  {"id":"prologue_01","time":"23:59","text":"街は、今日という一日を終えようとしていた。\n\n誰かが笑い。\n誰かが泣き。\n誰かが――奪われる。","background":null,"bgm":"opening","voice":null,"se":null,"portrait":null,"effect":"city"},
-  {"id":"prologue_02","time":"00:00","text":"鐘が鳴る。\n\n午前零時。\n\n世界の境界が、静かに侵蝕されていく。","background":null,"bgm":null,"voice":null,"se":"bell","portrait":null,"effect":"midnight"},
-  {"id":"prologue_03","time":null,"text":"人は誰しも、\n奪われたものを抱えて生きている。\n\n夢。\n誇り。\n居場所。\n記憶。\n\nそして――未来。","background":null,"bgm":null,"voice":null,"se":null,"portrait":null,"effect":"memory"},
-  {"id":"prologue_04","time":null,"text":"ならば。\n\n奪われたものは、\n盗り返せばいい。","background":null,"bgm":null,"voice":null,"se":null,"portrait":null,"effect":"resolve"},
-  {"id":"prologue_05","time":null,"text":"法で裁けない悪がいる。\n正義では救えない者がいる。\n\nだから俺たちは、\n\n夜を盗む。","background":null,"bgm":null,"voice":null,"se":null,"portrait":null,"effect":"phantom"},
-  {"id":"prologue_06","time":null,"text":"その名は――\n\n或世盗。\n\nARSÈNE.","background":null,"bgm":null,"voice":null,"se":null,"portrait":null,"effect":"arsene"},
-  {"id":"prologue_07","time":null,"text":"さあ。\n\n今宵の主役を選べ。","background":null,"bgm":null,"voice":null,"se":null,"portrait":null,"effect":"invitation"}
-]

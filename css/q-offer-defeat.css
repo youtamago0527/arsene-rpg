@@ -1,2 +1,0 @@
-.result-overlay{width:100dvw;height:100dvh;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));overflow:hidden}
-.result-card{width:min(570px,calc(100dvw - 24px));max-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));margin:0;overflow-y:auto;overscroll-behavior:contain}
