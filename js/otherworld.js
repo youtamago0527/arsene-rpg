@@ -13,7 +13,7 @@
   const $ = s => document.querySelector(s);
   const roll = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const STAT_LABEL = { str: '力', vit: '体力', mag: '魔力', mnd: '精神', agi: '素早さ', luk: '運', maxHp: 'HP', maxMp: 'MP' };
+  const STAT_LABEL = { str: '力', vit: '体力', mag: '魔力', mnd: '精神', agi: '素早さ', dex: '器用さ', luk: '運', maxHp: 'HP', maxMp: 'MP' };
 
   // ════════════════════════════════════════════════════════════
   // セーブ項目の補完
@@ -367,9 +367,12 @@
     const item = D().items[itemId];
     if (!item?.arcanaStat || !(this.profile.inventory[itemId] > 0)) return null;
     const def = (D().arcana?.weekly || []).find(a => a.id === itemId);
-    let stat = def?.stat || 'str';
+    // 曜日表を優先しつつ、そこから外れたアルカナはアイテム側の指定を使う。
+    // 旧仕様は weekly に無いと無条件で力になっており、曜日報酬から外した
+    // 幸運のアルカナが力を上げてしまっていた。
+    let stat = def?.stat || (typeof item.arcanaStat === 'string' ? item.arcanaStat : 'str');
     if (stat === 'random') {
-      const pool = D().arcana?.randomStats || ['str', 'vit', 'mag', 'mnd', 'agi', 'luk'];
+      const pool = D().arcana?.randomStats || ['str', 'vit', 'mag', 'mnd', 'agi', 'dex', 'luk'];
       stat = pool[roll(0, pool.length - 1)];
     }
     this.profile.inventory[itemId]--;

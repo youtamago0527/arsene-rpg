@@ -81,13 +81,13 @@
     ronin: {
       id: 'ronin', name: '浪士（仮）', nameEn: 'RONIN', description: '刀と見切りで攻撃を避け、反撃へ変える高速カウンターJOB。',
       signatureSkillId: 'afterimageClone', passiveUnlocks: { 5: 'p_returnBlade', 10: 'p_zanshin', 15: 'p_instantEdge' },
-      traits: { insight: { name: '見切り', nameEn: 'INSIGHT', type: 'agiEvasionEfficiency', rate: .20, description: '固定回避率ではなく、既存のAGI回避性能を20%強化する。' } },
+      traits: { insight: { name: '見切り', nameEn: 'INSIGHT', type: 'agiEvasionEfficiency', rate: .20, description: '固定回避率ではなく、既存の素早さ回避性能を20%強化する。' } },
       attackScaling: { str: 1.0, agi: .3 }, simulationAssumptions: { maintainSignatureBuff: true },
       growthStats: ['str', 'agi'], featureText: '回避成功を反撃・回復・次撃強化へ変換する。刀は両手占有で剣学を共有。',
       unlockCondition: { bossDefeated: 'astact', releaseFlag: 'd4Released' }, skillUnlocks: {}, weaponTypes: ['sword'], weaponSubtype: 'katana', ...DEV
     },
     hunter: {
-      id: 'hunter', name: '狩人', nameEn: 'HUNTER', description: '弓とDOT・DEBUFFを操り、弱った敵を仕留めるDEX型JOB。',
+      id: 'hunter', name: '狩人', nameEn: 'HUNTER', description: '弓とDOT・DEBUFFを操り、弱った敵を仕留める器用さ型JOB。',
       signatureSkillId: 'finishingShot', passiveUnlocks: { 5: 'p_toxicologist', 10: 'p_tracking', 15: 'p_weaknessHunter' },
       traits: { hunting: { name: '狩猟', nameEn: 'HUNTING', type: 'ownDotDamageUp', rate: .20, description: '自身が付与したDOTのダメージを20%上昇させる。' } },
       attackScaling: { dex: 1.0 }, simulationAssumptions: { activeDebuffs: 2, maintainDots: ['poison', 'burn'] },
@@ -150,7 +150,7 @@
     p_returnBlade: { id: 'p_returnBlade', name: '返し刃', nameEn: 'RETURN BLADE', type: 'PASSIVE', jobId: 'ronin', passiveEffect: { type: 'evadeCounter', rate: .30, power: 1.0 }, effectText: '回避成功時30%で通常攻撃相当の反撃', ...DEV },
     p_zanshin: { id: 'p_zanshin', name: '残心', nameEn: 'ZANSHIN', type: 'PASSIVE', jobId: 'ronin', passiveEffect: { type: 'evadeHeal', maxHpRate: .03, oncePerAction: true }, effectText: '回避成功時、最大HP3%回復（1ACTION1回）', ...DEV },
     p_instantEdge: { id: 'p_instantEdge', name: '刹那', nameEn: 'INSTANT EDGE', type: 'PASSIVE', jobId: 'ronin', passiveEffect: { type: 'evadeNextDamage', rate: .15, stacks: 1 }, effectText: '回避成功時、次の攻撃ダメージ+15%', ...DEV },
-    afterimageClone: { id: 'afterimageClone', name: '分身', nameEn: 'AFTERIMAGE CLONE', source: 'job', jobId: 'ronin', unlockJobLevel: 20, type: 'ACTIVE', kind: 'support', target: 'self', mp: 18, effect: { type: 'evasionAgiMultiplier', multiplier: 1.5, turns: 3 }, effectText: '3T、回避判定時AGI×1.5', ...DEV },
+    afterimageClone: { id: 'afterimageClone', name: '分身', nameEn: 'AFTERIMAGE CLONE', source: 'job', jobId: 'ronin', unlockJobLevel: 20, type: 'ACTIVE', kind: 'support', target: 'self', mp: 18, effect: { type: 'evasionAgiMultiplier', multiplier: 1.5, turns: 3 }, effectText: '3T、回避判定時素早さ×1.5', ...DEV },
 
     // D5 / 弓学・DOT
     bowShot: { id: 'bowShot', name: '射撃', nameEn: 'BOW SHOT', source: 'weapon', type: 'ACTIVE', kind: 'weapon', weaponType: 'bow', target: 'single', mp: 0, power: 1.0, ...DEV },
@@ -185,7 +185,7 @@
     p_bloodEdge: { id: 'p_bloodEdge', name: '血装', nameEn: 'BLOOD ARMAMENT', type: 'PASSIVE', jobId: 'darkKnight', passiveEffect: { type: 'hpCostDamageUp', rate: .15 }, effectText: 'HP消費技の最終ダメージ+15%', ...DEV },
     p_lifeEater: { id: 'p_lifeEater', name: '生命喰らい', nameEn: 'LIFE EATER', type: 'PASSIVE', jobId: 'darkKnight', passiveEffect: { type: 'damageHeal', rate: .03, oncePerAction: true }, effectText: '与ダメージの3%をHP回復（1ACTION1回）', ...DEV },
     p_abyssPierce: { id: 'p_abyssPierce', name: '冥穿', nameEn: 'ABYSS PIERCE', type: 'PASSIVE', jobId: 'darkKnight', passiveEffect: { type: 'defensePierce', rate: .20 }, effectText: '物理防御を20%貫通', ...DEV },
-    darkness: { id: 'darkness', name: '暗黒', nameEn: 'DARKNESS', source: 'job', jobId: 'darkKnight', unlockJobLevel: 20, type: 'ACTIVE', kind: 'physical', weaponType: 'greatsword', target: 'single', mp: 18, hpCostRate: .20, power: 4.0, ignoreDef: .50, unavoidable: true, element: 'dark', effectText: '最大HP20%消費／必中／DEF50%貫通', ...DEV }
+    darkness: { id: 'darkness', name: '暗黒', nameEn: 'DARKNESS', source: 'job', jobId: 'darkKnight', unlockJobLevel: 20, type: 'ACTIVE', kind: 'physical', weaponType: 'greatsword', target: 'single', mp: 18, hpCostRate: .20, power: 4.0, ignoreDef: .50, unavoidable: true, element: 'dark', effectText: '最大HP20%消費／必中／防御力50%貫通', ...DEV }
   });
 
   Object.assign(D.items, {

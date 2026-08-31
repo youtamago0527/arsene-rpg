@@ -22,12 +22,16 @@ window.ARSENE_DATA = {
   // 武器種マスタ。ここに追記すれば得意武器選択・アイテム欄のタブへ自動反映される。
   // damageStats は将来の体術ダメージ計算（力＋素早さ）用の予約情報。
   weaponTypes: [
-    { id: 'sword', name: '剣', nameEn: 'SWORD', description: '力で斬り込む近接武器。素直な物理攻撃。', damageStats: ['str'], starterWeaponId: 'phantomSword' },
-    { id: 'staff', name: '杖', nameEn: 'STAFF', description: '魔力を導く杖。魔法主体で戦う。', damageStats: ['mag'], starterWeaponId: 'mageStaff' },
-    { id: 'martial', name: '体術', nameEn: 'MARTIAL', description: '爪や籠手を使う徒手格闘。速さで手数を稼ぐ。', damageStats: ['str', 'agi'], starterWeaponId: 'ironClaw' },
+    { id: 'sword', name: '剣', nameEn: 'SWORD', description: '力で斬り込む近接武器。素直な物理攻撃。', damageStats: ['str'], starterWeaponId: 'forge_d1_sword' },
+    { id: 'staff', name: '杖', nameEn: 'STAFF', description: '魔力を導く杖。魔法主体で戦う。', damageStats: ['mag'], starterWeaponId: 'forge_d1_staff' },
+    { id: 'martial', name: '体術', nameEn: 'MARTIAL', description: '爪や籠手を使う徒手格闘。速さで手数を稼ぐ。', damageStats: ['str', 'agi'], starterWeaponId: 'forge_d1_martial' },
     // 楽器：魔奏士の証を入手するまでロック。器用さを火力へ変換する。
     { id: 'instrument', name: '楽器', nameEn: 'INSTRUMENT', description: '音に魔を乗せて放つ。器用さがそのまま威力になる。', damageStats: ['dex'], starterWeaponId: null, unlockFlag: 'instrumentUnlocked' },
-    { id: 'shield', name: '盾', nameEn: 'SHIELD', description: '防御性能を攻撃へ転換する守護士の武器。', damageStats: ['vit', 'mnd'], starterWeaponId: 'guardianAegis', unlockFlag: 'shieldUnlocked' }
+    // 盾武器は両手占有。右手に構えると左手が塞がる（isTwoHandedWeapon）。
+    // equipJobs を持つ武器種はそのJOBだけが右手に装備できる。
+    // 盾は守護士の戦い方そのものなので専用とし、全JOBの能力を借りる
+    // ファントムシーフにだけ例外を認める。
+    { id: 'shield', name: '盾', nameEn: 'SHIELD', description: '防御性能を攻撃へ転換する守護士の武器。両手で構えるため左手は空かない。', damageStats: ['vit', 'mnd'], starterWeaponId: 'guardianAegis', unlockFlag: 'shieldUnlocked', equipJobs: ['guardian', 'phantomThief'] }
   ],
   // 武器種ごとの通常攻撃。未定義の武器種は 'attack'（剣と同じ物理攻撃）にフォールバック。
   basicAttackByWeaponType: { sword: 'attack', staff: 'staffFireball', martial: 'martialStrike', instrument: 'resonantNote', shield: 'shieldStrike' },
@@ -40,6 +44,20 @@ window.ARSENE_DATA = {
   // 命中率（隠しステータス／画面には出さない）。攻撃側DEXと防御側AGIで共通判定する。
   // 数値は小数（0.05 = 5%）。既存敵にDEX/AGIが無い場合は戦闘側でSPDへフォールバックする。
   accuracy: { base: 0.90, dexRate: 0.006, defenderAgiRate: 0.005, min: 0.05, max: 1.0 },
+  // 装備の分解。素材へは戻さず一律のGOLDだけ返す（§53）。
+  // 金策コンテンツにはしない。目的はバッグ整理なので、★・強化値・ボス装備で
+  // 額を変えず、BOSS周回→★5大量分解→大量GOLD のループを作らない（§54）。
+  dismantleBalance: { goldPerItem: 100, confirmFromStars: 4, strongWarnFromStars: 5 },
+  // 旧「初期装備専用」アイテムから D1★3工房装備への対応表。
+  // ロード時にこの表で変換し、旧セーブの所持品・装備・強化値を引き継ぐ（§50/§70）。
+  starterWeaponMigration: { mageStaff: 'forge_d1_staff', phantomSword: 'forge_d1_sword', ironClaw: 'forge_d1_martial' },
+  // 盾（左手）のトレードオフ。防御性能はアイテム側の defensePower で伸ばし、
+  // 素早さの低下率だけをここで管理する。ランクが上がっても上限を超えない（§15）。
+  shieldBalance: {
+    agiPenaltyByStars: { 2: 6, 3: 8, 4: 10, 5: 12 },
+    defaultPenaltyPercent: 8,
+    maxPenaltyPercent: 15
+  },
   weaponScaling: {
     sword:   { scaling: { str: 1.0 },            powerKey: 'attackPower',      damageType: 'physical', accuracyModifier:  0.00 },
     martial: { scaling: { str: 0.5, agi: 0.5 },  powerKey: 'attackPower',      damageType: 'physical', accuracyModifier:  0.05 },
@@ -149,6 +167,10 @@ window.ARSENE_DATA = {
     vitalGrowthHpTierSize: 100,
     vitalGrowthMpTierSize: 100,
     vitalGrowthSparkPerTier: 10,
+    // HPは戦闘ごとの抽選で伸びる（JOB Lvでは増えない）。基礎15%＋JOB補正。
+    // 守護士は27%で全JOB中トップ。500戦でHP485、1000戦で890に達する。
+    // VITは防御力にしか変換されないため一見HPが薄く見えるが、
+    // 実際の到達値はこの成長率で決まる。
     jobHpGrowthBonus: { warrior: 0.10, martialArtist: 0.07, mage: 0.00, priest: 0.05, guardian: 0.12 },
     jobMpGrowthBonus: { warrior: 0.00, martialArtist: 0.02, mage: 0.10, priest: 0.08, guardian: 0.03 },
 
@@ -161,9 +183,13 @@ window.ARSENE_DATA = {
     ],
     sparkSourceMultipliers: { basic: .25, related: .5, direct: 2.0 },
     sparkInitialCastFree: true,
-    // パッシブは転生1回ごとに「基本値 × この割合」ずつ強くなる。
-    // 個別に rebirthStep / max を書けばそちらが優先される。
-    passiveRebirthStepRate: 0.4,
+    // パッシブは転生1回ごとに、全JOB共通でこの値ぶん強くなる（絶対値の+2%）。
+    // 旧仕様の「基本値×40%」は、基本値が小さいパッシブほど伸びず
+    // 転生しても上がった気がしない、という問題があったため一律へ変更した。
+    // 個別に rebirthStep / rebirthTable / max を書けばそちらが優先される。
+    passiveRebirthStepFlat: 0.02,
+    // JOB特性（そのJOBに就いている間だけの効果）は従来どおり基本値比で伸ばす。
+    jobTraitRebirthStepRate: 0.4,
     // 転生時、直前までにそのJOBのLvアップで得た能力のうち残す割合。
     rebirthStatRetentionRate: 0.20,
     // 転生1回につき、次のLvアップで得られるJOB成長量を10%増やす。
@@ -179,6 +205,13 @@ window.ARSENE_DATA = {
     jobGrowthPerLevel: {
       // どのJOBも合計6/Lvで揃える（Lv1→20で114ポイント）。
       // 器用さを伸ばすのは魔奏士だけ。楽器のダメージと命中に直結する。
+      //
+      // luk: 0 は書き忘れではなく意図的な線引き。会心率はLUKだけで決まるため、
+      // luk を持たないJOBは会心が初期値のまま（約9%）固定になる。
+      // 戦士・守護士・魔奏士は硬さや反撃、演奏バフがすでにリターン源になっており、
+      // そこへ会心を乗せると転生を重ねて上限95%へ届いた時点で
+      // アタッカーJOBを追い越してしまう。会心はアタッカーの取り分として空けてある。
+      // 「LUKが伸びないのはバグでは」と後から埋めないこと。
       warrior:       { str: 2, vit: 2, mag: 0, mnd: 1, agi: 1, dex: 0, luk: 0 },
       martialArtist: { str: 2, vit: 1, mag: 0, mnd: 0, agi: 2, dex: 0, luk: 1 }, // 体術は力0.5+素早さ0.5なので力を上げて伸び幅を戦士に揃える
       mage:          { str: 0, vit: 0, mag: 2, mnd: 2, agi: 1, dex: 0, luk: 1 },
@@ -246,12 +279,42 @@ window.ARSENE_DATA = {
   // 強化は「その装備自身の戦闘値・能力補正・特殊効果」を割合で伸ばす（+1ごとに powerRate）。
   //   弱い装備を強化しても強い装備を追い越さないのが狙い。
   //   旧 statBonus（基礎能力+5/Lv）は廃止。基礎能力はJOBとキャラだけが伸ばす。
-  enchantTable: { successRates: [1.00, 1.00, 1.00, 0.97, 0.93, 0.88, 0.82, 0.75, 0.66, 0.55], goldCosts: [100, 200, 300, 500, 700, 1000, 1400, 1800, 2500, 3500], maxLevel: 10, powerRate: 0.15 },
+  // 強化に上限は無い。失敗すると装備そのものが壊れるので、
+  // 「どこで止めるか」をプレイヤーが決めるギャンブルとして機能させる。
+  //
+  // successRates / goldCosts は +10 までの手作り値。それ以降は
+  // successFalloff / goldGrowth で外挿する（表の外に出た瞬間に
+  // undefined となり必ず破壊される事故を防ぐため、必ず両方を用意する）。
+  //   成功率  = 表の最終値 × successFalloff^(Lv-表の最終index)   下限 successFloor
+  //   費用    = 表の最終値 × goldGrowth^(Lv-表の最終index)
+  enchantTable: {
+    successRates: [1.00, 1.00, 1.00, 0.97, 0.93, 0.88, 0.82, 0.75, 0.66, 0.55],
+    goldCosts: [100, 200, 300, 500, 700, 1000, 1400, 1800, 2500, 3500],
+    successFalloff: 0.92, successFloor: 0.05, goldGrowth: 1.40,
+    powerRate: 0.15
+  },
   combatBalance: {
     playerVariance: { min: -2, max: 2 },
-    critical: { base: .06, luckRate: .008, max: .28, multiplier: 1.65 },
+    // 会心率はLUK一本で伸ばす。JOB成長で「率」を配ると、率どうしが複利で
+    // 噛み合って一瞬で天井へ張り付くため、レベルアップはLUKだけを上げる。
+    // 装備の会心率だけが率としてこの上に乗る。
+    //
+    // luckRate .0022 は「LUK 400 で約94%」から逆算した値。
+    // LUKはLv21以降の2倍帯と転生倍率(+10%/回)で伸び続け、
+    // 武道家 Lv40・転生50 で LUK 386（＝約91%）が実測の到達点。
+    // やり込み切ってようやく hardMax .95 へ届く配分になっている。
+    //
+    // 参考：DQ3武闘家とDQ4アリーナはどちらも Lv/256、一般キャラは 1/64 = 6.25%
+    // （base .06 とほぼ同じ）。特化の天井はアリーナ25%固定、武闘家Lv99で38.6%。
+    // うちはやり込みRPGなので、その先を長い時間で登らせる形にしている。
+    //
+    // max は旧「LUKだけで到達できる上限」。上限撤廃にともない廃止した。
+    // hardMax .95 だけが天井で、100%にはしない（必ず会心は作らない）。
+    critical: { base: .06, luckRate: .0022, hardMax: .95, multiplier: 1.65 },
     // 共通コマンド《防御》は物理・魔法を問わず、そのラウンドの最終被ダメージを半減する。
     guardReduction: .50,
+    // STACCATO FULL SET の反撃威力（通常攻撃に対する倍率）。過剰にしない（§40）。
+    staccatoCounterRate: .55,
     // 敵→プレイヤーのダメージは比率型：atk × attackScale × defenseK/(defenseK+防御)
     // 引き算型だと工房で装備を更新した瞬間にダメージが 0 か即死かの両極端に振れるため、
     // 防御が上がるほど緩やかに減衰する比率型へ統一している。
@@ -283,8 +346,10 @@ window.ARSENE_DATA = {
     id: 'ren', name: '蓮', shortName: 'REN', level: 1, exp: 0, gold: 0,
     baseStats: { maxHp: 80, maxMp: 40, str: 12, vit: 10, mag: 10, mnd: 14, agi: 18, dex: 12, luk: 14 },
     growth: { maxHp: 8, maxMp: 5, str: 0, vit: 0, mag: 0, mnd: 0, agi: 0, dex: 0, luk: 0 },
-    skills: ['quickSlash'], inventory: { potion: 3, manaPotion: 2, mageStaff: 1, phantomSword: 1 },
-    equipment: { rightHand: 'mageStaff', leftHand: null, head: null, body: null, arms: null, feet: null, accessory: null }
+    // 初期装備は専用アイテムを作らず、D1★3工房装備をそのまま1個持たせる（§48/§51）。
+    // 武器選択で選んだ種類の starterWeaponId が開始処理で上書きする。
+    skills: ['quickSlash'], inventory: { potion: 3, manaPotion: 2, forge_d1_staff: 1 },
+    equipment: { rightHand: 'forge_d1_staff', leftHand: null, head: null, body: null, arms: null, feet: null, accessory: null }
   },
   characterSkillProgression: [
     { level: 1, skillId: 'blueNote' },
@@ -314,7 +379,7 @@ window.ARSENE_DATA = {
     priest: {
       id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。長く潜り続け、稼いで帰るのが得意。', signatureSkillId: 'heal', passiveUnlocks: { 1: 'p_tithe', 5: 'p_spirit', 10: 'p_healArt', 15: 'p_wardBarrier' }, traits: {}, growthStats: ['mnd', 'vit'], featureText: '獲得GOLDを増やし、確率再生と一戦一度のHP→MP変換で長く潜れる。弱い敵を残して待つだけでは資源を永久回復できない。',
       growth: { 1: { mnd: 2 }, 2: { maxMp: 5 }, 3: { mnd: 2 }, 4: { maxMp: 6 }, 5: { mnd: 2, maxHp: 5 }, 6: { maxMp: 8 }, 7: { mnd: 3 }, 8: { maxMp: 8 }, 9: { mnd: 3 }, 10: { mnd: 4, maxMp: 12 }, 11: { mnd: 3 }, 12: { maxMp: 14, maxHp: 5 }, 13: { mnd: 4 }, 14: { maxMp: 12 }, 15: { mnd: 4 }, 16: { maxMp: 16 }, 17: { mnd: 5 }, 18: { maxMp: 14 }, 19: { mnd: 5 }, 20: { mnd: 6, maxMp: 20, maxHp: 8 } },
-      skillUnlocks: { 3: 'regenerate', 5: 'bodyToMind', 6: 'holyLight', 12: 'greatHeal', 15: 'soulPassage', 16: 'divineSmite' }
+      skillUnlocks: { 5: 'bodyToMind', 15: 'soulPassage' }
     },
     guardian: {
       id: 'guardian', name: '守護士', nameEn: 'GUARDIAN', description: '受けた痛みを共鳴へ変え、盾と反奏で格上を打ち破る基本JOB。',
@@ -345,14 +410,19 @@ window.ARSENE_DATA = {
       skillUnlocks: {}
     },
     dualBlade: {
-      id: 'dualBlade', name: '双刃士', nameEn: 'DUAL BLADE', description: '攻撃を当て続けるほど加速する、高STR・高AGIの二刀アタッカー。',
+      id: 'dualBlade', name: '双刃士', nameEn: 'DUAL BLADE', description: '攻撃を当て続けるほど加速する、高い力・高い素早さの二刀アタッカー。',
       signatureSkillId: 'battleDance',
       passiveUnlocks: { 1: 'p_dualWield', 5: 'p_comboDance', 10: 'p_pursuitBlade', 15: 'p_danceForm' },
       // 双刃そのもののSTR50%＋AGI50%参照は武器データ側で管理する。
       // JOB特性ではなくPASSIVEへ分離したため、PHANTOM THIEFも枠を使えば二刀を再現できる。
       traits: {},
       unlockCondition: { bossDefeated: 'myrthi' },
-      growth: { 1: { str: 3, agi: 2 }, 2: { critBonus: .02 }, 3: { str: 3, agi: 2 }, 4: { critBonus: .02 }, 5: { str: 4, agi: 3 }, 6: { critBonus: .03 }, 7: { str: 3, agi: 3 }, 8: { critBonus: .03 }, 9: { str: 4, agi: 3 }, 10: { critBonus: .05, str: 5, agi: 3 }, 11: { str: 4, agi: 3 }, 12: { critBonus: .03, str: 4 }, 13: { agi: 4, str: 3 }, 14: { critBonus: .03, agi: 4 }, 15: { str: 5, agi: 5 }, 16: { critBonus: .04 }, 17: { str: 5, agi: 4 }, 18: { critBonus: .04, str: 4 }, 19: { str: 6, agi: 5 }, 20: { critBonus: .08, str: 7, agi: 6, maxHp: 15 } },
+      // 会心率(critBonus)を直接配っていた枠はLUKへ置換した。率を配ると
+      // 転生倍率と20%保持が複利で乗って天井に張り付くため、会心はLUK経由で伸ばす。
+      // LUKは武道家と同じ 1/Lv。双刃士の会心らしさは素のLUKではなく
+      // 《追刃》(左手追撃の会心+15%)と《連舞》MAX(+10%)のパッシブ側に置いてある。
+      // 両方盛ると二重取りになるため、LUKは横並びにしている。
+      growth: { 1: { luk: 1, str: 3, agi: 2 }, 2: { luk: 1 }, 3: { luk: 1, str: 3, agi: 2 }, 4: { luk: 1 }, 5: { luk: 1, str: 4, agi: 3 }, 6: { luk: 1 }, 7: { luk: 1, str: 3, agi: 3 }, 8: { luk: 1 }, 9: { luk: 1, str: 4, agi: 3 }, 10: { luk: 1, str: 5, agi: 3 }, 11: { luk: 1, str: 4, agi: 3 }, 12: { luk: 1, str: 4 }, 13: { luk: 1, agi: 4, str: 3 }, 14: { luk: 1, agi: 4 }, 15: { luk: 1, str: 5, agi: 5 }, 16: { luk: 1 }, 17: { luk: 1, str: 5, agi: 4 }, 18: { luk: 1, str: 4 }, 19: { luk: 1, str: 6, agi: 5 }, 20: { luk: 1, str: 7, agi: 6, maxHp: 15 } },
       growthStats: ['str', 'agi'], featureText: '命中するたび《連舞》が高まり、二刀追撃と会心で一気に加速する。防御・魔防・自己回復は低い。',
       skillUnlocks: {}
     }
@@ -364,19 +434,19 @@ window.ARSENE_DATA = {
       proofItemId: 'magicKnightProof',
       role: '楽器をメイン武器にして、自分へ演奏バフを重ねながら専用技で戦う魔法寄りの前衛。',
       build: '楽器を装備 → 《フォルテ》や《クレッシェンド》を維持 → 解放された専用技で攻める。',
-      tips: ['MAGとSTRの両方を活かせる。', 'バフが切れると専用技も使えなくなるため、演奏の残りターンを意識する。']
+      tips: ['魔力と力の両方を活かせる。', 'バフが切れると専用技も使えなくなるため、演奏の残りターンを意識する。']
     },
     dualBlade: {
       proofItemId: 'dualBladeProof',
       role: '双刃を左右に持ち、命中を重ねるほど連舞で加速する高速アタッカー。',
       build: '右手・左手に双刃を装備 → 通常攻撃と体術技で連舞を貯める → MAXで《戦姫乱舞・極》を撃つ。',
-      tips: ['STR・AGI・会心率を伸ばすと火力、回避、行動順が一緒に伸びる。', 'MISSで連舞が0になる。命中を確保して連撃を続けるのが大切。']
+      tips: ['力・素早さ・会心率を伸ばすと火力、回避、行動順が一緒に伸びる。', 'MISSで連舞が0になる。命中を確保して連撃を続けるのが大切。']
     },
     guardian: {
       proofItemId: 'guardianProof',
       role: '右手の盾で格上の攻撃を受け、RESONANCEへ変えて反撃する耐久型JOB。',
       build: '盾を右手に装備 → 《防御》や守護術で耐える → 溜まったRESONANCEを《共鳴破》へ変える。',
-      tips: ['VIT・MNDと盾の防御性能が攻防の両方に関わる。', '強い敵ほど共鳴を稼げるが、無理に受け続けず防御と回復を使い分ける。']
+      tips: ['体力・精神と盾の防御性能が攻防の両方に関わる。', '強い敵ほど共鳴を稼げるが、無理に受け続けず防御と回復を使い分ける。']
     }
   },
   jobCommandAbilities: {
@@ -643,7 +713,7 @@ window.ARSENE_DATA = {
       recipes: ['cadenza_staff_recipe', 'soloist_mask_recipe', 'soloist_coat_recipe', 'maestro_gloves_recipe', 'finale_boots_recipe', 'maestri_baton_recipe'],
       dismantle: { materialId: 'cadenza_fragment', count: 3 },
       setBonuses: {
-        2: { id: 'solo', name: 'SOLO', description: 'MAG +5%', effect: { magPercent: 5 } },
+        2: { id: 'solo', name: 'SOLO', description: '魔力 +5%', effect: { magPercent: 5 } },
         4: { id: 'maestro', name: 'MAESTRO', description: '魔法使用時10%でMP消費なし', effect: { freeMagicMpChance: .10 } },
         6: { id: 'cadenza', name: 'CADENZA', description: '魔法使用時5%で追加発動', effect: { magicRepeatChance: .05 } }
       }
@@ -813,7 +883,7 @@ window.ARSENE_DATA = {
     // 剣は既存 attack をそのまま使用（力依存の物理攻撃）。
     // 3種の通常攻撃は同一の計算式（武器power × 参照ステータス）。参照する能力だけが異なる。
     //   剣 → 力 ／ 爪 → 素早さ ／ 杖 → 魔力
-    martialStrike: { id: 'martialStrike', name: 'たたかう', nameEn: 'MARTIAL STRIKE', mp: 0, kind: 'weapon', weaponType: 'martial', target: 'single', agiScale: 0, damageType: 'physical', powerText: 'AGI依存', description: '拳と爪による打撃。素早さを参照する。' },
+    martialStrike: { id: 'martialStrike', name: 'たたかう', nameEn: 'MARTIAL STRIKE', mp: 0, kind: 'weapon', weaponType: 'martial', target: 'single', agiScale: 0, damageType: 'physical', powerText: '素早さ依存', description: '拳と爪による打撃。素早さを参照する。' },
     staffFireball: { id: 'staffFireball', name: 'ファイアーボール', nameEn: 'FIREBALL', mp: 0, kind: 'weapon', weaponType: 'staff', target: 'single', power: 1.0, agiScale: 0, damageType: 'magical', element: 'fire', powerText: '魔法攻撃性能×1.0', effectText: '炎属性／MP消費なし', description: '杖に灯した炎弾を撃ち出す。杖の通常攻撃。' },
     resonantNote: { id: 'resonantNote', name: 'たたかう', nameEn: 'RESONANT NOTE', mp: 0, kind: 'weapon', weaponType: 'instrument', target: 'single', power: 1.0, agiScale: 0, damageType: 'magical', powerText: '楽器攻撃性能×1.0', description: '弦を弾き、音の刃を飛ばす。楽器の通常攻撃。' },
 
@@ -848,7 +918,7 @@ window.ARSENE_DATA = {
     p_dualWield: { id: 'p_dualWield', name: '二刀の型', nameEn: 'DUAL WIELD', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'dualWield', rate: .25, rebirthTable: { 0: .25, 1: .30, 2: .35, 3: .40, 4: .45, 5: .50, 6: .55, 7: .60, 8: .65, 9: .70, 10: .75, 11: .80, 12: .85, 13: .90, 14: .95, 15: 1.00 }, max: 1.00 }, effectText: '左手にも双刃を装備可能／右手命中後に左手追撃25%', description: '左右の双刃を一つの型として操る。左手は独立した命中・会心判定を行い、武器効果と体術武器学も適用される。' },
     p_comboDance: { id: 'p_comboDance', name: '連舞', nameEn: 'CHAIN DANCE', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'comboDance', damagePerStack: .02, maxStacks: 5, maxCriticalBonus: .10, rebirthSteps: { damagePerStack: .005, maxCriticalBonus: .02 }, rebirthMax: { damagePerStack: .05, maxCriticalBonus: .20 } }, effectText: '命中ごとに連舞+1（最大5）／1段階ごと与ダメ+2%／MAXで会心+10%', description: '右手・左手・多段攻撃の各Hitで加速する。MISSすると連舞は0へ戻る。' },
     p_pursuitBlade: { id: 'p_pursuitBlade', name: '追刃', nameEn: 'PURSUIT BLADE', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'offHandCritical', rate: .15, comboBonusOnCritical: 1, rebirthSteps: { comboBonusOnCritical: 1 }, rebirthMax: { comboBonusOnCritical: 3 } }, effectText: '左手追撃の会心率+15%／左手会心時に連舞+1追加', description: '追撃の刃を急所へ滑り込ませ、舞の速度を一気に引き上げる。' },
-    p_danceForm: { id: 'p_danceForm', name: '舞踏', nameEn: 'WAR DANCE', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'comboMaxBoost', agiRate: .20, offHandRate: .10, rebirthSteps: { agiRate: .05, offHandRate: .025 }, rebirthMax: { agiRate: .40, offHandRate: .20 } }, effectText: '連舞MAX中 AGI+20%／左手追撃倍率+10%', description: '連舞が頂点に達したときだけ完成する双刃士の戦闘舞踏。MISSすれば即座に失われる。' },
+    p_danceForm: { id: 'p_danceForm', name: '舞踏', nameEn: 'WAR DANCE', type: 'PASSIVE', jobId: 'dualBlade', passiveEffect: { type: 'comboMaxBoost', agiRate: .20, offHandRate: .10, rebirthSteps: { agiRate: .05, offHandRate: .025 }, rebirthMax: { agiRate: .40, offHandRate: .20 } }, effectText: '連舞MAX中 素早さ+20%／左手追撃倍率+10%', description: '連舞が頂点に達したときだけ完成する双刃士の戦闘舞踏。MISSすれば即座に失われる。' },
 
     // ══ 魔奏士 固有スキル ═════════════════════════════════════
     // アンサンブル：3ターンのあいだ魔奏士パッシブの発動率を引き上げる。
@@ -865,7 +935,7 @@ window.ARSENE_DATA = {
     p_forte:     { id: 'p_forte',     name: 'フォルテ',     nameEn: 'FORTE',     type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'atkUp',  rate: .10 }, effectText: '自ターン開始時に抽選。攻撃力+10%／専用技が解放', description: '強奏が刃に乗る。自分のターン開始時、一定確率で攻撃力が上がり、専用技が使えるようになる。' },
     p_crescendo: { id: 'p_crescendo', name: 'クレッシェンド', nameEn: 'CRESCENDO', type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'matkUp', rate: .10 }, effectText: '自ターン開始時に抽選。魔法攻撃力+10%', description: '高まりゆく旋律が魔を押し上げる。自分のターン開始時、一定確率で魔法攻撃力が上がる。' },
     p_nocturne:  { id: 'p_nocturne',  name: 'ノクターン',   nameEn: 'NOCTURNE',  type: 'PASSIVE', jobId: 'magicKnight', passiveEffect: { type: 'turnStartBuff', buff: 'regen', chance: .30, rebirthSteps: { chance: .03 }, rebirthMax: { chance: .50 } }, effectText: '自ターン開始時30%で発動。3ターン自然回復', description: '夜想曲が傷を癒やす。自分のターン開始時、30%の確率で3ターンの継続回復を得る。' },
-    magicCharge: { id: 'magicCharge', name: '魔力装填', nameEn: 'MAGIC CHARGE', source: 'job', jobId: 'magicKnight', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 4, cooldown: 3, powerText: '次の物理攻撃に MAG×0.5 を追加', effect: { type: 'selfMagicCharge' }, effectText: '次に使う物理攻撃・武器技へ魔力依存の追加ダメージ／CT3', description: '刃に魔力を装填する。次の物理攻撃へ魔力分のダメージを上乗せする。' },
+    magicCharge: { id: 'magicCharge', name: '魔力装填', nameEn: 'MAGIC CHARGE', source: 'job', jobId: 'magicKnight', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 4, cooldown: 3, powerText: '次の物理攻撃に 魔力×0.5 を追加', effect: { type: 'selfMagicCharge' }, effectText: '次に使う物理攻撃・武器技へ魔力依存の追加ダメージ／CT3', description: '刃に魔力を装填する。次の物理攻撃へ魔力分のダメージを上乗せする。' },
 
     // ══ 閃き技（対応する攻撃の使用中に閃く）═══════════════════
     // weaponType / sparkRank / sparkFrom で派生ツリーを構成する。
@@ -912,21 +982,21 @@ window.ARSENE_DATA = {
       weaponType: 'sword', prerequisiteSkill: 'attack', requiredWeaponLevel: 3, sparkRate: null,
       mp: 2, kind: 'physical', damageType: 'physical', target: 'single',
       power: 0.7, hitCount: 2, hits: 2, agiScale: 0, criticalModifier: 0, accuracyModifier: 0,
-      powerText: 'STR×0.7×2回', effectText: '2連撃／合計1.4倍', description: '踏み込みから返す刃で二度斬りつける。'
+      powerText: '力×0.7×2回', effectText: '2連撃／合計1.4倍', description: '踏み込みから返す刃で二度斬りつける。'
     },
     doubleClaw: {
       id: 'doubleClaw', name: 'ダブルクロー', nameEn: 'DOUBLE CLAW', source: 'weapon', type: 'ACTIVE',
       weaponType: 'martial', prerequisiteSkill: 'martialStrike', requiredWeaponLevel: 3, sparkRate: null,
       mp: 3, kind: 'physical', damageType: 'physical', target: 'single',
       power: 0.65, hitCount: 2, hits: 2, agiScale: 0, criticalModifier: 0.08,
-      powerText: 'AGI×0.65×2回', effectText: '2連撃／各撃で会心判定＋会心率上昇', description: '両の爪で切り裂く連撃。会心を狙いやすい。'
+      powerText: '素早さ×0.65×2回', effectText: '2連撃／各撃で会心判定＋会心率上昇', description: '両の爪で切り裂く連撃。会心を狙いやすい。'
     },
     fireStorm: {
       id: 'fireStorm', name: 'ファイアストーム', nameEn: 'FIRE STORM', source: 'weapon', type: 'ACTIVE',
       weaponType: 'staff', prerequisiteSkill: 'staffFireball', requiredWeaponLevel: 3, sparkRate: null,
       mp: 5, kind: 'magical', damageType: 'magical', element: 'fire', target: 'all',
       power: 0.7, hitCount: 1, agiScale: 0, criticalModifier: 0, accuracyModifier: 0.10,
-      powerText: 'MAG×0.7（全体）', effectText: '敵全体へ炎属性魔法', description: '渦巻く業火が戦場を包む。'
+      powerText: '魔力×0.7（全体）', effectText: '敵全体へ炎属性魔法', description: '渦巻く業火が戦場を包む。'
     },
 
     // ── 剣：二段斬り → 三段斬り → 音速剣 → 残像剣 ──────────────
@@ -935,14 +1005,14 @@ window.ARSENE_DATA = {
       weaponType: 'sword', prerequisiteSkill: 'doubleSlash', requiredWeaponLevel: 7, sparkRate: null,
       mp: 3, kind: 'physical', damageType: 'physical', target: 'single',
       power: 0.55, hitCount: 3, hits: 3, agiScale: 0, criticalModifier: 0, accuracyModifier: -0.05,
-      powerText: 'STR×0.55×3回', effectText: '3連撃／合計1.65倍', description: '流れるような三連の斬撃。'
+      powerText: '力×0.55×3回', effectText: '3連撃／合計1.65倍', description: '流れるような三連の斬撃。'
     },
     sonicBlade: {
       id: 'sonicBlade', name: '音速剣', nameEn: 'SONIC BLADE', source: 'weapon', type: 'ACTIVE',
       weaponType: 'sword', prerequisiteSkill: 'tripleSlash', requiredWeaponLevel: 12, sparkRate: null,
       mp: 5, kind: 'physical', damageType: 'physical', target: 'single',
       power: 1.6, hitCount: 1, agiScale: 0, criticalModifier: 0, accuracyModifier: 0.15, speedBonus: 40,
-      powerText: 'STR×1.6', effectText: '強い先制補正', description: '音を置き去りにする神速の一閃。'
+      powerText: '力×1.6', effectText: '強い先制補正', description: '音を置き去りにする神速の一閃。'
     },
     afterimageBlade: {
       id: 'afterimageBlade', name: '残像剣', nameEn: 'AFTERIMAGE BLADE', source: 'weapon', type: 'ACTIVE',
@@ -958,14 +1028,14 @@ window.ARSENE_DATA = {
       weaponType: 'martial', prerequisiteSkill: 'doubleClaw', requiredWeaponLevel: 7, sparkRate: null,
       mp: 5, kind: 'physical', damageType: 'physical', target: 'single',
       power: 1.2, hitCount: 1, agiScale: 0, criticalModifier: 0.25, accuracyModifier: -0.05,
-      powerText: 'AGI×1.2', effectText: '会心率 大幅上昇', description: '一点の急所を穿つ。会心を狙う技。'
+      powerText: '素早さ×1.2', effectText: '会心率 大幅上昇', description: '一点の急所を穿つ。会心を狙う技。'
     },
     galeFist: {
       id: 'galeFist', name: '疾風拳', nameEn: 'GALE FIST', source: 'weapon', type: 'ACTIVE',
       weaponType: 'martial', prerequisiteSkill: 'doubleClaw', requiredWeaponLevel: 12, sparkRate: null,
       mp: 8, kind: 'physical', damageType: 'physical', target: 'single',
       power: 1.4, hitCount: 1, agiScale: 0.3, criticalModifier: 0, speedBonus: 40,
-      powerText: 'AGI×1.4＋AGI×0.3', effectText: '強い先制補正', description: '疾風のごとき踏み込みから放つ拳。'
+      powerText: '素早さ×1.4＋素早さ×0.3', effectText: '強い先制補正', description: '疾風のごとき踏み込みから放つ拳。'
     },
     shadowStitch: {
       id: 'shadowStitch', name: '影縫い', nameEn: 'SHADOW STITCH', source: 'weapon', type: 'ACTIVE',
@@ -973,7 +1043,7 @@ window.ARSENE_DATA = {
       mp: 11, kind: 'physical', damageType: 'physical', target: 'single',
       power: 1.3, hitCount: 1, agiScale: 0, criticalModifier: 0,
       effect: { type: 'enemyBind', chance: 0.65, turns: 2, resistanceGain: 0.25 },
-      powerText: 'AGI×1.3', effectText: '65%で足止め（2行動）／重ね掛け不可・成功後は耐性上昇', description: '影を縫い止め、二度の行動を封じる。一度縫われた敵は次第に術を見切る。'
+      powerText: '素早さ×1.3', effectText: '65%で足止め（2行動）／重ね掛け不可・成功後は耐性上昇', description: '影を縫い止め、二度の行動を封じる。一度縫われた敵は次第に術を見切る。'
     },
 
     // ── 杖：ファイアーボール →（ファイアストーム／ファイアランス）→ インフェルノ → メテオ ──
@@ -982,75 +1052,71 @@ window.ARSENE_DATA = {
       weaponType: 'staff', prerequisiteSkill: 'staffFireball', requiredWeaponLevel: 7, sparkRate: null,
       mp: 6, kind: 'magical', damageType: 'magical', element: 'fire', target: 'single',
       power: 1.6, hitCount: 1, agiScale: 0, criticalModifier: 0,
-      powerText: 'MAG×1.6', effectText: '単体高火力の炎魔法', description: '収束した炎が槍となって貫く。'
+      powerText: '魔力×1.6', effectText: '単体高火力の炎魔法', description: '収束した炎が槍となって貫く。'
     },
     inferno: {
       id: 'inferno', name: 'インフェルノ', nameEn: 'INFERNO', source: 'weapon', type: 'ACTIVE',
       weaponType: 'staff', prerequisiteSkill: 'fireStorm', requiredWeaponLevel: 12, sparkRate: null,
       mp: 10, kind: 'magical', damageType: 'magical', element: 'fire', target: 'all',
       power: 1.0, hitCount: 1, agiScale: 0, criticalModifier: 0, accuracyModifier: 0.15,
-      powerText: 'MAG×1.0（全体）', effectText: '敵全体を焼き尽くす炎', description: '地を舐める獄炎が全てを飲み込む。'
+      powerText: '魔力×1.0（全体）', effectText: '敵全体を焼き尽くす炎', description: '地を舐める獄炎が全てを飲み込む。'
     },
     meteor: {
       id: 'meteor', name: 'メテオ', nameEn: 'METEOR', source: 'weapon', type: 'ACTIVE',
       weaponType: 'staff', prerequisiteSkill: 'inferno', requiredWeaponLevel: 18, sparkRate: null,
       mp: 18, kind: 'magical', damageType: 'magical', element: 'fire', target: 'all',
       power: 1.5, hitCount: 1, agiScale: 0, criticalModifier: 0, unavoidable: true,
-      powerText: 'MAG×1.5（全体）', effectText: '高コストの大魔法', description: '天より降る星の礫が戦場を穿つ。'
+      powerText: '魔力×1.5（全体）', effectText: '高コストの大魔法', description: '天より降る星の礫が戦場を穿つ。'
     },
 
-    quickSlash: { id: 'quickSlash', name: 'クイックスラッシュ', nameEn: 'QUICK SLASH', source: 'character', type: 'ACTIVE', mp: 5, kind: 'physical', target: 'single', power: 3.5, agiScale: 0.8, powerText: 'ATK×3.5＋AGI×0.8', effectText: '素早さも威力へ加算', description: '素早い踏み込みから放つ斬撃。力と素早さを参照して敵単体へダメージを与える。' },
+    quickSlash: { id: 'quickSlash', name: 'クイックスラッシュ', nameEn: 'QUICK SLASH', source: 'character', type: 'ACTIVE', mp: 5, kind: 'physical', target: 'single', power: 3.5, agiScale: 0.8, powerText: '攻撃力×3.5＋素早さ×0.8', effectText: '素早さも威力へ加算', description: '素早い踏み込みから放つ斬撃。力と素早さを参照して敵単体へダメージを与える。' },
     flame: { id: 'flame', name: 'フラム', mp: 6, kind: 'magical', target: 'all', power: 0.8, agiScale: 0, elementId: 'fire' },
     fireball: { id: 'fireball', name: 'ファイアボール', mp: 5, kind: 'magical', target: 'single', power: 1.4, agiScale: 0, elementId: 'fire' },
-    blueNote: { id: 'blueNote', name: 'ブルーノート', nameEn: 'BLUE NOTE', source: 'character', unlockLevel: 1, type: 'ACTIVE', kind: 'hybrid', target: 'single', mp: 5, power: 1, strScale: 1.7, magScale: 1.7, agiScale: 0, powerText: 'ATK×1.7＋MAG×1.7', effectText: '物理攻撃力と魔力の双方を参照', description: '青い魔力を武器へ纏わせて敵を攻撃する。物理攻撃力と魔力の双方を参照してダメージを与える。' },
-    blueEcho: { id: 'blueEcho', name: '蒼の残響', nameEn: 'BLUE ECHO', source: 'character', unlockLevel: 3, type: 'PASSIVE', kind: 'passive', target: 'self', mp: 0, powerText: '－', effectText: 'ターン開始時20%でMAG +10%／2ターン。重複せず残り時間を更新', description: '戦いの中で魔力の波長を捉え、自らの魔力を高める。' },
+    blueNote: { id: 'blueNote', name: 'ブルーノート', nameEn: 'BLUE NOTE', source: 'character', unlockLevel: 1, type: 'ACTIVE', kind: 'hybrid', target: 'single', mp: 5, power: 1, strScale: 1.7, magScale: 1.7, agiScale: 0, powerText: '攻撃力×1.7＋魔力×1.7', effectText: '物理攻撃力と魔力の双方を参照', description: '青い魔力を武器へ纏わせて敵を攻撃する。物理攻撃力と魔力の双方を参照してダメージを与える。' },
+    blueEcho: { id: 'blueEcho', name: '蒼の残響', nameEn: 'BLUE ECHO', source: 'character', unlockLevel: 3, type: 'PASSIVE', kind: 'passive', target: 'self', mp: 0, powerText: '－', effectText: 'ターン開始時20%で魔力 +10%／2ターン。重複せず残り時間を更新', description: '戦いの中で魔力の波長を捉え、自らの魔力を高める。' },
     meditation: { id: 'meditation', name: '精神集中', nameEn: 'MEDITATION', source: 'character', unlockLevel: 5, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 3, powerText: '次の魔法攻撃 ×2.5', effect: { type: 'selfMagCharge', rate: 1.5 }, effectText: '次に使う魔法攻撃の威力+150%／クールタイム3ターン', description: '呼吸を整え、魔力を一点へ収束させる。次に使用する魔法攻撃の威力を2.5倍にする。' },
     powerCharge: { id: 'powerCharge', name: 'ちからため', nameEn: 'POWER CHARGE', source: 'job', jobId: 'warrior', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 3, powerText: '次の物理攻撃 ×3.5', effect: { type: 'selfAtkCharge', rate: 2.5 }, effectText: '次に使う物理攻撃の威力+250%／クールタイム3ターン', description: '全身に力を溜める。次に使用する物理攻撃の威力を大きく高める。' },
     // 武道家の固有技。体術武器技（会心・先制・速度妨害）とは役割を分ける純粋な多段攻撃。
-    burstFist: { id: 'burstFist', name: 'ばくれつけん', nameEn: 'BURST FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 1, type: 'ACTIVE', kind: 'physical', target: 'single', randomTarget: true, mp: 6, power: 0.5, hits: 4, agiScale: 0, powerText: 'ATK×0.5×4回', effectText: '生存敵からランダムに4回連続攻撃／各撃で個別クリティカル判定', description: '目にも留まらぬ拳の連打を叩き込む。武道家だけが扱える固有技。' },
-    powerStrike: { id: 'powerStrike', name: '強撃', nameEn: 'POWER STRIKE', source: 'job', jobId: 'warrior', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 4, power: 4.2, agiScale: 0, powerText: 'ATK×4.2', effectText: '通常攻撃より高威力', description: '力を込めた一撃。ATKを参照して敵単体へ物理ダメージを与える。' },
-    breakEdge: { id: 'breakEdge', name: 'ブレイクエッジ', nameEn: 'BREAK EDGE', source: 'job', jobId: 'warrior', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 7, power: 3.5, agiScale: 0, effect: { type: 'enemyDefDown', rate: .20, turns: 2 }, powerText: 'ATK×3.5', effectText: '敵DEF -20%／2ターン', description: '防御を断つ斬撃。物理ダメージと同時に敵のDEFを低下させる。' },
-    recklessEdge: { id: 'recklessEdge', name: '捨て身斬り', nameEn: 'RECKLESS EDGE', source: 'job', jobId: 'warrior', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 10, power: 6.0, agiScale: 0, effect: { type: 'selfDefDown', rate: .20, turns: 2 }, powerText: 'ATK×6.0', effectText: '使用後、自身のDEF -20%／2ターン', description: '守りを捨てて放つ高威力の斬撃。' },
-    blueFlame: { id: 'blueFlame', name: '蒼炎弾', nameEn: 'BLUE FLAME', source: 'job', jobId: 'mage', unlockJobLevel: 3, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 6, power: 4.2, agiScale: 0, powerText: 'MAG×4.2', effectText: '敵単体へ魔法ダメージ', description: '蒼い炎を凝縮し、敵単体へ撃ち出す魔法。' },
-    manaBurst: { id: 'manaBurst', name: '魔力炸裂', nameEn: 'MANA BURST', source: 'job', jobId: 'mage', unlockJobLevel: 6, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 12, power: 2.8, agiScale: 0, powerText: 'MAG×2.8', effectText: '敵全体へ魔法ダメージ', description: '周囲へ魔力を炸裂させ、敵全体を攻撃する。' },
-    astralRay: { id: 'astralRay', name: 'アストラルレイ', nameEn: 'ASTRAL RAY', source: 'job', jobId: 'mage', unlockJobLevel: 9, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 15, power: 6.5, agiScale: 0, powerText: 'MAG×6.5', effectText: '敵単体へ高威力魔法攻撃', description: '大量のMPを収束した星幽の光線で敵を貫く。' },
-    doubleStrike: { id: 'doubleStrike', name: '連撃', nameEn: 'DOUBLE STRIKE', source: 'job', jobId: 'martialArtist', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 6, power: 2.0, hits: 2, agiScale: 0, powerText: 'ATK×2.0×2回', effectText: '2回攻撃／各攻撃で個別クリティカル判定', description: '間を置かず二撃を叩き込む。' },
-    breakFist: { id: 'breakFist', name: '崩拳', nameEn: 'BREAK FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 8, power: 3.8, ignoreDef: .40, agiScale: 0, powerText: 'ATK×3.8', effectText: '敵DEFを40%無視', description: '防御の隙間へ衝撃を通し、敵DEFの一部を無視する。' },
-    shadowRush: { id: 'shadowRush', name: '無影連舞', nameEn: 'SHADOW RUSH', source: 'job', jobId: 'martialArtist', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 3, agiScale: 0, powerText: 'ATK×2.0×3回', effectText: '3回攻撃／各攻撃で個別クリティカル判定', description: '影すら残さない三連撃。' },
-    heal: { id: 'heal', name: 'ヒール', nameEn: 'HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 6, powerText: 'MND×2.0＋30', effect: { type: 'hpRecover', baseHeal: 30, spiritScaling: 2.0 }, effectText: '精神を参照して自身のHPを大きく回復', description: '精神力を癒やしの力へ変え、自身のHPを回復する。' },
-    holyLight: { id: 'holyLight', name: 'ホーリーライト', nameEn: 'HOLY LIGHT', source: 'job', jobId: 'priest', unlockJobLevel: 6, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 8, power: 4.0, agiScale: 0, elementId: 'light', powerText: 'MAG×4.0', effectText: '敵単体へ光属性魔法攻撃', description: '聖なる光を放ち、敵単体へ魔法ダメージを与える。' },
-    regenerate: { id: 'regenerate', name: 'リジェネレート', nameEn: 'REGENERATE', source: 'job', jobId: 'priest', unlockJobLevel: 3, type: 'ACTIVE', kind: 'support', target: 'self', mp: 8, powerText: '各ターン35%で最大HP15%×3T', effect: { type: 'regenerate', maxHpRate: .15, triggerChance: .35, turns: 3 }, effectText: '3ターン、各ターン35%で最大HPの15%回復', description: '3ターン祈りを保ち、ターン開始ごとに35%で傷を癒やす。運良く3回すべて成功すれば最大HPの45%（回復強化込みではさらに増加）を取り戻す。' },
-    bodyToMind: { id: 'bodyToMind', name: 'ボディ・トゥ・マインド', nameEn: 'BODY TO MIND', source: 'job', jobId: 'priest', unlockJobLevel: 5, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, maxUsesPerBattle: 1, powerText: '最大HP20% → 最大MP25%', effect: { type: 'hpToMp', hpCostRate: .20, mpRecoverRate: .25 }, effectText: '最大HP20%を消費し最大MP25%回復／1戦1回／HP不足時不可', description: '肉体に宿る生命力を魔力へ転換する、一戦一度の循環術。リジェネレートが連続成功すれば傷を補えるが、同じ敵を残して変換を繰り返すことはできない。' },
-    warCry: { id: 'warCry', name: '雄叫び', nameEn: 'WAR CRY', source: 'job', jobId: 'warrior', unlockJobLevel: 12, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 4, powerText: '自身DEF +35%／3T', effect: { type: 'selfDefUp', rate: .35, turns: 3 }, effectText: '自身のDEF +35%／3ターン、CT4', description: '魂の底から放つ雄叫び。一時的に防御力を大幅に高める。' },
-    titanBlow: { id: 'titanBlow', name: '天地崩拳', nameEn: 'TITAN BLOW', source: 'job', jobId: 'warrior', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 14, power: 8.0, agiScale: 0, powerText: 'ATK×8.0', effectText: '極大物理ダメージ', description: '全身の力を一点に凝縮した、天地を砕く究極の一撃。' },
-    arcaneExplosion: { id: 'arcaneExplosion', name: '魔力爆発', nameEn: 'ARCANE EXPLOSION', source: 'job', jobId: 'mage', unlockJobLevel: 12, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 16, power: 3.8, agiScale: 0, powerText: 'MAG×3.8', effectText: '敵全体へ高威力魔法攻撃', description: '体内に蓄えた魔力を一気に爆発させ、周囲の敵すべてを薙ぎ払う。' },
-    voidNova: { id: 'voidNova', name: '虚空の星霊', nameEn: 'VOID NOVA', source: 'job', jobId: 'mage', unlockJobLevel: 16, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 20, power: 9.0, agiScale: 0, powerText: 'MAG×9.0', effectText: '敵単体へ極大魔法攻撃', description: '虚空から星霊の力を引き出した究極魔法。魔導士の到達点。' },
-    swiftBarrage: { id: 'swiftBarrage', name: '迅雷四連撃', nameEn: 'SWIFT BARRAGE', source: 'job', jobId: 'martialArtist', unlockJobLevel: 12, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 4, agiScale: 0, powerText: 'ATK×2.0×4回', effectText: '4回攻撃／各攻撃で個別クリティカル判定', description: '稲妻のような四連撃。体術の極みが生み出す怒涛の連打。' },
-    shadowSeven: { id: 'shadowSeven', name: '幻影七閃', nameEn: 'SHADOW SEVEN', source: 'job', jobId: 'martialArtist', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 18, power: 2.5, hits: 5, agiScale: 0, powerText: 'ATK×2.5×5回', effectText: '5回攻撃／各攻撃で個別クリティカル判定', description: '影を七つに見せる五連閃。武道家の至高の多段技。' },
-    greatHeal: { id: 'greatHeal', name: 'グレートヒール', nameEn: 'GREAT HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 12, type: 'ACTIVE', kind: 'support', target: 'self', mp: 12, powerText: 'MND×5.0＋40', effect: { type: 'hpRecover', mndScale: 5, base: 40 }, effectText: 'MND参照で大量HP回復', description: '精神力のすべてを傾けた大回復術。大きく傷を癒やし、戦場への帰還を可能にする。' },
-    soulPassage: { id: 'soulPassage', name: '魂送の祈り', nameEn: 'SOUL PASSAGE', source: 'job', jobId: 'priest', unlockJobLevel: 15, type: 'ACTIVE', kind: 'magical', damageType: 'magical', target: 'single', mp: 14, powerText: '即死確率 5～60%', effect: { type: 'instantDeath', baseChance: .20, statEdgeRate: .008, minChance: .05, maxChance: .60 }, effectText: '20%＋（MAG＋MND－敵MND）×0.8%／BOSS無効', description: '魂を静かに彼方へ送る祈り。魔力と精神を鍛えた僧侶ほど成功しやすいが、強い魔法防御には阻まれる。' },
-    divineSmite: { id: 'divineSmite', name: '神裁の一閃', nameEn: 'DIVINE SMITE', source: 'job', jobId: 'priest', unlockJobLevel: 16, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 22, power: 7.0, agiScale: 0, elementId: 'light', powerText: 'MAG×7.0', effectText: '敵単体へ極大光属性魔法攻撃', description: '神の裁定を下す一閃。光を凝縮した究極の聖魔法。' },
+    burstFist: { id: 'burstFist', name: 'ばくれつけん', nameEn: 'BURST FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 1, type: 'ACTIVE', kind: 'physical', target: 'single', randomTarget: true, mp: 6, power: 0.5, hits: 4, agiScale: 0, powerText: '攻撃力×0.5×4回', effectText: '生存敵からランダムに4回連続攻撃／各撃で個別クリティカル判定', description: '目にも留まらぬ拳の連打を叩き込む。武道家だけが扱える固有技。' },
+    powerStrike: { id: 'powerStrike', name: '強撃', nameEn: 'POWER STRIKE', source: 'job', jobId: 'warrior', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 4, power: 4.2, agiScale: 0, powerText: '攻撃力×4.2', effectText: '通常攻撃より高威力', description: '力を込めた一撃。攻撃力を参照して敵単体へ物理ダメージを与える。' },
+    breakEdge: { id: 'breakEdge', name: 'ブレイクエッジ', nameEn: 'BREAK EDGE', source: 'job', jobId: 'warrior', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 7, power: 3.5, agiScale: 0, effect: { type: 'enemyDefDown', rate: .20, turns: 2 }, powerText: '攻撃力×3.5', effectText: '敵防御力 -20%／2ターン', description: '防御を断つ斬撃。物理ダメージと同時に敵の防御力を低下させる。' },
+    recklessEdge: { id: 'recklessEdge', name: '捨て身斬り', nameEn: 'RECKLESS EDGE', source: 'job', jobId: 'warrior', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 10, power: 6.0, agiScale: 0, effect: { type: 'selfDefDown', rate: .20, turns: 2 }, powerText: '攻撃力×6.0', effectText: '使用後、自身の防御力 -20%／2ターン', description: '守りを捨てて放つ高威力の斬撃。' },
+    blueFlame: { id: 'blueFlame', name: '蒼炎弾', nameEn: 'BLUE FLAME', source: 'job', jobId: 'mage', unlockJobLevel: 3, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 6, power: 4.2, agiScale: 0, powerText: '魔力×4.2', effectText: '敵単体へ魔法ダメージ', description: '蒼い炎を凝縮し、敵単体へ撃ち出す魔法。' },
+    manaBurst: { id: 'manaBurst', name: '魔力炸裂', nameEn: 'MANA BURST', source: 'job', jobId: 'mage', unlockJobLevel: 6, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 12, power: 2.8, agiScale: 0, powerText: '魔力×2.8', effectText: '敵全体へ魔法ダメージ', description: '周囲へ魔力を炸裂させ、敵全体を攻撃する。' },
+    astralRay: { id: 'astralRay', name: 'アストラルレイ', nameEn: 'ASTRAL RAY', source: 'job', jobId: 'mage', unlockJobLevel: 9, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 15, power: 6.5, agiScale: 0, powerText: '魔力×6.5', effectText: '敵単体へ高威力魔法攻撃', description: '大量のMPを収束した星幽の光線で敵を貫く。' },
+    doubleStrike: { id: 'doubleStrike', name: '連撃', nameEn: 'DOUBLE STRIKE', source: 'job', jobId: 'martialArtist', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 6, power: 2.0, hits: 2, agiScale: 0, powerText: '攻撃力×2.0×2回', effectText: '2回攻撃／各攻撃で個別クリティカル判定', description: '間を置かず二撃を叩き込む。' },
+    breakFist: { id: 'breakFist', name: '崩拳', nameEn: 'BREAK FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 8, power: 3.8, ignoreDef: .40, agiScale: 0, powerText: '攻撃力×3.8', effectText: '敵防御力を40%無視', description: '防御の隙間へ衝撃を通し、敵防御力の一部を無視する。' },
+    shadowRush: { id: 'shadowRush', name: '無影連舞', nameEn: 'SHADOW RUSH', source: 'job', jobId: 'martialArtist', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 3, agiScale: 0, powerText: '攻撃力×2.0×3回', effectText: '3回攻撃／各攻撃で個別クリティカル判定', description: '影すら残さない三連撃。' },
+    heal: { id: 'heal', name: 'ヒール', nameEn: 'HEAL', source: 'job', jobId: 'priest', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 6, powerText: '精神×2.0＋30', effect: { type: 'hpRecover', baseHeal: 30, spiritScaling: 2.0 }, effectText: '精神を参照して自身のHPを大きく回復', description: '精神力を癒やしの力へ変え、自身のHPを回復する。' },
+    bodyToMind: { id: 'bodyToMind', name: 'ボディ・トゥ・マインド', nameEn: 'BODY TO MIND', source: 'job', jobId: 'priest', unlockJobLevel: 5, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, maxUsesPerBattle: 1, powerText: '最大HP20% → 最大MP25%', effect: { type: 'hpToMp', hpCostRate: .20, mpRecoverRate: .25 }, effectText: '最大HP20%を消費し最大MP25%回復／1戦1回／HP不足時不可', description: '肉体に宿る生命力を魔力へ転換する、一戦一度の循環術。削った体力はヒールで補えるが、同じ敵を残して変換を繰り返すことはできない。' },
+    warCry: { id: 'warCry', name: '雄叫び', nameEn: 'WAR CRY', source: 'job', jobId: 'warrior', unlockJobLevel: 12, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 4, powerText: '自身防御力 +35%／3T', effect: { type: 'selfDefUp', rate: .35, turns: 3 }, effectText: '自身の防御力 +35%／3ターン、CT4', description: '魂の底から放つ雄叫び。一時的に防御力を大幅に高める。' },
+    titanBlow: { id: 'titanBlow', name: '天地崩拳', nameEn: 'TITAN BLOW', source: 'job', jobId: 'warrior', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 14, power: 8.0, agiScale: 0, powerText: '攻撃力×8.0', effectText: '極大物理ダメージ', description: '全身の力を一点に凝縮した、天地を砕く究極の一撃。' },
+    arcaneExplosion: { id: 'arcaneExplosion', name: '魔力爆発', nameEn: 'ARCANE EXPLOSION', source: 'job', jobId: 'mage', unlockJobLevel: 12, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 16, power: 3.8, agiScale: 0, powerText: '魔力×3.8', effectText: '敵全体へ高威力魔法攻撃', description: '体内に蓄えた魔力を一気に爆発させ、周囲の敵すべてを薙ぎ払う。' },
+    voidNova: { id: 'voidNova', name: '虚空の星霊', nameEn: 'VOID NOVA', source: 'job', jobId: 'mage', unlockJobLevel: 16, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 20, power: 9.0, agiScale: 0, powerText: '魔力×9.0', effectText: '敵単体へ極大魔法攻撃', description: '虚空から星霊の力を引き出した究極魔法。魔導士の到達点。' },
+    swiftBarrage: { id: 'swiftBarrage', name: '迅雷四連撃', nameEn: 'SWIFT BARRAGE', source: 'job', jobId: 'martialArtist', unlockJobLevel: 12, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 4, agiScale: 0, powerText: '攻撃力×2.0×4回', effectText: '4回攻撃／各攻撃で個別クリティカル判定', description: '稲妻のような四連撃。体術の極みが生み出す怒涛の連打。' },
+    shadowSeven: { id: 'shadowSeven', name: '幻影七閃', nameEn: 'SHADOW SEVEN', source: 'job', jobId: 'martialArtist', unlockJobLevel: 16, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 18, power: 2.5, hits: 5, agiScale: 0, powerText: '攻撃力×2.5×5回', effectText: '5回攻撃／各攻撃で個別クリティカル判定', description: '影を七つに見せる五連閃。武道家の至高の多段技。' },
+    soulPassage: { id: 'soulPassage', name: '魂送の祈り', nameEn: 'SOUL PASSAGE', source: 'job', jobId: 'priest', unlockJobLevel: 15, type: 'ACTIVE', kind: 'magical', damageType: 'magical', target: 'single', mp: 14, powerText: '即死確率 5～60%', effect: { type: 'instantDeath', baseChance: .20, statEdgeRate: .008, minChance: .05, maxChance: .60 }, effectText: '20%＋（魔力＋精神－敵精神）×0.8%／BOSS無効', description: '魂を静かに彼方へ送る祈り。魔力と精神を鍛えた僧侶ほど成功しやすいが、強い魔法防御には阻まれる。' },
     // ↓ここから5つは魔奏聖の専用技だった。魔奏聖の削除にともない、現在どのJOBからも習得できない。
     //   別JOBへ割り当て直すか、不要なら丸ごと削除してよい。
-    resonantSpell: { id: 'resonantSpell', name: '共鳴魔法', nameEn: 'RESONANT SPELL', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 3, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 14, power: 3.2, agiScale: 0, powerText: 'MAG×3.2', effectText: '敵全体へ魔法攻撃', description: '魔奏士の共鳴する魔力を解き放ち、敵全体を攻撃する。' },
-    celestialNote: { id: 'celestialNote', name: '天韻の一節', nameEn: 'CELESTIAL NOTE', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 6, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 18, power: 8.0, agiScale: 0, powerText: 'MAG×8.0', effectText: '敵単体へ強力な魔法攻撃', description: '天上の旋律を一音に凝縮した、高威力の魔法弾。' },
-    divineMelody: { id: 'divineMelody', name: '神癒の律動', nameEn: 'DIVINE MELODY', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 9, type: 'ACTIVE', kind: 'support', target: 'self', mp: 16, powerText: 'MND×6.0＋50', effect: { type: 'hpRecover', mndScale: 6, base: 50 }, effectText: 'MND参照で大量HP回復', description: '神聖な旋律の加護により、大量のHPを回復する。' },
-    grandOrchestra: { id: 'grandOrchestra', name: '大演奏', nameEn: 'GRAND ORCHESTRA', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 12, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 22, power: 4.5, agiScale: 0, powerText: 'MAG×4.5', effectText: '敵全体へ高威力魔法攻撃', description: '全ての魔力を交響曲として解き放つ。敵全体を薙ぎ払う大魔法。' },
-    cosmicAria: { id: 'cosmicAria', name: '宇宙の詠唱', nameEn: 'COSMIC ARIA', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 16, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 28, power: 11.0, agiScale: 0, powerText: 'MAG×11.0', effectText: '敵単体へ極大魔法攻撃', description: '宇宙の律動を一点に収束させた究極魔法。魔奏士の境地。' },
-    twistingEdge: { id: 'twistingEdge', name: '連刃突き', nameEn: 'TWISTING EDGE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 8, power: 2.5, hits: 2, agiScale: 0, powerText: 'ATK×2.5×2回', effectText: '2回物理攻撃', description: '双刃を連続して突き込む。' },
-    sunderDance: { id: 'sunderDance', name: '乱舞斬', nameEn: 'SUNDER DANCE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 3, ignoreDef: .20, agiScale: 0, powerText: 'ATK×2.0×3回', effectText: '3回攻撃 / DEF20%無視', description: '舞うように放つ三連斬。防御を部分的に無視する。' },
-    crimsonRush: { id: 'crimsonRush', name: '黒紅突進', nameEn: 'CRIMSON RUSH', source: 'job', jobId: 'dualBlade', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 15, power: 7.0, ignoreDef: .30, agiScale: 0, powerText: 'ATK×7.0', effectText: 'DEF30%無視の高威力突進', description: '黒紅の軌跡を描きながら敵へ一直線に突進する。' },
-    dualEdgeBarrage: { id: 'dualEdgeBarrage', name: '双刃乱打', nameEn: 'DUAL EDGE BARRAGE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 12, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 16, power: 1.8, hits: 5, agiScale: 0, powerText: 'ATK×1.8×5回', effectText: '5回物理攻撃', description: '双刃を猛烈に振り回す五連打。各攻撃が個別にクリティカルを狙う。' },
+    resonantSpell: { id: 'resonantSpell', name: '共鳴魔法', nameEn: 'RESONANT SPELL', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 3, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 14, power: 3.2, agiScale: 0, powerText: '魔力×3.2', effectText: '敵全体へ魔法攻撃', description: '魔奏士の共鳴する魔力を解き放ち、敵全体を攻撃する。' },
+    celestialNote: { id: 'celestialNote', name: '天韻の一節', nameEn: 'CELESTIAL NOTE', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 6, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 18, power: 8.0, agiScale: 0, powerText: '魔力×8.0', effectText: '敵単体へ強力な魔法攻撃', description: '天上の旋律を一音に凝縮した、高威力の魔法弾。' },
+    divineMelody: { id: 'divineMelody', name: '神癒の律動', nameEn: 'DIVINE MELODY', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 9, type: 'ACTIVE', kind: 'support', target: 'self', mp: 16, powerText: '精神×6.0＋50', effect: { type: 'hpRecover', mndScale: 6, base: 50 }, effectText: '精神参照で大量HP回復', description: '神聖な旋律の加護により、大量のHPを回復する。' },
+    grandOrchestra: { id: 'grandOrchestra', name: '大演奏', nameEn: 'GRAND ORCHESTRA', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 12, type: 'ACTIVE', kind: 'magical', target: 'all', mp: 22, power: 4.5, agiScale: 0, powerText: '魔力×4.5', effectText: '敵全体へ高威力魔法攻撃', description: '全ての魔力を交響曲として解き放つ。敵全体を薙ぎ払う大魔法。' },
+    cosmicAria: { id: 'cosmicAria', name: '宇宙の詠唱', nameEn: 'COSMIC ARIA', source: 'job', jobId: 'arcaneMaestro', unlockJobLevel: 16, type: 'ACTIVE', kind: 'magical', target: 'single', mp: 28, power: 11.0, agiScale: 0, powerText: '魔力×11.0', effectText: '敵単体へ極大魔法攻撃', description: '宇宙の律動を一点に収束させた究極魔法。魔奏士の境地。' },
+    twistingEdge: { id: 'twistingEdge', name: '連刃突き', nameEn: 'TWISTING EDGE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 8, power: 2.5, hits: 2, agiScale: 0, powerText: '攻撃力×2.5×2回', effectText: '2回物理攻撃', description: '双刃を連続して突き込む。' },
+    sunderDance: { id: 'sunderDance', name: '乱舞斬', nameEn: 'SUNDER DANCE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 12, power: 2.0, hits: 3, ignoreDef: .20, agiScale: 0, powerText: '攻撃力×2.0×3回', effectText: '3回攻撃 / 防御力20%無視', description: '舞うように放つ三連斬。防御を部分的に無視する。' },
+    crimsonRush: { id: 'crimsonRush', name: '黒紅突進', nameEn: 'CRIMSON RUSH', source: 'job', jobId: 'dualBlade', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 15, power: 7.0, ignoreDef: .30, agiScale: 0, powerText: '攻撃力×7.0', effectText: 'DEF30%無視の高威力突進', description: '黒紅の軌跡を描きながら敵へ一直線に突進する。' },
+    dualEdgeBarrage: { id: 'dualEdgeBarrage', name: '双刃乱打', nameEn: 'DUAL EDGE BARRAGE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 12, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 16, power: 1.8, hits: 5, agiScale: 0, powerText: '攻撃力×1.8×5回', effectText: '5回物理攻撃', description: '双刃を猛烈に振り回す五連打。各攻撃が個別にクリティカルを狙う。' },
     battleDance: { id: 'battleDance', name: '戦姫乱舞', nameEn: 'WAR PRINCESS DANCE', source: 'job', jobId: 'dualBlade', unlockJobLevel: 1, type: 'ACTIVE', kind: 'physical', damageType: 'physical', weaponType: 'martial', requiresWeaponSubtype: 'dualBlade', target: 'single', mp: 16, power: .5, hits: 5, hitPowersDual: [.45, .45, .50, .50, .85], hitPowersSingle: [.50, .55, .85], agiScale: 0, powerText: '二刀時 0.45+0.45+0.50+0.50+0.85（計×2.75）', effectText: '各Hit独立命中・会心／片手時3Hit／連舞MAXなら最終Hit×1.5後に連舞0', description: 'ミルティから盗んだ双刃士の象徴技。二刀で真価を発揮し、連舞MAXでは《戦姫乱舞・極》へ変化する。' },
 
     // ── 盾学：防御性能を攻撃へ転換する守護士の武器技 ──
-    shieldStrike: { id: 'shieldStrike', name: '盾撃', nameEn: 'SHIELD STRIKE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', mp: 0, kind: 'weapon', damageType: 'physical', target: 'single', power: 1.0, powerText: '盾攻撃性能×1.0', effectText: 'DEF×0.5＋MDEF×0.5を攻撃へ転換', description: '盾の防御性能を乗せて敵を打ち据える通常攻撃。' },
+    shieldStrike: { id: 'shieldStrike', name: '盾撃', nameEn: 'SHIELD STRIKE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', mp: 0, kind: 'weapon', damageType: 'physical', target: 'single', power: 1.0, powerText: '盾攻撃性能×1.0', effectText: '防御力×0.5＋魔法防御力×0.5を攻撃へ転換', description: '盾の防御性能を乗せて敵を打ち据える通常攻撃。' },
     shieldBash: { id: 'shieldBash', name: 'シールドバッシュ', nameEn: 'SHIELD BASH', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'shieldStrike', mp: 3, kind: 'physical', damageType: 'physical', target: 'single', power: .85, effect: { type: 'enemyStun', chance: .55, bossChance: .18, overdriveChance: .08, turns: 1 }, powerText: '盾攻撃性能×0.85', effectText: '低ダメージ／一定確率で1行動スタン（BOSS・OVERDRIVEは低確率）', description: '大きく盾を叩きつけ、敵の動きを止める低難度の閃き技。BOSSにも完全耐性はなく、わずかに通る。' },
-    guardImpact: { id: 'guardImpact', name: 'ガードインパクト', nameEn: 'GUARD IMPACT', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'shieldBash', mp: 4, kind: 'physical', damageType: 'physical', target: 'single', power: 1.3, effect: { type: 'selfDefUpAfterHit', rate: .10, turns: 1 }, powerText: '盾攻撃性能×1.3', effectText: '攻撃後DEF +10%／1ターン', description: '衝撃を返し、次の攻撃を受け止める構えへ繋ぐ。' },
-    magicRepulse: { id: 'magicRepulse', name: 'マジックリパルス', nameEn: 'MAGIC REPULSE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'guardImpact', mp: 7, kind: 'magical', damageType: 'magical', shieldFormula: 'magicRepulse', target: 'single', power: 1.0, powerText: 'MDEF×1.2＋DEF×0.3', effectText: '魔法防御寄りの盾技', description: '魔力を盾面で反転させ、魔法防御性能から衝撃を生む。' },
+    guardImpact: { id: 'guardImpact', name: 'ガードインパクト', nameEn: 'GUARD IMPACT', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'shieldBash', mp: 4, kind: 'physical', damageType: 'physical', target: 'single', power: 1.3, effect: { type: 'selfDefUpAfterHit', rate: .10, turns: 1 }, powerText: '盾攻撃性能×1.3', effectText: '攻撃後防御力 +10%／1ターン', description: '衝撃を返し、次の攻撃を受け止める構えへ繋ぐ。' },
+    magicRepulse: { id: 'magicRepulse', name: 'マジックリパルス', nameEn: 'MAGIC REPULSE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'guardImpact', mp: 7, kind: 'magical', damageType: 'magical', shieldFormula: 'magicRepulse', target: 'single', power: 1.0, powerText: '魔法防御力×1.2＋防御力×0.3', effectText: '魔法防御寄りの盾技', description: '魔力を盾面で反転させ、魔法防御性能から衝撃を生む。' },
     fortress: { id: 'fortress', name: 'フォートレス', nameEn: 'FORTRESS', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'magicRepulse', mp: 8, kind: 'support', target: 'self', effect: { type: 'fortress', reduction: .30, turns: 1 }, powerText: '被ダメージ -30%', effectText: '1ターン防御。軽減後ダメージはRESONANCEへ蓄積', description: '盾を大地へ固定し、攻撃を真正面から受け止める。' },
-    revengeForce: { id: 'revengeForce', name: 'リベンジ・フォース', nameEn: 'REVENGE FORCE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'fortress', mp: 12, kind: 'physical', damageType: 'physical', shieldFormula: 'revenge', target: 'single', power: 1.65, powerText: '直前の被弾タイプに応じDEF/MDEF参照', effectText: '物理被弾ならDEF、魔法被弾ならMDEFを強く参照', description: '直前に受けた攻撃の性質を読み、最適な防御性能で打ち返す盾学奥義。' },
-    resonanceBreak: { id: 'resonanceBreak', name: 'RESONANCE BREAK', nameEn: 'RESONANCE BREAK', remixName: 'RESONANCE', source: 'job', jobId: 'guardian', unlockJobLevel: 1, type: 'ACTIVE', kind: 'neutral', damageType: 'neutral', target: 'single', mp: 0, power: 1.0, ignoreDef: 1, unavoidable: true, powerText: '現在武器の攻撃性能×共鳴倍率', effectText: '全RESONANCE消費／DEF・MDEF・物理魔法耐性を無視／必中', description: '受けた痛みを共鳴へ変え、現在の武器性能から無属性の一撃を放つ。RE:MIXではACTION「RESONANCE」として装備中だけ共鳴が有効。' },    preciousSky: { id: 'preciousSky', name: 'プレシャススカイ', nameEn: 'PRECIOUS SKY', source: 'weapon', type: 'ACTIVE', weaponType: 'instrument', prerequisiteSkill: 'resonantNote', requiredWeaponLevel: 8, sparkRate: .035, guitarTreeId: 'versicrellGuitar', requiredWeaponId: 'parentGiftGuitar', mp: 12, kind: 'magical', damageType: 'magical', element: 'sound', target: 'all', power: 1.65, selfHealRate: .08, powerText: 'DEX参照×1.65（敵全体）', effectText: '敵全体へ音属性攻撃／与ダメージ後に最大HPの8%回復', description: '人として残った最初の音を、青空のような音圧へ変える。リコーダー系とは異なるギター専用武器技。' }
+    revengeForce: { id: 'revengeForce', name: 'リベンジ・フォース', nameEn: 'REVENGE FORCE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'fortress', mp: 12, kind: 'physical', damageType: 'physical', shieldFormula: 'revenge', target: 'single', power: 1.65, powerText: '直前の被弾タイプに応じ防御力/魔法防御力参照', effectText: '物理被弾なら防御力、魔法被弾なら魔法防御力を強く参照', description: '直前に受けた攻撃の性質を読み、最適な防御性能で打ち返す盾学奥義。' },
+    resonanceBreak: { id: 'resonanceBreak', name: 'RESONANCE BREAK', nameEn: 'RESONANCE BREAK', remixName: 'RESONANCE', source: 'job', jobId: 'guardian', unlockJobLevel: 1, type: 'ACTIVE', kind: 'neutral', damageType: 'neutral', target: 'single', mp: 0, power: 1.0, ignoreDef: 1, unavoidable: true, powerText: '現在武器の攻撃性能×共鳴倍率', effectText: '全RESONANCE消費／防御力・魔法防御力・物理魔法耐性を無視／必中', description: '受けた痛みを共鳴へ変え、現在の武器性能から無属性の一撃を放つ。RE:MIXではACTION「RESONANCE」として装備中だけ共鳴が有効。' },    preciousSky: { id: 'preciousSky', name: 'プレシャススカイ', nameEn: 'PRECIOUS SKY', source: 'weapon', type: 'ACTIVE', weaponType: 'instrument', prerequisiteSkill: 'resonantNote', requiredWeaponLevel: 8, sparkRate: .035, guitarTreeId: 'versicrellGuitar', requiredWeaponId: 'parentGiftGuitar', mp: 12, kind: 'magical', damageType: 'magical', element: 'sound', target: 'all', power: 1.65, selfHealRate: .08, powerText: '器用さ参照×1.65（敵全体）', effectText: '敵全体へ音属性攻撃／与ダメージ後に最大HPの8%回復', description: '人として残った最初の音を、青空のような音圧へ変える。リコーダー系とは異なるギター専用武器技。' }
   },
   guitarSkillTrees: {
     versicrellGuitar: { id: 'versicrellGuitar', weaponId: 'parentGiftGuitar', name: 'SILVER CIRCLE GUITAR', skills: ['preciousSky', null, null, null] }
@@ -1287,7 +1353,7 @@ window.ARSENE_DATA = {
     d3MartialClaw: { id: 'd3MartialClaw', name: '裂界の爪', weaponType: 'martial', weaponSprite: 'claw_01', battleSprite: null, attackMotion: 'slash', attackPower: 24, bonuses: {}, effects: { criticalRateBonus: .02 } },
     d3MaestroInstrument: { id: 'd3MaestroInstrument', name: '星銀の弦琴', weaponType: 'instrument', battlePose: 'guitar', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', magicAttackPower: 36, bonuses: {}, effects: { criticalRateBonus: .03, magicDamagePercent: .03 } },
     d3TwinRight: { id: 'd3TwinRight', name: '裂界の双刃・右', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 22, bonuses: {}, effects: { criticalRateBonus: .02 } },
-    d3TwinLeft: { id: 'd3TwinLeft', name: '裂界の双刃・左', weaponType: 'martial', weaponSubtype: 'dualBlade', offHandOnly: true, weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 18, bonuses: {}, effects: { criticalRateBonus: .01 } },
+    d3TwinLeft: { id: 'd3TwinLeft', name: '裂界の双刃・左', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 18, bonuses: {}, effects: { criticalRateBonus: .01 } },
     d3GuardianAegis: { id: 'd3GuardianAegis', name: '城塞核の盾', weaponType: 'shield', weaponSprite: 'shield_reprise', battleSprite: null, attackMotion: 'shieldBash', damageType: 'physical', defensePower: 42, magicDefensePower: 38, bonuses: {}, effects: { magicDamageReductionPercent: .08, physicalDamageReductionPercent: .06, resonanceGainPercent: .25 } },
     parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', dungeonId: 'dungeon3', weaponType: 'instrument', battlePose: 'guitar', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', damageStat: 'dex', power: 4.0, guitarSkillTree: 'versicrellGuitar', bonuses: { dex: 10, mag: 5, critBonus: 0.04 } },
     myrthi_blade: { id: 'myrthi_blade', name: '黒紅刃ミルティア', nameEn: 'MYRTHI BLADE', seriesId: 'myrthi', dungeonId: 'dungeon2', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_myrthi', battleSprite: null, attackMotion: 'slash', attackPower: 32, bonuses: { str: 16, agi: 8, critBonus: .06 } }
@@ -1564,14 +1630,14 @@ window.ARSENE_DATA = {
       ai: [{ id: 'voidHeal', name: '虚空治癒', kind: 'heal', power: .22, weight: .58 }, { id: 'soulBolt', name: '聖唱弾', kind: 'magic', weight: .42 }]
     },
     ironChanter: {
-      id: 'ironChanter', name: '鉄壁の詠唱兵', enName: 'IRON CHANTER', dungeonId: 'dungeon3', role: 'PHYSICAL BUFFER', roleDescription: '敵全体のDEFを上昇させる。',
+      id: 'ironChanter', name: '鉄壁の詠唱兵', enName: 'IRON CHANTER', dungeonId: 'dungeon3', role: 'PHYSICAL BUFFER', roleDescription: '敵全体の防御力を上昇させる。',
       element: '闇', weaknesses: ['魔', '雷'], resistances: ['物理'], sprite: 'assets/enemy-characters/dungeon3/ironChanter.png', spriteClass: 'iron-chanter', battleScale: 1.05,
       stats: { maxHp: 390, atk: 26, def: 44, mag: 22, mnd: 24, spd: 9 }, exp: 120, gold: { min: 48, max: 82 },
       dropTable: [{ itemId: 'darkIron', chance: .48 }, { itemId: 'voidShard', chance: .20 }],
       ai: [{ id: 'ironChant', name: '鉄壁詠唱', kind: 'defBuff', rate: .30, turns: 3, weight: .48 }, { id: 'attack', name: '鉄杖打ち', kind: 'physical', weight: .52 }]
     },
     arcaneChanter: {
-      id: 'arcaneChanter', name: '秘儀の詠唱兵', enName: 'ARCANE CHANTER', dungeonId: 'dungeon3', role: 'MAGIC BUFFER', roleDescription: '敵全体のMDEFを上昇させる。',
+      id: 'arcaneChanter', name: '秘儀の詠唱兵', enName: 'ARCANE CHANTER', dungeonId: 'dungeon3', role: 'MAGIC BUFFER', roleDescription: '敵全体の魔法防御力を上昇させる。',
       element: '虚無', weaknesses: ['斬', '打'], resistances: ['魔'], sprite: 'assets/enemy-characters/dungeon3/arcaneChanter.png', spriteClass: 'arcane-chanter', battleScale: 1.0,
       stats: { maxHp: 350, atk: 18, def: 20, mag: 34, mnd: 48, spd: 11 }, exp: 122, gold: { min: 50, max: 84 },
       dropTable: [{ itemId: 'chaosDust', chance: .46 }, { itemId: 'phantomCore', chance: .12 }],
