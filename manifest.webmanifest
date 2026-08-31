@@ -1,0 +1,37 @@
+{
+  "name": "或世盗 -ARSÈNE- RE:MIX",
+  "short_name": "ARSÈNE",
+  "description": "奪え、編み直せ、物語を。JOBを育て、武器学を磨き、盗んだ力で異世界へ潜るブラウザ怪盗RPG。",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#040814",
+  "theme_color": "#040814",
+  "categories": [
+    "games",
+    "entertainment"
+  ],
+  "icons": [
+    {
+      "src": "assets/ui/brand/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/ui/brand/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/ui/brand/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

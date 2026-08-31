@@ -1,0 +1,10 @@
+{
+  "items": [
+    { "id": "mageStaff", "name": "魔導士の杖", "category": "equipment", "rarity": "common", "description": "青い魔力を導く魔導士の基本杖。", "slot": "rightHand", "effect": { "hp": 0, "mp": 0 }, "bonuses": {} },
+    { "id": "phantomSword", "name": "青影の剣", "category": "equipment", "rarity": "common", "description": "青い残光を引く怪盗の細身剣。", "slot": "rightHand", "effect": { "hp": 0, "mp": 0 }, "bonuses": { "str": 2 } },
+    { "id": "shadowWand", "name": "シャドウワンド", "category": "equipment", "rarity": "rare", "description": "闇の魔力を帯びたシャドウスライム由来の杖。", "slot": "rightHand", "effect": { "hp": 0, "mp": 0 }, "bonuses": { "mag": 4, "mnd": 1 } },
+    { "id": "flameStaff", "name": "フレイムスタッフ", "category": "equipment", "rarity": "epic", "description": "紅蓮の魔力を宿した杖。振るうと全体に炎の波動が広がる。", "slot": "rightHand", "effect": { "hp": 0, "mp": 0 }, "bonuses": { "mag": 6 } },
+    { "id": "wizardRod", "name": "ウィザードロッド", "category": "equipment", "rarity": "epic", "description": "熟練の魔導士が用いる杖。狙った一点を穿つ炎弾を放てる。", "slot": "rightHand", "effect": { "hp": 0, "mp": 0 }, "bonuses": { "mag": 9 } },
+    { "id": "sunStaff", "name": "太陽の杖", "category": "equipment", "rarity": "epic", "description": "太陽そのものを封じたような杖。振るうだけで敵を圧倒する光と熱を放つ。", "slot": "rightHand", "effect": { "hp": 0, "mp": 0 }, "bonuses": { "mag": 14 } }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "skills": [
+    { "id": "attack", "name": "たたかう", "kind": "weapon", "target": "single", "mp": 0, "power": 2, "agiScale": 0, "elementId": "none" },
+    { "id": "quickSlash", "name": "クイックスラッシュ", "kind": "physical", "target": "single", "mp": 5, "power": 2.5, "agiScale": 0.5, "elementId": "none" },
+    { "id": "flame", "name": "フラム", "kind": "magical", "target": "all", "mp": 6, "power": 0.8, "agiScale": 0, "elementId": "fire" },
+    { "id": "fireball", "name": "ファイアボール", "kind": "magical", "target": "single", "mp": 5, "power": 1.4, "agiScale": 0, "elementId": "fire" }
+  ]
+}

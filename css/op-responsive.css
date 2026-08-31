@@ -1,0 +1,7 @@
+.opening-movie figure{background:var(--op-bg) center/cover no-repeat}
+.opening-movie figure:before{content:"";position:absolute;z-index:0;inset:-6%;background:inherit;filter:blur(28px) brightness(.34);transform:scale(1.08)}
+.opening-movie figure img{position:relative;z-index:1}
+.opening-movie figure:after{z-index:2}
+@media(max-width:700px){.opening-movie figure img{object-fit:cover!important;object-position:center center!important;transform:scale(1.025)}.opening-movie figure:nth-child(odd).active img,.opening-movie figure:nth-child(even).active img{animation:op-mobile-camera 5.2s ease-out both}}
+@keyframes op-mobile-camera{from{transform:scale(1.025) translateY(1.2%)}to{transform:scale(1.07) translateY(-1.2%)}}
+

@@ -1,0 +1,197 @@
+/* ══ 異世界 / PHANTOM THIEF ══════════════════════════════════ */
+
+/* ── NOISE演出 ── */
+.ow-noise{position:fixed;inset:0;z-index:9000;display:grid;place-items:center;background:#02030a;cursor:pointer;overflow:hidden}
+.ow-noise-bars{position:absolute;inset:-20%;opacity:.22;pointer-events:none;
+  background:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 3px);
+  animation:ow-scan 5s linear infinite}
+@keyframes ow-scan{from{transform:translateY(0)}to{transform:translateY(24px)}}
+.ow-noise:before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 50% 45%,#2f9dff22,transparent 60%);mix-blend-mode:screen}
+.ow-noise-body{position:relative;width:min(560px,88vw);padding:26px 22px;text-align:center}
+.ow-noise p{margin:0;min-height:96px;display:grid;align-content:center;gap:8px}
+.ow-noise p.ow-sys{font:700 14px/1.9 ui-monospace,Consolas,monospace;letter-spacing:.24em;color:#5fc6ff;text-shadow:0 0 14px #2f9dff88}
+.ow-noise p.ow-big{font:900 30px/1.3 Cinzel,serif;letter-spacing:.14em;color:#ff5f85;text-shadow:0 0 20px #c4004488}
+.ow-noise p.ow-talk b{display:block;font-size:11px;letter-spacing:.16em;color:#f0a24b}
+.ow-noise p.ow-talk span{display:block;font-size:16px;line-height:1.9;color:#dceaf8;white-space:pre-line}
+.ow-noise.flick p{animation:ow-flick .34s steps(3)}
+@keyframes ow-flick{0%{opacity:.2;transform:translateX(-4px) skewX(6deg)}50%{opacity:1;transform:translateX(3px) skewX(-3deg)}100%{opacity:1;transform:none}}
+.ow-noise-next{margin-top:14px;padding:4px 16px;background:transparent;color:#5fc6ff;border:1px solid #2f6ea8;border-radius:99px;font-size:12px;cursor:pointer;animation:ow-blink 1.2s ease-in-out infinite}
+@keyframes ow-blink{50%{opacity:.25}}
+body.ow-glitch #menu-screen{animation:ow-shake .5s steps(2) 3}
+@keyframes ow-shake{0%{transform:none;filter:none}30%{transform:translateX(-3px);filter:hue-rotate(40deg) saturate(1.6)}60%{transform:translateX(4px);filter:hue-rotate(-30deg)}100%{transform:none;filter:none}}
+
+/* ── レニーフォックス ── */
+.hideout-fox{cursor:pointer}
+.ow-lenny-guide #menu-screen{position:relative}
+.ow-lenny-guide #menu-screen:after{content:"";position:fixed;z-index:900;inset:0;background:#01030bc9;backdrop-filter:blur(2px);pointer-events:auto}
+.ow-lenny-guide .hideout-art-shell>.hideout-fox-hotspot{z-index:902;outline:2px solid #50c8ff;outline-offset:4px;background:radial-gradient(circle,#42c7ff22 0 38%,#168dff12 58%,transparent 72%);box-shadow:0 0 18px #42c7ff,0 0 48px #125eff;animation:ow-guide-pulse 1.05s ease-in-out infinite}
+.ow-lenny-guide-label{position:absolute;z-index:903;left:50%;top:26.5%;translate:-50% 0;width:max-content;max-width:82%;padding:8px 15px;color:#e9f8ff;background:#051326ee;border:1px solid #48beff;border-radius:4px;font-size:11px;font-weight:800;letter-spacing:.08em;text-align:center;pointer-events:none;box-shadow:0 0 18px #168dff88}
+@keyframes ow-guide-pulse{50%{filter:brightness(1.55);box-shadow:0 0 30px #71d8ff,0 0 70px #274fff;transform:scale(1.035)}}
+
+/* ── 異世界へ飲み込まれる遷移 ── */
+.ow-dive{position:fixed;z-index:12000;inset:0;display:grid;place-items:center;overflow:hidden;background:#01020a00;pointer-events:all;animation:ow-dive-dark 1.55s ease-in forwards}
+.ow-dive:before,.ow-dive:after{content:"";position:absolute;left:50%;top:50%;width:26vmax;height:26vmax;border-radius:50%;translate:-50% -50%;border:2px solid #6e35ff;box-shadow:0 0 30px #168dff,inset 0 0 40px #6e35ff;animation:ow-vortex 1.45s cubic-bezier(.55,.05,.72,.36) forwards}
+.ow-dive:after{width:14vmax;height:14vmax;border-color:#62d9ff;animation-delay:.08s;animation-duration:1.32s;animation-direction:reverse;opacity:.72}
+.ow-dive-rings{position:absolute;left:50%;top:50%;width:8vmax;height:8vmax;border-radius:50%;translate:-50% -50%;background:repeating-conic-gradient(from 18deg,#65dcff 0 4deg,transparent 5deg 18deg,#8d35ff 19deg 22deg,transparent 23deg 37deg);filter:blur(.4px) drop-shadow(0 0 12px #168dff);animation:ow-ring-swallow 1.5s cubic-bezier(.6,.02,.8,.4) forwards}
+.ow-dive-core{position:absolute;left:50%;top:50%;width:3vmax;height:3vmax;border-radius:50%;translate:-50% -50%;background:#000;box-shadow:0 0 30px 12px #6c20ff,0 0 80px 32px #116dff88;animation:ow-core-swallow 1.5s ease-in forwards}
+.ow-dive-label{position:relative;z-index:2;margin-top:34vmin;color:#dff7ff;font:800 11px Cinzel,serif;letter-spacing:.38em;text-shadow:0 0 12px #37bfff;animation:ow-dive-label 1.3s ease forwards}
+@keyframes ow-dive-dark{0%{background:#01020a00}55%{background:#03011688}100%{background:#000}}
+@keyframes ow-vortex{0%{scale:.16;rotate:0deg;opacity:0}20%{opacity:1}100%{scale:7.5;rotate:520deg;opacity:.2}}
+@keyframes ow-ring-swallow{0%{scale:.2;rotate:0deg;opacity:0}15%{opacity:1}70%{scale:5.5;rotate:-610deg;opacity:1}100%{scale:13;rotate:-840deg;opacity:0}}
+@keyframes ow-core-swallow{0%{scale:.2;opacity:.2}58%{scale:2.2;opacity:1}100%{scale:36;opacity:1}}
+@keyframes ow-dive-label{0%,20%{opacity:0;letter-spacing:.65em}45%{opacity:1}88%{opacity:1}100%{opacity:0;filter:blur(5px)}}
+@media(prefers-reduced-motion:reduce){.ow-dive,.ow-dive:before,.ow-dive:after,.ow-dive-rings,.ow-dive-core,.ow-dive-label{animation-duration:.35s!important}}
+.lenny-lead{margin:2px 0 12px;font-size:13px;color:#f0a24b}
+.lenny-menu{display:grid;gap:8px}
+.lenny-menu button{position:relative;display:grid;gap:2px;padding:12px 14px;text-align:left;background:#080f1c;color:#dceaf8;border:1px solid #24405f;border-radius:5px;cursor:pointer}
+.lenny-menu button:hover{border-color:#2f9dff;background:#0c1830}
+.lenny-menu button b{font-size:14px}
+.lenny-menu button span{font-size:11px;color:#7d95ad}
+.lenny-menu button mark{position:absolute;right:12px;top:12px;padding:1px 8px;border-radius:99px;background:#c40044;color:#fff;font-size:9px;letter-spacing:.12em}
+
+/* ── PHANTOM THIEF チュートリアル ── */
+.pt-dots{display:flex;gap:5px;margin:0 0 12px}
+.pt-dots i{flex:1;height:3px;border-radius:2px;background:#182a40}
+.pt-dots i.on{background:linear-gradient(90deg,#a86bff,#5fc6ff)}
+.pt-talk{display:grid;gap:4px;margin-bottom:10px}
+.pt-talk p{margin:0;font-size:13px;line-height:1.9;color:#c6d8ea}
+.pt-big{margin:0 0 14px;padding:12px;text-align:center;font:700 17px/1.6 serif;color:#ffb4c6;background:#170a14;border:1px solid #6b2740;border-radius:5px}
+.pt-note{display:grid;gap:6px;padding:11px 13px;background:#080f1c;border:1px solid #17293f;border-radius:5px}
+.pt-note p{margin:0;font-size:11px;line-height:1.8;color:#9db6cf}
+.pt-actions{display:grid;gap:5px;margin-bottom:10px}
+.pt-actions div{display:flex;justify-content:space-between;gap:8px;padding:7px 11px;background:#080f1c;border:1px solid #17293f;border-radius:4px;font-size:12px}
+.pt-actions span{color:#7d95ad}
+.pt-actions b{color:#c9a4ff}
+.pt-example{margin-bottom:10px;padding:11px 13px;background:#0b0716;border:1px solid #43128f;border-radius:5px}
+.pt-example>b{display:block;margin-bottom:8px;font-size:12px;color:#c9a4ff}
+.pt-ex-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:4px 8px;align-items:center;font-size:12px}
+.pt-ex-grid span{color:#8fa7c4;text-align:right}
+.pt-ex-grid em{color:#5d7a99;font-style:normal}
+.pt-ex-grid b{color:#7fd6a5}
+.pt-example small{display:block;margin-top:8px;font-size:10px;color:#6d859e}
+.pt-cycle{display:grid;gap:6px;margin-bottom:12px;text-align:center}
+.pt-cy-box{display:grid;gap:3px;padding:10px;background:#080f1c;border:1px solid #17293f;border-radius:5px}
+.pt-cy-box.steal{border-color:#6b2740;background:#160a12}
+.pt-cy-box.other{border-color:#43128f;background:#0d0718}
+.pt-cy-box small{font-size:9px;letter-spacing:.16em;color:#5fc6ff}
+.pt-cy-box b{font-size:12px;color:#dceaf8}
+.pt-cy-box span{font-size:10px;color:#4d637b}
+.pt-cy-arrow{font-size:10px;letter-spacing:.2em;color:#a86bff}
+.pt-nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px}
+.pt-nav button{padding:9px 18px;background:#122744;color:#cfe0f2;border:1px solid #2f6ea8;border-radius:4px;cursor:pointer;font-size:13px}
+.pt-nav button.primary{background:#1c4b7d;border-color:#3f8fd0}
+
+/* ── PHANTOM THIEF ACTION 選択 ── */
+.pt-modal{position:fixed;inset:0;z-index:9500;display:grid;place-items:center;background:#02040ae6;padding:16px}
+.pt-modal-box{width:min(420px,92vw);max-height:80vh;display:flex;flex-direction:column;background:#08111f;border:1px solid #43128f;border-radius:6px;overflow:hidden}
+.pt-modal-box header{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #1d3a5c}
+.pt-modal-box header b{font-size:13px;letter-spacing:.14em;color:#c9a4ff}
+.pt-modal-box header button{width:28px;height:28px;background:transparent;color:#8fa7c4;border:1px solid #24405f;border-radius:4px;cursor:pointer;font-size:16px;line-height:1}
+.pt-modal-list{display:grid;gap:6px;padding:12px;overflow:auto}
+.pt-modal-list button{display:grid;gap:2px;padding:10px 12px;text-align:left;background:#0b1526;color:#dceaf8;border:1px solid #17293f;border-radius:4px;cursor:pointer}
+.pt-modal-list button.on{border-color:#a86bff;background:#170f2c}
+.pt-modal-list b{font-size:13px}
+.pt-modal-list small{font-size:10px;color:#7d95ad}
+.pt-modal-empty{padding:24px 16px;text-align:center;font-size:12px;line-height:1.9;color:#7d95ad}
+.ow-resume-box{border-color:#5c45ba;box-shadow:0 0 35px #5028a855}
+.ow-resume-body{display:grid;gap:10px;padding:18px;text-align:center}
+.ow-resume-body>strong{font-size:16px;color:#f1e9ff}.ow-resume-body>span{font:800 11px Cinzel;color:#ad8cff;letter-spacing:.08em}
+.ow-resume-body>p,.ow-resume-body>small{margin:0;font-size:10px;line-height:1.6;color:#8fa7c4}
+.ow-resume-body>button{min-height:46px;border:1px solid #7d58dc;background:linear-gradient(90deg,#34206d,#5940a8);color:#fff;font-weight:900;cursor:pointer}
+.ow-resume-body>button.danger{border-color:#703c55;background:#24131f;color:#e6aabd}
+
+/* ── 異世界メニュー ── */
+.ow-power{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:center;margin-bottom:10px;padding:12px 14px;background:linear-gradient(120deg,#0d0718,#080f1c);border:1px solid #43128f;border-radius:5px}
+.ow-power span{font-size:11px;letter-spacing:.12em;color:#a68fd0}
+.ow-power b{font-size:22px;color:#c9a4ff;font-variant-numeric:tabular-nums;text-align:right}
+.ow-power i{grid-column:1/-1;display:flex;gap:5px;margin-top:6px}
+.ow-power i em{flex:1;height:5px;border-radius:3px;background:#1a1230}
+.ow-power i em.on{background:linear-gradient(90deg,#a86bff,#5fc6ff);box-shadow:0 0 10px #a86bff66}
+.ow-today{display:grid;gap:3px;margin-bottom:10px;padding:12px 14px;background:#080f1c;border:1px solid #24405f;border-radius:5px}
+.ow-today small{font-size:10px;letter-spacing:.14em;color:#5fc6ff}
+.ow-today b{font-size:15px;color:#ffdc94}
+.ow-today span{font-size:11px;line-height:1.8;color:#9db6cf}
+.ow-info{display:grid;gap:4px;margin-bottom:10px}
+.ow-info div{display:flex;justify-content:space-between;gap:8px;padding:7px 12px;background:#080f1c;border:1px solid #17293f;border-radius:4px;font-size:12px}
+.ow-info span{color:#7d95ad}
+.ow-info b{color:#cfe0f2}
+.ow-warn{margin:0 0 10px;padding:10px 12px;font-size:11px;line-height:1.9;color:#f0a24b;background:#16100a;border:1px solid #5c3f16;border-radius:4px}
+.ow-warn.ow-stop{color:#ff9d86;background:#170a0a;border-color:#6b2a2a}
+.ow-rule{margin:0 0 8px;padding:9px 12px;text-align:center;font-size:11px;line-height:1.7;color:#a9bad0;background:#080d17;border:1px solid #253851;border-radius:4px}
+.ow-rule b{color:#b891ff;letter-spacing:.08em}
+.ow-ability-link{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin:0 0 9px;padding:10px 12px;text-align:left;color:#cae7ff;background:linear-gradient(110deg,#08182b,#111026);border:1px solid #315d8c;border-radius:5px;cursor:pointer}
+.ow-ability-link b{font-size:13px;color:#75caff}.ow-ability-link span{font-size:9px;color:#829bb5}
+.ow-enter{width:100%;padding:14px;background:linear-gradient(120deg,#43128f,#1c4b7d);color:#fff;border:1px solid #a86bff;border-radius:5px;font-size:15px;letter-spacing:.1em;cursor:pointer}
+.ow-enter:hover{box-shadow:0 0 20px #a86bff55}
+.ow-dungeon-list{display:grid;gap:10px;margin-top:12px}
+.ow-dungeon-card{position:relative;display:grid;grid-template-columns:104px minmax(0,1fr);gap:0;width:100%;padding:0;text-align:left;color:#e8f4ff;background:linear-gradient(125deg,#120822,#071629);border:1px solid #6335a1;border-radius:6px;overflow:hidden}
+.ow-dungeon-card>div{min-width:0;display:grid;gap:5px;align-content:center;padding:13px 14px}
+.ow-dungeon-thumb{display:block;width:104px;min-height:118px;background-position:center;background-size:cover;border-right:1px solid #6335a1;filter:saturate(.88) brightness(.8);transition:filter .2s,transform .2s}
+.ow-dungeon-card.active:hover .ow-dungeon-thumb{filter:saturate(1.05) brightness(1);transform:scale(1.025)}
+.ow-dungeon-card.active{cursor:pointer;box-shadow:inset 0 0 24px #46169b44,0 0 15px #213d8e44}
+.ow-dungeon-card.active:before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 25%,#55c8ff15 47%,transparent 68%);translate:-100% 0;animation:ow-card-scan 2.8s ease-in-out infinite}
+.ow-dungeon-card small{font:800 9px Cinzel,serif;letter-spacing:.2em;color:#6ecfff}
+.ow-dungeon-card strong{font-size:17px;letter-spacing:.05em}
+.ow-dungeon-card span{font-size:10px;line-height:1.6;color:#99acc2}
+.ow-dungeon-card em{justify-self:start;padding:3px 8px;color:#d9c4ff;background:#42167599;border:1px solid #7e46b8;border-radius:99px;font-size:9px;font-style:normal}
+.ow-dungeon-card.locked{grid-template-columns:1fr;min-height:76px;place-content:center;padding:15px;filter:saturate(.35);opacity:.48;border-color:#283647;background:#070b12}
+.ow-dungeon-card.locked strong{font:800 12px Cinzel,serif;letter-spacing:.14em}.ow-dungeon-card.locked span{letter-spacing:.1em}
+.ow-job-confirm{display:grid;gap:12px;padding:16px 13px;text-align:center;background:linear-gradient(145deg,#10081d,#071426);border:1px solid #6940a2;border-radius:7px;box-shadow:inset 0 0 28px #45188833}
+.ow-job-confirm>p{margin:0;font-size:12px;line-height:1.8;color:#aebed0}.ow-job-confirm>p b{color:#c49cff;letter-spacing:.1em}
+.ow-job-swap{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:9px;padding:12px 8px;background:#050a12;border:1px solid #263c57;border-radius:5px}
+.ow-job-swap span{color:#899db3;font-size:12px}.ow-job-swap i{color:#5fc6ff;font-style:normal}.ow-job-swap b{color:#c49cff;font-size:12px}
+.ow-job-confirm .ow-job-note{color:#e2eaf4}.ow-job-confirm .ow-ability-link{margin:0}
+.ow-confirm-actions{display:grid;grid-template-columns:1.45fr 1fr;gap:8px}.ow-confirm-actions button{padding:12px 8px;color:#adbed0;background:#101b2a;border:1px solid #354b65;border-radius:5px;font-size:11px;cursor:pointer}.ow-confirm-actions button.yes{color:#fff;background:linear-gradient(120deg,#4d168e,#1a4e80);border-color:#a66aff;box-shadow:0 0 15px #7b43c733}
+@keyframes ow-card-scan{0%,52%{translate:-110% 0}100%{translate:130% 0}}
+@media(max-width:430px){.ow-dungeon-card{grid-template-columns:86px minmax(0,1fr)}.ow-dungeon-thumb{width:86px;min-height:112px}.ow-dungeon-card>div{padding:10px 11px}.ow-dungeon-card strong{font-size:15px}.ow-dungeon-card span{font-size:9px}.ow-dungeon-card.locked{grid-template-columns:1fr;padding:12px}}
+
+/* ── 異世界：周回中 ── */
+.ow-step,.ow-chests,.ow-summary{display:grid;gap:10px;justify-items:center;text-align:center}
+.ow-step small{font-size:10px;letter-spacing:.16em;color:#5fc6ff}
+.ow-step>b{font:900 26px/1 Cinzel,serif;color:#c9a4ff}
+.ow-step-bar{width:min(320px,80%);height:5px;border-radius:3px;background:#141a26;overflow:hidden}
+.ow-step-bar em{display:block;height:100%;background:linear-gradient(90deg,#a86bff,#5fc6ff)}
+.ow-got{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.ow-got span{padding:4px 12px;background:#0d1c30;border:1px solid #2f6ea8;border-radius:99px;font-size:12px;color:#8fd6a8}
+.ow-got.big span{font-size:14px;padding:7px 16px;border-color:#a86bff;color:#ffdc94}
+.ow-none{margin:0;font-size:11px;color:#6d859e}
+.ow-step-btns{display:flex;gap:8px;margin-top:4px}
+.ow-step-btns button{padding:11px 22px;background:#122744;color:#cfe0f2;border:1px solid #2f6ea8;border-radius:4px;cursor:pointer;font-size:13px}
+.ow-step-btns button.primary{background:#1c4b7d;border-color:#3f8fd0}
+.ow-chest-lead{margin:0;font:700 18px/1.6 serif;color:#ffb4c6}
+.ow-chest-row{display:flex;gap:12px;justify-content:center}
+.ow-chest{display:grid;gap:6px;justify-items:center;padding:14px 16px;background:#0d0718;border:1px solid #43128f;border-radius:6px;cursor:pointer;transition:.25s}
+.ow-chest:hover:not(:disabled){border-color:#a86bff;transform:translateY(-4px);box-shadow:0 6px 20px #a86bff44}
+.ow-chest i{width:44px;height:34px;border-radius:4px;background:linear-gradient(#c9a4ff,#5b3a9c);box-shadow:inset 0 -6px 0 #2d1a52}
+.ow-chest span{font-size:10px;letter-spacing:.14em;color:#a68fd0}
+.ow-chest.gone{opacity:0;transform:scale(.7);pointer-events:none}
+.ow-chest.opened i{background:linear-gradient(#ffdc94,#c8a04a);box-shadow:0 0 24px #ffdc9488}
+.ow-sum-grid{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;padding:12px 16px;background:#080f1c;border:1px solid #17293f;border-radius:5px;font-size:12px;text-align:left}
+.ow-sum-grid span{color:#7d95ad}
+.ow-sum-grid b{color:#cfe0f2}
+
+/* ── アルカナ使用トースト ── */
+.arcana-toast{position:fixed;left:50%;bottom:80px;z-index:9600;translate:-50% 20px;opacity:0;display:grid;gap:2px;padding:12px 22px;text-align:center;background:#0d0718ee;border:1px solid #a86bff;border-radius:6px;box-shadow:0 8px 30px #00000088;transition:.35s}
+.arcana-toast.show{translate:-50% 0;opacity:1}
+.arcana-toast small{font-size:9px;letter-spacing:.2em;color:#a68fd0}
+.arcana-toast b{font-size:15px;color:#ffdc94}
+.arcana-toast span{font-size:12px;color:#dceaf8}
+
+/* ── STEAL結果 ── */
+.pt-steal-result{display:grid;gap:5px;margin-top:10px;padding:12px 14px;text-align:center;background:linear-gradient(140deg,#170a14,#0d0718);border:1px solid #a86bff;border-radius:6px}
+.pt-steal-result small{font-size:9px;letter-spacing:.22em;color:#a68fd0}
+.pt-steal-result strong{font-size:15px;color:#ffb4c6}
+.pt-steal-result span{font-size:11px;color:#c6d8ea}
+.pt-steal-stats{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:2px}
+.pt-steal-stats b{padding:3px 11px;background:#0b1526;border:1px solid #2f6ea8;border-radius:99px;font-size:12px;color:#7fd6a5}
+.pt-steal-result em{font-size:12px;font-style:normal;color:#ffdc94}
+
+/* ── 魔奏士バフ表示 ── */
+.maestro-buffs{position:absolute;left:50%;bottom:100%;translate:-50% -6px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;width:max-content;max-width:60vw;pointer-events:none;z-index:6}
+.maestro-buffs i{padding:2px 9px;border-radius:99px;font:700 10px/1.6 system-ui,sans-serif;font-style:normal;letter-spacing:.04em;white-space:nowrap;background:#050b16e6;box-shadow:0 2px 8px #0008}
+.maestro-buffs .mb-atk{color:#ffb98a;border:1px solid #c8703a}
+.maestro-buffs .mb-matk{color:#c9a4ff;border:1px solid #7a3fd0}
+.maestro-buffs .mb-regen{color:#8fd6a8;border:1px solid #2c8b5e}
+.maestro-buffs .mb-ens{color:#ffdc94;border:1px solid #c8a04a}
+.maestro-buffs .mb-solo{color:#ff9de0;border:1px solid #b0359c}
