@@ -48,4 +48,10 @@ assert.match(titles, /titlePanelSource === 'equipment' \? 'equipment' : 'job'/, 
 assert.match(game, /this\.battleMode !== 'slime'/, '一掃は通常ダンジョン戦だけで有効にする');
 assert(!/rows\.push\(`保護|rows\.push\(`BOSS/.test(offer), '文脈限定効果を常設インジケータへ出さない');
 
+assert.match(offer, /if \(activeModal \|\| offerInFlight\) return false/, '広告POPの多重起動を共通で拒否する');
+assert.match(offer, /setOfferButtonsBusy\(true\)/, '広告POP表示中は入口ボタンを無効化する');
+assert.match(offer, /closeActive\(options = \{\}\)/, '戦闘終了から広告POPを破棄できる共通APIを公開する');
+assert.match(game, /cleanupBattleTransientUI\(\)[\s\S]{0,400}arseneQOffer\?\.closeActive/, '戦闘終了時に広告POPを含む一時UIを掃除する');
+assert.match(game, /showMenu\(panel = 'home'\)[\s\S]{0,350}cleanupBattleTransientUI/, '手動帰還でも戦闘一時UIを残さない');
+
 console.log('Q offer context regression: OK');

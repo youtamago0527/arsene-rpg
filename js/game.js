@@ -45,7 +45,8 @@
 
   class BattleGame {
     constructor() {
-      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.autoBattle = false; this.autoBattleSpeedIndex = -1; this.autoToggleBusy = false; this.autoPickTimer = null; this.autoAdvanceTimer = null; this.simpleBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.enhanceWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.enhanceArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false; this.lastBattleAction = null; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
+      document.documentElement.classList.toggle('capacitor-native', !!window.Capacitor?.isNativePlatform?.());
+      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.defeatResolving = false; this.autoBattle = false; this.autoBattleSpeedIndex = -1; this.autoToggleBusy = false; this.autoPickTimer = null; this.autoAdvanceTimer = null; this.simpleBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.enhanceWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.enhanceArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false; this.lastBattleAction = null; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
       // 旧セーブ・新規プロファイルの両方で楽器学を必ず初期化する。
       this.profile.weaponMastery.instrument ||= { level: 1, exp: 0 };
       this.currentDungeonId = 'dungeon1';
@@ -1680,6 +1681,7 @@
     progressState() { const f = this.profile.flags, noelGoal = D.battleProgression?.noelEncounterWins || 3, zenakadoGoal = D.battleProgression?.zenakadoEncounterWins || 7; if (!f.noelFirstEncounterCleared) { const wins = Math.max(0, f.preNoelBattleWins || 0); return { phase: 'noel', wins, goal: noelGoal, ready: wins >= noelGoal, bossId: 'noelFirstEncounter', bossName: 'NOËL' }; } if (!f.zenakadoDefeated) { const wins = Math.max(0, f.postNoelBattleWins || 0); return { phase: 'zenakado', wins, goal: zenakadoGoal, ready: wins >= zenakadoGoal, bossId: 'zenakado', bossName: 'ZENAKADO' }; } return { phase: 'complete', wins: zenakadoGoal, goal: zenakadoGoal, ready: false, bossId: null, bossName: 'DUNGEON CLEAR' }; }
 
     startBattle() {
+      this.defeatResolving = false;
       this.closeBattleMenu(); this.cancelAutoPick(); this.battleMode = 'slime'; const stats = this.totalStats(), vitals = this.storedVitals(stats); this.player = this.freshBattlePlayer(stats, D.settings.healOnBattleStart ? stats.maxHp : vitals.hp, D.settings.healOnBattleStart ? stats.maxMp : vitals.mp);
       const dungeon = this.getDungeon(), dungeon2 = this.currentDungeonId === 'dungeon2', dungeon3 = this.currentDungeonId === 'dungeon3';
       let wins, lineup;
@@ -1709,6 +1711,7 @@
     // 曲の切り替えは各 start 関数の中でまとめて行う。
     playBossMusic(bossId) { this.audio.playTrack(this.bossMusicFor(bossId)); }
     startBossEncounter(forceBossId = null, forcePhase = null) {
+      this.defeatResolving = false;
       const progress = this.progressState();
       const bossId = forceBossId || progress.bossId, phase = forcePhase || progress.phase;
       if (!bossId || (!forceBossId && !progress.ready)) { this.showMenu('home'); return; }
@@ -1724,6 +1727,7 @@
       this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); this.setLog(bossArrival); this.flashTitle('BOSS ENCOUNTER', (template.nameEn || template.name || progress.bossName).toUpperCase()); this.showMainCommands();
     }
     startDebugGuardianTrial() {
+      this.defeatResolving = false;
       const template = D.enemies.debugOverpowerEnemy;
       if (!template || this.profile.currentJob !== 'guardian' || this.equippedWeaponType() !== 'shield') return false;
       this.debugBattleSnapshot = { profile: clone(this.profile), dungeonId: this.currentDungeonId, floorId: this.currentFloorId };
@@ -1743,6 +1747,7 @@
       this.profile = clone(snapshot.profile); this.currentDungeonId = snapshot.dungeonId; this.currentFloorId = snapshot.floorId; this.debugBattleSnapshot = null; this.player = null; this.saveProfile();
     }
     startMyrthiBoss() {
+      this.defeatResolving = false;
       this.battleMode = 'myrthi'; const stats = this.totalStats(), template = D.enemies.myrthi;
       this.playBossMusic('myrthi');
       const vitals = this.storedVitals(stats); this.player = this.freshBattlePlayer(stats, vitals.hp, vitals.mp);
@@ -1754,6 +1759,7 @@
       this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); this.setLog('沈黙の楽殿に、黒紅の旋風が舞い込む……！'); this.flashTitle('BOSS ENCOUNTER', 'MYRTHI'); this.showMainCommands();
     }
     startVersicrellBoss() {
+      this.defeatResolving = false;
       this.battleMode = 'versicrell'; const stats = this.totalStats(), template = D.enemies.versicrell, vitals = this.storedVitals(stats);
       this.playBossMusic('versicrell');
       this.player = this.freshBattlePlayer(stats, vitals.hp, vitals.mp);
@@ -1764,6 +1770,7 @@
       this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); this.setLog('ヴェルシクレル「……一周するまで、聴いていけば？」'); this.flashTitle('MID BOSS ENCOUNTER', 'VERSICRELL // SILVER CIRCLE'); this.showMainCommands();
     }
     startSeripesBoss() {
+      this.defeatResolving = false;
       this.battleMode = 'seripes'; const stats = this.totalStats(), template = D.enemies.seripes, vitals = this.storedVitals(stats);
       this.playBossMusic('seripes');
       this.player = this.freshBattlePlayer(stats, vitals.hp, vitals.mp);
@@ -2234,6 +2241,16 @@
       const pop = $('#battle-menu-popover'), button = $('#battle-menu-button');
       if (pop) pop.hidden = true;
       button?.setAttribute('aria-expanded', 'false');
+    }
+    cleanupBattleTransientUI() {
+      this.closeBattleMenu();
+      this.cancelAutoPick();
+      window.arseneQOffer?.closeActive?.();
+      this.hideStatusDetail?.();
+      const drawer = $('#command-drawer');
+      if (drawer) { drawer.hidden = true; drawer.innerHTML = ''; drawer.style.removeProperty('top'); }
+      const panel = $('#command-panel');
+      if (panel) { panel.inert = false; panel.classList.remove('drawer-open', 'turn-locked'); panel.innerHTML = ''; }
     }
     renderBattleMenu() {
       const pop = $('#battle-menu-popover'); if (!pop) return;
@@ -3306,7 +3323,8 @@
       enemy.hasStolen = true; this.saveProfile(); el?.classList.remove('enemy-attacking'); this.updateHUD(); await this.battleSleep(440);
     }
     async enemyEncounterEscaped() {
-      this.finished = true; this.pauseAutoBattle(); this.locked = false; $('#phase-label').textContent = 'ESCAPED';
+      if (this.finished) return;
+      this.finished = true; this.cleanupBattleTransientUI(); this.pauseAutoBattle(); this.locked = false; $('#phase-label').textContent = 'ESCAPED';
       $('#log').innerHTML = '<p>希少怪異は逃走した。この遭遇は階層踏破数に加算されない。</p>';
       this.panel(this.button('次の戦闘へ', 'NEXT BATTLE', 'next') + this.button('拠点へ戻る', 'HIDEOUT', 'hideout'));
       const goNext = () => { this.cancelAutoAdvance(); this.startBattle(); };
@@ -3457,9 +3475,10 @@
       return true;
     }
     async victory() {
+      if (this.finished) return;
       const quick = !!this.quickResolving;
       this.profile.flags.consecutiveDefeats = 0; this.profile.flags.lastBattleResult = 'victory';
-      this.finished = true; this.pauseAutoBattle(); this.audio.sfx('victory'); this.flashTitle('VICTORY', 'ALL SHADOWS ELIMINATED'); $('#ren').classList.add('victory'); await this.battleSleep(quick ? 120 : 1100);
+      this.finished = true; this.cleanupBattleTransientUI(); this.pauseAutoBattle(); this.audio.sfx('victory'); this.flashTitle('VICTORY', 'ALL SHADOWS ELIMINATED'); $('#ren').classList.add('victory'); await this.battleSleep(quick ? 120 : 1100);
       const reward = { exp: this.battleRewards.exp, gold: this.battleRewards.gold, drops: this.battleRewards.drops }, levels = this.battleRewards.levels;
       const masteryParts = this.battleRewards.masteryResults || [], jobParts = this.battleRewards.jobResults || [];
       const masteryResult = masteryParts.length ? { ...masteryParts[0], gain: masteryParts.reduce((s, r) => s + r.gain, 0), before: masteryParts[0].before, after: masteryParts[masteryParts.length - 1].after, leveled: masteryParts.some(r => r.leveled) } : null;
@@ -3528,7 +3547,8 @@
       this.scheduleAutoAdvance(goNext);
     }
     async defeat() {
-      this.finished = true; this.endAutoBattle(); this.audio.stopMusic(500); this.audio.sfx('defeat'); $('#ren').classList.add('down');
+      if (this.defeatResolving) return;
+      this.defeatResolving = true; this.finished = true; this.cleanupBattleTransientUI(); this.endAutoBattle(); this.audio.stopMusic(500); this.audio.sfx('defeat'); $('#ren').classList.add('down');
       if (this.battleMode === 'debugOverpower') { const damage = this.enemies[0]?.debugDamageTaken || 0, turns = this.turn, resonance = this.player?.resonance || 0; this.restoreDebugBattle(); this.flashTitle('TEST COMPLETE', 'GUARDIAN ENDURANCE'); await this.battleSleep(700); this.showResult('TEST COMPLETE', 'HP無限の強敵検証体に敗北。開始前のセーブ状態へ戻した。', 'DEBUG RESULT', `<div class="boss-result-note"><b>生存 ${turns} ACTION</b><br>総与ダメージ ${Math.round(damage).toLocaleString('ja-JP')}<br>最終RESONANCE ${resonance.toFixed(1)}%</div>`); return; }
       // まかない系は敗北した時点で失効。デバッグ検証は上でセーブを巻き戻すため対象外。
       if (this.activeMealBuffType()) this.clearMealBuff();
@@ -3545,8 +3565,8 @@
     showGameOverOrRevive(copy, kicker, html) { const showGameOver = () => { this.clearBossOverdriveChallenge?.(); this.showResult('GAME OVER', copy, kicker, html); }; if (!this.showReviveOfferIfAvailable(showGameOver)) showGameOver(); }
     showReviveOfferIfAvailable(onDecline) { const offer = window.arseneQOffer; if (!offer?.canUse?.('revive')) return false; return offer.show('revive', { onGrant: () => this.reviveAfterAdNoise(), onClose: onDecline }); }
     reviveAfterAdNoise() { return this.reviveAfterDefeat(); }
-    reviveAfterDefeat() { const maxHp = this.player?.stats?.maxHp || this.totalStats().maxHp; this.finished = false; this.locked = false; this.player.hp = Math.max(1, Math.ceil(maxHp * .5)); this.persistVitals(); const result = $('#result'); result.hidden = true; result.style.display = 'none'; $('#ren').classList.remove('down'); $('#ren').classList.add('idle'); const dungeon = this.getDungeon(this.currentDungeonId); this.audio.playTrack(dungeon?.music || this.battleMusic); this.updateHUD(); this.setLog(`${this.playerName()}はHP50%で立ち上がった！`); this.flashTitle('REVIVE', 'PHANTOM RISES AGAIN'); this.showMainCommands(); }
-    showResult(title, copy, kicker, html) { this.pauseAutoBattle(); this.locked = false; this.resultContinue = null; $('#result-title').textContent = title; $('#result-copy').textContent = copy; $('#result-kicker').textContent = kicker; $('#rewards').innerHTML = html; const resultMenu = $('#result-menu'); resultMenu.hidden = false; resultMenu.style.display = ''; resultMenu.innerHTML = '拠点へ <span>HIDEOUT</span>'; $('#result').hidden = false; $('#result').style.display = 'grid'; }
+    reviveAfterDefeat() { const maxHp = this.player?.stats?.maxHp || this.totalStats().maxHp; this.finished = false; this.defeatResolving = false; this.locked = false; this.player.hp = Math.max(1, Math.ceil(maxHp * .5)); this.persistVitals(); const result = $('#result'); result.hidden = true; result.style.display = 'none'; $('#ren').classList.remove('down'); $('#ren').classList.add('idle'); const dungeon = this.getDungeon(this.currentDungeonId); this.audio.playTrack(dungeon?.music || this.battleMusic); this.updateHUD(); this.setLog(`${this.playerName()}はHP50%で立ち上がった！`); this.flashTitle('REVIVE', 'PHANTOM RISES AGAIN'); this.showMainCommands(); }
+    showResult(title, copy, kicker, html) { this.cleanupBattleTransientUI(); this.pauseAutoBattle(); this.locked = true; this.resultContinue = null; $('#result-title').textContent = title; $('#result-copy').textContent = copy; $('#result-kicker').textContent = kicker; $('#rewards').innerHTML = html; const resultMenu = $('#result-menu'); resultMenu.hidden = false; resultMenu.style.display = ''; resultMenu.innerHTML = '拠点へ <span>HIDEOUT</span>'; $('#result').hidden = false; $('#result').style.display = 'grid'; }
     showStagedMilestone(rewardBlock, milestone) { this.showResult('VICTORY', '闇を切り裂き、戦利品を獲得した。', 'BATTLE COMPLETE', rewardBlock); this.resultContinue = () => this.showMilestonePopup(milestone); $('#result-menu').innerHTML = '次へ <span>NEXT</span>'; }
     showMilestonePopup(milestone) {
       if (milestone.type === 'floor') this.showResult('ROUTE OPEN', '次の階層に行けるようになりました', 'SAFE ZONE REACHED', `<div class="milestone-popup"><small>NEXT FLOOR UNLOCKED</small><strong>${milestone.nextFloorName}</strong><span>ここまでの進行度はセーフゾーンに記録されました。</span></div><div class="result-actions"><button data-result-action="next-floor" data-target="${milestone.nextFloorId}">進む<small>NEXT FLOOR</small></button><button data-result-action="continue-floor" data-target="${milestone.currentFloorId}">そのまま戦闘<small>KEEP FIGHTING</small></button><button data-result-action="hideout">拠点へ戻る<small>HIDEOUT</small></button></div>`);
@@ -3555,7 +3575,7 @@
     }
     handleResultAction(action, target) { if (action === 'hideout') { this.showMenu('home'); return; } if (action === 'boss-now') { this.startBossByKey(target); return; } if (action === 'next-floor' || action === 'continue-floor') { this.currentDungeonId = this.floorDungeonId(target) || this.currentDungeonId; this.currentFloorId = target; $('#ren').classList.remove('victory'); this.startBattle(); } }
 
-    showMenu(panel = 'home') { if (this.player) this.persistVitals(); if (panel === 'home' && this.profile.flags?.owRestoreJobPending) this.restoreNormalDungeonJob(true); this.closeBattleMenu(); this.endAutoBattle(); if (panel === 'home' && this.activeMealBuffType()) { this.clearMealBuff(); this.saveProfile(); } const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderHideoutRouteStatus(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
+    showMenu(panel = 'home') { if (this.player) this.persistVitals(); if (panel === 'home' && this.profile.flags?.owRestoreJobPending) this.restoreNormalDungeonJob(true); this.cleanupBattleTransientUI(); this.endAutoBattle(); if (panel === 'home' && this.activeMealBuffType()) { this.clearMealBuff(); this.saveProfile(); } const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderHideoutRouteStatus(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
     hideoutRouteStatus() {
       const available = (D.dungeons || []).filter(dungeon => this.isDungeonUnlocked(dungeon.id));
       const dungeon = available[available.length - 1] || this.getDungeon('dungeon1');

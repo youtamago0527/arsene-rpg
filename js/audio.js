@@ -46,19 +46,42 @@
         } catch { this.musicSource = null; this.musicGain = null; this.applyMusicVolume(); }
       }
       if (this.ctx.state === 'suspended') await this.ctx.resume();
-      if (!this.started && !this.muted) { this.audioFocus?.postMessage({ type: 'claim', id: this.audioId }); this.started = true; this.music.play().catch(() => { this.started = false; }); }
+      if (!this.started && !this.muted) { this.audioFocus?.postMessage({ type: 'claim', id: this.audioId }); if (Number.isFinite(this.pendingMusicStartVolume)) this.setMusicOutput(this.pendingMusicStartVolume); this.started = true; this.music.play().catch(() => { this.started = false; }); }
     }
     // 武器種から直接鳴らす。読み込み前や未定義の武器種は false を返すので、呼び出し側で合成音へ落とせる。
     playWeaponAttack(weaponType) { return this.playSfxFile(WEAPON_SFX[weaponType]); }
     setMusicOutput(value) { const level = Math.max(0, value); if (this.musicGain) this.musicGain.gain.value = level; else { try { this.music.volume = Math.min(1, level); } catch {} } }
     getMusicOutput() { return this.musicGain ? this.musicGain.gain.value : this.music.volume; }
     applyMusicVolume() { this.setMusicOutput(this.muted ? 0 : this.musicVolume); }
-    async restartMusic() { this.fadeToken++; this.music.pause(); this.music.currentTime = 0; this.applyMusicVolume(); this.started = false; await this.unlock(); }
-    async playTrack(path) { this.fadeToken++; this.music.pause(); this.music.ontimeupdate = null; this.music.loop = true; this.music.src = path; this.music.load(); this.music.currentTime = 0; this.applyMusicVolume(); this.started = false; await this.unlock(); }
+    fadeMusicTo(target, duration = 180, token = this.fadeToken) {
+      const initial = this.getMusicOutput(), start = performance.now();
+      if (duration <= 0 || Math.abs(initial - target) < .001) { this.setMusicOutput(target); return Promise.resolve(token === this.fadeToken); }
+      return new Promise(resolve => {
+        const step = now => {
+          if (token !== this.fadeToken) { resolve(false); return; }
+          const p = Math.min(1, (now - start) / duration);
+          this.setMusicOutput(initial + (target - initial) * p);
+          if (p < 1) requestAnimationFrame(step); else resolve(true);
+        };
+        requestAnimationFrame(step);
+      });
+    }
+    async restartMusic() { const token = ++this.fadeToken; if (this.started && !this.music.paused) await this.fadeMusicTo(0, 160, token); if (token !== this.fadeToken) return; this.music.pause(); this.music.currentTime = 0; this.pendingMusicStartVolume = 0; this.started = false; await this.unlock(); delete this.pendingMusicStartVolume; if (token === this.fadeToken) await this.fadeMusicTo(this.muted ? 0 : this.musicVolume, 180, token); }
+    async playTrack(path) {
+      const targetUrl = new URL(path, document.baseURI).href;
+      if ((this.music.currentSrc || this.music.src) === targetUrl && this.started && !this.music.paused) { this.applyMusicVolume(); return; }
+      const token = ++this.fadeToken;
+      if (this.started && !this.music.paused) await this.fadeMusicTo(0, 180, token);
+      if (token !== this.fadeToken) return;
+      this.music.pause(); this.music.ontimeupdate = null; this.music.loop = true; this.music.src = path; this.music.load(); this.music.currentTime = 0; this.pendingMusicStartVolume = 0; this.setMusicOutput(0); this.started = false;
+      await this.unlock(); delete this.pendingMusicStartVolume;
+      if (token === this.fadeToken) await this.fadeMusicTo(this.muted ? 0 : this.musicVolume, 220, token);
+    }
     async playTimedLoop(path, loopAt = 100, fadeSeconds = 5) { await this.playTrack(path); this.music.loop = false; this.music.ontimeupdate = () => { const fadeStart = Math.max(0, loopAt - fadeSeconds), time = this.music.currentTime; if (time >= loopAt) { this.music.currentTime = 0; this.applyMusicVolume(); if (this.music.paused && !this.muted) this.music.play().catch(() => {}); return; } if (time >= fadeStart) this.setMusicOutput(this.musicVolume * Math.max(0, (loopAt - time) / fadeSeconds)); }; }
-    stopMusic(fadeMs = 500) {
-      if (!this.started) return; const token = ++this.fadeToken, start = performance.now(), initial = this.getMusicOutput();
-      const fade = now => { if (token !== this.fadeToken) return; const p = Math.min(1, (now - start) / fadeMs); this.setMusicOutput(initial * (1 - p)); if (p < 1) requestAnimationFrame(fade); else { this.music.pause(); this.music.currentTime = 0; this.applyMusicVolume(); this.started = false; } }; requestAnimationFrame(fade);
+    async stopMusic(fadeMs = 500) {
+      if (!this.started) return; const token = ++this.fadeToken;
+      const completed = await this.fadeMusicTo(0, fadeMs, token); if (!completed || token !== this.fadeToken) return;
+      this.music.pause(); this.music.currentTime = 0; this.applyMusicVolume(); this.started = false;
     }
     toggle() {
       this.muted = !this.muted; if (this.master) this.master.gain.value = this.muted ? 0 : .72 * this.levels.sfx;
