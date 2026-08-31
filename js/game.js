@@ -2097,7 +2097,7 @@
         });
       }
     }
-    applySetBattleVisual() { const ren = $('#ren'), active = this.equippedSeriesCount('zenacad') >= 6; ren.classList.toggle('zenacad-six-set', active); if (active) { ren.classList.add('set-intro'); setTimeout(() => ren.classList.remove('set-intro'), 1800); } }
+    applySetBattleVisual() { document.activeElement?.blur?.(); window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); const ren = $('#ren'), active = this.equippedSeriesCount('zenacad') >= 6; ren.classList.toggle('zenacad-six-set', active); if (active) { ren.classList.add('set-intro'); setTimeout(() => ren.classList.remove('set-intro'), 1800); } }
     updateHUD() {
       const playerNameLabel = $('#player-name-label'); if (playerNameLabel) playerNameLabel.textContent = this.playerName();
       const battleGold = $('#battle-gold'); if (battleGold) { const amount = Math.max(0, this.profile.gold || 0), digits = String(amount).length; battleGold.textContent = amount.toLocaleString('ja-JP'); battleGold.dataset.amountSize = digits >= 9 ? 'tiny' : digits >= 7 ? 'compact' : 'normal'; }

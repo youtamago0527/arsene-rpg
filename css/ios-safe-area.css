@@ -35,6 +35,9 @@ html.capacitor-native .hideout-art-shell{
 /* 戦闘は固定590pxの戦場を廃止し、上Safe Areaから下Safe Area直前までを使う。
    上部HUD・敵名・戦場・コマンドが同じ座標系で下がり、メニュー表示時と下端が揃う。 */
 #game.game-shell{
+  position:fixed;
+  inset:0;
+  margin-inline:auto;
   height:var(--app-viewport-height);
   min-height:var(--app-viewport-height);
   max-height:var(--app-viewport-height);
@@ -42,6 +45,7 @@ html.capacitor-native .hideout-art-shell{
   align-content:stretch;
   overflow:hidden;
 }
+body:has(#game:not([hidden])){overflow:hidden}
 #game .battlefield{
   height:auto!important;
   min-height:0!important;
