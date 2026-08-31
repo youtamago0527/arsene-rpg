@@ -4,27 +4,57 @@
   --safe-right:env(safe-area-inset-right,0px);
   --safe-bottom:env(safe-area-inset-bottom,0px);
   --safe-left:env(safe-area-inset-left,0px);
-  --native-ui-top-guard:0px;
+  --native-screen-top:0px;
   --app-viewport-height:100vh;
 }
 @supports(height:100dvh){:root{--app-viewport-height:100dvh}}
-html.capacitor-native{--native-ui-top-guard:6px}
+html.capacitor-native{--native-screen-top:calc(var(--safe-top) + 10px)}
 
 /* Edge-to-edge art stays unchanged; interactive controls use the safe area. */
 .start-flow,.start-flow .flow-screen{height:var(--app-viewport-height);min-height:var(--app-viewport-height)}
 .start-flow .op-skip,.start-flow .prologue-skip{top:calc(var(--safe-top) + 10px)!important;right:calc(var(--safe-right) + 10px)!important}
 .start-flow .jd-close{top:calc(var(--safe-top) + 8px);right:calc(var(--safe-right) + 8px)}
 
-/* Keep the supplied hideout artwork at full size and move only live UI. */
+/* Capacitorでは拠点全体の描画領域をstatus barの下から開始する。
+   上部情報は背景画像にも描かれているため、live UIだけを動かしてもSafe Areaを回避できない。 */
 .hideout-art-shell{height:var(--app-viewport-height)!important;min-height:var(--app-viewport-height)!important}
-.hideout-art-shell .hideout-player{margin-top:0!important;translate:0 calc(var(--safe-top) + var(--native-ui-top-guard))!important}
 .hideout-art-shell .hideout-panel{max-height:calc(var(--app-viewport-height) - var(--safe-top) - var(--safe-bottom) - 24px)}
+html.capacitor-native .hideout-screen{
+  height:var(--app-viewport-height);
+  min-height:var(--app-viewport-height);
+  padding-top:var(--native-screen-top);
+  padding-bottom:var(--safe-bottom);
+  overflow:hidden;
+  background:#000;
+}
+html.capacitor-native .hideout-art-shell{
+  height:calc(var(--app-viewport-height) - var(--native-screen-top) - var(--safe-bottom))!important;
+  min-height:0!important;
+}
 
-/* Battle top and bottom controls clear Dynamic Island and Home Indicator. */
+/* 戦闘は固定590pxの戦場を廃止し、上Safe Areaから下Safe Area直前までを使う。
+   上部HUD・敵名・戦場・コマンドが同じ座標系で下がり、メニュー表示時と下端が揃う。 */
 #game.game-shell{min-height:var(--app-viewport-height)}
-#game .battle-topbar{top:calc(var(--safe-top) + var(--native-ui-top-guard) + 8px)!important;right:calc(var(--safe-right) + 8px)!important;left:calc(var(--safe-left) + 8px)!important;transform:none!important}
+#game .battle-topbar{top:calc(var(--safe-top) + 8px)!important;right:calc(var(--safe-right) + 8px)!important;left:calc(var(--safe-left) + 8px)!important;transform:none!important}
 #game .battle-console{padding-right:max(8px,var(--safe-right))!important;padding-bottom:max(7px,var(--safe-bottom))!important;padding-left:max(8px,var(--safe-left))!important}
 #game .command-drawer{right:calc(var(--safe-right) + 4px)!important;bottom:calc(var(--safe-bottom) + 4px)!important}
+html.capacitor-native #game.game-shell{
+  height:var(--app-viewport-height);
+  min-height:var(--app-viewport-height);
+  max-height:var(--app-viewport-height);
+  padding-top:var(--native-screen-top);
+  grid-template-rows:minmax(0,1fr) auto;
+  align-content:stretch;
+  overflow:hidden;
+}
+html.capacitor-native #game .battlefield{
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+}
+html.capacitor-native #game .battle-topbar{
+  top:8px!important;
+}
 
 /* Infinite Score is fixed fullscreen; inset HUD and command/log bands only. */
 #menu-panel[data-panel^="infinite-score"],.is-explore-screen{height:var(--app-viewport-height)!important;min-height:var(--app-viewport-height)!important}
