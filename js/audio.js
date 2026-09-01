@@ -6,10 +6,10 @@
   //   maxDur … 長いファイルを途中でフェードアウトさせる秒数
   //   rate   … 再生速度。同じ素材を流用して質感を変えるのに使う
   const SFX_FILES = {
-    critical:    { url: '音楽系/効果音/会心の一撃1.mp3', gain: .92, offset: .002, maxDur: 1.5 },
-    criticalHit: { url: '音楽系/効果音/会心の一撃1.mp3', gain: .92, offset: .002, maxDur: 1.5 },
-    evade:       { url: '音楽系/効果音/回避.mp3', gain: .86, offset: .002, maxDur: 1.2 },
-    playerHit:   { url: '音楽系/効果音/打撃6.mp3', gain: .90, offset: .002, maxDur: 1.2 },
+    critical:    { url: '音楽系/効果音/critical-hit-v2.mp3', gain: .92, offset: .002, maxDur: 1.5 },
+    criticalHit: { url: '音楽系/効果音/critical-hit-v2.mp3', gain: .92, offset: .002, maxDur: 1.5 },
+    evade:       { url: '音楽系/効果音/evade-v2.mp3', gain: .86, offset: .002, maxDur: 1.2 },
+    playerHit:   { url: '音楽系/効果音/enemy-hit-v2.mp3', gain: .90, offset: .002, maxDur: 1.2 },
     swordHit:    { url: '音楽系/効果音/剣で斬る2.mp3', gain: .90, offset: .050, maxDur: .9 },
     clawHit:     { url: '音楽系/効果音/爪通常.mp3',    gain: 1.10, offset: .100, maxDur: .9 },
     // ファイアボールは「飛んでいる最中」の音なので、着弾ではなく発射のタイミングで鳴らす
@@ -33,7 +33,7 @@
       if (!this.ctx) {
         const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
         this.ctx = new AC(); this.master = this.ctx.createGain(); this.master.gain.value = .72 * this.levels.sfx; this.master.connect(this.ctx.destination);
-        this.preloadSfxFiles();
+        await this.preloadSfxFiles();
         // iOS Safari ignores HTMLMediaElement.volume. Route BGM through a
         // Web Audio gain node so the in-game slider also works on phones.
         try {
@@ -104,11 +104,12 @@
     // 効果音ファイルを読み込んでデコードしておく。
     // 失敗しても握りつぶす。鳴らす側は合成音へフォールバックする。
     preloadSfxFiles() {
-      if (!this.ctx || this.sfxBuffers) return;
+      if (!this.ctx) return Promise.resolve();
+      if (this.sfxReady) return this.sfxReady;
       this.sfxBuffers = {};
       const urls = [...new Set(Object.values(SFX_FILES).map(f => f.url))];
-      urls.forEach(url => {
-        fetch(url)
+      this.sfxReady = Promise.all(urls.map(url =>
+        fetch(url, { cache: 'no-store' })
           .then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status))))
           .then(buf => new Promise((res, rej) => {
             // Safari 系は Promise を返さない実装があるのでコールバック版で受ける
@@ -116,8 +117,9 @@
             if (ret && typeof ret.then === 'function') ret.then(res, rej);
           }))
           .then(decoded => { this.sfxBuffers[url] = decoded; })
-          .catch(() => { this.sfxBuffers[url] = null; });
-      });
+          .catch(() => { this.sfxBuffers[url] = null; })
+      ));
+      return this.sfxReady;
     }
     // ファイルの効果音を鳴らす。まだ読み込めていなければ false を返す。
     playSfxFile(name) {
@@ -163,8 +165,12 @@
     }
     sfx(name) {
       if (!this.ctx || this.muted) return;
-      // 用意された効果音ファイルがあればそれを優先。未読み込み・失敗時は合成音へ。
+      // 用意された効果音は旧合成音へ落とさない。初回デコード中なら完了後に1回だけ鳴らす。
       if (this.playSfxFile(name)) return;
+      if (SFX_FILES[name]) {
+        this.sfxReady?.then(() => this.playSfxFile(name));
+        return;
+      }
       const chord = (notes, gap=.08) => notes.forEach((n,i)=>this.tone(n,.2,'sine',.1,1,i*gap));
       switch (name) {
         case 'ui': this.tone(620,.055,'square',.045,1.28); break;
