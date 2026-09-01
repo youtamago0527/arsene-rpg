@@ -294,6 +294,7 @@
   function bestSkill(id, stats, enemy, options = {}) {
     const weaponType = WEAPON_BY_JOB[id] || 'sword';
     const skills = skillPool(id, weaponType).filter(skill => {
+      if (skill.requiresBareFists && options.armorMode !== 'none') return false;
       if (options.target === 'single') return skill.target !== 'all';
       if (options.target === 'all') return skill.target === 'all';
       return true;

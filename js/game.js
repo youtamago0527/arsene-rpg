@@ -1004,6 +1004,8 @@
     playerCombatStats() {
       const stats = { ...(this.player?.stats || this.totalStats()) }, boost = this.comboMaxBoost();
       if (boost?.agiRate) stats.agi = Math.round((stats.agi || 0) * (1 + boost.agiRate));
+      const strStacks = Math.max(0, Number(this.player?.buffs?.martialStrStacks) || 0), strRate = Math.max(0, Number(this.player?.buffs?.martialStrRate) || 0);
+      if (strStacks && strRate) stats.str = Math.max(1, Math.round((stats.str || 0) * (1 + strStacks * strRate)));
       const down = this.player?.buffs?.fegoriaStatDown;
       if (down && this.turn <= down.until && stats[down.stat] != null) stats[down.stat] = Math.max(1, Math.round(stats[down.stat] * (1 - down.rate)));
       return stats;
@@ -1594,7 +1596,7 @@
     jobLearnedActiveSkills(jobId) { const job = D.jobs[jobId]; if (!this.isPlayerContentVisible(job)) return []; const list = Object.entries(job.skillUnlocks || {}).filter(([lv, id]) => this.jobAbilityLearned(jobId, id, lv)).map(([, id]) => D.skills[id]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE'); const sig = D.skills[job.signatureSkillId]; if (this.isPlayerContentVisible(sig) && sig.type !== 'PASSIVE' && this.jobAbilityLearned(jobId, sig.id, sig.unlockJobLevel || 1) && !list.some(s => s.id === sig.id)) list.unshift(sig); return list; }
     masteredActions() { return (this.profile.jobMastered || []).map(id => D.skills[D.jobs[id]?.signatureSkillId]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE'); }
     setPhantomAction(idx, skillId) { const max = this.actionSlotCount(); this.profile.ptActionSlots ||= new Array(max).fill(null); while (this.profile.ptActionSlots.length < max) this.profile.ptActionSlots.push(null); if (skillId) this.profile.ptActionSlots = this.profile.ptActionSlots.map(v => v === skillId ? null : v); this.profile.ptActionSlots[idx] = skillId || null; this.saveProfile(); this.audio.sfx('confirm'); if (this.jobUI) this.jobUI.modal = null; this.renderMenuPanel('job'); }
-    skillEquipmentReady(skill) { const required = skill?.requiresWeaponSubtype; return !required || this.equippedWeapon()?.weaponSubtype === required; }
+    skillEquipmentReady(skill) { if (skill?.requiresBareFists && !this.usesBareFists()) return false; const required = skill?.requiresWeaponSubtype; return !required || this.equippedWeapon()?.weaponSubtype === required; }
     allLearnedPassives() { const ids = [...(this.profile.learnedJobSkills || []), ...(this.profile.learnedCharacterSkills || [])]; return [...new Set(ids)].map(id => D.skills[id]).filter(s => this.isPlayerContentVisible(s) && s.type === 'PASSIVE'); }
     setPassiveSlot(idx, skillId) { this.setEquippedPassive(idx, skillId); }
     syncSkillUnlocks() { const learnedCharacter = new Set(this.profile.learnedCharacterSkills || []), learnedJob = new Set(this.profile.learnedJobSkills || []); (D.characterSkillProgression || []).forEach(entry => { if (this.profile.level >= entry.level) learnedCharacter.add(entry.skillId); }); Object.entries(this.profile.jobs || {}).forEach(([jobId, progress]) => { const job = D.jobs[jobId]; Object.entries(job?.skillUnlocks || {}).forEach(([level, skillId]) => { if (progress.level >= Number(level)) learnedJob.add(skillId); }); }); // 廃止された技（定義ごと削除）は旧セーブからも取り除く
@@ -2198,6 +2200,7 @@
           chips.push(this.statusChip(`連舞 ${combo}/${comboMax}`, 'buff', `与ダメージ+${damage}%${maxed ? '、会心率+10%、《舞踏》装備中は素早さ+20%・左手追撃倍率+10%' : ''}。MISSすると0へ戻ります。`));
         }
         if (b.atkCharge) chips.push(this.statusChip('ATK↑'));
+        if (b.martialStrStacks) chips.push(this.statusChip(`練体 ${b.martialStrStacks}/5`, 'buff', `戦闘終了までSTR +${Math.round(b.martialStrStacks * (b.martialStrRate || .05) * 100)}%。`));
         if (b.magicCharge) chips.push(this.statusChip('魔力装填'));
         if (b.magFocus) chips.push(this.statusChip('精神集中', 'buff', '次に使う魔法攻撃の威力が2.5倍になります。'));
         if (b.defUp && this.turn <= b.defUp.until) chips.push(this.statusChip('DEF↑', 'buff', '', b.defUp.until - this.turn + 1 <= 1));
@@ -2833,6 +2836,14 @@
       } if (misses && !total) { this.setLog(`${target.name}${target.label}に攻撃を外した！`); ren.classList.remove('attacking','casting'); if (extremeDance) this.player.comboDance = 0; return { anyHit: false }; }
       const hitNames = Object.keys(perHit).map(uid => { const e = this.enemies.find(x => x.uid === uid); return e ? `${e.name}${e.label}` : ''; }).filter(Boolean); const targetLabel = skill.randomTarget && hitNames.length > 1 ? hitNames.join('・') : `${target.name}${target.label}`; this.setLog(`${criticals ? `CRITICAL ×${criticals}! ` : ''}${targetLabel}に${total}ダメージ！${hits > 1 ? `（${hits}HIT）` : ''}`); if (skill.kind === 'physical' || skill.kind === 'weapon') { delete this.player.buffs.atkCharge; delete this.player.buffs.magicCharge; } if (skill.kind === 'magical' || skill.damageType === 'magical') delete this.player.buffs.magFocus; ren.classList.remove('attacking', 'casting');
       this.applySkillDebuff(skill, target);
+      if (skill.effect?.type === 'selfStrStackAfterHit' && total > 0 && this.player.martialStrStackTurn !== this.turn) {
+        const e = skill.effect, max = Math.max(1, Number(e.maxStacks) || 5);
+        this.player.buffs.martialStrStacks = Math.min(max, (this.player.buffs.martialStrStacks || 0) + 1);
+        this.player.buffs.martialStrRate = Math.max(this.player.buffs.martialStrRate || 0, Number(e.rate) || .05);
+        this.player.martialStrStackTurn = this.turn;
+        const stacks = this.player.buffs.martialStrStacks, pct = Math.round(stacks * this.player.buffs.martialStrRate * 100);
+        this.audio.sfx('buff'); this.floating($('#ren'), `STR +${pct}%`, 'heal'); this.setLog(`《${skill.name}》で力が研ぎ澄まされた！ STR +${pct}%（${stacks}/${max}）`); this.updateHUD();
+      }
       if (skill.effect?.type === 'selfDefUpAfterHit') this.player.buffs.defUp = { rate: skill.effect.rate, until: this.turn + (skill.effect.turns || 1) };
       if (skill.effect?.type === 'selfDefDown') { this.player.defDownUntil = this.turn + skill.effect.turns - 1; this.setLog(`捨て身斬りの反動で${this.playerName()}の防御力が20%低下！`); }
       // このターンに攻撃した敵のうち、倒れたものをまとめて処理する（最終targetも含む）
@@ -2860,7 +2871,7 @@
       }
       if (effect.type === 'hpRecover') {
         const baseHeal = effect.baseHeal ?? effect.base ?? 0, spiritScaling = effect.spiritScaling ?? effect.mndScale ?? 0;
-        const amount = Math.max(1, Math.round((baseHeal + this.player.stats.mnd * spiritScaling) * (1 + this.passiveEffectRate('healUp') + this.equipmentEffectRate('healingPowerPercent')) * this.traitHealMult())), gained = Math.min(amount, this.player.stats.maxHp - this.player.hp);
+        const amount = Math.max(1, Math.round((baseHeal + this.player.stats.mnd * spiritScaling + this.player.stats.maxHp * (effect.maxHpRate || 0)) * (1 + this.passiveEffectRate('healUp') + this.equipmentEffectRate('healingPowerPercent')) * this.traitHealMult())), gained = Math.min(amount, this.player.stats.maxHp - this.player.hp);
         this.player.hp += gained; this.audio.sfx('heal'); this.floating(ren, `+${gained}`, 'heal'); this.setLog(`ヒールでHPが${gained}回復！`);
       }
       if (effect.type === 'regenerate') {
@@ -3077,7 +3088,7 @@
         if ((target.stunTurns || 0) > 0) { this.floating(el, 'NO STACK', 'miss'); return; }
         const baseChance = target.kind === 'boss' ? ((target.overdriveLevel || target.isOverdrive) ? (e.overdriveChance ?? .08) : (e.bossChance ?? .18)) : (e.chance ?? .55);
         const resistance = clamp(target.stunResistance || 0, 0, .9), chance = clamp(baseChance * (1 - resistance), .01, .95);
-        if (Math.random() < chance) { target.stunTurns = e.turns || 1; target.stunResistance = clamp(resistance + .18, 0, .9); this.floating(el, 'STUN', 'debuff'); this.setLog(target.name + target.label + 'は盾の衝撃でひるんだ！'); }
+        if (Math.random() < chance) { target.stunTurns = e.turns || 1; target.stunResistance = clamp(resistance + .18, 0, .9); this.floating(el, 'STUN', 'debuff'); this.setLog(`${target.name}${target.label}は《${skill.name}》の衝撃でひるんだ！`); }
         else { target.stunResistance = clamp(resistance + .06, 0, .9); this.floating(el, 'RESIST', 'miss'); this.setLog(target.name + target.label + 'は体勢を崩さない！'); }
         this.updateHUD();
       }      if (e.type === 'enemyBind') {
@@ -5040,7 +5051,7 @@
     }
     previewEquipment(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; this.selectedEquipmentId = id; this.renderMenuPanel('equipment'); }
     equipItem(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; const slot = (this.equipSlot && this.candidatesForSlot(this.equipSlot).includes(id)) ? this.equipSlot : item.slot; if (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) return; if (slot === 'rightHand' && (this.isOffHandOnlyWeapon(id) || !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
-    unequipSlot(slotId) { if (!slotId || !(slotId in this.profile.equipment)) return; this.profile.equipment[slotId] = slotId === 'rightHand' ? this.defaultWeaponId() : null; this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('ui'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
+    unequipSlot(slotId) { if (!slotId || !(slotId in this.profile.equipment)) return; const bareRightHand = slotId === 'rightHand' && this.jobHasTrait('bareFists'); this.profile.equipment[slotId] = slotId === 'rightHand' && !bareRightHand ? this.defaultWeaponId() : null; if (bareRightHand) this.profile.equipment.leftHand = null; this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('ui'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
     equipFromInventory(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || !(this.profile.inventory[id] > 0)) return; const slot = this.isOffHandOnlyWeapon(id) ? 'leftHand' : D.weapons[id] ? 'rightHand' : item.slot; if (!slot || (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) || (slot === 'rightHand' && !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('items'); }
     equipLeftHandWeapon(id) { if (!(this.profile.inventory[id] > 0) || !this.isLeftHandItemAllowed(id)) return; this.profile.equipment.leftHand = id; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
 
