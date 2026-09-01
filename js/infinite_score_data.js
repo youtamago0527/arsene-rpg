@@ -51,7 +51,6 @@
     ],
     enemyPool: ['shadowSlime', 'nightBat', 'ratThief', 'goblin', 'soulMage', 'ghostBone', 'fortressGolem', 'voidWatcher'].filter(id => D.enemies?.[id]),
     rareEnemyPool: ['merox'].filter(id => D.enemies?.[id]),
-    consumablePool: ['potion', 'manaPotion'],
-    equipmentPool: Object.values(D.items || {}).filter(item => item?.category === 'equipment' && item.slot && !item.devOnly && !item.reserved).map(item => item.id)
+    consumablePool: ['potion', 'manaPotion']
   };
 })();
