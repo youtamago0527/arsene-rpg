@@ -2534,17 +2534,27 @@
     // 所持している回復系の消費アイテムをすべて並べる。
     // 以前は回復薬と魔力回復薬を直書きしていたため、アイテムを足しても
     // 戦闘中のアイテム欄に出てこなかった。
+    recoveryItemInfo(item, stats = this.player?.stats || this.totalStats()) {
+      const effect = item?.effect || {};
+      const key = effect.hp || effect.hpRate ? 'hp' : effect.mp || effect.mpRate ? 'mp' : null;
+      if (!key) return null;
+      const maxKey = key === 'hp' ? 'maxHp' : 'maxMp';
+      const rate = Number(effect[`${key}Rate`]) || 0;
+      const amount = rate > 0 ? Math.max(1, Math.ceil((Number(stats?.[maxKey]) || 0) * rate)) : Math.max(0, Number(effect[key]) || 0);
+      return { key, maxKey, rate, amount, label: rate > 0 ? `${key.toUpperCase()} ${Math.round(rate * 100)}%` : `${key.toUpperCase()} +${amount}` };
+    }
     battleUsableItems() {
       return Object.values(D.items)
-        .filter(i => this.isPlayerContentVisible(i) && i.category === 'consumable' && (i.effect?.hp || i.effect?.mp) && (this.profile.inventory[i.id] || 0) > 0);
+        .filter(i => this.isPlayerContentVisible(i) && i.category === 'consumable' && this.recoveryItemInfo(i) && (this.profile.inventory[i.id] || 0) > 0);
     }
     showBattleItems() {
       const items = this.battleUsableItems();
       if (!items.length) { this.panel(this.button('もどる', 'BACK', 'back')); this.bindActions({ back: () => this.showMainCommands() }); this.setLog('使えるアイテムを持っていない。'); return; }
       const rows = items.map(i => {
         const n = this.profile.inventory[i.id] || 0;
-        const full = i.effect?.hp ? this.player.hp >= this.player.stats.maxHp : this.player.mp >= this.player.stats.maxMp;
-        const label = i.effect?.hp ? `HP +${i.effect.hp}` : `MP +${i.effect.mp}`;
+        const recovery = this.recoveryItemInfo(i, this.player.stats);
+        const full = this.player[recovery.key] >= this.player.stats[recovery.maxKey];
+        const label = recovery.label;
         return this.button(i.name, `${label} // ×${n}`, i.id, full, 'item', i.description || `${label}回復する。`);
       }).join('');
       this.panel(this.button('閉じる', 'BACK', 'back') + rows, 'list');
@@ -3292,7 +3302,7 @@
       return item.rarity === 'epic' || item.rarity === 'legendary';
     }
     announceRareDrop(item) { const layer = $('#rare-drop-layer'); if (!layer) return; this.audio.sfx('rareDrop'); const b = document.createElement('div'); b.className = `rare-drop-banner rarity-${item.rarity}`; b.innerHTML = `<small>${item.rarity === 'legendary' ? 'LEGENDARY DROP' : 'EPIC DROP'}</small><b>${item.name}</b>`; layer.appendChild(b); requestAnimationFrame(() => b.classList.add('show')); setTimeout(() => { b.classList.remove('show'); setTimeout(() => b.remove(), 420); }, 2400); }
-    async useConsumable(id) { const item = D.items[id], amount = item?.effect?.hp || item?.effect?.mp || 0, key = item?.effect?.hp ? 'hp' : 'mp', maxKey = key === 'hp' ? 'maxHp' : 'maxMp'; if (!item || !(this.profile.inventory[id] > 0)) { this.setLog(`${item?.name || 'アイテム'}を持っていない。`); return; } if (this.player[key] >= this.player.stats[maxKey]) { this.setLog(`${key.toUpperCase()}は満タンだ。`); return; } this.lastBattleAction = { type: 'item', itemId: id }; this.locked = true; this.keepAutoControlVisible(); await this.beginPlayerTurn(); const heal = Math.min(amount, this.player.stats[maxKey] - this.player[key]); this.profile.inventory[id]--; this.player[key] += heal; this.persistVitals(); this.audio.sfx('heal'); this.setLog(`${item.name}を使った。${key.toUpperCase()}が${heal}回復！`); this.floating($('#ren'), `+${heal}`, 'heal'); this.updateHUD(); await this.battleSleep(650); await this.enemyOnlyTurn(); }
+    async useConsumable(id) { const item = D.items[id], recovery = this.recoveryItemInfo(item, this.player?.stats), key = recovery?.key, maxKey = recovery?.maxKey; if (!item || !recovery || !(this.profile.inventory[id] > 0)) { this.setLog(`${item?.name || 'アイテム'}を持っていない。`); return; } if (this.player[key] >= this.player.stats[maxKey]) { this.setLog(`${key.toUpperCase()}は満タンだ。`); return; } this.lastBattleAction = { type: 'item', itemId: id }; this.locked = true; this.keepAutoControlVisible(); await this.beginPlayerTurn(); const heal = Math.min(recovery.amount, this.player.stats[maxKey] - this.player[key]); this.profile.inventory[id]--; this.player[key] += heal; this.persistVitals(); this.audio.sfx('heal'); this.setLog(`${item.name}を使った。${key.toUpperCase()}が${heal}回復！`); this.floating($('#ren'), `+${heal}`, 'heal'); this.updateHUD(); await this.battleSleep(650); await this.enemyOnlyTurn(); }
     async guardAction() {
       if (this.locked || this.finished) return;
       this.lastBattleAction = { type: 'guard' };
@@ -3640,7 +3650,7 @@
       if (name === 'workshop') this.renderWorkshop(panel);
       if (name === 'food') { const activeMeal = this.activeMealBuff(), makanai = D.foodMenu?.buffs?.makanai, sapporo = D.foodMenu?.buffs?.sapporoMiso, taiwan = D.foodMenu?.buffs?.taiwanMazesoba, price = this.mealPriceFor('makanai'), activeNote = activeMeal ? `<p class="meal-active-note">現在の効果：<b>${activeMeal.name}</b><span>別の麺を食べると、現在の効果は上書きになります。</span></p>` : '', adFoodOffer = window.arseneQOffer?.foodHTML?.() || '', sapporoUnlocked = this.isMealUnlocked('sapporoMiso'), sapporoPoor = this.profile.gold < this.mealPriceFor('sapporoMiso'), sapporoCard = sapporoUnlocked ? `<section class="food-special"><header><b>NEW MENU</b><span>ZENACAD CLEAR</span></header><div><strong>${sapporo.name}</strong><em>次の潜入中、獲得GOLD +10%</em><small>${sapporo.description}</small><button class="eat-food" data-eat-food="sapporoMiso" ${sapporoPoor ? 'disabled' : ''}>${sapporoPoor ? 'GOLD不足' : `${sapporo.price} GOLD で食べる`}</button></div></section>` : '', taiwanUnlocked = this.isMealUnlocked('taiwanMazesoba'), taiwanPoor = this.profile.gold < this.mealPriceFor('taiwanMazesoba'), taiwanNew = !!this.profile.flags.taiwanMazesobaNew, taiwanCard = taiwanUnlocked ? `<section class="food-special ${taiwanNew ? 'food-spark-new' : ''}"><header><b>${taiwanNew ? 'KAZU’S SPARK' : 'SPECIAL MENU'}</b><span>${taiwanNew ? 'NEW RECIPE' : 'GOLD BOOST'}</span></header><div><strong>${taiwan.name}</strong><em>次の潜入中、獲得GOLD +20%</em><small>${taiwan.description}</small><button class="eat-food" data-eat-food="taiwanMazesoba" ${taiwanPoor ? 'disabled' : ''}>${taiwanPoor ? 'GOLD不足' : `${taiwan.price} GOLD で食べる`}</button></div></section>` : '', coming = (D.foodMenu?.comingSoon || []).map(item => `<article class="food-coming-card" aria-disabled="true"><i aria-hidden="true"></i><b>${item.name}</b><span>COMING SOON</span></article>`).join('');
         // 売り物。所持数とは別に、セーブへ累計購入数を保持する。食べても在庫は復活しない。
-        const shop = this.shopStock().map(it => { const have = this.profile.inventory[it.id] || 0, max = this.shopMaxStack(it), bought = this.shopPurchaseCount(it.id), limit = this.shopPurchaseLimit(it), soldOut = bought >= limit, isFull = have >= max, poor = this.profile.gold < it.price; const eff = it.effect?.hp ? `HP +${it.effect.hp}` : it.effect?.mp ? `MP +${it.effect.mp}` : ''; return `<article class="shop-card${soldOut ? ' sold-out' : ''}"><div class="shop-info"><b>${it.name}</b><em>${eff}</em><small>${it.description}</small></div><div class="shop-buy"><span class="shop-price">${it.price} G</span><span class="shop-have">所持 ${have} / ${max}</span><span class="shop-have">購入 ${bought} / ${Number.isFinite(limit) ? limit : '∞'}</span><button data-buy-item="${it.id}" ${soldOut || isFull || poor ? 'disabled' : ''}>${soldOut ? '売り切れ' : isFull ? '所持上限' : poor ? 'GOLD不足' : '買う'}</button></div></article>`; }).join('');
+        const shop = this.shopStock().map(it => { const have = this.profile.inventory[it.id] || 0, max = this.shopMaxStack(it), bought = this.shopPurchaseCount(it.id), limit = this.shopPurchaseLimit(it), soldOut = bought >= limit, isFull = have >= max, poor = this.profile.gold < it.price, eff = this.recoveryItemInfo(it)?.label || ''; return `<article class="shop-card${soldOut ? ' sold-out' : ''}"><div class="shop-info"><b>${it.name}</b><em>${eff}</em><small>${it.description}</small></div><div class="shop-buy"><span class="shop-price">${it.price} G</span><span class="shop-have">所持 ${have} / ${max}</span><span class="shop-have">購入 ${bought} / ${Number.isFinite(limit) ? limit : '∞'}</span><button data-buy-item="${it.id}" ${soldOut || isFull || poor ? 'disabled' : ''}>${soldOut ? '売り切れ' : isFull ? '所持上限' : poor ? 'GOLD不足' : '買う'}</button></div></article>`; }).join('');
         panel.innerHTML = `<small>KAZU'S SPECIAL</small><h2>カズのまかない</h2>${activeNote}<div class="food-panel"><div class="food-bowl" aria-hidden="true"></div><div class="food-copy"><strong>${makanai.name}</strong><span>${makanai.description}</span><em>料金：所持GOLDの30％　<b>${price.toLocaleString('ja-JP')} GOLD</b></em><button class="eat-food" data-eat-food="makanai">まかないを食べる</button></div></div>${sapporoCard}${taiwanCard}<section class="food-shop"><header><b>持ち帰り</b><span>TAKEOUT</span></header><p class="shop-note">各商品は累計5個まで。使っても購入枠は戻らず、5個購入すると売り切れになります。</p><div class="shop-grid">${shop}</div></section><section class="food-coming"><header><b>NEXT MENU</b><span>COMING SOON</span></header><div>${coming}</div></section>`;
         if (adFoodOffer) (panel.querySelector('.meal-active-note') || panel.querySelector('h2'))?.insertAdjacentHTML('afterend', adFoodOffer);
         const rebirthTests = (D.foodMenu?.testItems || []).map(entry => {
@@ -4654,7 +4664,7 @@
       const rows = list.map(([id, n]) => {
         const it = D.items[id], w = D.weapons[id];
         // アルカナは恒久強化用なので拠点で使用可。HP/MP回復アイテムは戦闘内だけで使える。
-        if (this.itemTab === 'consumable') { const recover = it.effect?.hp || it.effect?.mp; return `<div class="item-row rarity-${it.rarity}"><div><b>${it.name}</b><small>${it.description}</small></div><strong>×${n}</strong>${it.arcanaStat ? `<button data-use-arcana="${id}">使う</button>` : recover ? '<button disabled>戦闘中のみ</button>' : ''}</div>`; }
+        if (this.itemTab === 'consumable') { const recover = this.recoveryItemInfo(it); return `<div class="item-row rarity-${it.rarity}"><div><b>${it.name}</b><small>${it.description}</small></div><strong>×${n}</strong>${it.arcanaStat ? `<button data-use-arcana="${id}">使う</button>` : recover ? '<button disabled>戦闘中のみ</button>' : ''}</div>`; }
         const equipped = Object.values(this.profile.equipment).includes(id), slot = w ? 'rightHand' : it.slot;
         return `<div class="item-row rarity-${it.rarity}${equipped ? ' item-equipped' : ''}"><div><b>${it.name}${this.enchantSuffix(id)}${equipped ? '<mark class="eq-badge">装備中</mark>' : ''}</b><small>${this.bonusText(id)}</small></div><strong>×${n}</strong><button data-equip-item="${id}" data-equip-slot="${slot}" ${equipped ? 'disabled' : ''}>${equipped ? '装備中' : '装備'}</button></div>`;
       }).join('');
