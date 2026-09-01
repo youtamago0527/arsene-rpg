@@ -9,7 +9,9 @@
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
   P.isCfg = function () { return D().infiniteScore || {}; };
-  P.isDebugAllowed = function () { return !!window.arseneDebugRoom?.isUnlocked?.() || this.localScenario?.id === 'infinite-score-ready'; };
+  P.isInfiniteScoreUnlocked = function () { return !!(this.profile?.flags?.infiniteScoreUnlocked && this.isJobUnlocked?.('phantomThief')); };
+  P.isInfiniteScoreDebug = function () { return !!window.arseneDebugRoom?.isUnlocked?.() || this.localScenario?.id === 'infinite-score-ready'; };
+  P.isDebugAllowed = function () { return this.isInfiniteScoreUnlocked() || this.isInfiniteScoreDebug(); };
   P.isRun = function () { return this.profile?.infiniteScore?.active ? this.profile.infiniteScore : null; };
   P.isEnsureRunShape = function (run = this.isRun()) {
     if (!run) return null;
@@ -147,10 +149,10 @@
     if (!this.isDebugAllowed()) return;
     const active = this.isEnsureRunShape(this.isRun());
     if (active) this.saveProfile();
-    panel.insertAdjacentHTML('beforeend', `<button class="ow-enter is-score-entry" data-is-action="${active ? 'resume' : 'warning'}"><b>無限奏廊</b><span>INFINITE SCORE // DEBUG${active ? ` // FLOOR ${active.floor}` : ''}</span></button>`);
+    panel.insertAdjacentHTML('beforeend', `<button class="ow-enter is-score-entry" data-is-action="${active ? 'resume' : 'warning'}"><b>無限奏廊</b><span>INFINITE SCORE${this.isInfiniteScoreDebug() ? ' // DEBUG' : ''}${active ? ` // FLOOR ${active.floor}` : ''}</span></button>`);
   };
   P.isRenderWarning = function (panel) {
-    panel.innerHTML = `<button class="panel-home" data-lenny="otherworld">異世界へ戻る</button><small>INFINITE SCORE // DEBUG</small><h2>無限奏廊</h2>
+    panel.innerHTML = `<button class="panel-home" data-lenny="otherworld">異世界へ戻る</button><small>INFINITE SCORE</small><h2>無限奏廊</h2>
       <div class="is-warning"><strong>WARNING</strong><p>持ち込んだ装備・アイテムも、死亡時にはすべて失われます。</p><p>持ち帰れるのは、生還した時のみです。</p></div>
       <p class="ow-rule">「持ち帰るまで、それはお前のものじゃない。」</p>
       <div class="is-actions"><button class="is-primary" data-is-action="import">侵入準備へ</button><button data-lenny="otherworld">戻る</button></div>`;
@@ -189,7 +191,7 @@
 
   // ── 画面 ──────────────────────────────────────────────────
   P.isHeader = function () { const r=this.isRun(); return `<div class="is-head"><b>無限奏廊</b><span>FLOOR ${r.floor}</span><small>SEED ${r.seed}</small></div><div class="is-run-grid"><div><small>HP</small><b>${r.hp} / ${this.totalStats().maxHp}</b></div><div><small>MP</small><b>${r.mp} / ${this.totalStats().maxMp}</b></div><div><small>LOOT BAG</small><b>${this.isBagUsed()} / ${this.isBagLimit()}</b></div><div><small>奏貨</small><b>${r.dungeonGold}</b></div></div>`; };
-  P.isToolbar = function () { return `<div class="is-toolbar"><button data-is-action="explore">探索</button><button data-is-action="map">MAP</button><button data-is-action="bag">バッグ</button><button data-is-action="equipment">装備</button><button data-is-action="debug">DEBUG</button><button data-is-action="return-check">RETURN</button></div>`; };
+  P.isToolbar = function () { return `<div class="is-toolbar"><button data-is-action="explore">探索</button><button data-is-action="map">MAP</button><button data-is-action="bag">バッグ</button><button data-is-action="equipment">装備</button>${this.isInfiniteScoreDebug() ? '<button data-is-action="debug">DEBUG</button>' : ''}<button data-is-action="return-check">RETURN</button></div>`; };
   P.isCreateFloorMap = function () {
     const run=this.isRun(); if(!run)return null;
     const cfg=this.isEffectiveCfg(),rows=Math.max(5,Math.round(cfg.mapRows||8)),width=Math.max(3,Math.round(cfg.mapWidth||3));

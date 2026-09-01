@@ -1502,7 +1502,7 @@ window.ARSENE_DATA = {
     },
     zenakado: {
       id: 'zenakado', name: 'ゼナカド', enName: 'ZENAKADO — THE SOLOIST', kind: 'boss', encounter: 1,
-      title: '独奏卿', element: '闇', weaknesses: ['光', '火'],
+      title: '第一奏卿《孤高の独奏者》', element: '闇', weaknesses: ['光', '火'],
       sprite: 'assets/enemy-characters/zenakado/battle-idle-v3.png',
       stats: { maxHp: 640, atk: 28, def: 16, mag: 26, mnd: 16, dex: 24, agi: 24, spd: 24 },
       exp: 150, gold: { min: 100, max: 150 },
@@ -2007,7 +2007,7 @@ window.ARSENE_DATA = {
 
     myrthi: {
       id: 'myrthi', name: 'ミルティ', enName: 'MYRTHI', kind: 'boss', encounter: 1,
-      title: '黒紅の双刃戦姫', element: '物理', weaknesses: ['魔法'],
+      title: '第二奏卿《黒紅の双刃戦姫》', element: '物理', weaknesses: ['魔法'],
       sprite: 'assets/enemy-characters/myrthi/battle-idle-v1.jpg', spriteClass: 'myrthi-sprite',
       stats: { maxHp: 1760, atk: 100, def: 50, mag: 60, mnd: 52, dex: 60, agi: 52, spd: 52 },
       exp: 200, gold: { min: 150, max: 200 },

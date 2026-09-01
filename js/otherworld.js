@@ -430,11 +430,11 @@
     if (document.getElementById('ow-noise')) return Promise.resolve(false);
     return new Promise(resolve => {
     const el = document.createElement('div');
-    el.id = 'ow-noise'; el.className = 'ow-noise';
+    el.id = 'ow-noise'; el.className = `ow-noise${options.className ? ` ${options.className}` : ''}`;
     el.innerHTML = `<div class="ow-noise-bars"></div><div class="ow-noise-body"><p id="ow-noise-line"></p><button class="ow-noise-next" id="ow-noise-next">▼</button></div>`;
     document.body.appendChild(el);
-    document.body.classList.add('ow-glitch');
-    this.audio?.sfx?.('dark');
+    if (options.glitch !== false) document.body.classList.add('ow-glitch');
+    this.audio?.sfx?.(options.sfx || 'dark');
     let i = 0;
     const line = el.querySelector('#ow-noise-line');
     const render = () => {
