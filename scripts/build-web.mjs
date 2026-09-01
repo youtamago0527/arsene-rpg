@@ -1,4 +1,4 @@
-import { cp, mkdir, readdir, rm } from 'node:fs/promises';
+import { cp, mkdir, rm } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 
 const root = process.cwd();
@@ -27,11 +27,8 @@ for (const directory of runtimeDirectories) {
   });
 }
 
-// 参照される可能性があるルート直下のメディアも保持する。
-for (const entry of await readdir(root, { withFileTypes: true })) {
-  if (!entry.isFile() || rootFiles.has(entry.name)) continue;
-  if (!runtimeExtensions.has(extname(entry.name).toLowerCase())) continue;
-  await cp(join(root, entry.name), join(output, entry.name));
-}
+// ルート直下の画像は制作資料であり、実行時参照は assets/ 以下へ集約する。
+// iCloudの未ダウンロード資料を無条件コピーするとnative buildが失敗するため、
+// アプリbundleへ含めるのは上記の明示したruntime directoriesだけに限定する。
 
 console.log('Web assets built into dist/.');
