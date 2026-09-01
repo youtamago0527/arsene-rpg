@@ -372,7 +372,10 @@ window.ARSENE_DATA = {
     martialArtist: {
       id: 'martialArtist', name: '武道家', nameEn: 'MARTIAL ARTIST', description: '速度と多段攻撃でクリティカルを狙う。', signatureSkillId: 'burstFist', passiveUnlocks: { 5: 'p_gale', 10: 'p_vitalAim', 15: 'p_fortune' },
       // JOB特性：武器を外すと両手が拳になる。体術スケール（力50%＋素早さ50%）で殴る。
-      traits: { bareFists: { name: '無手の型', nameEn: 'BARE FISTS', rate: .125, rebirthStep: .015, max: .25, text: '素手なら両手が拳で2回攻撃（左手12.5%）', description: '武器を持たないほうが強い、武道家の本領。右手・左手が空のとき両手が拳になり、攻撃力は力と素早さの合計の50%になる。通常攻撃は右拳・左拳の2回攻撃になり、左拳の威力は12.5%。転生を重ねるほど左拳が強くなる。' } }, growthStats: ['agi', 'luk'], featureText: '素早さ・運を伸ばしやすいジョブ。会心率・素早い行動などに関係するパッシブを習得できる。',
+      traits: {
+        bareFists: { name: '無手の型', nameEn: 'BARE FISTS', rate: .125, rebirthStep: .015, max: .25, text: '素手なら両手が拳で2回攻撃（左手12.5%）', description: '武器を持たないほうが強い、武道家の本領。右手・左手が空のとき両手が拳になり、攻撃力は力と素早さの合計の50%になる。通常攻撃は右拳・左拳の2回攻撃になり、左拳の威力は12.5%。転生を重ねるほど左拳が強くなる。' },
+        equipmentAgiPenalty: { name: '無装の極意', nameEn: 'UNARMORED MASTERY', weaponPercent: 10, armorPerSlotPercent: 2, maxPercent: 20, text: '武器−10%／防具1枠ごと−2% AGI', description: '装備の重さを捨てるほど本来の速さを取り戻す。武器装備で素早さが10%、防具1枠につき2%低下する（最大20%）。素手・裸なら低下しない。' }
+      }, growthStats: ['agi', 'luk'], featureText: '素早さ・運を伸ばしやすいジョブ。会心率・素早い行動などに関係するパッシブを習得できる。',
       growth: { 1: { agi: 2 }, 2: { str: 2, maxHp: 4 }, 3: { agi: 2 }, 4: { str: 2 }, 5: { agi: 3 }, 6: { str: 2 }, 7: { critBonus: .02 }, 8: { agi: 3, str: 2 }, 9: { critBonus: .03 }, 10: { critBonus: .05, agi: 3 }, 11: { agi: 3 }, 12: { str: 3, critBonus: .02 }, 13: { agi: 4 }, 14: { str: 3 }, 15: { agi: 4, critBonus: .03 }, 16: { str: 4 }, 17: { agi: 4 }, 18: { str: 4, critBonus: .03 }, 19: { agi: 5 }, 20: { critBonus: .07, agi: 5, str: 4 } },
       skillUnlocks: {}
     },
@@ -415,7 +418,9 @@ window.ARSENE_DATA = {
       passiveUnlocks: { 1: 'p_dualWield', 5: 'p_comboDance', 10: 'p_pursuitBlade', 15: 'p_danceForm' },
       // 双刃そのもののSTR50%＋AGI50%参照は武器データ側で管理する。
       // JOB特性ではなくPASSIVEへ分離したため、PHANTOM THIEFも枠を使えば二刀を再現できる。
-      traits: {},
+      traits: {
+        equipmentAgiPenalty: { name: '軽装双刃', nameEn: 'TWINBLADE LIGHTNESS', weaponPercent: 0, armorPerSlotPercent: 5, maxPercent: 25, text: '武器低下なし／防具1枠ごと−5% AGI', description: '二刀の重さを速度へ変える双刃士の身ごなし。武器では素早さが低下せず、防具1枠につき5%低下する（最大25%）。' }
+      },
       unlockCondition: { bossDefeated: 'myrthi' },
       // 会心率(critBonus)を直接配っていた枠はLUKへ置換した。率を配ると
       // 転生倍率と20%保持が複利で乗って天井に張り付くため、会心はLUK経由で伸ばす。

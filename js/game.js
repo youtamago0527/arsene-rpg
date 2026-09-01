@@ -1662,7 +1662,7 @@
     equippedSeriesCount(seriesId, equipment = this.profile.equipment) { return Object.values(equipment).filter(id => id && (D.items[id]?.seriesId === seriesId || this.equipmentDefinition(id)?.seriesId === seriesId)).length; }
     activeSetEffects(equipment = this.profile.equipment) { const effects = {}; this.unlockedBossSeries().forEach(series => { const count = this.equippedSeriesCount(series.id, equipment); Object.entries(series.setBonuses || {}).forEach(([needed, bonus]) => { if (count < Number(needed)) return; Object.assign(effects, bonus.effect || {}); /* 本家JOBだけの追加恩恵（§38/§41） */ Object.assign(effects, bonus.jobEffects?.[this.profile.currentJob] || {}); }); }); return effects; }
     totalStats(equipment = this.profile.equipment) {
-      const total = clone(this.profile.baseStats), bonuses = this.equipmentBonuses(equipment), jobBonuses = this.activeJobBonuses(), jobGrowth = this.jobStatBonuses(); Object.entries(bonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobBonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobGrowth).forEach(([k, v]) => total[k] = (total[k] || 0) + v); const setEffects = this.activeSetEffects(equipment); for (const key of ['str', 'vit', 'mag', 'mnd', 'agi', 'dex', 'luk']) { const pct = setEffects[`${key}Percent`] || 0; if (pct) total[key] = Math.max(total[key] + 1, Math.floor(total[key] * (1 + pct / 100))); } const shieldPenalty = this.shieldAgiPenaltyRate(); if (shieldPenalty) total.agi = Math.max(1, Math.floor(total.agi * (1 - shieldPenalty))); if (setEffects.critBonusFlat) total.critBonus = (total.critBonus || 0) + setEffects.critBonusFlat; if (this.activeMealBuffType() === 'makanai') total.maxHp = Math.ceil(total.maxHp * (1 + (D.foodMenu?.buffs?.makanai?.maxHpRate || .03))); total.critBonus ||= 0; this.applyPassiveStats(total); total.def = total.vit; /* 旧互換：def は体力と同義。装備防御力は defensePowerFor() 側で加算する */ /* 強化済みの能力補正は equipmentBonuses()、戦闘値は equipmentCombatStats() で加算する */ return total;
+      const total = clone(this.profile.baseStats), bonuses = this.equipmentBonuses(equipment), jobBonuses = this.activeJobBonuses(), jobGrowth = this.jobStatBonuses(); Object.entries(bonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobBonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobGrowth).forEach(([k, v]) => total[k] = (total[k] || 0) + v); const setEffects = this.activeSetEffects(equipment); for (const key of ['str', 'vit', 'mag', 'mnd', 'agi', 'dex', 'luk']) { const pct = setEffects[`${key}Percent`] || 0; if (pct) total[key] = Math.max(total[key] + 1, Math.floor(total[key] * (1 + pct / 100))); } const agiPenalty = Math.min(.80, this.shieldAgiPenaltyRate(equipment) + this.jobEquipmentAgiPenaltyRate(equipment)); if (agiPenalty) total.agi = Math.max(1, Math.floor(total.agi * (1 - agiPenalty))); if (setEffects.critBonusFlat) total.critBonus = (total.critBonus || 0) + setEffects.critBonusFlat; if (this.activeMealBuffType() === 'makanai') total.maxHp = Math.ceil(total.maxHp * (1 + (D.foodMenu?.buffs?.makanai?.maxHpRate || .03))); total.critBonus ||= 0; this.applyPassiveStats(total); total.def = total.vit; /* 旧互換：def は体力と同義。装備防御力は defensePowerFor() 側で加算する */ /* 強化済みの能力補正は equipmentBonuses()、戦闘値は equipmentCombatStats() で加算する */ return total;
     }
     getDungeon(id = this.currentDungeonId) { return (D.dungeons || []).find(d => d.id === id) || (D.dungeons || [])[0]; }
     isDungeonUnlocked(id) { const d = this.getDungeon(id); if (!d) return false; if (!d.unlockCondition) return true; const previousBoss = { dungeon1Clear: 'zenacad', dungeon2Clear: 'myrthi', dungeon3Clear: 'seripes', dungeon4Clear: 'astact', dungeon5Clear: 'ostina' }[d.unlockCondition]; return previousBoss ? this.isBossDefeated(previousBoss) : false; }
@@ -5012,12 +5012,23 @@
     }
     // 盾は防御を得る代わりに素早さを落とす。低下率はデータ側で管理し、
     // 上限を設けてランクが上がっても速度が潰れきらないようにする。
-    shieldAgiPenaltyRate() {
-      const id = this.profile?.equipment?.leftHand;
+    shieldAgiPenaltyRate(equipment = this.profile?.equipment) {
+      const id = equipment?.leftHand;
       if (!id || !this.isShield(id)) return 0;
       const sb = D.shieldBalance || {}, item = D.items[id] || {};
       const pct = item.agiPenaltyPercent ?? (sb.agiPenaltyByStars || {})[item.stars] ?? sb.defaultPenaltyPercent ?? 0;
       return Math.min(sb.maxPenaltyPercent ?? 15, Math.max(0, pct)) / 100;
+    }
+    // 武道家は武器と防具、双刃士は防具だけがAGI低下の対象。
+    // 固定値ではなく割合にして、転生・アルカナ育成後も装備の代償が残るようにする。
+    jobEquipmentAgiPenaltyRate(equipment = this.profile?.equipment, jobId = this.profile?.currentJob) {
+      const trait = D.jobs?.[jobId]?.traits?.equipmentAgiPenalty;
+      if (!trait || !equipment) return 0;
+      const hasWeapon = !!D.weapons?.[equipment.rightHand];
+      const armorSlots = ['head', 'body', 'arms', 'feet', 'accessory'];
+      const armorCount = armorSlots.reduce((count, slot) => count + (this.equipmentDefinition(equipment[slot]) ? 1 : 0), 0);
+      const pct = (hasWeapon ? (trait.weaponPercent || 0) : 0) + armorCount * (trait.armorPerSlotPercent || 0);
+      return Math.min(trait.maxPercent ?? 100, Math.max(0, pct)) / 100;
     }
     sanitizeLeftHandEquipment() { const id = this.profile?.equipment?.leftHand; if (id && !this.isLeftHandItemAllowed(id, this.profile.currentJob)) this.profile.equipment.leftHand = null; }
     sanitizeRightHandEquipment() { const id = this.profile?.equipment?.rightHand; if (!id || this.canEquipRightHand(id)) return; const preferred = this.weaponTypeDef(this.profile.preferredWeaponType)?.starterWeaponId, fallback = [preferred, this.defaultWeaponId()].find(wid => wid && (this.profile.inventory[wid] || 0) > 0 && this.canEquipRightHand(wid)); this.profile.equipment.rightHand = fallback || this.defaultWeaponId(); }

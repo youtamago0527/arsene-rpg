@@ -83,6 +83,16 @@
       : jobGrowth(id);
     for (const [key, value] of Object.entries(growth)) base[key] = (base[key] || 0) + value;
     if (armorMode === 'd3build') for (const [key, value] of Object.entries(d3Build(id).bonuses)) base[key] = (base[key] || 0) + value;
+    const equipmentPenalty = D.jobs?.[id]?.traits?.equipmentAgiPenalty;
+    if (equipmentPenalty) {
+      const armorSlots = armorMode === 'd3build'
+        ? (D3_BUILD_LOADOUTS[id] || []).filter(itemId => !D.weapons?.[itemId]).length
+        : 5;
+      const hasWeapon = armorMode !== 'none';
+      const pct = Math.min(equipmentPenalty.maxPercent ?? 100,
+        (hasWeapon ? (equipmentPenalty.weaponPercent || 0) : 0) + armorSlots * (equipmentPenalty.armorPerSlotPercent || 0));
+      base.agi = Math.max(1, Math.floor((base.agi || 0) * (1 - pct / 100)));
+    }
     for (const passive of passiveList(id)) {
       const e = passive.passiveEffect || {};
       if (e.type === 'statPercent') base[e.stat] = (base[e.stat] || 0) * (1 + (e.rate || 0));
@@ -389,7 +399,9 @@
       damage += steadyDot;
       if (skill.effect?.type === 'triggerNextDotTick') damage += steadyDot;
     }
-    if (id === 'martialArtist' && weaponType === 'martial') damage *= 1 + (D.jobs.martialArtist?.traits?.bareFists?.rate || .125);
+    // D3最適装備では爪を装備しているため《無手の型》の左拳追撃は発生しない。
+    // 素手専用ツリーを追加した際は、素手ビルドを別ロードアウトとして比較する。
+    if (id === 'martialArtist' && armorMode === 'none') damage *= 1 + (D.jobs.martialArtist?.traits?.bareFists?.rate || .125);
     // 戦姫乱舞の5Hitには左右の斬撃が含まれる。別技のときだけ左手25%追撃を加える。
     if (id === 'dualBlade' && skill.id !== 'battleDance' && hitsLanded > 0) damage *= 1.25;
     if (id === 'warrior' && rng() < .30) damage += Math.max(1, ((stats.str || 0) + (build?.atk || 20)) - enemy.def) * (D.settings?.counterPowerRate || .7);
