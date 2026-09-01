@@ -547,7 +547,7 @@
   // シリーズ収集も★4より早くなっていたため、全ボス共通で1個あたり0.1%へ正規化する。
   Object.values(D.enemies || {}).forEach(enemy => (enemy.dropTable || []).forEach(drop => {
     const item = D.items[drop.itemId];
-    if (item?.category === 'equipment' && (item.source === 'boss' || Number(item.stars) === 5)) drop.chance = .001;
+    if (item?.category === 'equipment' && item.source !== 'secretGuitar' && (item.source === 'boss' || Number(item.stars) === 5)) drop.chance = .001;
   }));
 
   D.equipmentBalanceTargets = {

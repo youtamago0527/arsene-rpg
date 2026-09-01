@@ -808,6 +808,12 @@
       // 左手追撃の会心上乗せも天井の内側に収める。外で足すと《追刃》のぶんだけ上限を超えていた。
       const hardMax = D.combatBalance?.critical?.hardMax ?? 1;
       const criticalChance = Math.min(hardMax, this.criticalChanceFor(skill, stats) + offHandCrit);
+      const fegoriaEvasion = enemy?.id === 'd4MidBoss' && this.turn <= (enemy.hideUntil || 0) ? (enemy.specialAttacks?.hideAndSeek?.evasionRate ?? .60) : 0;
+      if (fegoriaEvasion && !skill?.unavoidable && !options.unavoidable) {
+        const hitChance = this.hitChanceBetween(stats, enemy?.stats || {}, { ...options, skill, weapon, weaponType, otherModifier: (Number(options.otherModifier) || 0) - fegoriaEvasion });
+        const hit = Math.random() < hitChance, critical = hit && criticalChance > 0 && Math.random() < criticalChance;
+        return { hit, critical, unavoidable: false, hitChance, criticalChance };
+      }
       return this.rollAttackOutcome(stats, enemy?.stats || {}, { ...options, skill, weapon, weaponType, criticalChance });
     }
     rollEnemyAttackOutcome(enemy, action = {}, options = {}) {
@@ -889,7 +895,7 @@
       const balance = D.combatBalance, formula = kind === 'magical' ? balance.enemyMagic : balance.enemyPhysical;
       // 数値以外が混ざるとダメージがNaNになり「HPが減らない＝無敵」になる。必ず数値へ落とす。
       const atk = Number(attackStat) || 0;
-      const def = Math.max(0, (Number(this.defensePowerFor(kind, this.player.stats)) || 0) * (Number(defUpBuff) || 1));
+      const def = Math.max(0, (Number(this.defensePowerFor(kind, this.playerCombatStats())) || 0) * (Number(defUpBuff) || 1));
       const scale = Number(formula?.attackScale) || 0;
       const k = Number(formula?.defenseK) || 0;
       const raw = k ? atk * scale * (k / (k + def)) : atk * scale - def * (Number(formula?.defenseScale) || 0);
@@ -995,7 +1001,13 @@
     comboDanceMiss() { if (!this.player || !this.comboDanceActive() || !this.comboDanceStacks()) return; this.player.comboDance = 0; this.floating($('#ren'), '連舞 BREAK', 'miss'); this.updateHUD(); }
     comboDanceDamageRate() { const p = this.activePassiveByType('comboDance'); const per = (p ? this.passiveValue(p, 'damagePerStack') : 0) + this.comboDanceSetRate(); return per ? this.comboDanceStacks() * per : 0; }
     comboMaxBoost() { const p = this.activePassiveByType('comboMaxBoost'); return p && this.comboDanceStacks() >= this.comboDanceMax() ? { ...p.passiveEffect, agiRate: this.passiveValue(p, 'agiRate'), offHandRate: this.passiveValue(p, 'offHandRate') } : null; }
-    playerCombatStats() { const stats = { ...(this.player?.stats || this.totalStats()) }, boost = this.comboMaxBoost(); if (boost?.agiRate) stats.agi = Math.round((stats.agi || 0) * (1 + boost.agiRate)); return stats; }
+    playerCombatStats() {
+      const stats = { ...(this.player?.stats || this.totalStats()) }, boost = this.comboMaxBoost();
+      if (boost?.agiRate) stats.agi = Math.round((stats.agi || 0) * (1 + boost.agiRate));
+      const down = this.player?.buffs?.fegoriaStatDown;
+      if (down && this.turn <= down.until && stats[down.stat] != null) stats[down.stat] = Math.max(1, Math.round(stats[down.stat] * (1 - down.rate)));
+      return stats;
+    }
     dualWieldRate() { const p = this.activePassiveByType('dualWield'); return p ? this.passiveRate(p) : 0; }
     // ══ JOB特性 ═══════════════════════════════════════════════
     // パッシブと違い「そのJOBに就いていること自体」で得る効果。
@@ -1722,7 +1734,8 @@
       const vitals = this.storedVitals(stats); this.player = this.freshBattlePlayer(stats, vitals.hp, vitals.mp);
       const baseBossStats = template.dynamicScale ? { maxHp: stats.maxHp * template.dynamicScale, atk: Math.max(stats.str, stats.mag) * template.dynamicScale, def: stats.def * template.dynamicScale, mag: stats.mag * template.dynamicScale, mnd: stats.mnd * template.dynamicScale, spd: stats.agi * template.dynamicScale } : { ...template.stats };
       const bossStats = this.applyBossOverdriveStats ? this.applyBossOverdriveStats(bossId, baseBossStats) : baseBossStats;
-      this.enemies = [{ ...template, uid: `${template.id}-boss`, label: '', stats: bossStats, hp: bossStats.maxHp, alive: true, bindResistance: template.bindResistance ?? .35, bindTurns: 0 }];
+      const bossRuntime = template.id === 'd4MidBoss' ? { form: 1, sparklerPhase: 0, hideUntil: 0, despairTurns: 0, despairStep: 0, hasUsedDespairDays: false } : {};
+      this.enemies = [{ ...template, uid: `${template.id}-boss`, label: '', stats: bossStats, hp: bossStats.maxHp, alive: true, bindResistance: template.bindResistance ?? .35, bindTurns: 0, ...bossRuntime }];
       this.turn = 1; this.locked = false; this.finished = false; this.resetBattleLog(); this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [] }; $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyDungeonBackground();
       const bossArrival = this.battleMode === 'noel'
         ? '忘却の最奥――永遠の裁定者ノエルが姿を現した……。'
@@ -1800,6 +1813,26 @@
       this.flashTitle('SECOND FORM', 'GUITAR AXE // SILVER CIRCLE'); this.setLog('銀環が暴走し、異形の奏者がギターを逆さに構えた！'); await this.battleSleep(900);
       this.turn++; this.locked = false; this.showMainCommands();
     }
+    isPendingBossTransform(enemy) { return !!enemy && enemy.form === 1 && ((this.battleMode === 'versicrell' && enemy.id === 'versicrell') || (this.battleMode === 'd4MidBoss' && enemy.id === 'd4MidBoss')); }
+    async transformFegoria(enemy) {
+      this.audio.stopMusic(260);
+      const el = document.getElementById(enemy.uid); el?.classList.add('fegoria-transforming');
+      this.flashTitle('BATTLE COMPLETE...', 'NO — NOT YET'); await this.battleSleep(650);
+      const lines = [
+        { who: 'フェゴリア', text: '綺麗なものって、嫌い。' },
+        { who: 'フェゴリア', text: 'だって最後は、ぜんぶガラクタになるから。' },
+        { who: 'フェゴリア', text: '紅葉も、花火も……キミも。' },
+        { who: 'フェゴリア', text: 'だからさ。' },
+        { big: '「終わるまで、かくれんぼしようよ。」' }
+      ];
+      if (typeof this.playNoiseSequence === 'function') await this.playNoiseSequence(lines); else for (const line of lines) { this.setLog(line.text || line.big); await this.battleSleep(650); }
+      const form = D.enemies.d4MidBoss.form2;
+      Object.assign(enemy, { name: form.name, title: form.title, sprite: form.sprite, battleScale: form.battleScale, stats: { ...form.stats }, hp: form.stats.maxHp, alive: true, form: 2, sparklerPhase: 0, hideUntil: 0, despairTurns: 0, despairStep: 0, hasUsedDespairDays: false, rolledDrops: null });
+      this.renderEnemies(); this.updateHUD(); this.playBossMusic('d4MidBoss');
+      this.flashTitle('SECOND FORM', 'FEGOLIA // HIDE AND SEEK'); this.setLog('紅葉と墨が崩れ合い、フェゴリアは形を失った。'); await this.battleSleep(900);
+      this.turn++; this.locked = false; this.showMainCommands();
+    }
+    async transformPendingBoss(enemy) { if (this.battleMode === 'versicrell') return this.transformVersicrell(enemy); if (this.battleMode === 'd4MidBoss') return this.transformFegoria(enemy); }
     async applyVersicrellMovement(enemy, mode) {
       enemy.movement = mode; enemy.defBuffUntil = 0; enemy.mdefBuffUntil = 0; enemy.defBuffRate = 0; enemy.mdefBuffRate = 0;
       if (mode === 'first') { enemy.defBuffUntil = 99999; enemy.defBuffRate = .50; enemy.movementActionsLeft = 3; this.flashTitle('FIRST MOVEMENT', '《銀環奏・剛》 防御力 +50%'); this.setLog('銀環が肉体を包み、物理防御を高めた！'); }
@@ -1924,7 +1957,7 @@
         return `<div id="${e.uid}-hud" class="enemy-hud${e.kind === 'boss' ? ' boss-hud' : ''}"><span>${name}</span>${hpMeter}<small>???? / ????</small>${statuses}</div>`;
       }).join('');
       enemyLayer.innerHTML = this.enemies.map((e, i) => {
-        const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : '';
+        const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : e.id === 'd4MidBoss' ? ` fegoria-boss form-${e.form || 1}` : '';
         const scale = Math.max(.65, Math.min(1.5, Number(e.battleScale) || 1));
         const art = e.sprite
           ? `<img class="${e.kind === 'boss' ? `noel-sprite monster-image boss-monster-image${e.spriteClass ? ` ${e.spriteClass}` : ''}` : 'slime monster-image'}" src="${e.sprite}" alt="" draggable="false">`
@@ -1955,7 +1988,7 @@
       enemyLayer.dataset.count = String(Math.min(3, Math.max(1, this.enemies.length)));
       enemyLayer.innerHTML = this.enemies.map((e, i) => {
         const statuses = '<button type="button" class="status-strip enemy-statuses" aria-label="敵の状態と解析情報"></button>';
-        const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : '';
+        const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : e.id === 'd4MidBoss' ? ` fegoria-boss form-${e.form || 1}` : '';
         const slotLabel = String.fromCharCode(65 + i);
         // 肩書き付きボスの表示名。既存の異名テーブルはそのまま使い、文字数を数えて
         // font-sizeを決めるのではなく、肩書きデータが実在するボスだけ2段表示にする。
@@ -2175,6 +2208,7 @@
         if (this.player?.defDownUntil >= this.turn) chips.push(this.statusChip('DEF↓', 'debuff', '', this.player.defDownUntil - this.turn + 1 <= 1));
         if (b.versicrellAtkDown && this.turn <= b.versicrellAtkDown.until) chips.push(this.statusChip('ATK↓', 'debuff', '', b.versicrellAtkDown.until - this.turn + 1 <= 1));
         if (b.versicrellMagDown && this.turn <= b.versicrellMagDown.until) chips.push(this.statusChip('MAG↓', 'debuff', '', b.versicrellMagDown.until - this.turn + 1 <= 1));
+        if (b.fegoriaStatDown && this.turn <= b.fegoriaStatDown.until) { const d = b.fegoriaStatDown; chips.push(this.statusChip(`${statLabels[d.stat] || d.stat.toUpperCase()}↓`, 'debuff', `${Math.round(d.rate * 100)}%低下`, d.until - this.turn + 1 <= 1)); }
         if (b.regenerate || b.nocturneUntil >= this.turn) { const remain = b.regenerate || (b.nocturneUntil - this.turn + 1), regenDetail = b.regenerate ? `ターン開始時に${Math.round((b.regenerateChance ?? 1) * 100)}%で最大HPの${Math.round((b.regenerateRate || .08) * 100)}%を回復します。` : ''; chips.push(this.statusChip(`再生 ${remain}T`, 'buff', regenDetail, remain <= 1)); }
         if (b.ensembleUntil >= this.turn) chips.push(this.statusChip('総奏', 'buff', '', b.ensembleUntil - this.turn + 1 <= 1));
         if (b.doubleActUntil >= this.turn) chips.push(this.statusChip('2回行動', 'buff', '', b.doubleActUntil - this.turn + 1 <= 1));
@@ -2195,6 +2229,8 @@
         if (this.turn <= (e.mdefBuffUntil || 0)) chips.push(this.statusChip('MDEF↑', 'buff', '', e.mdefBuffUntil - this.turn + 1 <= 1));
         if (this.turn <= (e.regenUntil || 0)) chips.push(this.statusChip('再生', 'buff', '', e.regenUntil - this.turn + 1 <= 1));
         if (e.repriseStance) chips.push(this.statusChip('反奏'));
+        if (e.id === 'd4MidBoss' && this.turn <= (e.hideUntil || 0)) chips.push(this.statusChip('かくれんぼ', 'buff', `全攻撃への回避率 +${Math.round((e.specialAttacks?.hideAndSeek?.evasionRate ?? .60) * 100)}%`, e.hideUntil - this.turn + 1 <= 1));
+        if (e.id === 'd4MidBoss' && (e.despairTurns || 0) > 0) chips.push(this.statusChip(`絶望 ${e.despairTurns}T`, 'debuff', '一切の行動を行わない。', e.despairTurns <= 1));
         strip.innerHTML = chips.join(''); strip.dataset.statusOwner = `${e.name}${e.label || ''}`; strip.dataset.enemyUid = e.uid; strip.tabIndex = 0; strip.setAttribute('role', 'button'); strip.title = 'タップで敵の状態と解析情報を確認'; strip.onclick = event => { event.preventDefault(); event.stopPropagation(); this.showStatusGroup(strip.dataset.statusOwner, strip); };
       });
     }
@@ -2657,7 +2693,7 @@
       if (skillId === 'resonanceBreak') { const stored = this.player.resonance; skill = { ...skill, resonanceStored: stored, power: this.resonanceMultiplier(stored) }; this.player.resonance = 0; this.flashTitle('RESONANCE BREAK', `${stored.toFixed(1)}% // ×${skill.power}`); }
       this.locked = true; this.clearTargets(); this.keepAutoControlVisible(); $('#phase-label').textContent = 'ACTION'; await this.beginPlayerTurn(); const setEffects = this.activeSetEffects(), freeMp = skill.kind === 'magical' && skill.mp > 0 && Math.random() < (setEffects.freeMagicMpChance || 0); if (this.skillMpCost(skill) > 0) this.usedMpThisBattle = true; if (!freeMp) this.player.mp -= this.skillMpCost(skill); else this.flashTitle('MAESTRO', 'MP COST 0'); if (skill.cooldown) this.player.cooldowns[skill.id] = this.turn + skill.cooldown; this.persistVitals(); this.updateHUD();
       const actors = [{ type: 'player', speed: this.playerCombatStats().agi + roll(0, 4) + (skill.speedBonus || 0), act: () => this.playerActionWithSpark(skill, targetIndex) }]; this.enemies.filter(e => e.alive).forEach(e => actors.push({ type: 'enemy', enemy: e, speed: e.stats.spd + roll(0, 4), act: () => this.enemyAttack(e) })); actors.sort((a, b) => b.speed - a.speed);
-      for (const actor of actors) { if (this.finished || this.player.hp <= 0) break; if (actor.type === 'enemy' && !actor.enemy.alive) continue; await actor.act(); await this.battleSleep(300); if (!this.enemies.some(e => e.alive)) { const fallen = this.enemies[0]; if (this.battleMode === 'versicrell' && fallen?.form === 1) { await this.transformVersicrell(fallen); return; } if (this.enemies.every(e => e.escaped)) { await this.enemyEncounterEscaped(); return; } await this.victory(); return; } }
+      for (const actor of actors) { if (this.finished || this.player.hp <= 0) break; if (actor.type === 'enemy' && !actor.enemy.alive) continue; await actor.act(); await this.battleSleep(300); if (!this.enemies.some(e => e.alive)) { const fallen = this.enemies[0]; if (this.isPendingBossTransform(fallen)) { await this.transformPendingBoss(fallen); return; } if (this.enemies.every(e => e.escaped)) { await this.enemyEncounterEscaped(); return; } await this.victory(); return; } }
       if (this.player.hp <= 0) { await this.defeat(); return; } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands();
     }
     effectivePlayerStat(key) { const base = this.player.stats[key] || 0; return key === 'mag' && (this.player.buffs?.blueEcho || 0) > 0 ? base * 1.10 : base; }
@@ -2805,7 +2841,7 @@
       for (const t of defeated) {
         t.alive = false; const tEl = document.getElementById(t.uid);
         this.audio.sfx('defeat'); tEl.classList.add('defeated');
-        if (this.battleMode === 'versicrell' && t.form === 1) { t.rolledDrops = []; this.setLog('BATTLE COMPLETE...'); continue; }
+        if (this.isPendingBossTransform(t)) { t.rolledDrops = []; this.setLog('BATTLE COMPLETE...'); continue; }
         t.rolledDrops = this.rollDrops(t);
         t.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(tEl, item.name, 'heal'); if (this.shouldAnnounceDrop(item)) this.announceRareDrop(item); } });
         const earned = this.grantEnemyReward(t);
@@ -2877,7 +2913,7 @@
       el.classList.remove('hit'); ren.classList.remove('attacking');
       if (enemy.hp <= 0 && enemy.alive) {
         enemy.alive = false; this.audio.sfx('defeat'); el.classList.add('defeated');
-        if (this.battleMode === 'versicrell' && enemy.form === 1) { enemy.rolledDrops = []; this.setLog('BATTLE COMPLETE...'); await this.battleSleep(300); return; }
+        if (this.isPendingBossTransform(enemy)) { enemy.rolledDrops = []; this.setLog('BATTLE COMPLETE...'); await this.battleSleep(300); return; }
         enemy.rolledDrops = this.rollDrops(enemy);
         enemy.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); if (this.shouldAnnounceDrop(item)) this.announceRareDrop(item); } });
         this.grantEnemyReward(enemy);
@@ -2938,7 +2974,7 @@
       el.classList.remove('hit'); ren.classList.remove('attacking');
       if (enemy.hp <= 0 && enemy.alive) {
         enemy.alive = false; this.audio.sfx('defeat'); el.classList.add('defeated');
-        if (this.battleMode === 'versicrell' && enemy.form === 1) { enemy.rolledDrops = []; this.setLog('BATTLE COMPLETE...'); await this.battleSleep(300); return; }
+        if (this.isPendingBossTransform(enemy)) { enemy.rolledDrops = []; this.setLog('BATTLE COMPLETE...'); await this.battleSleep(300); return; }
         enemy.rolledDrops = this.rollDrops(enemy);
         enemy.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); if (this.shouldAnnounceDrop(item)) this.announceRareDrop(item); } });
         this.grantEnemyReward(enemy);
@@ -3078,7 +3114,7 @@
         await this.battleSleep(220); el.classList.remove('hit');
         // 全体攻撃でも状態異常・弱体は個別に判定する（単体攻撃と同じ規則）
         if (target.hp > 0) this.applySkillDebuff(skill, target);
-        if (target.hp <= 0) { target.alive = false; this.audio.sfx('defeat'); el.classList.add('defeated'); if (this.battleMode === 'versicrell' && target.form === 1) target.rolledDrops = []; else { target.rolledDrops = this.rollDrops(target); target.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); if (this.shouldAnnounceDrop(item)) this.announceRareDrop(item); } }); this.grantEnemyReward(target); } }
+        if (target.hp <= 0) { target.alive = false; this.audio.sfx('defeat'); el.classList.add('defeated'); if (this.isPendingBossTransform(target)) target.rolledDrops = []; else { target.rolledDrops = this.rollDrops(target); target.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); if (this.shouldAnnounceDrop(item)) this.announceRareDrop(item); } }); this.grantEnemyReward(target); } }
       }
       if (this.player.buffs?.atkCharge && skill.kind === 'physical') delete this.player.buffs.atkCharge;
       if (this.player.buffs?.magFocus && (skill.kind === 'magical' || skill.damageType === 'magical')) delete this.player.buffs.magFocus;
@@ -3185,6 +3221,49 @@
       if (chosen.kind === 'reprise') { enemy.repriseStance = 'normal'; this.flashTitle('REPRISE...', '次の攻撃タイプを記録'); this.setLog('セリペスは反奏の構えを取った。'); await this.seripesAura(enemy, 'reprise'); return; }
       await this.seripesStrike(enemy, '反奏剣', 'physical', .9);
     }
+    async fegoriaStrike(enemy, action, multiplier = 1, sparklerPhase = 0) {
+      const el = document.getElementById(enemy.uid), ren = $('#ren');
+      if (sparklerPhase) el?.classList.add(`fegoria-sparkler-${sparklerPhase}`);
+      this.flashTitle(action.name, sparklerPhase ? `SPARKLER // ×${multiplier}` : 'BROKEN POEM'); this.setLog(`${enemy.name}の${action.name}！`);
+      this.audio.sfx(sparklerPhase ? 'magic' : 'slash'); el?.classList.add('enemy-attacking'); await this.battleSleep(sparklerPhase === 3 ? 560 : 360);
+      const raw = this.enemyRawDamage('physical', enemy.stats.atk, 1), outcome = this.rollEnemyAttackOutcome(enemy, action), damage = Math.max(1, Math.round(raw * multiplier + roll(D.combatBalance.enemyVariance.min, D.combatBalance.enemyVariance.max)));
+      if (!outcome.hit) { this.triggerEvade(enemy, 'player', action, { source: 'fegoria' }); this.floating(ren, 'EVADE', 'miss'); this.setLog(`${this.playerName()}は${action.name}をかわした！`); }
+      else { ren.classList.add('hit'); this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, 'physical'); this.floating(ren, actual, 'enemy-damage'); this.setLog(`${this.playerName()}は${actual}ダメージを受けた！`); }
+      this.updateHUD(); await this.battleSleep(430); el?.classList.remove('enemy-attacking'); ren.classList.remove('hit'); if (sparklerPhase) el?.classList.remove(`fegoria-sparkler-${sparklerPhase}`);
+      return outcome.hit;
+    }
+    async fegoriaGarakuta(enemy) {
+      const action = enemy.specialAttacks.garakuta, hit = await this.fegoriaStrike(enemy, action, 1);
+      if (!hit || this.player.hp <= 0) return;
+      const keys = ['str', 'vit', 'mag', 'mnd', 'agi', 'dex'], stat = keys[Math.floor(Math.random() * keys.length)], rate = action.debuffRate ?? .20, turns = action.debuffTurns ?? 3;
+      this.player.buffs.fegoriaStatDown = { stat, rate, until: this.turn + turns };
+      this.floating($('#ren'), `${statLabels[stat]} -${Math.round(rate * 100)}%`, 'debuff'); this.setLog(`${this.playerName()}の${statLabels[stat]}が低下した！`); this.updateHUD(); await this.battleSleep(320);
+    }
+    async fegoriaSparkler(enemy) {
+      const phase = enemy.sparklerPhase || 1, multiplier = [0, 1, 2, 4][phase], copies = ['','……ぱち。','ぱち、ぱち……。','――線香花火。'];
+      this.setLog(copies[phase]); await this.fegoriaStrike(enemy, enemy.specialAttacks.sparkler, multiplier, phase);
+      enemy.sparklerPhase = phase >= 3 ? 0 : phase + 1;
+    }
+    async fegoriaHideAndSeek(enemy) {
+      const action = enemy.specialAttacks.hideAndSeek; enemy.hideUntil = this.turn + (action.turns ?? 3);
+      this.flashTitle('かくれんぼ', `EVASION +${Math.round((action.evasionRate ?? .60) * 100)}% // 3T`); this.audio.sfx('dark'); this.floating(document.getElementById(enemy.uid), 'EVADE UP', 'heal'); this.setLog('フェゴリアの輪郭が紅葉と墨へ溶け、攻撃が捉えられなくなった！'); this.updateHUD(); await this.battleSleep(650);
+    }
+    async fegoriaDespairDays(enemy) {
+      const action = enemy.specialAttacks.despairDays; enemy.hasUsedDespairDays = true; enemy.despairTurns = action.despairTurns ?? 3; enemy.despairStep = 0;
+      this.flashTitle('絶望Days', 'HP = 1 // DESPAIR 3T'); this.audio.sfx('dark'); await this.battleSleep(480);
+      this.player.hp = 1; this.persistVitals(); this.floating($('#ren'), 'HP 1', 'enemy-damage'); this.setLog('絶望が心臓を掴む――HPが1になった。'); this.updateHUD(); await this.battleSleep(650);
+    }
+    async bossAttackFegoria(enemy) {
+      if ((enemy.despairTurns || 0) > 0) { const logs = ['フェゴリアは絶望の中に沈んでいる……。', '詩は、もう続かない。', '……それでも、まだ終われない。']; const index = Math.min(enemy.despairStep || 0, 2); this.setLog(logs[index]); this.floating(document.getElementById(enemy.uid), 'DESPAIR', 'miss'); enemy.despairStep = index + 1; enemy.despairTurns--; this.updateHUD(); await this.battleSleep(600); return; }
+      if ((enemy.sparklerPhase || 0) > 0) { await this.fegoriaSparkler(enemy); return; }
+      const hpRate = enemy.hp / enemy.stats.maxHp, despair = enemy.specialAttacks.despairDays;
+      if (enemy.form === 2 && !enemy.hasUsedDespairDays && hpRate <= (despair.threshold ?? .30)) { await this.fegoriaDespairDays(enemy); return; }
+      if (enemy.form === 1) { if (Math.random() < .55) await this.fegoriaGarakuta(enemy); else { enemy.sparklerPhase = 1; await this.fegoriaSparkler(enemy); } return; }
+      const canHide = this.turn > (enemy.hideUntil || 0), r = Math.random();
+      if (canHide && r < .28) { await this.fegoriaHideAndSeek(enemy); return; }
+      if (r < .64) { enemy.sparklerPhase = 1; await this.fegoriaSparkler(enemy); return; }
+      await this.fegoriaGarakuta(enemy);
+    }
     async enemyAttack(enemy) {
       if ((enemy.stunTurns || 0) > 0) {
         const el = document.getElementById(enemy.uid); enemy.stunTurns--;
@@ -3222,6 +3301,7 @@
       if (outcome.hit) await this.tryCounter(enemy);
     }
     async bossAttack(enemy) {
+      if (enemy.id === 'd4MidBoss') { await this.bossAttackFegoria(enemy); return; }
       if (enemy.id === 'myrthi') { await this.bossAttackMyrthi(enemy); return; }
       if (enemy.id === 'versicrell') { await this.bossAttackVersicrell(enemy); return; }
       if (enemy.id === 'seripes') { await this.bossAttackSeripes(enemy); return; }
@@ -3302,7 +3382,7 @@
       this.executeRound(last.skillId, targetIndex);
     }
     async tryEscape() { if (this.battleMode === 'debugOverpower') { const damage = this.enemies[0]?.debugDamageTaken || 0, turns = this.turn; this.finished = true; this.restoreDebugBattle(); this.audio.sfx('escape'); this.showResult('TEST ABORTED', '強敵検証を中断し、開始前のセーブ状態へ戻した。', 'GUARDIAN TRIAL', `<div class="boss-result-note">生存 ${turns} ACTION　/　総与ダメージ ${Math.round(damage).toLocaleString('ja-JP')}</div>`); return; } this.locked = true; this.keepAutoControlVisible(); await this.beginPlayerTurn(); const live = this.enemies.filter(e => e.alive), avg = live.reduce((s, e) => s + e.stats.spd, 0) / live.length, chance = clamp(.45 + (this.player.stats.agi - avg) * .025, .35, .9); this.setLog('逃走経路を探している……'); await this.battleSleep(600); if (Math.random() < chance) { this.finished = true; this.persistVitals(); this.audio.sfx('escape'); this.flashTitle('ESCAPED', '戦線を離脱'); await this.battleSleep(700); this.showResult('ESCAPED', '怪異との戦闘から離脱し、拠点へ帰還した。', 'RETURN TO HIDEOUT', this.battleSummaryHTML()); } else { this.setLog('逃げられない！'); await this.battleSleep(450); await this.enemyOnlyTurn(); } }
-    async enemyOnlyTurn() { for (const e of this.enemies.filter(e => e.alive)) { await this.enemyAttack(e); if (this.player.hp <= 0) { await this.defeat(); return; } if (!this.enemies.some(x => x.alive)) { if (this.enemies.every(x => x.escaped)) await this.enemyEncounterEscaped(); else await this.victory(); return; } await this.battleSleep(300); } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands(); }
+    async enemyOnlyTurn() { for (const e of this.enemies.filter(e => e.alive)) { await this.enemyAttack(e); if (this.player.hp <= 0) { await this.defeat(); return; } if (!this.enemies.some(x => x.alive)) { const fallen = this.enemies[0]; if (this.isPendingBossTransform(fallen)) await this.transformPendingBoss(fallen); else if (this.enemies.every(x => x.escaped)) await this.enemyEncounterEscaped(); else await this.victory(); return; } await this.battleSleep(300); } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands(); }
 
     async enemyFlee(enemy, action) {
       const el = document.getElementById(enemy.uid); enemy.alive = false; enemy.escaped = true;
@@ -4481,10 +4561,11 @@
       const all = Object.values(D.items || {}).filter(item => this.isPlayerContentVisible(item) && item.category === 'equipment' && item.catalogDungeon === dunId && !item.legacy && item.source !== 'collection');
       const order = { workshop: 1, dropOnly: 2, boss: 3 };
       all.sort((a, b) => (a.stars || 0) - (b.stars || 0) || (order[a.source] || 9) - (order[b.source] || 9) || a.name.localeCompare(b.name, 'ja'));
-      const sourceLabel = item => item.source === 'boss' ? 'BOSS' : item.source === 'dropOnly' ? 'DROP ONLY' : 'WORKSHOP';
+      const sourceLabel = item => item.source === 'boss' ? 'BOSS' : item.source === 'dropOnly' ? 'DROP ONLY' : item.source === 'secretGuitar' ? 'SECRET GUITAR' : 'WORKSHOP';
       const cards = all.map(item => {
         const known = found.has(item.id), stars = '★'.repeat(item.stars || 1), def = this.equipmentDefinition(item.id);
-        return `<article class="equipment-archive-card rarity-${item.rarity} ${known ? 'collected' : 'unknown'}"><header><small>${known ? sourceLabel(item) : 'UNKNOWN'}</small><b>${known ? item.name : '？？？？？？'}</b><em>${known ? stars : '？'}</em></header>${known ? `<strong>${this.bonusText(item.id)}</strong><p>${item.description}</p><span>${def?.weaponType ? this.weaponTypeName(def.weaponType) : (D.equipmentSlots || []).find(s => s.id === item.slot)?.name || '装備'}</span>` : '<p>未収集の装備です。怪異討伐または工房製作で記録されます。</p>'}</article>`;
+        const unknownHint = item.source === 'secretGuitar' ? (item.archiveHint || '入手経路不明。') : '未収集の装備です。怪異討伐または工房製作で記録されます。';
+        return `<article class="equipment-archive-card rarity-${item.rarity} ${known ? 'collected' : 'unknown'}"><header><small>${known ? sourceLabel(item) : (item.source === 'secretGuitar' ? 'UNKNOWN SIGNAL' : 'UNKNOWN')}</small><b>${known ? item.name : '？？？？？？'}</b><em>${known ? stars : '？'}</em></header>${known ? `<strong>${this.bonusText(item.id)}</strong><p>${item.description}</p><span>${def?.weaponType ? this.weaponTypeName(def.weaponType) : (D.equipmentSlots || []).find(s => s.id === item.slot)?.name || '装備'}</span>` : `<p>${unknownHint}</p>`}</article>`;
       }).join('');
       const current = collection.collected.length, total = collection.def?.itemIds?.length || 0, pct = total ? Math.round(current / total * 100) : 0;
       const collectionHtml = collection.def ? `<section class="equipment-collection ${collection.complete ? 'complete' : ''}"><header><div><small>MONSTER EQUIPMENT COLLECTION</small><b>${collection.def.name}</b></div><strong>${pct}%</strong></header><p>このダンジョンの★4怪異装備をすべて入手すると報酬を獲得できます。</p><div><span>COMPLETE REWARD</span><b>${reward?.name || '？？？'}　★★★★</b><button data-claim-equipment-collection="${dunId}" ${collection.complete && !collection.claimed ? '' : 'disabled'}>${collection.claimed ? '受取済み' : collection.complete ? '報酬を受け取る' : '未達成'}</button></div></section>` : '';

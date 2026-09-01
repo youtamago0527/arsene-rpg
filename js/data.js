@@ -1116,10 +1116,16 @@ window.ARSENE_DATA = {
     magicRepulse: { id: 'magicRepulse', name: 'マジックリパルス', nameEn: 'MAGIC REPULSE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'guardImpact', mp: 7, kind: 'magical', damageType: 'magical', shieldFormula: 'magicRepulse', target: 'single', power: 1.0, powerText: '魔法防御力×1.2＋防御力×0.3', effectText: '魔法防御寄りの盾技', description: '魔力を盾面で反転させ、魔法防御性能から衝撃を生む。' },
     fortress: { id: 'fortress', name: 'フォートレス', nameEn: 'FORTRESS', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'magicRepulse', mp: 8, kind: 'support', target: 'self', effect: { type: 'fortress', reduction: .30, turns: 1 }, powerText: '被ダメージ -30%', effectText: '1ターン防御。軽減後ダメージはRESONANCEへ蓄積', description: '盾を大地へ固定し、攻撃を真正面から受け止める。' },
     revengeForce: { id: 'revengeForce', name: 'リベンジ・フォース', nameEn: 'REVENGE FORCE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'fortress', mp: 12, kind: 'physical', damageType: 'physical', shieldFormula: 'revenge', target: 'single', power: 1.65, powerText: '直前の被弾タイプに応じ防御力/魔法防御力参照', effectText: '物理被弾なら防御力、魔法被弾なら魔法防御力を強く参照', description: '直前に受けた攻撃の性質を読み、最適な防御性能で打ち返す盾学奥義。' },
-    resonanceBreak: { id: 'resonanceBreak', name: 'RESONANCE BREAK', nameEn: 'RESONANCE BREAK', remixName: 'RESONANCE', source: 'job', jobId: 'guardian', unlockJobLevel: 1, type: 'ACTIVE', kind: 'neutral', damageType: 'neutral', target: 'single', mp: 0, power: 1.0, ignoreDef: 1, unavoidable: true, powerText: '現在武器の攻撃性能×共鳴倍率', effectText: '全RESONANCE消費／防御力・魔法防御力・物理魔法耐性を無視／必中', description: '受けた痛みを共鳴へ変え、現在の武器性能から無属性の一撃を放つ。RE:MIXではACTION「RESONANCE」として装備中だけ共鳴が有効。' },    preciousSky: { id: 'preciousSky', name: 'プレシャススカイ', nameEn: 'PRECIOUS SKY', source: 'weapon', type: 'ACTIVE', weaponType: 'instrument', prerequisiteSkill: 'resonantNote', requiredWeaponLevel: 8, sparkRate: .035, guitarTreeId: 'versicrellGuitar', requiredWeaponId: 'parentGiftGuitar', mp: 12, kind: 'magical', damageType: 'magical', element: 'sound', target: 'all', power: 1.65, selfHealRate: .08, powerText: '器用さ参照×1.65（敵全体）', effectText: '敵全体へ音属性攻撃／与ダメージ後に最大HPの8%回復', description: '人として残った最初の音を、青空のような音圧へ変える。リコーダー系とは異なるギター専用武器技。' }
+    resonanceBreak: { id: 'resonanceBreak', name: 'RESONANCE BREAK', nameEn: 'RESONANCE BREAK', remixName: 'RESONANCE', source: 'job', jobId: 'guardian', unlockJobLevel: 1, type: 'ACTIVE', kind: 'neutral', damageType: 'neutral', target: 'single', mp: 0, power: 1.0, ignoreDef: 1, unavoidable: true, powerText: '現在武器の攻撃性能×共鳴倍率', effectText: '全RESONANCE消費／防御力・魔法防御力・物理魔法耐性を無視／必中', description: '受けた痛みを共鳴へ変え、現在の武器性能から無属性の一撃を放つ。RE:MIXではACTION「RESONANCE」として装備中だけ共鳴が有効。' },    preciousSky: { id: 'preciousSky', name: 'プレシャススカイ', nameEn: 'PRECIOUS SKY', source: 'weapon', type: 'ACTIVE', weaponType: 'instrument', prerequisiteSkill: 'resonantNote', requiredWeaponLevel: 8, sparkRate: .035, guitarTreeId: 'versicrellGuitar', mp: 12, kind: 'magical', damageType: 'magical', element: 'sound', target: 'all', power: 1.65, selfHealRate: .08, powerText: '器用さ参照×1.65（敵全体）', effectText: '敵全体へ音属性攻撃／与ダメージ後に最大HPの8%回復', description: '人として残った最初の音を、青空のような音圧へ変える。リコーダー系とは異なるギター専用武器技。' }
   },
   guitarSkillTrees: {
     versicrellGuitar: { id: 'versicrellGuitar', weaponId: 'parentGiftGuitar', name: 'SILVER CIRCLE GUITAR', skills: ['preciousSky', null, null, null] }
+  },
+  // D3以降、各ダンジョンへ1本ずつ潜ませる超希少ギター枠。
+  // 同階層のボス武器を約10%上回り、入手先は図鑑でも開示しない。
+  guitarSeries: {
+    policy: { beginsAtDungeon: 3, onePerDungeon: true, powerOverBossRate: 1.10, defaultDropChance: .002, archiveSourceHidden: true },
+    entries: [{ dungeonId: 'dungeon3', itemId: 'parentGiftGuitar', dropEnemyId: 'versicrell', skillTreeId: 'versicrellGuitar' }]
   },
   items: {
     potion: { id: 'potion', name: '回復薬', category: 'consumable', rarity: 'common', description: 'HPを30回復する。', effect: { hp: 30 } },
@@ -1272,7 +1278,7 @@ window.ARSENE_DATA = {
     sanctumGear: { id: 'sanctumGear', name: '聖堂歯車', nameEn: 'SANCTUM GEAR', category: 'material', rarity: 'rare', dungeonId: 'dungeon3', description: '崩壊した礼拝堂の自動奏機から採れる歯車。楽器と精密装備の中核素材。' },
     astralMercury: { id: 'astralMercury', name: '星銀水', nameEn: 'ASTRAL MERCURY', category: 'material', rarity: 'epic', dungeonId: 'dungeon3', description: 'メロクスが残す液体金属。極端に軽く、硬い。' },
     gildedCore: { id: 'gildedCore', name: '強欲の金核', nameEn: 'GILDED CORE', category: 'material', rarity: 'epic', dungeonId: 'dungeon3', description: '財貨を食らう怪異の黄金核。高級装備の触媒になる。' },
-    parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', category: 'equipment', slot: 'rightHand', rarity: 'epic', stars: 4, dungeonId: 'dungeon3', guitarSkillTree: 'versicrellGuitar', description: '昔、親に買ってもらったギター。少し変わった形をしているが、最初に触れた「音」は今でも重い。' },
+    parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', source: 'secretGuitar', guitarSkillTree: 'versicrellGuitar', archiveHint: '入手経路不明。どこかの怪異が、ごく稀に大切な一本を隠し持っているらしい。', description: '昔、親に買ってもらったギター。少し変わった形をしているが、最初に触れた「音」は今でも重い。' },
     voidHelm: { id: 'voidHelm', name: '虚空の兜', nameEn: 'VOID HELM', category: 'equipment', slot: 'head', rarity: 'epic', dungeonId: 'dungeon3', description: '崩界の深廊の素材で鍛えた兜。精神と防御を高める。' },
     abyssalArmor: { id: 'abyssalArmor', name: '深淵の鎧', nameEn: 'ABYSSAL ARMOR', category: 'equipment', slot: 'body', rarity: 'epic', dungeonId: 'dungeon3', description: '深淵鉄鉱を用いた最高位の鎧。強靭な防御力を誇る。' },
     phantomGauntlet: { id: 'phantomGauntlet', name: '幻影拳甲', nameEn: 'PHANTOM GAUNTLET', category: 'equipment', slot: 'arms', rarity: 'epic', dungeonId: 'dungeon3', description: '幻影核の力が宿る拳甲。攻撃力と俊敏を高める。' },
@@ -1355,7 +1361,7 @@ window.ARSENE_DATA = {
     d3TwinRight: { id: 'd3TwinRight', name: '裂界の双刃・右', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 22, bonuses: {}, effects: { criticalRateBonus: .02 } },
     d3TwinLeft: { id: 'd3TwinLeft', name: '裂界の双刃・左', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 18, bonuses: {}, effects: { criticalRateBonus: .01 } },
     d3GuardianAegis: { id: 'd3GuardianAegis', name: '城塞核の盾', weaponType: 'shield', weaponSprite: 'shield_reprise', battleSprite: null, attackMotion: 'shieldBash', damageType: 'physical', defensePower: 42, magicDefensePower: 38, bonuses: {}, effects: { magicDamageReductionPercent: .08, physicalDamageReductionPercent: .06, resonanceGainPercent: .25 } },
-    parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', dungeonId: 'dungeon3', weaponType: 'instrument', battlePose: 'guitar', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', damageStat: 'dex', power: 4.0, guitarSkillTree: 'versicrellGuitar', bonuses: { dex: 10, mag: 5, critBonus: 0.04 } },
+    parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', dungeonId: 'dungeon3', weaponType: 'instrument', battlePose: 'guitar', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', damageStat: 'dex', magicAttackPower: 154, power: 4.8, guitarSeriesId: 'secretGuitar', guitarSkillTree: 'versicrellGuitar', bonuses: { dex: 18, mag: 10, agi: 6, critBonus: .06 }, effects: { criticalRateBonus: .06, magicDamagePercent: .08 } },
     myrthi_blade: { id: 'myrthi_blade', name: '黒紅刃ミルティア', nameEn: 'MYRTHI BLADE', seriesId: 'myrthi', dungeonId: 'dungeon2', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_myrthi', battleSprite: null, attackMotion: 'slash', attackPower: 32, bonuses: { str: 16, agi: 8, critBonus: .06 } }
   },
   accessories: {
@@ -1965,7 +1971,7 @@ window.ARSENE_DATA = {
       sprite: 'assets/enemy-characters/versicrell/versicrell-form1-v1.png', spriteClass: 'versicrell-sprite versicrell-form1',
       stats: { maxHp: 3000, atk: 90, def: 84, mag: 96, mnd: 76, dex: 108, agi: 44, spd: 44 },
       exp: 360, gold: { min: 210, max: 300 },
-      dropTable: [{ itemId: 'voidEssence', chance: .50 }, { itemId: 'phantomCore', chance: .60 }, { itemId: 'parentGiftGuitar', chance: .006 }],
+      dropTable: [{ itemId: 'voidEssence', chance: .50 }, { itemId: 'phantomCore', chance: .60 }, { itemId: 'parentGiftGuitar', chance: .002 }],
       music: '音楽系/ダンジョン/ヴェルシクレルのテーマ1.mp3',
       musicPhase2: '音楽系/ダンジョン/ヴェルシクレルのテーマ2.mp3',
       form2: {
