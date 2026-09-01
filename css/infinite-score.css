@@ -36,11 +36,12 @@
 /* Direction selection v2 — supplied left/straight/right artwork, without the old purple panel. */
 .is-route-overlay{position:absolute;z-index:12;inset:20% 1.5% 29%;display:grid;place-content:center;padding:0;background:transparent;border:0;pointer-events:none}
 .is-route-list{display:flex;justify-content:center;align-items:center;gap:1.2%;width:100%;pointer-events:auto}
-.is-route-choice{position:relative;flex:0 0 38%;min-width:0;min-height:0;aspect-ratio:671/440;padding:0;overflow:visible;border:0;background:transparent;box-shadow:none;filter:drop-shadow(0 6px 10px #000b);touch-action:manipulation}
-.is-route-choice.straight{flex-basis:20%;aspect-ratio:274/440}
-.is-route-art{position:absolute;inset:0;display:block;background-image:url("../assets/ui/infinite-score/direction-buttons-v1.png");background-repeat:no-repeat;background-size:250.4% 214.8%;background-position:1.4% 47.5%}
-.is-route-choice.straight .is-route-art{background-size:613.1% 214.8%;background-position:50% 47.5%}
-.is-route-choice.right .is-route-art{background-position:98.4% 47.5%}
+.is-route-choice{position:relative;flex:0 0 38%;min-width:0;min-height:0;aspect-ratio:696/439;padding:0;overflow:visible;border:0;background:transparent;box-shadow:none;filter:drop-shadow(0 6px 10px #000b);touch-action:manipulation}
+.is-route-choice.straight{flex-basis:20%;aspect-ratio:285/439}
+.is-route-choice.right{aspect-ratio:686/439}
+.is-route-art{position:absolute;inset:0;display:block;background:url("../assets/ui/infinite-score/direction-left-v1.png") center/contain no-repeat}
+.is-route-choice.straight .is-route-art{background-image:url("../assets/ui/infinite-score/direction-straight-v1.png")}
+.is-route-choice.right .is-route-art{background-image:url("../assets/ui/infinite-score/direction-right-v1.png")}
 .is-route-choice:active{transform:scale(.95);filter:brightness(1.18) drop-shadow(0 4px 8px #000c)}
 .is-route-choice em{position:absolute;left:3%;right:3%;top:100%;margin-top:4px;padding:5px 4px;color:#f5eaff;background:#07020dcc;border:1px solid #8f5eaf;font:700 9px/1.35 "Noto Serif JP",serif;text-align:center}
 .is-route-overlay.examining .is-route-choice{min-height:0}
