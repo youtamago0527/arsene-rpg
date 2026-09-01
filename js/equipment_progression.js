@@ -132,7 +132,7 @@
         magicAttackPower: magical ? rated : 0, power: p.power, bonuses: {},
         scaling: type === 'instrument' ? { dex: .65, mag: .35 } : null,
         powerKey: magical ? 'magicAttackPower' : 'attackPower', damageType: magical ? 'magical' : 'physical',
-        description: `${dungeonId.toUpperCase().replace('UNGEON', '')}工房規格。基本能力を変えず、${magical ? '術式出力' : '武器攻撃力'}だけを高める。`
+        description: `${dungeonId.toUpperCase().replace('UNGEON', '')}工房規格。基本能力は変えず、${magical ? '術式出力' : '武器攻撃力'}を高める。`
       });
       const prior = previousStage[stage] ? weaponLines[type][previousStage[stage]]?.[0] : null;
       const mats = stageMaterials(stage);
@@ -171,26 +171,25 @@
       // ティアごとの予算（def+mdef）は据え置き、その配分を部位で変える。
       const budget = p.def + p.mdef;
       const r = n => Math.round(budget * n);
-      // HPは戦闘ごとの抽選で自然に伸びる（15%で3〜6、100戦で約+68）ので、
-      // 装備でHPを盛っても価値が薄い。逆にMPは8%で1〜3としか伸びないため、
-      // 「MPを増やす装備」が魔法職の実質的な選択肢になる。
-      // D1〜D2は選択肢を絞り、物理なら防御・魔法ならMPの二択で足りるようにする。
+      // ★3工房品は基礎能力（STR/MAG/HP/MP等）を一切上げない。
+      // 役割差は攻撃力・魔法攻撃力・防御力・魔法防御力だけで作り、
+      // 基礎能力補正はDROP限定の★4とボス★5から解禁する。
       const profile = isAccessory
-        ? { defensePower: 0, magicDefensePower: 0, bonuses: { luk: Math.max(1, r(.14)) }, role: '運' }
+        ? { defensePower: 0, magicDefensePower: 0, bonuses: {}, role: '補助枠' }
         : isShield
           // 盾：物理に寄せる。魔法を受けたいなら頭で魔防を稼ぐ、という住み分け。
           ? { defensePower: r(.85), magicDefensePower: r(.20), bonuses: {}, role: '物理防御' }
           : slot === 'head'
-            // 頭：魔防とMP。魔法職の主力枠。物理防御は持たない。
-            ? { defensePower: 0, magicDefensePower: r(.65), bonuses: { maxMp: r(.55) }, role: '魔法防御とMP' }
+            // 頭：魔防。魔法職の主力枠。物理防御は持たない。
+            ? { defensePower: 0, magicDefensePower: r(.65), bonuses: {}, role: '魔法防御' }
             : slot === 'body'
               // 体：物理防御の主力。HPはおまけ程度に留める。
-              ? { defensePower: r(.85), magicDefensePower: 0, bonuses: { maxHp: r(.35) }, role: '物理防御' }
+              ? { defensePower: r(.85), magicDefensePower: 0, bonuses: {}, role: '物理防御' }
               : slot === 'arms'
                 // 手：素の力と器用さを伸ばす。装備の攻撃力ではなく能力値で効かせる。
-                ? { defensePower: r(.20), magicDefensePower: 0, bonuses: { str: Math.max(1, r(.20)), dex: Math.max(1, r(.16)) }, role: '力と器用さ' }
+                ? { defensePower: r(.20), magicDefensePower: 0, bonuses: {}, role: '軽量防御' }
                 // 足：防御は薄く、素早さで避ける。
-                : { defensePower: r(.20), magicDefensePower: r(.20), bonuses: { agi: Math.max(1, r(.22)) }, role: '素早さ' };
+                : { defensePower: r(.20), magicDefensePower: r(.20), bonuses: {}, role: '均衡防御' };
       addArmor(id, {
         name, nameEn: `${stage.toUpperCase()} ${slot.toUpperCase()}`, dungeonId, catalogDungeon: dungeonId,
         slot, stars: p.stars, rarity: rarityFor(p.stars), source: 'workshop',
@@ -231,7 +230,9 @@
   })()) && e.kind !== 'boss' && !['zenakado', 'myrthi', 'noelFirstEncounter', 'astact', 'd4MidBoss'].includes(e.id));
   const typeCycle = ['sword', 'staff', 'martial', 'head', 'body', 'arms', 'feet', 'accessory', 'instrument', 'shield', 'dualBlade'];
   // ★4の基礎DROP率（§4）。図鑑称号などの倍率は rollDrops() 側でこの値へ乗算される。
-  const dungeonChance = { dungeon1: .010, dungeon2: .010, dungeon3: .009, dungeon4: .008 };
+  // 旧値は約1%。さらにDROP特性の+2%が加算され、D1の一部敵は候補が2個あったため
+  // 1戦で★4を引く確率が約6%まで膨らんでいた。★3製作を先に体験できる水準へ落とす。
+  const dungeonChance = { dungeon1: .0040, dungeon2: .0035, dungeon3: .0030, dungeon4: .0025 };
   const dungeonRank = { dungeon1: 1, dungeon2: 2, dungeon3: 3, dungeon4: 4 };
   // ★4の基礎性能。★3の仕上げ品 +5(×1.75) をさらに1.10倍した値＝★3の1.93倍。
   // 「★3を+5まで鍛えた人が、拾った瞬間に乗り換えたくなる」水準（§65）。
@@ -249,10 +250,42 @@
       const weaponKind = ['sword', 'staff', 'martial', 'instrument', 'dualBlade'].includes(kind);
       const [prefix, enPrefix] = suffixes[kind], displayName = existing?.name || `${prefix}《${enemy.name}》`;
       const rank = dungeonRank[dungeonId], bonusValue = 2 + rank * 2;
-      const bonuses = weaponKind
-        ? (kind === 'staff' ? { mag: bonusValue, dex: Math.max(2, bonusValue - 2) } : kind === 'instrument' ? { dex: bonusValue, mag: Math.max(2, bonusValue - 2) } : kind === 'martial' ? { agi: bonusValue, str: Math.max(2, bonusValue - 2) } : { str: bonusValue, dex: Math.max(2, bonusValue - 2) })
+      // ★4から初めて基礎能力が付く。各武器系統/JOBに用途を持たせつつ、
+      // 行動順・回避へ同時に効くAGIは他能力の半分以下に抑える。LUKは装備補正に使わない。
+      const accessoryProfiles = [
+        { str: bonusValue, dex: Math.max(2, bonusValue - 2) },
+        { mag: bonusValue, maxMp: 4 * rank },
+        { dex: bonusValue, mnd: Math.max(2, bonusValue - 2) }
+      ];
+      let bonuses = weaponKind
+        ? (kind === 'staff' ? { mag: bonusValue, mnd: Math.max(2, bonusValue - 2) }
+          : kind === 'instrument' ? { dex: bonusValue, mag: Math.max(2, bonusValue - 2) }
+          : kind === 'martial' ? { str: bonusValue, agi: Math.max(1, Math.floor(bonusValue * .4)) }
+          : kind === 'dualBlade' ? { str: bonusValue, dex: Math.max(2, bonusValue - 2), agi: Math.max(1, Math.floor(bonusValue * .3)) }
+          : { str: bonusValue, dex: Math.max(2, bonusValue - 2) })
         : kind === 'shield' ? { vit: bonusValue, mnd: Math.max(2, bonusValue - 2) }
-        : kind === 'body' ? { vit: bonusValue, maxHp: 8 * rank } : kind === 'head' ? { mnd: bonusValue, dex: Math.max(2, bonusValue - 2) } : kind === 'arms' ? { str: bonusValue, dex: bonusValue } : kind === 'feet' ? { agi: bonusValue, dex: Math.max(2, bonusValue - 2) } : { luk: bonusValue, mnd: Math.max(2, bonusValue - 2) };
+        : kind === 'body' ? { vit: bonusValue, mnd: Math.max(2, bonusValue - 2) }
+        : kind === 'head' ? { mag: bonusValue, mnd: Math.max(2, bonusValue - 2) }
+        : kind === 'arms' ? { str: bonusValue, dex: bonusValue }
+        : kind === 'feet' ? { dex: bonusValue, agi: Math.max(1, Math.floor(bonusValue * .4)) }
+        : accessoryProfiles[(index + subIndex) % accessoryProfiles.length];
+      // D1は7通常JOBがそれぞれ最初の目標装備を持てるよう、既存固有品を明示配分する。
+      const d1BonusProfiles = {
+        shadowWand: { mag: 4, mnd: 2 },                         // 魔導士
+        slimeRing: { vit: 4, mnd: 2 },                         // 守護士
+        soulRobe: { mag: 4, mnd: 3, maxMp: 6 },                // 僧侶
+        ratBoots: { dex: 4, agi: 2 },                          // 武道家
+        goblinGloves: { str: 4, vit: 2 },                      // 戦士
+        nightHat: { dex: 4, mag: 3 },                          // 魔奏士
+        ghostBoneReliquary: { str: 4, dex: 3, agi: 1 }         // 双刃士
+      };
+      if (d1BonusProfiles[id]) bonuses = d1BonusProfiles[id];
+      const accessoryOverrides = {
+        // アクセは不足能力を埋める調整枠。攻撃系2種を用意し、LUK/AGIは付けない。
+        monster_relic_nocturneBanshee: { mag: 6, maxMp: 8 },
+        monster_relic_requiemKnight: { str: 6, dex: 4 }
+      };
+      if (accessoryOverrides[id]) bonuses = accessoryOverrides[id];
       const common = {
         name: displayName, nameEn: existing?.nameEn || `${enPrefix} // ${enemy.enName || enemy.id.toUpperCase()}`,
         dungeonId, catalogDungeon: dungeonId, stars: 4, rarity: 'epic', source: 'dropOnly', dropEnemyId: enemy.id,
@@ -276,7 +309,9 @@
         // def/mdef を両方同じだけ持っていて、一式そろえると無条件に固くなった。
         // ランクごとの総量は据え置き、配分だけ変える。
         const ab = star4ArmorBudget[dungeonId] || (17 + rank * 10), ar = n => Math.round(ab * n);
-        const armorProfile =
+        const armorProfile = id === 'soulRobe'
+          ? { defensePower: 0, magicDefensePower: ar(.70) }
+          :
           // 盾は物理に寄せる。★3工房の盾と同じ役割分担にそろえる。
           kind === 'shield' ? { defensePower: ar(.85), magicDefensePower: ar(.20) }
           : kind === 'head' ? { defensePower: 0, magicDefensePower: ar(.70) }
@@ -506,6 +541,13 @@
   // すべてのボス装備を★5として統一する。
   Object.values(D.bossEquipmentSeries || {}).forEach(series => (series.equipment || []).forEach(id => {
     if (D.items[id]) Object.assign(D.items[id], { stars: 5, rarity: 'legendary', source: 'boss', catalogDungeon: D.items[id].catalogDungeon || seriesDungeon[series.id] || 'dungeon3' });
+  }));
+
+  // ★5現物は素材製作とは別枠の大当たり。各装備3%の独立抽選では一度に複数落ち、
+  // シリーズ収集も★4より早くなっていたため、全ボス共通で1個あたり0.1%へ正規化する。
+  Object.values(D.enemies || {}).forEach(enemy => (enemy.dropTable || []).forEach(drop => {
+    const item = D.items[drop.itemId];
+    if (item?.category === 'equipment' && (item.source === 'boss' || Number(item.stars) === 5)) drop.chance = .001;
   }));
 
   D.equipmentBalanceTargets = {

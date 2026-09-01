@@ -3362,7 +3362,21 @@
     }
     rollDrops(enemy) {
       const drops = [], bonus = this.traitDropRateBonus(), mult = this.collectionTitleEffect?.('dropMultiplier') ?? 1;
-      (enemy.dropTable || []).forEach(d => { if (Math.random() < Math.min(1, (Number(d.chance) || 0) * mult + bonus)) drops.push([d.itemId, 1]); }); return drops;
+      const equipmentHits = [];
+      (enemy.dropTable || []).forEach(d => {
+        const item = D.items[d.itemId], equipment = item?.category === 'equipment';
+        // DROP特性の+2%は通常素材には従来どおり加算するが、希少装備へ加算すると
+        // 0.4%が2.4%になるため、装備だけは倍率として適用する。
+        const chance = equipment
+          ? (Number(d.chance) || 0) * mult * (1 + bonus)
+          : (Number(d.chance) || 0) * mult + bonus;
+        if (Math.random() >= Math.min(1, chance)) return;
+        if (equipment) equipmentHits.push(d.itemId);
+        else drops.push([d.itemId, 1]);
+      });
+      // 同一敵から装備現物は最大1個。素材は従来どおり複数同時に落ちる。
+      if (equipmentHits.length) drops.push([equipmentHits[Math.floor(Math.random() * equipmentHits.length)], 1]);
+      return drops;
     }
     applyRewards(reward) {
       this.profile.exp += reward.exp; this.profile.gold += reward.gold; Object.entries(reward.drops).forEach(([id, n]) => this.profile.inventory[id] = (this.profile.inventory[id] || 0) + n); this.recordEquipmentDiscovery(Object.keys(reward.drops)); const levels = [];
@@ -3390,7 +3404,13 @@
       if (levels.length) { const stats = this.totalStats(); this.profile.currentVitals = { hp: stats.maxHp, mp: stats.maxMp }; if (this.player) { this.player.stats = stats; this.player.hp = stats.maxHp; this.player.mp = stats.maxMp; } } else this.persistVitals();
       this.saveProfile(); return levels;
     }
-    isRecipeUnlocked(recipe) { if (!this.isPlayerContentVisible(recipe)) return false; if (!recipe.materialUnlockId) return true; return (this.profile.unlockedRecipes || []).includes(recipe.id); }
+    isRecipeUnlocked(recipe) {
+      if (!this.isPlayerContentVisible(recipe)) return false;
+      // 素材を先に拾ったセーブでも、対応Dungeonを解放するまでは先の製作を見せない。
+      if (recipe.dungeonId && !this.isDungeonUnlocked(recipe.dungeonId)) return false;
+      if (!recipe.materialUnlockId) return true;
+      return (this.profile.unlockedRecipes || []).includes(recipe.id);
+    }
     grantJobExp(amount) {
       const jobId = this.profile.currentJob, job = D.jobs[jobId], progress = this.profile.jobs[jobId], from = progress.level, learnedBefore = new Set(this.profile.learnedJobSkills || []);
       const cap = this.effectiveJobLevelCap();
