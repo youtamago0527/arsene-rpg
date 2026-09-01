@@ -2,7 +2,15 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <script>
+    // Capacitor bridge is injected before the document in the native WebView.
+    // Mark native launches synchronously so the first painted frame already uses
+    // the status-bar and home-indicator layout rules.
+    if (window.Capacitor?.isNativePlatform?.() || window.Capacitor?.getPlatform?.() === 'ios') {
+      document.documentElement.classList.add('capacitor-native');
+    }
+  </script>
   <meta name="theme-color" content="#040814">
   <title>或世盗 -ARSÈNE- RE:MIX | 怪盗RPG</title>
   <meta name="description" content="或世盗 -ARSÈNE- RE:MIX（アルセーヌ リミックス）。奪え、編み直せ、物語を。JOBを育て、武器学を磨き、盗んだ力で異世界へ潜るブラウザ怪盗RPG。インストール不要、スマートフォンでも遊べます。">
@@ -42,7 +50,7 @@
   <link rel="stylesheet" href="css/q-offer-defeat.css?v=0.1.1">
   <link rel="stylesheet" href="css/title-system.css?v=0.1.1">
   <link rel="stylesheet" href="css/infinite-score.css?v=0.3.1">
-  <link rel="stylesheet" href="css/fixes.css?v=0.6.7">
+  <link rel="stylesheet" href="css/fixes.css?v=0.6.8">
   <link rel="stylesheet" href="css/battle-fx.css?v=0.2.2">
   <link rel="stylesheet" href="css/battle-ui-v2.css?v=0.1.67">
   <link rel="stylesheet" href="css/hideout.css?v=0.3.8">
@@ -54,6 +62,7 @@
   <link rel="stylesheet" href="css/start-flow.css?v=0.4.5">
   <link rel="stylesheet" href="css/op-movie.css?v=0.3.2">
   <link rel="stylesheet" href="css/op-responsive.css?v=0.3.1">
+  <link rel="stylesheet" href="css/ios-safe-area.css?v=0.2.4">
 </head>
 <body>
   <div id="start-flow" class="start-flow" aria-live="polite"></div>
