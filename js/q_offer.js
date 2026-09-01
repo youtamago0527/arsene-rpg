@@ -1,6 +1,7 @@
-/* Q'S OFFER — provider-neutral reward offers. No ad SDK or forced navigation. */
+/* Q'S OFFER — native iOS uses AdMob rewarded ads; web keeps the mock preview. */
 (function () {
   const DAILY = 2;
+  const IOS_REWARDED_TEST_ID = 'ca-app-pub-3940256099942544/1712485313';
   const DAY = () => new Date().toLocaleDateString('ja-JP');
   const QD = window.ARSENE_Q_DIALOGUE || { rates: { hint: .1, secret: .01 }, offer: {}, success: [], hint: [], secret: [] };
   const defs = {
@@ -71,6 +72,26 @@
     if (typeof g.playNoiseSequence !== 'function') { done(); return; }
     g.playNoiseSequence([{ sys: 'NOISE...' }, { who: 'Q', text: picked.text }], { onClose: done });
   }
+  function nativeAdMob() {
+    const capacitor = window.Capacitor;
+    if (!capacitor?.isNativePlatform?.()) return null;
+    return capacitor.Plugins?.AdMob || null;
+  }
+  let adMobInit;
+  async function showNativeRewardedAd() {
+    const adMob = nativeAdMob();
+    if (!adMob) throw new Error('AdMob plugin is unavailable');
+    adMobInit ||= adMob.initialize();
+    await adMobInit;
+    await adMob.prepareRewardVideoAd({
+      adId: IOS_REWARDED_TEST_ID,
+      isTesting: true,
+      npa: true
+    });
+    const reward = await adMob.showRewardVideoAd();
+    if (!reward || Number(reward.amount) <= 0) throw new Error('Reward was not earned');
+    return reward;
+  }
   const api = {
     defs,
     canUse(type = 'auto2') { return canUse(game(), type); },
@@ -86,18 +107,33 @@
     show(type = 'auto2', extra = {}) {
       const g = game(); if (!canUse(g, type)) return false;
       const d = { ...(defs[type] || defs.auto2), ...extra }, left = remaining(type);
-      const qCopy = String(extra.copy ?? QD.offer?.[type] ?? d.copy).replace(/\n/g, '<br>'), skip = hasAdSkip(g);
-      const adStatus = skip ? (premium(g).adSkipLicense ? '永久スキップ適用' : `スキップ券を使用（残り${Number(premium(g).adSkipTickets) || 0}）`) : '広告を再生しています';
-      const countdown = skip ? 'READY' : '3', watchText = skip ? '広告をスキップして発動する' : '広告を見て発動する';
+      const qCopy = String(extra.copy ?? QD.offer?.[type] ?? d.copy).replace(/\n/g, '<br>'), skip = hasAdSkip(g), native = !!nativeAdMob();
+      const adStatus = skip ? (premium(g).adSkipLicense ? '永久スキップ適用' : `スキップ券を使用（残り${Number(premium(g).adSkipTickets) || 0}）`) : native ? 'リワード広告を読み込みます' : 'ブラウザ用プレビュー';
+      const countdown = skip || native ? 'READY' : '3', watchText = skip ? '広告をスキップして発動する' : '広告を見て発動する';
       const reviveCard = `<div class="q-offer-card q-revive-card" role="dialog" aria-label="戦闘復活"><button class="q-offer-close" data-q-close aria-label="閉じる">✕ CLOSE</button><header><small class="q-revive-tag"><i></i>DAILY REVIVE REWARD</small><h2>怪盗の再起</h2><p>Q「${qCopy}」</p></header><div class="q-revive-details"><div><span><i></i>復活時HP</span><b>最大HPの50%</b></div><div><span><i></i>復帰地点</span><b>現在の戦闘</b></div><div><span><i></i>本日の残り回数</span><b>${left} 回</b></div></div><div class="q-offer-ad"><span>${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch><span>▶　${watchText}</span></button><button class="q-revive-cancel" data-q-close>今回は諦める</button></div>`;
-      const normalCard = `<div class="q-offer-card" role="dialog" aria-label="Q offer"><button class="q-offer-close" data-q-close aria-label="閉じる">×</button><div class="q-offer-q">Q</div><small class="q-offer-kicker">Q'S OFFER</small><h2>${d.title}</h2><p>「${qCopy}」</p><div class="q-offer-ad"><span>${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch>${watchText}<span>${skip ? 'SKIP ENTITLEMENT' : 'WATCH MOCK AD'}</span></button></div>`;
+      const normalCard = `<div class="q-offer-card" role="dialog" aria-label="Q offer"><button class="q-offer-close" data-q-close aria-label="閉じる">×</button><div class="q-offer-q">Q</div><small class="q-offer-kicker">Q'S OFFER</small><h2>${d.title}</h2><p>「${qCopy}」</p><div class="q-offer-ad"><span>${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch>${watchText}<span>${skip ? 'SKIP ENTITLEMENT' : native ? 'REWARDED AD' : 'WEB PREVIEW'}</span></button></div>`;
       const modal = document.createElement('div'); modal.className = 'q-offer-modal'; modal.innerHTML = type === 'revive' ? reviveCard : normalCard; if (type === 'revive') modal.classList.add('q-offer-defeat'); document.body.appendChild(modal);
-      let n = 3; const count = modal.querySelector('[data-q-countdown]'), watch = modal.querySelector('[data-q-watch]'); watch.disabled = !skip;
-      const timer = skip ? null : setInterval(() => { n--; if (count) count.textContent = n; if (n <= 0) { clearInterval(timer); watch.disabled = false; } }, 1000);
-      modal.addEventListener('click', e => {
+      let n = 3; const count = modal.querySelector('[data-q-countdown]'), watch = modal.querySelector('[data-q-watch]'); watch.disabled = !skip && !native;
+      const timer = skip || native ? null : setInterval(() => { n--; if (count) count.textContent = n; if (n <= 0) { clearInterval(timer); watch.disabled = false; } }, 1000);
+      modal.addEventListener('click', async e => {
         if (e.target.closest('[data-q-close]')) { clearInterval(timer); modal.remove(); d.onClose?.(); return; }
         if (e.target.closest('[data-q-watch]') && !watch.disabled) {
-          clearInterval(timer); modal.remove(); playIntervention(g, d.forceDialogueCategory, () => { const granted = api.grant(type); if (granted) { if (skip) consumeAdSkip(g); d.onGrant?.(); } });
+          clearInterval(timer);
+          watch.disabled = true;
+          try {
+            if (native && !skip) {
+              if (count) count.textContent = 'LOAD';
+              await showNativeRewardedAd();
+            }
+            modal.remove();
+            playIntervention(g, d.forceDialogueCategory, () => { const granted = api.grant(type); if (granted) { if (skip) consumeAdSkip(g); d.onGrant?.(); } });
+          } catch (error) {
+            console.error('Rewarded ad failed', error);
+            if (count) count.textContent = 'ERROR';
+            const status = modal.querySelector('.q-offer-ad span');
+            if (status) status.textContent = '広告を読み込めませんでした。もう一度お試しください';
+            watch.disabled = false;
+          }
         }
       });
       return true;

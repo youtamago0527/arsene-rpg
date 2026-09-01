@@ -1,2 +1,3 @@
 # 動作確認でPlaywrightを一時インストールするため、毎回未追跡として残る
 node_modules/
+dist/
