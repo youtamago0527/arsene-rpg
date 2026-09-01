@@ -146,10 +146,17 @@
   const origRenderOw = P.renderOtherWorldPanel;
   P.renderOtherWorldPanel = function (panel) {
     origRenderOw.call(this, panel);
-    if (!this.isDebugAllowed()) return;
+    const slot = panel.querySelector('[data-infinite-entry]');
+    if (!slot) return;
+    const unlocked = this.isDebugAllowed();
+    if (!unlocked) {
+      slot.innerHTML = `<article class="ow-mode-card infinite locked"><div class="ow-mode-badges"><em>LOCKED</em><span>INFINITE SCORE</span></div><h3>無限奏廊</h3><strong>第三奏卿の先に眠る異世界</strong><p>第三奏卿《不落の反奏騎士》セリペスを撃破すると解放されます。</p><div class="ow-mode-lock">D3 踏破で解放</div></article>`;
+      return;
+    }
     const active = this.isEnsureRunShape(this.isRun());
     if (active) this.saveProfile();
-    panel.insertAdjacentHTML('beforeend', `<button class="ow-enter is-score-entry" data-is-action="${active ? 'resume' : 'warning'}"><b>無限奏廊</b><span>INFINITE SCORE${this.isInfiniteScoreDebug() ? ' // DEBUG' : ''}${active ? ` // FLOOR ${active.floor}` : ''}</span></button>`);
+    const debug = this.isInfiniteScoreDebug() ? ' // DEBUG' : '';
+    slot.innerHTML = `<article class="ow-mode-card infinite"><div class="ow-mode-badges"><em>高危険度</em><span>INFINITE SCORE${debug}</span></div><h3>無限奏廊</h3><strong>${active ? `FLOOR ${active.floor}から再開` : '終わりなき探索へ'}</strong><p>HP・MPを引き継いで進む連続探索。死亡すると持ち込み品と探索中の戦利品を失います。</p><div class="ow-mode-stats"><span><small>進行</small><b>${active ? `FLOOR ${active.floor}` : 'ENDLESS'}</b></span><span><small>帰還</small><b>任意</b></span><span><small>HP / MP</small><b>継続</b></span><span><small>死亡時</small><b>戦利品消失</b></span></div><button class="ow-mode-action danger" data-is-action="${active ? 'resume' : 'warning'}"><b>${active ? '探索を再開' : '無限奏廊へ'}</b><span>${active ? '前回の続きから侵入' : '危険事項を確認して侵入'}</span></button></article>`;
   };
   P.isRenderWarning = function (panel) {
     panel.innerHTML = `<button class="panel-home" data-lenny="otherworld">異世界へ戻る</button><small>INFINITE SCORE</small><h2>無限奏廊</h2>

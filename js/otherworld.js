@@ -584,25 +584,32 @@
     const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
     const canGo = inf.left > 0;
     return void (panel.innerHTML = `<button class="panel-home" data-lenny="menu">レニーへ戻る</button>
-      <small>OTHER WORLD</small><h2>異世界</h2>
+      <small>OTHER WORLD / SELECT MODE</small><h2>異世界侵入先</h2>
       <div class="ow-power"><span>異界干渉力</span><b>${inf.left} / ${inf.max}</b>
         <i>${Array.from({ length: inf.max }, (_, k) => `<em class="${k < inf.left ? 'on' : ''}"></em>`).join('')}</i></div>
       ${window.arseneQOffer?.otherworldHTML?.() || ''}
-      <div class="ow-today"><small>本日の異世界（${dayNames[new Date().getDay()]}曜）</small>
-        <b>${esc(item?.name || a?.name || '—')}</b>
-        <span>${esc(item?.description || '')}</span></div>
-      <div class="ow-info">
-        <div><span>1周の戦闘数</span><b>${cfg.battlesPerRun ?? 10} 戦</b></div>
-        <div><span>難易度</span><b>初級 ／ 中級</b></div>
-        <div><span>中級報酬</span><b>アイテム数 ×2 ／ BOSS ×2確定</b></div>
-        <div><span>雑魚ドロップ</span><b>${((cfg.zakoArcanaRate ?? 0.01) * 100).toFixed(1)}%</b></div>
-        <div><span>経験値・GOLD</span><b>なし</b></div>
-      </div>
       <p class="ow-rule">異世界へ侵入できるのは <b>PHANTOM THIEF</b> のみ。</p>
       <button class="ow-ability-link" data-lenny="abilities"><b>アビリティ設定</b><span>突入前にPHANTOM THIEFのACTION / PASSIVEを設定する</span></button>
-      ${canGo
-        ? '<button class="ow-enter" data-lenny="select">侵入先を選択する</button>'
-        : '<p class="ow-warn ow-stop">「今日はもうやめとけ。」<br>「今のお前じゃ、これ以上向こう側に干渉したら身体がもたねえ。」</p>'}`);
+      <div class="ow-mode-guide"><b>侵入先を選択</b><span>目的とルールの異なる2つの異世界</span></div>
+      <div class="ow-mode-list">
+        <article class="ow-mode-card daily${canGo ? '' : ' unavailable'}">
+          <div class="ow-mode-badges"><em>曜日バトル</em><span>DAILY RIFT</span></div>
+          <h3>${dayNames[new Date().getDay()]}曜の異世界</h3>
+          <strong>${esc(item?.name || a?.name || '—')}</strong>
+          <p>${esc(item?.description || '')}</p>
+          <div class="ow-mode-stats">
+            <span><small>1周</small><b>${cfg.battlesPerRun ?? 10} 戦</b></span>
+            <span><small>難易度</small><b>初級 / 中級</b></span>
+            <span><small>中級報酬</small><b>ITEM ×2</b></span>
+            <span><small>EXP / GOLD</small><b>なし</b></span>
+          </div>
+          ${canGo
+            ? '<button class="ow-mode-action" data-lenny="select"><b>曜日バトルへ</b><span>本日の侵入先を選ぶ</span></button>'
+            : '<div class="ow-mode-action disabled"><b>本日の挑戦終了</b><span>異界干渉力を使い切りました</span></div>'}
+        </article>
+        <div data-infinite-entry></div>
+      </div>
+      ${canGo ? '' : '<p class="ow-warn ow-stop">「今日はもうやめとけ。」<br>「今のお前じゃ、これ以上向こう側に干渉したら身体がもたねえ。」</p>'}`);
   };
 
   P.owDungeonChoices = function () {
