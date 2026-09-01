@@ -891,10 +891,22 @@
     $('#result-menu').style.display = '';
   };
 
-  // 敗北時は周回を打ち切る
+  // 異世界での死亡は、広告復活を断念してGAME OVERが確定した時だけ周回終了。
+  // 死亡直後にowRunを消すと、復活後のBGMと次戦闘が通常ダンジョンへ戻ってしまう。
+  const origGameOverOrRevive = P.showGameOverOrRevive;
+  P.showGameOverOrRevive = function (copy, kicker, html) {
+    if (!this.owRun) return origGameOverOrRevive.call(this, copy, kicker, html);
+    const showGameOver = () => {
+      this.owSettleEntry('defeat');
+      this.owRun = null; this.owChestPicks = null;
+      this.clearBossOverdriveChallenge?.();
+      this.showResult('GAME OVER', copy, kicker, html);
+    };
+    if (!this.showReviveOfferIfAvailable(showGameOver)) showGameOver();
+  };
+
   const origDefeat = P.defeat;
   P.defeat = async function () {
-    if (this.owRun) { this.owSettleEntry('defeat'); this.owRun = null; }
     return origDefeat.call(this);
   };
 
