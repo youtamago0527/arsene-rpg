@@ -1891,19 +1891,33 @@
       return { ...t, uid: `enemy-${index}`, label: String.fromCharCode(65 + index), floorId: floor?.id || t.floorId, floorScale: scale, stats, hp: stats.maxHp, exp: Math.round((t.exp || 0) * rewardRate), gold, alive: true, bindResistance: t.bindResistance || 0, bindTurns: 0 };
     }
     rollEncounter(wins, progression) {
-      if (this.currentDungeonId === 'dungeon3') {
+      const rareEncounters = {
+        dungeon3: D.dungeon3RareEncounters,
+        dungeon4: D.dungeon4RareEncounters,
+        dungeon5: D.dungeon5RareEncounters
+      }[this.currentDungeonId] || [];
+      const appendRareEncounters = lineup => {
+        if (!rareEncounters.length || lineup.length >= 4) return lineup;
         const rareMult = this.collectionTitleEffect?.('rareEncounterMultiplier') ?? 1;
-        let rareRoll = Math.random();
-        for (const rare of D.dungeon3RareEncounters || []) {
-          rareRoll -= Math.min(1, (rare.chance || 0) * rareMult);
-          if (rareRoll <= 0) return [rare.id];
+        const appeared = [];
+        for (const rare of rareEncounters) {
+          const chance = Math.min(1, (rare.chance || 0) * rareMult);
+          if (Math.random() < chance) {
+            appeared.push(rare.id);
+            // 初回の出現率は変えず、当選後だけもう一度抽選して同種2体も許可する。
+            if (Math.random() < chance) appeared.push(rare.id);
+          }
         }
-      }
+        // 通常敵と混成し、別種のレアが同時に当選する編成も許可する。
+        // 戦闘UIが4体表示までのため、合計数だけをここで制限する。
+        appeared.sort(() => Math.random() - .5);
+        return [...lineup, ...appeared.slice(0, Math.max(0, 4 - lineup.length))];
+      };
       const tiers = progression || D.encounterProgression || [], tier = [...tiers].reverse().find(entry => wins >= entry.minWins);
-      if (!tier) { const encounters = D.normalEncounters || [['shadowSlime', 'shadowSlime']]; return [...encounters[Math.min(wins, encounters.length - 1)]]; }
+      if (!tier) { const encounters = D.normalEncounters || [['shadowSlime', 'shadowSlime']]; return appendRareEncounters([...encounters[Math.min(wins, encounters.length - 1)]]); }
       const count = roll(tier.count[0], tier.count[1]), totalWeight = tier.pool.reduce((sum, entry) => sum + entry.weight, 0), lineup = [];
       for (let i = 0; i < count; i++) { let cursor = Math.random() * totalWeight, selected = tier.pool[tier.pool.length - 1].id; for (const entry of tier.pool) { cursor -= entry.weight; if (cursor <= 0) { selected = entry.id; break; } } lineup.push(selected); }
-      return lineup;
+      return appendRareEncounters(lineup);
     }
     // 図鑑用：戦闘に出た敵を「遭遇済み」として記録する。
     // ボス戦も通常戦もここを通るので、1か所で拾える。
@@ -3572,7 +3586,7 @@
     }
     handleResultAction(action, target) { if (action === 'hideout') { this.showMenu('home'); return; } if (action === 'boss-now') { this.startBossByKey(target); return; } if (action === 'next-floor' || action === 'continue-floor') { this.currentDungeonId = this.floorDungeonId(target) || this.currentDungeonId; this.currentFloorId = target; $('#ren').classList.remove('victory'); this.startBattle(); } }
 
-    showMenu(panel = 'home') { if (this.player) this.persistVitals(); if (panel === 'home' && this.profile.flags?.owRestoreJobPending) this.restoreNormalDungeonJob(true); this.closeBattleMenu(); this.endAutoBattle(); if (panel === 'home' && this.activeMealBuffType()) { this.clearMealBuff(); this.saveProfile(); } const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderHideoutRouteStatus(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
+    showMenu(panel = 'home') { if (this.player) this.persistVitals(); const retreatRollback = panel === 'home' ? this.rollbackToCheckpoint() : null; if (retreatRollback) this.saveProfile(); if (panel === 'home' && this.profile.flags?.owRestoreJobPending) this.restoreNormalDungeonJob(true); this.closeBattleMenu(); this.endAutoBattle(); if (panel === 'home' && this.activeMealBuffType()) { this.clearMealBuff(); this.saveProfile(); } const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderHideoutRouteStatus(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
     hideoutRouteStatus() {
       const available = (D.dungeons || []).filter(dungeon => this.isDungeonUnlocked(dungeon.id));
       const dungeon = available[available.length - 1] || this.getDungeon('dungeon1');

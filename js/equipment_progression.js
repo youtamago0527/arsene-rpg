@@ -22,8 +22,8 @@
       id, name: item.name, nameEn: item.nameEn, dungeonId: item.dungeonId,
       weaponType: data.weaponType, weaponSubtype: data.weaponSubtype || null, weaponSprite: data.weaponSprite || `${data.weaponType}_progression`,
       battleSprite: data.battleSprite || null,
-      attackMotion: data.weaponType === 'staff' || data.weaponType === 'instrument' ? 'staffCast' : data.weaponType === 'shield' ? 'shieldBash' : 'slash',
-      damageStat: data.damageStat || (data.weaponType === 'staff' ? 'mag' : data.weaponType === 'instrument' ? 'dex' : 'str'),
+      attackMotion: data.weaponType === 'staff' || data.weaponType === 'instrument' ? 'staffCast' : data.weaponType === 'shield' ? 'shieldBash' : data.weaponType === 'bow' ? 'shoot' : 'slash',
+      damageStat: data.damageStat || (data.weaponType === 'staff' ? 'mag' : ['instrument', 'bow'].includes(data.weaponType) ? 'dex' : 'str'),
       power: data.power || 2.5, attackPower: data.attackPower || 0,
       magicAttackPower: data.magicAttackPower || 0, defensePower: data.defensePower || 0,
       magicDefensePower: data.magicDefensePower || 0, bonuses: data.bonuses || {}, effects: data.effects || {},
@@ -106,7 +106,7 @@
   };
   // 武器種ごとの基礎攻撃力の比。爪は手数・追撃・連舞・会心・AGIが乗るため
   // 単発を明確に低くする（§11：剣の65〜75%）。杖/楽器は魔法攻撃力として使う。
-  const weaponAttackRate = { sword: 1.00, martial: 0.70, staff: 1.08, instrument: 1.08 };
+  const weaponAttackRate = { sword: 1.00, martial: 0.70, staff: 1.08, instrument: 1.08, bow: 1.00 };
   const dungeonForStage = stage => stage.startsWith('d1') ? 'dungeon1' : stage.startsWith('d2') ? 'dungeon2' : stage.startsWith('d4') ? 'dungeon4' : 'dungeon3';
   const weaponMaterials = {
     d1: [{ itemId: 'rustedKnife', count: 3 }, { itemId: 'manaDrop', count: 3 }, { itemId: 'batFang', count: 2 }],
@@ -214,62 +214,84 @@
     goblin: ['goblinGloves'], nightBat: ['nightHat'], ghostBone: ['ghostBoneReliquary']
   };
   const suffixes = {
-    sword: ['怪異剣', 'MONSTER BLADE'], staff: ['秘杖', 'ARCANE RELIC'], martial: ['魔装拳', 'FIEND FIST'],
+    sword: ['怪異剣', 'MONSTER BLADE'], staff: ['秘杖', 'ARCANE RELIC'], martial: ['魔装拳', 'FIEND FIST'], bow: ['魔猟弓', 'FIEND HUNTBOW'],
     instrument: ['禁奏器', 'FORBIDDEN SCORE'], head: ['異貌', 'FIEND VISAGE'], body: ['怪装', 'MONSTER GARB'],
     arms: ['魔骸手', 'FIEND ARMS'], feet: ['夜渡靴', 'NIGHTWALKER'], accessory: ['怪異核', 'MONSTER CORE'],
     // 左手枠。盾は全JOBが左手へ、守護士・ファントムシーフは右手へも構えられる。
     // 双牙は offHandOnly の双刃で、《二刀の型》を持つ双刃士だけが左手に持てる。
-    shield: ['怪盾', 'MONSTER AEGIS'], dualBlade: ['双牙', 'FIEND TWINFANG']
+    shield: ['怪盾', 'MONSTER AEGIS'], guardianShield: ['魔狩盾', 'FIEND HUNT AEGIS'], dualBlade: ['双牙', 'FIEND TWINFANG']
   };
-  const monsterGearByDungeon = { dungeon1: [], dungeon2: [], dungeon3: [], dungeon4: [] };
-  const normalEnemies = Object.values(D.enemies || {}).filter(e => ['dungeon1', 'dungeon2', 'dungeon3', 'dungeon4'].includes(e.dungeonId || (() => {
+  const monsterGearByDungeon = { dungeon1: [], dungeon2: [], dungeon3: [], dungeon4: [], dungeon5: [] };
+  const normalEnemies = Object.values(D.enemies || {}).filter(e => ['dungeon1', 'dungeon2', 'dungeon3', 'dungeon4', 'dungeon5'].includes(e.dungeonId || (() => {
     for (const d of D.dungeons || []) {
       const tiers = [...(d.encounterProgression || []), ...(d.floors || []).flatMap(f => f.encounterProgression || [])];
       if (tiers.some(t => (t.pool || []).some(p => p.id === e.id))) return d.id;
     }
     return null;
-  })()) && e.kind !== 'boss' && !['zenakado', 'myrthi', 'noelFirstEncounter', 'astact', 'd4MidBoss'].includes(e.id));
+  })()) && e.kind !== 'boss' && !['zenakado', 'myrthi', 'noelFirstEncounter', 'astact', 'd4MidBoss', 'ostina', 'd5MidBoss'].includes(e.id));
   const typeCycle = ['sword', 'staff', 'martial', 'head', 'body', 'arms', 'feet', 'accessory', 'instrument', 'shield', 'dualBlade'];
+  // D5は狩人・弓学まで解放済みになるため、全武器系統と全防具枠を明示的に割り当てる。
+  // 配列に複数指定した敵は、低確率の専用装備を2種類持つ。
+  const d5Unique = {
+    venomWeaver: [{ id: 'monster_relic_venomWeaver_staff', kind: 'staff' }, { id: 'monster_relic_venomWeaver_instrument', kind: 'instrument' }],
+    repeatedHunter: [{ id: 'monster_relic_repeatedHunter', kind: 'bow' }],
+    venomMantis: [{ id: 'monster_relic_venomMantis', kind: 'sword' }],
+    echoJackal: [{ id: 'monster_relic_echoJackal', kind: 'martial' }],
+    thornMarionette: [{ id: 'monster_relic_thornMarionette', kind: 'dualBlade' }],
+    plagueBulwark: [{ id: 'monster_relic_plagueBulwark', kind: 'shield' }, { id: 'monster_relic_plagueBulwark_guardian', kind: 'guardianShield' }],
+    hushMothQueen: [{ id: 'monster_relic_hushMothQueen', kind: 'head' }],
+    rotBloom: [{ id: 'monster_relic_rotBloom', kind: 'body' }],
+    pursuitGaunt: [{ id: 'monster_relic_pursuitGaunt', kind: 'arms' }],
+    loopStag: [{ id: 'monster_relic_loopStag_feet', kind: 'feet' }, { id: 'monster_relic_loopStag_core', kind: 'accessory' }],
+    strayMerukuru: [{
+      id: 'monster_relic_strayMerukuru', kind: 'accessory', chance: .007,
+      name: 'はぐれメロクス', nameEn: 'STRAY MEROX',
+      bonuses: { str: 50, vit: 50, mag: 50, mnd: 50, dex: 50, agi: 50, luk: 50 }
+    }]
+  };
   // ★4の基礎DROP率（§4）。図鑑称号などの倍率は rollDrops() 側でこの値へ乗算される。
-  const dungeonChance = { dungeon1: .010, dungeon2: .010, dungeon3: .009, dungeon4: .008 };
-  const dungeonRank = { dungeon1: 1, dungeon2: 2, dungeon3: 3, dungeon4: 4 };
+  const dungeonChance = { dungeon1: .010, dungeon2: .010, dungeon3: .009, dungeon4: .008, dungeon5: .007 };
+  const dungeonRank = { dungeon1: 1, dungeon2: 2, dungeon3: 3, dungeon4: 4, dungeon5: 5 };
   // ★4の基礎性能。★3の仕上げ品 +5(×1.75) をさらに1.10倍した値＝★3の1.93倍。
   // 「★3を+5まで鍛えた人が、拾った瞬間に乗り換えたくなる」水準（§65）。
-  const star4Attack = { dungeon1: 23, dungeon2: 35, dungeon3: 69, dungeon4: 208 };
-  const star4ArmorBudget = { dungeon1: 21, dungeon2: 32, dungeon3: 63, dungeon4: 190 };
+  const star4Attack = { dungeon1: 23, dungeon2: 35, dungeon3: 69, dungeon4: 208, dungeon5: 260 };
+  const star4ArmorBudget = { dungeon1: 21, dungeon2: 32, dungeon3: 63, dungeon4: 190, dungeon5: 238 };
   normalEnemies.forEach((enemy, index) => {
     const dungeonId = enemy.dungeonId || (D.dungeons || []).find(d => [...(d.encounterProgression || []), ...(d.floors || []).flatMap(f => f.encounterProgression || [])].some(t => (t.pool || []).some(p => p.id === enemy.id)))?.id;
     if (!dungeonId) return;
-    const assigned = d1Unique[enemy.id] || [`monster_relic_${enemy.id}`];
-    assigned.forEach((id, subIndex) => {
-      let kind = typeCycle[(index + subIndex) % typeCycle.length];
+    const assigned = d5Unique[enemy.id] || (d1Unique[enemy.id] || [`monster_relic_${enemy.id}`]).map(id => ({ id }));
+    assigned.forEach((entry, subIndex) => {
+      const id = typeof entry === 'string' ? entry : entry.id;
+      let kind = entry.kind || typeCycle[(index + subIndex) % typeCycle.length];
       const existing = D.items[id];
       if (existing?.slot && existing.slot !== 'rightHand') kind = existing.slot;
       else if (D.weapons[id]) kind = D.weapons[id].weaponType;
-      const weaponKind = ['sword', 'staff', 'martial', 'instrument', 'dualBlade'].includes(kind);
-      const [prefix, enPrefix] = suffixes[kind], displayName = existing?.name || `${prefix}《${enemy.name}》`;
+      const weaponKind = ['sword', 'staff', 'martial', 'instrument', 'bow', 'guardianShield', 'dualBlade'].includes(kind);
+      const [prefix, enPrefix] = suffixes[kind], displayName = entry.name || existing?.name || `${prefix}《${enemy.name}》`;
       const rank = dungeonRank[dungeonId], bonusValue = 2 + rank * 2;
       const bonuses = weaponKind
-        ? (kind === 'staff' ? { mag: bonusValue, dex: Math.max(2, bonusValue - 2) } : kind === 'instrument' ? { dex: bonusValue, mag: Math.max(2, bonusValue - 2) } : kind === 'martial' ? { agi: bonusValue, str: Math.max(2, bonusValue - 2) } : { str: bonusValue, dex: Math.max(2, bonusValue - 2) })
+        ? (kind === 'staff' ? { mag: bonusValue, dex: Math.max(2, bonusValue - 2) } : kind === 'instrument' || kind === 'bow' ? { dex: bonusValue, agi: Math.max(2, bonusValue - 2) } : kind === 'guardianShield' ? { vit: bonusValue, mnd: Math.max(2, bonusValue - 2) } : kind === 'martial' ? { agi: bonusValue, str: Math.max(2, bonusValue - 2) } : { str: bonusValue, dex: Math.max(2, bonusValue - 2) })
         : kind === 'shield' ? { vit: bonusValue, mnd: Math.max(2, bonusValue - 2) }
         : kind === 'body' ? { vit: bonusValue, maxHp: 8 * rank } : kind === 'head' ? { mnd: bonusValue, dex: Math.max(2, bonusValue - 2) } : kind === 'arms' ? { str: bonusValue, dex: bonusValue } : kind === 'feet' ? { agi: bonusValue, dex: Math.max(2, bonusValue - 2) } : { luk: bonusValue, mnd: Math.max(2, bonusValue - 2) };
       const common = {
-        name: displayName, nameEn: existing?.nameEn || `${enPrefix} // ${enemy.enName || enemy.id.toUpperCase()}`,
+        name: displayName, nameEn: entry.nameEn || existing?.nameEn || `${enPrefix} // ${enemy.enName || enemy.id.toUpperCase()}`,
         dungeonId, catalogDungeon: dungeonId, stars: 4, rarity: 'epic', source: 'dropOnly', dropEnemyId: enemy.id,
-        bonuses, description: `${enemy.name}の怪異性が凝固した一点物。基本能力まで引き上げる、工房では再現できない遺装。`
+        bonuses: entry.bonuses || bonuses, description: `${enemy.name}の怪異性が凝固した一点物。基本能力まで引き上げる、工房では再現できない遺装。`
       };
       if (weaponKind || existing?.slot === 'rightHand') {
         const base = star4Attack[dungeonId] || 23;
         // 双牙は体術武器として扱い、左手専用の双刃にする。
-        const isTwin = kind === 'dualBlade', wt = isTwin ? 'martial' : (weaponKind ? kind : 'staff');
+        const isTwin = kind === 'dualBlade', isGuardianShield = kind === 'guardianShield', wt = isTwin ? 'martial' : isGuardianShield ? 'shield' : (weaponKind ? kind : 'staff');
         const rated = Math.round(base * (weaponAttackRate[wt] ?? 1) * (isTwin ? .92 : 1));
         addWeapon(id, {
           ...common, weaponType: wt,
           // 双刃は左右を区別しない。slot は rightHand のままにして、
           // 左手へは isLeftHandItemAllowed() が双刃かどうかで判定する。
           ...(isTwin ? { weaponSubtype: 'dualBlade' } : {}),
-          attackPower: ['sword', 'martial'].includes(wt) ? rated : 0,
+          damageStat: wt === 'bow' ? 'dex' : undefined,
+          attackPower: ['sword', 'martial', 'bow'].includes(wt) ? rated : 0,
           magicAttackPower: ['staff', 'instrument'].includes(wt) ? rated : 0, power: 2.7 + rank * .2
+          ,...(isGuardianShield ? { defensePower: rated, magicDefensePower: Math.round(rated * .82), damageStat: 'vit', damageType: 'physical' } : {})
         });
       } else {
         // ★4も部位ごとに役割を分ける。以前は頭も体も足もアクセまで
@@ -288,8 +310,9 @@
         addArmor(id, { ...common, slot: kind === 'shield' ? 'leftHand' : kind, ...armorProfile });
       }
       const uniqueDrop = enemy.dropTable.find(drop => drop.itemId === id);
-      if (uniqueDrop) uniqueDrop.chance = dungeonChance[dungeonId];
-      else enemy.dropTable.push({ itemId: id, chance: dungeonChance[dungeonId] });
+      const dropChance = entry.chance ?? dungeonChance[dungeonId];
+      if (uniqueDrop) uniqueDrop.chance = dropChance;
+      else enemy.dropTable.push({ itemId: id, chance: dropChance });
       monsterGearByDungeon[dungeonId].push(id);
     });
   });
@@ -298,7 +321,9 @@
   const collectionRewards = {
     dungeon1: ['archive_reward_d1', '宵盗の蒼章', 'AZURE THIEF CREST', { dex: 4, luk: 4 }],
     dungeon2: ['archive_reward_d2', '静夜を破る黒章', 'SILENCE BREAKER CREST', { agi: 7, str: 5 }],
-    dungeon3: ['archive_reward_d3', '崩界踏破の星環', 'WORLD END STAR RING', { mag: 8, mnd: 8, luk: 5 }]
+    dungeon3: ['archive_reward_d3', '崩界踏破の星環', 'WORLD END STAR RING', { mag: 8, mnd: 8, luk: 5 }],
+    dungeon4: ['archive_reward_d4', '断月を越す紅章', 'STACCATO MOON CREST', { agi: 10, dex: 10, luk: 5 }],
+    dungeon5: ['archive_reward_d5', '終わらぬ狩律環', 'OSTINATO HUNT CREST', { dex: 12, agi: 8, luk: 6 }]
   };
   D.equipmentCollections = {};
   for (const [dungeonId, [id, name, nameEn, bonuses]] of Object.entries(collectionRewards)) {
