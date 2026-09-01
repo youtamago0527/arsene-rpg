@@ -135,7 +135,33 @@
       if (system.acquiredCollection.includes(title.id)) return;
       if (this.archiveCompletionPct(dungeonId) !== 100) return;
       const acquired = this.acquireCollectionTitle(title.id);
-      if (acquired?.first) this.flashTitle?.('図鑑称号 GET', title.name);
+      if (acquired?.first) {
+        this.flashTitle?.('図鑑称号 GET', title.name);
+        // 最初の称号でだけ、装備して初めて効果が出ることを簡潔に案内する。
+        // 詳細説明は既存HELPへ一本化し、以降の称号取得では繰り返さない。
+        if (acquired.systemUnlocked) this.showTitleHelpPopup?.(acquired);
+      }
+    });
+  };
+  proto.showTitleHelpPopup = function (title) {
+    document.querySelector('.title-help-modal')?.remove();
+    const modal = document.createElement('div');
+    modal.className = 'title-help-modal';
+    modal.innerHTML = `<section class="title-help-card" role="dialog" aria-modal="true" aria-label="称号システム解放">
+      <small>TITLE SYSTEM UNLOCKED</small>
+      <h2>称号が解放されました</h2>
+      <strong>${title?.name || '新しい称号'}</strong>
+      <em>${title?.effectText || ''}</em>
+      <p>称号は入手しただけでは効果が発動しません。<br><b>装備・ステータス → 称号</b>から装備してください。</p>
+      <span>詳しくは「設定 → HELP → 称号とアルカナ」で確認できます。</span>
+      <button type="button" data-title-help-close>わかった<small>CLOSE</small></button>
+    </section>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', event => {
+      if (event.target === modal || event.target.closest('[data-title-help-close]')) {
+        this.audio?.sfx?.('ui');
+        modal.remove();
+      }
     });
   };
   proto.equippedBossTitle = function () {

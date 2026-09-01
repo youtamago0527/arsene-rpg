@@ -152,19 +152,22 @@ assert.equal(dualGame.profile.titleSystem.equipped.boss, 'boss_reprise', '図鑑
 // ── 図鑑完成による図鑑称号の自動付与（checkCollectionTitleUnlocks） ──
 const unlockGame = new BattleGame();
 unlockGame.profile.titleSystem = { unlocked: false, collectionSlotUnlocked: false, bossSlotUnlocked: false, acquired: [], acquiredBoss: [], acquiredCollection: [], equipped: { collection: null, boss: null }, bossProgress: {} };
-let archivePct = 60, flashed = 0;
+let archivePct = 60, flashed = 0, helpPopups = 0;
 unlockGame.archiveCompletionPct = () => archivePct;
 unlockGame.flashTitle = () => { flashed++; };
+unlockGame.showTitleHelpPopup = () => { helpPopups++; };
 unlockGame.checkCollectionTitleUnlocks('dungeon1');
 assert.equal(unlockGame.profile.titleSystem.acquiredCollection.length, 0, '図鑑完成率が100%未満なら図鑑称号を付与しない');
 archivePct = 100;
 unlockGame.checkCollectionTitleUnlocks('dungeon1');
 assert.deepEqual(unlockGame.profile.titleSystem.acquiredCollection, ['d1_collection_gold'], '対象ダンジョンの図鑑が100%になったら図鑑称号を自動付与する');
 assert.equal(flashed, 1, '初回取得時に通知を出す');
+assert.equal(helpPopups, 1, '最初の称号取得時だけ称号HELPの案内を出す');
 unlockGame.checkCollectionTitleUnlocks('dungeon1');
 assert.equal(unlockGame.profile.titleSystem.acquiredCollection.length, 1, '既に取得済みの図鑑称号を重複付与しない');
 assert.equal(flashed, 1, '再チェックでは通知を出し直さない（旧セーブの100%到達も1回だけ自動付与される）');
 unlockGame.checkCollectionTitleUnlocks('dungeon2');
 assert.deepEqual(unlockGame.profile.titleSystem.acquiredCollection.sort(), ['d1_collection_gold', 'd2_collection_exp'].sort(), '別ダンジョンの図鑑称号は対応するダンジョンIDでのみ付与される');
+assert.equal(helpPopups, 1, '2個目以降の称号では初回HELPを繰り返さない');
 
 console.log('title_system_regression: PASS');
