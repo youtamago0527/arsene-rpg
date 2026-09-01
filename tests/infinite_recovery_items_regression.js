@@ -1,0 +1,21 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const root = require('node:path').resolve(__dirname, '..');
+const dataSource = fs.readFileSync(`${root}/js/infinite_score_data.js`, 'utf8');
+const scoreSource = fs.readFileSync(`${root}/js/infinite_score.js`, 'utf8');
+const gameSource = fs.readFileSync(`${root}/js/game.js`, 'utf8');
+const context = { window: { ARSENE_DATA: { items: {}, enemies: {} } }, console };
+vm.runInNewContext(dataSource, context);
+const D = context.window.ARSENE_DATA;
+const expected = { owPotion20:['hpRate',.2], owPotion40:['hpRate',.4], owPotion60:['hpRate',.6], owManaPotion20:['mpRate',.2], owManaPotion40:['mpRate',.4], owManaPotion60:['mpRate',.6] };
+for (const [id,[key,rate]] of Object.entries(expected)) { assert(D.items[id],`${id} is missing`); assert.equal(D.items[id].effect[key],rate); assert.equal(D.items[id].otherWorldItem,true); }
+assert.equal(D.infiniteScore.bagLimit,30);
+assert.equal(D.infiniteScore.recoveryItems.length,6);
+assert(!scoreSource.includes("hadReturn=this.isHasReturn(),stack="),'run loot must not stack');
+assert(scoreSource.includes("this.profile.inventory[x.itemId]=(this.profile.inventory[x.itemId]||0)+(x.count||1)"),'return must stack at home');
+assert(scoreSource.includes("this.profile.inventory[id]--"),'import must consume one per slot');
+assert(scoreSource.includes('recoveryDropRate'),'enemy recovery drops missing');
+for (const id of Object.keys(expected)) assert(scoreSource.includes(`product('${id}'`),`${id} missing from shop`);
+assert(gameSource.includes('recoveryItemInfo(item'),'normal battles must support percentage recovery');
+console.log('infinite recovery items regression: ok');
