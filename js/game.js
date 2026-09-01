@@ -1680,6 +1680,9 @@
     progressState() { const f = this.profile.flags, noelGoal = D.battleProgression?.noelEncounterWins || 3, zenakadoGoal = D.battleProgression?.zenakadoEncounterWins || 7; if (!f.noelFirstEncounterCleared) { const wins = Math.max(0, f.preNoelBattleWins || 0); return { phase: 'noel', wins, goal: noelGoal, ready: wins >= noelGoal, bossId: 'noelFirstEncounter', bossName: 'NOËL' }; } if (!f.zenakadoDefeated) { const wins = Math.max(0, f.postNoelBattleWins || 0); return { phase: 'zenakado', wins, goal: zenakadoGoal, ready: wins >= zenakadoGoal, bossId: 'zenakado', bossName: 'ZENAKADO' }; } return { phase: 'complete', wins: zenakadoGoal, goal: zenakadoGoal, ready: false, bossId: null, bossName: 'DUNGEON CLEAR' }; }
 
     startBattle() {
+      // PHANTOM THIEFは異世界専用。古いセーブや外部導線で選択状態が残っていても、
+      // 通常ダンジョン開始時には直前の通常JOBへ必ず戻す。
+      if (this.isPhantomThief()) this.restoreNormalDungeonJob(true);
       this.closeBattleMenu(); this.cancelAutoPick(); this.battleMode = 'slime'; const stats = this.totalStats(), vitals = this.storedVitals(stats); this.player = this.freshBattlePlayer(stats, D.settings.healOnBattleStart ? stats.maxHp : vitals.hp, D.settings.healOnBattleStart ? stats.maxMp : vitals.mp);
       const dungeon = this.getDungeon(), dungeon2 = this.currentDungeonId === 'dungeon2', dungeon3 = this.currentDungeonId === 'dungeon3';
       let wins, lineup;
@@ -1709,6 +1712,7 @@
     // 曲の切り替えは各 start 関数の中でまとめて行う。
     playBossMusic(bossId) { this.audio.playTrack(this.bossMusicFor(bossId)); }
     async startBossEncounter(forceBossId = null, forcePhase = null) {
+      if (this.isPhantomThief()) this.restoreNormalDungeonJob(true);
       const progress = this.progressState();
       const bossId = forceBossId || progress.bossId, phase = forcePhase || progress.phase;
       if (!bossId || (!forceBossId && !progress.ready)) { this.showMenu('home'); return; }
@@ -3705,11 +3709,11 @@
       const base = [...(D.startingJobIds || []), 'magicKnight', 'guardian', 'dualBlade'].filter(id => this.isJobUnlocked(id));
       const special = ['phantomThief'].filter(id => this.isJobUnlocked(id));
       // 解放判定は profile.unlockedJobs が唯一の情報源。初期ジョブを固定しない。
-      const card = id => { const j = D.jobs[id]; if (!j) return ''; const p = this.profile.jobs[id] || { level: 1 }, avail = this.isJobUnlocked(id), isCur = id === currentId; return `<button class="jcard${isCur ? ' cur' : ''}${avail ? '' : ' locked'}" data-job-detail="${id}"><div class="jcard-name">${j.name}</div><div class="jcard-lv">${avail ? `Lv.${p.level}` : 'LOCKED'}</div></button>`; };
+      const card = id => { const j = D.jobs[id]; if (!j) return ''; const p = this.profile.jobs[id] || { level: 1 }, avail = this.isJobUnlocked(id), isCur = id === currentId, otherWorldOnly = id === 'phantomThief'; return `<button class="jcard${isCur ? ' cur' : ''}${avail ? '' : ' locked'}${otherWorldOnly ? ' otherworld-only' : ''}" data-job-detail="${id}"><div class="jcard-name">${j.name}${otherWorldOnly ? '<small>異世界専用・通常D使用不可</small>' : ''}</div><div class="jcard-lv">${avail ? otherWorldOnly ? 'SPECIAL' : `Lv.${p.level}` : 'LOCKED'}</div></button>`; };
       // ダンジョン名はデータから引く。名前を変えても文言が追従する。
       const d1Name = this.getDungeon('dungeon1')?.name || 'ダンジョン1';
       const notice = this.isJobUnlocked('magicKnight') ? '' : `<p class="job-lock-notice">《${d1Name}》をクリアして《魔奏士の証》を入手すると、残りの基本JOBと魔奏士が解放されます。</p>`;
-      const specialSec = special.length ? `<section class="jsec"><h4>特殊JOB</h4><div class="jgrid">${special.map(card).join('')}</div></section>` : '';
+      const specialSec = special.length ? `<section class="jsec"><h4>異世界専用・特殊JOB</h4><p class="job-lock-notice">PHANTOM THIEFは異世界への突入時だけ自動で変更され、帰還時に元のJOBへ戻ります。通常ダンジョンでは使用できません。</p><div class="jgrid">${special.map(card).join('')}</div></section>` : '';
       return `${notice}<section class="jsec"><h4>基本JOB</h4><div class="jgrid">${base.map(card).join('')}</div></section>${specialSec}`;
     }
     jobDetailHtml(jobId, unlocked, currentId) {
@@ -3760,7 +3764,8 @@
       // JOB特性：そのJOBに就いている間だけの効果（他JOBへ持ち出せない）
       const traits = this.jobTraitEntries(jobId);
       const traitHtml = traits.length ? `<div class="jbonus jtraits"><h4>JOB特性</h4><div class="jtrait-list">${traits.map(t => `<button type="button" class="jtrait-row" data-job-trait-detail="${jobId}:${t.key}"><b>${t.name}</b><span>${t.label}${t.gain > 0 ? `（転生 +${t.gain}%）` : ''}</span><em>▶</em></button>`).join('')}</div><p class="jbn-note">このJOBに就いている間だけ有効。他JOBへは持ち出せません。</p></div>` : '';
-      return `<div class="jdetail"><button class="jback-btn" data-job-back>← JOB一覧</button><div class="jdetail-hdr"><div><b>${j.name}</b></div><em class="jdetail-badge">${isCur ? '現在' : !avail ? 'LOCKED' : noGrow ? 'SPECIAL' : `Lv.${p.level}`}</em></div>${avail ? `<div class="jexp-wrap"><div class="jlv-row"><b>JOB Lv.${p.level}</b><span>JEXP ${need ? `${p.exp} / ${need}` : 'MASTER'}</span></div><div class="jexp-bar"><i style="width:${bar}%"></i></div></div>${noGrow ? `<p class="jfeature">${j.featureText || j.description || ''}</p>${stealHtml}` : `<div class="jbonus"><h4>このJOBで育てた能力</h4><div class="jbn-grid">${bonusGrid}</div><p class="jbn-note">この成長は、このJOBに就いている間だけ乗ります。</p></div>`}${traitHtml}${isCur ? '<div class="jcur-badge">現在のJOB</div>' : `<button class="jchange-btn" data-job-change="${jobId}">このJOBに変更</button>`}${this.rebirthSectionHTML(jobId)}${skillRows ? `<div class="jskills"><h4>アビリティ</h4><div class="jar-list">${skillRows}</div></div>` : ''}` : `<p class="jlocked-note">${j.description}</p>${condHtml}`}</div>`;
+      const jobAction = isPT ? '<div class="jcur-badge pt-world-only">異世界突入時に自動変更／通常ダンジョンでは使用不可</div>' : isCur ? '<div class="jcur-badge">現在のJOB</div>' : `<button class="jchange-btn" data-job-change="${jobId}">このJOBに変更</button>`;
+      return `<div class="jdetail"><button class="jback-btn" data-job-back>← JOB一覧</button><div class="jdetail-hdr"><div><b>${j.name}</b></div><em class="jdetail-badge">${isCur ? '現在' : !avail ? 'LOCKED' : noGrow ? 'SPECIAL' : `Lv.${p.level}`}</em></div>${avail ? `<div class="jexp-wrap"><div class="jlv-row"><b>JOB Lv.${p.level}</b><span>JEXP ${need ? `${p.exp} / ${need}` : 'MASTER'}</span></div><div class="jexp-bar"><i style="width:${bar}%"></i></div></div>${noGrow ? `<p class="jfeature">${j.featureText || j.description || ''}</p>${stealHtml}` : `<div class="jbonus"><h4>このJOBで育てた能力</h4><div class="jbn-grid">${bonusGrid}</div><p class="jbn-note">この成長は、このJOBに就いている間だけ乗ります。</p></div>`}${traitHtml}${jobAction}${this.rebirthSectionHTML(jobId)}${skillRows ? `<div class="jskills"><h4>アビリティ</h4><div class="jar-list">${skillRows}</div></div>` : ''}` : `<p class="jlocked-note">${j.description}</p>${condHtml}`}</div>`;
     }
     abilitySetHtml(currentId) {
       const ps = this.profile.passiveSlots || [null, null], p0 = ps[0] ? D.skills[ps[0]] : null, p1 = ps[1] ? D.skills[ps[1]] : null;
@@ -4003,7 +4008,13 @@
       if (render) { this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('job'); }
       return true;
     }
-    changeJob(id) { return this.switchJobState(id, true); }
+    changeJob(id) {
+      if (id === 'phantomThief') {
+        window.arseneStartFlow?.toast?.('PHANTOM THIEFは異世界への突入時のみ使用できます');
+        return false;
+      }
+      return this.switchJobState(id, true);
+    }
     restoreNormalDungeonJob(force = false) {
       if (this.profile.currentJob !== 'phantomThief' && !force) return false;
       const target = [this.profile.otherWorldReturnJob, this.profile.lastNormalJob, this.profile.initialJob, 'mage']
