@@ -538,3 +538,8 @@
 .dismantle-modal .dismantle-target { font-size: 1.05em; font-weight: 700; }
 .dismantle-modal.dismantle-strong .q-revive-card { border-color: #b8892f; }
 .dismantle-modal.dismantle-strong h2 { color: #e0b458; }
+
+.workshop-quick-help { margin-top: -8px; border-color: #9b75ff; background: linear-gradient(120deg,#11102e,#1c2450); box-shadow: none; }
+.workshop-quick-help b { color: #c7a9ff; }
+.workshop-quick-help strong { font-size: 14px; }
+.workshop-quick-help small { padding-top: 7px; border-top: 1px solid #8068b866; font-size: 9px; line-height: 1.6; color: #dfd1ff; }

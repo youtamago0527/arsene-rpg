@@ -1708,7 +1708,7 @@
     // ボス戦の開始点はメニュー・再戦・ダンジョン内と複数あるので、
     // 曲の切り替えは各 start 関数の中でまとめて行う。
     playBossMusic(bossId) { this.audio.playTrack(this.bossMusicFor(bossId)); }
-    startBossEncounter(forceBossId = null, forcePhase = null) {
+    async startBossEncounter(forceBossId = null, forcePhase = null) {
       const progress = this.progressState();
       const bossId = forceBossId || progress.bossId, phase = forcePhase || progress.phase;
       if (!bossId || (!forceBossId && !progress.ready)) { this.showMenu('home'); return; }
@@ -1721,7 +1721,19 @@
       const bossArrival = this.battleMode === 'noel'
         ? '忘却の最奥――永遠の裁定者ノエルが姿を現した……。'
         : `${template.title ? `${template.title} ` : ''}${template.name}が立ちはだかった……！`;
-      this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); this.setLog(bossArrival); this.flashTitle('BOSS ENCOUNTER', (template.nameEn || template.name || progress.bossName).toUpperCase()); this.showMainCommands();
+      this.renderEnemies(); this.applyEquipmentVisual(); this.updateHUD(); this.setLog(bossArrival);
+      if (this.battleMode === 'noel' && typeof this.playNoiseSequence === 'function') {
+        this.locked = true;
+        this.panel('');
+        await this.playNoiseSequence([
+          { sys: 'NOISE...' },
+          { sys: 'UNKNOWN JUDGEMENT SIGNAL' },
+          { who: 'ノエル', text: 'ここまで追いかけてくるとは。だが、今のお前たちの力では私には到底及ばんぞ。' },
+          { who: 'ノエル', text: '力の差を見せてやろう。' }
+        ]);
+        this.locked = false;
+      }
+      this.flashTitle('BOSS ENCOUNTER', (template.nameEn || template.name || progress.bossName).toUpperCase()); this.showMainCommands();
     }
     startDebugGuardianTrial() {
       const template = D.enemies.debugOverpowerEnemy;
@@ -1967,6 +1979,7 @@
         // キャラクター本体の見かけの大きさが揃わない。足元を基準に、主要4体を
         // 同じ「画面を占める強敵感」へ補正する（名札・HPの寸法には影響させない）。
         const bossArtScale = e.kind === 'boss' ? ({
+          noelFirstEncounter: 1.4,
           zenakado: 1.54,
           myrthi: 1.33,
           seripes: 1.28,
@@ -3532,7 +3545,7 @@
       if (this.battleMode === 'debugOverpower') { const damage = this.enemies[0]?.debugDamageTaken || 0, turns = this.turn, resonance = this.player?.resonance || 0; this.restoreDebugBattle(); this.flashTitle('TEST COMPLETE', 'GUARDIAN ENDURANCE'); await this.battleSleep(700); this.showResult('TEST COMPLETE', 'HP無限の強敵検証体に敗北。開始前のセーブ状態へ戻した。', 'DEBUG RESULT', `<div class="boss-result-note"><b>生存 ${turns} ACTION</b><br>総与ダメージ ${Math.round(damage).toLocaleString('ja-JP')}<br>最終RESONANCE ${resonance.toFixed(1)}%</div>`); return; }
       // まかない系は敗北した時点で失効。デバッグ検証は上でセーブを巻き戻すため対象外。
       if (this.activeMealBuffType()) this.clearMealBuff();
-      if (this.battleMode === 'noel') { const stats = this.totalStats(); this.profile.flags.noelFirstEncounterCleared = true; this.profile.flags.preNoelBattleWins = Math.max(this.profile.flags.preNoelBattleWins || 0, D.battleProgression.noelEncounterWins); this.profile.flags.postNoelBattleWins = 0; this.profile.currentVitals = { hp: stats.maxHp, mp: stats.maxMp }; this.player.hp = stats.maxHp; this.player.mp = stats.maxMp; this.saveProfile(); this.flashTitle('DEFEAT', 'NOËL — THE ETERNAL JUDGE'); await this.battleSleep(1000); this.showResult('DEFEAT', '圧倒的な裁定の前に敗れた。ノエルは姿を消し、全回復して拠点へ帰還した。', 'THE NEXT KEY', '<div class="workshop-unlock"><b>PHANTOM WORKSHOP</b><strong>工房が解放された！</strong><span>敗北の記録を解析し、装備製作機能が使用可能になりました。</span></div>'); return; }
+      if (this.battleMode === 'noel') { const stats = this.totalStats(); this.profile.flags.noelFirstEncounterCleared = true; this.profile.flags.preNoelBattleWins = Math.max(this.profile.flags.preNoelBattleWins || 0, D.battleProgression.noelEncounterWins); this.profile.flags.postNoelBattleWins = 0; this.profile.currentVitals = { hp: stats.maxHp, mp: stats.maxMp }; this.player.hp = stats.maxHp; this.player.mp = stats.maxMp; this.saveProfile(); this.flashTitle('DEFEAT', 'NOËL — THE ETERNAL JUDGE'); await this.battleSleep(1000); this.showResult('DEFEAT', '圧倒的な裁定の前に敗れた。ノエルは姿を消し、全回復して拠点へ帰還した。', 'THE NEXT KEY', `<div class="workshop-unlock"><b>PHANTOM WORKSHOP</b><strong>工房が解放された！</strong><span>敵が落とす素材を集め、武器や防具を製作しよう。</span></div><div class="workshop-unlock workshop-quick-help"><b>CRAFT &amp; ENHANCE</b><strong>同じ武器・防具を掛け合わせて強化</strong><span>強化が解放されたら、同じ装備を素材にして性能を引き上げられます。+3までは成功率100%。+4以降は失敗すると強化する装備を失います。</span><small>保護アイテムがあればロストを回避可能。入手場所は……カズが何か知っていそうだ。何度か声をかけてみよう。</small></div>`); return; }
       const rollback = this.rollbackToCheckpoint();
       if (rollback) { this.battleRewards.checkpointNotice = `<div class="checkpoint-loss"><small>SAFE ZONE ROLLBACK</small><b>${rollback.before + 1}戦目で敗北 → ${rollback.nextBattle}戦目から再開</b><span>直前のセーフゾーン（${rollback.after}戦突破）まで進行度が戻りました。</span></div>`; this.saveProfile(); }
       this.player.hp = 1; this.profile.flags.lastBattleResult = 'defeat'; this.profile.flags.consecutiveDefeats = (this.profile.flags.consecutiveDefeats || 0) + 1; this.persistVitals(); if (this.battleMode === 'zenakado') { this.flashTitle('DEFEAT', 'ZENAKADO WINS'); this.showDefeatWithRevive('ゼナカドに敗れた。', 'CHALLENGE FAILED'); return; }
