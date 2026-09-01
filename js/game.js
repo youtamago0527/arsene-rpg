@@ -1286,30 +1286,35 @@
     // ══ HELP / 遊び方 ══════════════════════════════════════════
     // 文章は js/help_data.js（window.ARSENE_HELP）側で管理する。
     helpUnlocked(key) {
+      const f = this.profile.flags || {};
+      if (key === 'workshop') return !!f.noelFirstEncounterCleared;
+      if (key === 'magicKnight') return this.isJobUnlocked('magicKnight');
+      if (key === 'dualBlade') return this.isJobUnlocked('dualBlade');
+      if (key === 'guardian') return this.isJobUnlocked('guardian');
+      if (key === 'enhance') return (f.dungeon2BattleWins || 0) >= 15;
+      if (key === 'levelCap') return !!f.jobLevelCapUnlocked;
       if (key === 'rebirth') return this.rebirthUnlocked();
       if (key === 'phantomThief') return this.isJobUnlocked('phantomThief');
-      if (key === 'otherWorld') return !!this.profile.flags.otherWorldUnlocked;
+      if (key === 'otherWorld') return !!f.otherWorldUnlocked;
       return true;
     }
     helpSectionHTML() {
       const list = window.ARSENE_HELP || []; if (!list.length) return '';
       const open = this.helpOpenId;
-      const rows = list.map(e => {
-        const locked = e.lockedBy && !this.helpUnlocked(e.lockedBy);
+      // 未解放システムは見出しも出さない。名称だけで展開を先読みできるため、
+      // 解放後に初めてHELP一覧へ追加する。
+      const visible = list.filter(e => !e.lockedBy || this.helpUnlocked(e.lockedBy));
+      const rows = visible.map(e => {
         const isOpen = open === e.id;
-        let body;
-        if (locked) body = `<p class="help-locked">${e.lockedText || '???'}</p>`;
-        else {
-          const parts = []; let bullets = [];
-          (e.body || []).forEach(line => {
-            if (line.startsWith('- ')) { bullets.push(`<li>${line.slice(2)}</li>`); return; }
-            if (bullets.length) { parts.push(`<ul>${bullets.join('')}</ul>`); bullets = []; }
-            parts.push(`<p>${line}</p>`);
-          });
-          if (bullets.length) parts.push(`<ul>${bullets.join('')}</ul>`);
-          body = parts.join('');
-        }
-        return `<div class="help-item${isOpen ? ' open' : ''}"><button class="help-head" data-help-toggle="${e.id}"><span>${locked ? '🔒 ' : ''}${e.title}</span><small>${e.titleEn || ''}</small><em>${isOpen ? '−' : '＋'}</em></button>${isOpen ? `<div class="help-body">${body}</div>` : ''}</div>`;
+        const parts = []; let bullets = [];
+        (e.body || []).forEach(line => {
+          if (line.startsWith('- ')) { bullets.push(`<li>${line.slice(2)}</li>`); return; }
+          if (bullets.length) { parts.push(`<ul>${bullets.join('')}</ul>`); bullets = []; }
+          parts.push(`<p>${line}</p>`);
+        });
+        if (bullets.length) parts.push(`<ul>${bullets.join('')}</ul>`);
+        const body = parts.join('');
+        return `<div class="help-item${isOpen ? ' open' : ''}"><button class="help-head" data-help-toggle="${e.id}"><span>${e.title}</span><small>${e.titleEn || ''}</small><em>${isOpen ? '−' : '＋'}</em></button>${isOpen ? `<div class="help-body">${body}</div>` : ''}</div>`;
       }).join('');
       return `<section class="sound-settings help-section"><header><b>HELP / 遊び方</b><span>項目をタップで開閉</span></header><div class="help-list">${rows}</div></section>`;
     }
