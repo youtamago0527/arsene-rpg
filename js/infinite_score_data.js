@@ -51,8 +51,16 @@
       { id: 'merchant', name: '行商人', text: 'その場にショップが出現', weight: 7 },
       { id: 'sublime', name: '昇華', text: '任意OPを1Rank強化', weight: 2 }
     ],
-    enemyPool: ['shadowSlime', 'nightBat', 'ratThief', 'goblin', 'soulMage', 'ghostBone', 'fortressGolem', 'voidWatcher'].filter(id => D.enemies?.[id]),
-    rareEnemyPool: ['merox'].filter(id => D.enemies?.[id]),
+    // 出現する原種も段階更新する。倍率だけでなく、見た目と行動も攻略進度に合わせる。
+    enemyTiers: [
+      { minFloor: 1, maxFloor: 4, pool: ['shadowSlime', 'nightBat', 'ratThief'] },
+      { minFloor: 5, maxFloor: 10, pool: ['shadowSlime', 'nightBat', 'ratThief', 'goblin', 'soulMage', 'ghostBone'] },
+      { minFloor: 11, maxFloor: 15, pool: ['hushMoth', 'chimeImp', 'fadingChorister', 'mutedHound', 'silentHarmonist', 'echoWraith'] },
+      { minFloor: 16, maxFloor: 9999, pool: ['voidWatcher', 'abyssalKnight', 'voidGargoyle', 'chaosWitch', 'fortressGolem', 'riftAssailant'] }
+    ].map(tier => ({ ...tier, pool: tier.pool.filter(id => D.enemies?.[id]) })),
+    enemyPool: ['shadowSlime', 'nightBat', 'ratThief'].filter(id => D.enemies?.[id]),
+    rareEnemyTiers: [{ minFloor: 16, maxFloor: 9999, pool: ['merox'] }].map(tier => ({ ...tier, pool: tier.pool.filter(id => D.enemies?.[id]) })),
+    rareEnemyPool: [],
     consumablePool: ['owPotion20', 'owManaPotion20'],
     recoveryItems: [
       { itemId: 'owPotion20', weight: 34, minFloor: 1 },
