@@ -38,17 +38,18 @@
 .is-forge-gear-card.selected .is-forge-card-stats{flex:0 0 auto!important;height:auto!important;min-height:0!important;padding:2px 0 0!important;border:0!important;border-top:1px solid #ffffff14!important;background:none!important;color:#dce8f7!important;font-size:0!important;line-height:0!important}
 .is-forge-gear-card.selected .is-forge-card-op{flex:0 0 auto!important;height:auto!important;min-height:0!important;padding:0!important;border:0!important;background:none!important;color:#c4b5fd!important;font-size:6px!important;line-height:normal!important}
 .is-forge-selected-art,.is-forge-selected>em{display:none}
-.is-forge-selected{box-sizing:border-box;height:100%;min-height:258px;padding:12px 9px;justify-content:flex-start}
+.is-forge-selected{box-sizing:border-box;height:calc(100% - 10.4px);min-height:258px;margin-top:10.4px;padding:12px 9px;justify-content:flex-start}
 .is-forge-selected>i{margin-bottom:5px}
 .is-forge-selected>small{font-size:7px}
-.is-forge-selected h3{margin:12px 0 5px;font-size:12px;line-height:1.45}
+.is-forge-selected h3{box-sizing:border-box;width:100%;margin:12px 0 5px;padding:0 28px;font-size:12px;line-height:1.45}
 .is-forge-selected>strong{margin:2px 0;color:#d76cff;font-size:12px;line-height:1.4}
 .is-forge-selected>b{display:block;margin:2px 0;font-size:13px;line-height:1.35}
+.is-forge-selected>b:nth-of-type(2){position:absolute;right:11px;top:47px;margin:0;color:#67e8f9;font-size:13px}
 .is-forge-selected>div{gap:6px;margin-top:10px}
 .is-forge-selected>div span{min-height:43px;padding:7px 4px;place-content:center}
 .is-forge-selected>div small{font-size:7px}
 .is-forge-selected>div b{font-size:13px}
-.is-forge-selected>p{margin-top:10px;padding-top:9px;font-size:8px;line-height:1.65}
+.is-forge-selected>p{margin-top:10px;padding-top:9px;font-size:10px;line-height:1.7}
 .is-forge-preview{padding:8px}
 .is-forge-preview>header{padding-bottom:5px}
 .is-forge-stat-table{margin-top:4px}

@@ -28,7 +28,9 @@ assert.match(css, /\.is-forge-gear-card\.selected\{gap:0!important\}/, '選択�
 assert.match(css, /\.is-forge-gear-card\.selected>b\{[^}]+height:auto!important[^}]+line-height:normal!important/, '選択中カードでも装備名の高さを消さない');
 assert.match(css, /\.is-forge-gear-card\.selected \.is-forge-card-stats\{flex:0 0 auto!important;height:auto!important;min-height:0!important;[^}]+border:0!important/, '選択中カードの能力欄に大きな囲み枠を付けない');
 assert.match(css, /\.is-forge-detail-layout\{grid-template-columns:[^}]+;align-items:stretch\}/, '左右の詳細パネルを同じ高さに揃える');
-assert.match(css, /\.is-forge-selected\{box-sizing:border-box;height:100%/, '選択装備パネルを右側の加工内容と同じ高さまで伸ばす');
+assert.match(css, /\.is-forge-selected\{box-sizing:border-box;height:calc\(100% - 10\.4px\);[^}]+margin-top:10\.4px/, '選択装備パネルの枠上端を右の加工パネル本体へ揃える');
+assert.match(css, /\.is-forge-selected>b:nth-of-type\(2\)\{position:absolute;right:11px;top:47px/, '強化値を装備名と同じ行へ配置する');
+assert.match(css, /\.is-forge-selected>p\{[^}]+font-size:10px/, '選択装備のOPを読みやすく表示する');
 assert.match(css, /env\(safe-area-inset-bottom/, 'iPhoneのセーフエリアを確保する');
 assert.match(html, /css\/infinite-forge\.css/, '工房専用スタイルを読み込む');
 
