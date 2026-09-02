@@ -352,6 +352,14 @@
     if(this.isRun())this.isRun().pendingChoices=null;
     document.querySelector('.is-route-overlay')?.remove();
   };
+  P.isShowRouteTransition = function (direction, node) {
+    document.querySelector('.is-route-transition')?.remove();
+    const el=document.createElement('div'),visited=this.isFloorMap()?.nodes?.filter(n=>n.visited).length||1;
+    el.className='is-route-transition';
+    el.innerHTML=`<b>${esc(direction)}へ移動</b><span>FLOOR ${this.isRun()?.floor||1} // ROOM ${visited}</span>`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),520);
+  };
   P.isBindLongPress = function(panel){panel.querySelectorAll('[data-is-choice]').forEach(btn=>{btn.addEventListener('contextmenu',e=>e.preventDefault());btn.addEventListener('pointerup',e=>{if(btn.dataset.isResolved)return;e.preventDefault();e.stopPropagation();btn.dataset.isResolved='1';this.isResolveChoice(+btn.dataset.isChoice);},{once:true});});};
   P.isBagDetailHtml=function(x){
     if(!x)return `<section class="is-bag-detail empty"><small>ITEM DETAIL</small><h3>アイテムを選択</h3><p>上の一覧から確認したいアイテムをタップしてください。</p></section>`;
@@ -454,7 +462,7 @@
     menu.hidden=true;menu.style.display='none';this.isExploreOverlayMode=null;
     this.isPlayExploreMusic();this.renderMenuPanel('infinite-score');window.scrollTo({top:0,behavior:'instant'});
   };
-  P.isResolveChoice=function(index){const r=this.isRun(),choice=r.pendingChoices?.[index];this.isDismissRouteOverlay();if(!choice){this.isRenderExplore($('#menu-panel'));return;}const node=choice.nodeId&&this.isMapNode(choice.nodeId);if(node){this.isFloorMap().currentId=node.id;node.visited=true;r.stairsFound=!!node.stairs;this.isStairPromptDismissed=null;}const forced=r.forcedEvent;if(forced){choice.type=forced;r.forcedEvent=null;if(node)node.type=forced;}if(node&&!['encounter','rare'].includes(choice.type))node.cleared=true;const direction=this.isDirectionLabel(node,index).name;this.isLog(`${direction}の道へ進む → ${choice.type}`);this.isResolveEvent(choice.type);};
+  P.isResolveChoice=function(index){const r=this.isRun(),choice=r.pendingChoices?.[index];this.isDismissRouteOverlay();if(!choice){this.isRenderExplore($('#menu-panel'));return;}const node=choice.nodeId&&this.isMapNode(choice.nodeId);if(node){this.isFloorMap().currentId=node.id;node.visited=true;r.stairsFound=!!node.stairs;this.isStairPromptDismissed=null;}const forced=r.forcedEvent;if(forced){choice.type=forced;r.forcedEvent=null;if(node)node.type=forced;}if(node&&!['encounter','rare'].includes(choice.type))node.cleared=true;const direction=this.isDirectionLabel(node,index).name;this.isShowRouteTransition(direction,node);this.isLog(`${direction}の道へ進む → ${choice.type}`);this.isResolveEvent(choice.type);};
   P.isResolveEvent=function(type){const r=this.isRun();this.isDismissRouteOverlay();if(type==='encounter'){this.isStartBattle(false);return;}if(type==='rare'){this.isStartBattle(true);return;}if(type==='treasure'){this.isTreasure();return;}if(type==='workshop'){this.isRenderWorkshop($('#menu-panel'));return;}if(type==='item'){const id=this.isCfg().consumablePool[Math.floor(this.isRand()*this.isCfg().consumablePool.length)];this.isAddLoot({uid:this.isUid('item'),kind:'item',itemId:id,count:1});}else if(type==='gold'){const g=Math.max(1,Math.round((1+Math.floor(this.isRand()*5))*(1+r.buffs.goldBonus)));r.dungeonGold+=g;this.isLog(`奏貨 +${g}`);}else if(type==='trap'){const stats=this.totalStats(),dmg=Math.max(1,Math.round(stats.maxHp*(.08+this.isRand()*.17)));r.hp=Math.max(1,r.hp-dmg);this.isLog(`罠：HP -${dmg}`);}else if(type==='shop'){this.isRenderShop($('#menu-panel'),false);return;}else if(type==='merchant'){this.isRenderShop($('#menu-panel'),true);return;}else if(type==='card'||type==='returnCard'||type==='sublime'){this.isShowCards(type);return;}this.isRollStairs();this.isRenderExplore($('#menu-panel'));};
   P.isTreasure=function(){const cfg=this.isCfg(),r=this.isRun(),ch=this.isPickWeighted(Object.entries(cfg.chestRates).map(([id,weight])=>({id,weight}))).id,bonus=ch==='gold'?3:ch==='silver'?1:0,gear=this.isGenerateGear({opRank:bonus||undefined}),name=this.owgName?.(gear)||D().items[gear.itemId]?.name||gear.itemId;this.isAddLoot(gear);r.buffs.treasureBonus=0;this.isLog(`宝箱(${ch})`,{rarity:gear.rarity,item:gear.itemId,ops:gear.ops});this.isRollStairs();this.isSave();this.isRenderRoomResult(`${name}を拾いました`,'LOOT BAGへ収めた。','item');};
 
