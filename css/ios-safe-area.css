@@ -62,6 +62,7 @@ body:has(#game:not([hidden])){overflow:hidden}
 }
 #game .battle-topbar{top:calc(var(--safe-top) + 8px)!important;right:calc(var(--safe-right) + 8px)!important;left:calc(var(--safe-left) + 8px)!important;transform:none!important}
 #game .battle-console{padding-right:max(8px,var(--safe-right))!important;padding-bottom:max(7px,var(--safe-bottom))!important;padding-left:max(8px,var(--safe-left))!important}
+#game .battle-console{box-sizing:border-box;min-height:var(--battle-console-stable-height,0px)}
 #game .command-drawer{right:calc(var(--safe-right) + 4px)!important;bottom:calc(var(--safe-bottom) + 4px)!important}
 html.capacitor-native #game.game-shell{
   padding-top:var(--native-screen-top);

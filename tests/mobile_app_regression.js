@@ -9,6 +9,9 @@ const safeArea = read('css/ios-safe-area.css');
 const fixes = read('css/fixes.css');
 const plist = read('ios/App/App/Info.plist');
 const buildScript = read('scripts/build-web.mjs');
+const packageJson = JSON.parse(read('package.json'));
+const bundleVerifier = read('scripts/verify-ios-bundle.mjs');
+const audio = read('js/audio.js');
 const capacitor = JSON.parse(read('capacitor.config.json'));
 
 assert.match(html, /width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover/);
@@ -24,6 +27,8 @@ assert.match(safeArea, /position:fixed/);
 assert.match(safeArea, /overscroll-behavior:none/);
 assert.match(safeArea, /#game\.game-shell/);
 assert.match(safeArea, /padding-bottom:max\(7px,var\(--safe-bottom\)\)/);
+assert.match(safeArea, /min-height:var\(--battle-console-stable-height,0px\)/);
+assert.match(read('js/game.js'), /--battle-console-stable-height/);
 
 assert.match(fixes, /@media\(max-width:360px\)/);
 assert.match(fixes, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
@@ -39,6 +44,14 @@ for (const section of [phoneOrientation, tabletOrientation]) {
 assert.equal(capacitor.webDir, 'dist');
 assert.equal(capacitor.server?.iosScheme, 'https');
 assert(!buildScript.includes('readdir(root'), 'unreferenced root artwork must not be copied into the native bundle');
+assert.match(packageJson.scripts['cap:sync'], /verify-ios-bundle\.mjs/);
+assert.match(bundleVerifier, /stale iOS bundle/);
+assert.match(bundleVerifier, /css\/battle-ui-v2\.css/);
+assert.match(bundleVerifier, /js\/audio\.js/);
+assert.match(audio, /AUDIO_ASSET_VERSION/);
+assert.match(audio, /searchParams\.set\('av'/);
+assert.match(audio, /visibilitychange/);
+assert.doesNotMatch(audio, /await this\.preloadSfxFiles\(\)/, 'user gesture must not wait for SFX downloads before resuming audio');
 
 const localRefs = [...html.matchAll(/(?:src|href)="([^"?#]+)(?:\?[^"#]*)?"/g)]
   .map(match => match[1])
