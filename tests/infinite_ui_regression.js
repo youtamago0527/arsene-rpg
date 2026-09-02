@@ -1,0 +1,17 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const score = fs.readFileSync(path.join(root, 'js/infinite_score.js'), 'utf8');
+const gear = fs.readFileSync(path.join(root, 'js/otherworld_gear.js'), 'utf8');
+const css = fs.readFileSync(path.join(root, 'css/infinite-score.css'), 'utf8');
+assert(score.includes('P.isShowLootPop'), 'loot acquisition pop is missing');
+assert(score.includes('を拾った'), 'loot pop copy is missing');
+assert(score.includes('P.isGameDialog'), 'in-game dialog layer is missing');
+assert(score.includes('P.isForgeEnhance=async'), 'forge enhancement still uses native UI');
+assert(score.includes('P.isForgeTransfer=async'), 'forge transfer still uses native UI');
+assert(score.includes('P.isForgeDelete=async'), 'forge OP deletion still uses native UI');
+assert(!gear.includes("P.isOpenMerge=function(){alert("), 'removed merge action still uses native alert');
+assert(css.includes('env(safe-area-inset-top)'), 'dialog/toast ignores iPhone safe area');
+assert(css.includes('@media(max-width:360px)'), 'narrow-screen layout correction is missing');
+console.log('infinite UI regression: ok');
