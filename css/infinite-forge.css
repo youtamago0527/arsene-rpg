@@ -23,7 +23,7 @@
 
 /* 装備選択は一覧性を優先し、ゲーム内で使わない内部スロット名と仮アイコンを見せない。 */
 .is-forge-picker>div{align-items:flex-start;padding-bottom:5px}
-.is-forge-gear-card{flex-basis:112px;height:124px;min-height:0;padding:7px 6px;overflow:hidden}
+.is-forge-gear-card{flex-basis:112px;height:92px;min-height:0;padding:7px 6px;overflow:hidden}
 .is-forge-gear-icon,.is-forge-gear-card.selected .is-forge-gear-icon,.is-forge-gear-card>b+small{display:none!important}
 .is-forge-gear-card>b{margin-top:14px;font-size:8px}
 .is-forge-gear-card>strong{margin:1px 0;font-size:7px}
