@@ -10,5 +10,8 @@ assert(score.includes('P.isSortBag=function()'), 'bag sort implementation is mis
 assert(score.includes("localeCompare(String(bi.name||b.itemId),'ja')"), 'Japanese name fallback sort is missing');
 assert(score.includes("this.isLog('LOOT BAGを整頓')"), 'bag sort is not persisted/logged');
 assert(css.includes('.is-bag-title-actions'), 'bag sort button layout is missing');
-assert(index.includes('infinite-score.css?v=0.3.14'), 'CSS cache bust was not updated');
+assert(score.includes("isEquipped?'EQUIPPED'"), 'equipped gear badge is missing');
+assert(score.includes('aria-disabled="true">装備中'), 'equipped detail action is not disabled');
+assert(css.includes('button.equipped'), 'equipped detail blackout style is missing');
+assert(index.includes('infinite-score.css?v=0.3.15'), 'CSS cache bust was not updated');
 console.log('infinite bag sort regression: ok');
