@@ -23,9 +23,5 @@ for (const directory of runtimeDirectories) {
     }
   });
 }
-for (const entry of await readdir(root, { withFileTypes: true })) {
-  if (!entry.isFile() || rootFiles.has(entry.name)) continue;
-  if (!runtimeExtensions.has(extname(entry.name).toLowerCase())) continue;
-  await cp(join(root, entry.name), join(output, entry.name));
-}
+// ルート直下の制作資料はコピーせず、実行時参照先だけをアプリへ含める。
 console.log('Web assets built into dist/.');
