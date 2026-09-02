@@ -1,0 +1,14 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const score = fs.readFileSync(path.join(root, 'js/infinite_score.js'), 'utf8');
+const css = fs.readFileSync(path.join(root, 'css/infinite-score.css'), 'utf8');
+const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+assert(score.includes('data-is-bag-sort'), 'bag sort button is missing');
+assert(score.includes('P.isSortBag=function()'), 'bag sort implementation is missing');
+assert(score.includes("localeCompare(String(bi.name||b.itemId),'ja')"), 'Japanese name fallback sort is missing');
+assert(score.includes("this.isLog('LOOT BAGを整頓')"), 'bag sort is not persisted/logged');
+assert(css.includes('.is-bag-title-actions'), 'bag sort button layout is missing');
+assert(index.includes('infinite-score.css?v=0.3.14'), 'CSS cache bust was not updated');
+console.log('infinite bag sort regression: ok');
