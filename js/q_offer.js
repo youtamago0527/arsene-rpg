@@ -120,23 +120,30 @@
       const d = { ...(defs[type] || defs.auto2), ...extra }, left = remaining(type);
       const qCopy = String(extra.copy ?? QD.offer?.[type] ?? d.copy).replace(/\n/g, '<br>'), skip = hasAdSkip(g);
       const adStatus = skip ? (premium(g).adSkipLicense ? '永久スキップ適用' : `スキップ券を使用（残り${Number(premium(g).adSkipTickets) || 0}）`) : '広告を再生しています';
-      const countdown = skip ? 'READY' : '3', watchText = skip ? '広告をスキップして発動する' : '広告を見て発動する';
+      const nativeAd = !skip && window.arseneAdMob?.isNativeIOS?.();
+      const countdown = skip || nativeAd ? 'READY' : '3', watchText = skip ? '広告をスキップして発動する' : '広告を見て発動する';
       const reviveCard = `<div class="q-offer-card q-revive-card" role="dialog" aria-label="戦闘復活"><button class="q-offer-close" data-q-close aria-label="閉じる">✕ CLOSE</button><header><small class="q-revive-tag"><i></i>DAILY REVIVE REWARD</small><h2>怪盗の再起</h2><p>Q「${qCopy}」</p></header><div class="q-revive-details"><div><span><i></i>復活時HP</span><b>最大HPの50%</b></div><div><span><i></i>復帰地点</span><b>現在の戦闘</b></div><div><span><i></i>本日の残り回数</span><b>${left} 回</b></div></div><div class="q-offer-ad"><span>${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch><span>▶　${watchText}</span></button><button class="q-revive-cancel" data-q-close>今回は諦める</button></div>`;
-      const normalCard = `<div class="q-offer-card" role="dialog" aria-label="Q offer"><button class="q-offer-close" data-q-close aria-label="閉じる">×</button><div class="q-offer-q">Q</div><small class="q-offer-kicker">Q'S OFFER</small><h2>${d.title}</h2><p>「${qCopy}」</p><div class="q-offer-ad"><span>${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch>${watchText}<span>${skip ? 'SKIP ENTITLEMENT' : 'WATCH MOCK AD'}</span></button></div>`;
+      const normalCard = `<div class="q-offer-card" role="dialog" aria-label="Q offer"><button class="q-offer-close" data-q-close aria-label="閉じる">×</button><div class="q-offer-q">Q</div><small class="q-offer-kicker">Q'S OFFER</small><h2>${d.title}</h2><p>「${qCopy}」</p><div class="q-offer-ad"><span>${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch>${watchText}<span>${skip ? 'SKIP ENTITLEMENT' : nativeAd ? 'WATCH REWARDED AD' : 'WATCH MOCK AD'}</span></button></div>`;
       const modal = document.createElement('div'); modal.className = 'q-offer-modal'; modal.innerHTML = type === 'revive' ? reviveCard : normalCard; if (type === 'revive') modal.classList.add('q-offer-defeat'); modal._qOnClose = d.onClose; activeModal = modal; setOfferButtonsBusy(true); document.body.appendChild(modal);
-      let n = 3; const count = modal.querySelector('[data-q-countdown]'), watch = modal.querySelector('[data-q-watch]'); watch.disabled = !skip;
-      activeTimer = skip ? null : setInterval(() => { n--; if (count) count.textContent = n; if (n <= 0) { clearInterval(activeTimer); activeTimer = null; watch.disabled = false; } }, 1000);
+      let n = 3; const count = modal.querySelector('[data-q-countdown]'), watch = modal.querySelector('[data-q-watch]'); watch.disabled = !(skip || nativeAd);
+      activeTimer = skip || nativeAd ? null : setInterval(() => { n--; if (count) count.textContent = n; if (n <= 0) { clearInterval(activeTimer); activeTimer = null; watch.disabled = false; } }, 1000);
       modal.addEventListener('click', e => {
         if (e.target.closest('[data-q-close]')) { closeActiveModal({ notify: true }); return; }
         if (e.target.closest('[data-q-watch]') && !watch.disabled) {
           const generation = ++offerGeneration;
           offerInFlight = true;
+          watch.disabled = true;
           closeActiveModal();
-          playIntervention(g, d.forceDialogueCategory, () => {
+          const showAd = nativeAd ? window.arseneAdMob.showRewarded() : Promise.resolve(true);
+          showAd.then(rewarded => {
             if (generation !== offerGeneration) return;
-            try { const granted = api.grant(type); if (granted) { if (skip) consumeAdSkip(g); d.onGrant?.(); } }
-            finally { if (generation === offerGeneration) offerInFlight = false; }
-          });
+            if (!rewarded) { offerInFlight = false; return; }
+            playIntervention(g, d.forceDialogueCategory, () => {
+              if (generation !== offerGeneration) return;
+              try { const granted = api.grant(type); if (granted) { if (skip) consumeAdSkip(g); d.onGrant?.(); } }
+              finally { if (generation === offerGeneration) offerInFlight = false; }
+            });
+          }).catch(() => { if (generation === offerGeneration) offerInFlight = false; });
         }
       });
       return true;

@@ -10,6 +10,7 @@ const sentinels = [
   'css/battle-ui-v2.css',
   'css/ios-safe-area.css',
   'js/audio.js',
+  'js/admob.js',
   'js/data.js',
   'js/game.js'
 ];
@@ -23,6 +24,15 @@ const verifyTriplet = async relative => {
 };
 
 await Promise.all(sentinels.map(verifyTriplet));
+
+const plist = await readFile(join(root, 'ios', 'App', 'App', 'Info.plist'), 'utf8');
+if (!/<key>GADApplicationIdentifier<\/key>\s*<string>ca-app-pub-3940256099942544~1458002511<\/string>/.test(plist)) {
+  throw new Error('iOS Info.plist is missing the Google demo AdMob app ID.');
+}
+const swiftPackage = await readFile(join(root, 'ios', 'App', 'CapApp-SPM', 'Package.swift'), 'utf8');
+if (!/CapacitorCommunityAdmob/.test(swiftPackage)) {
+  throw new Error('CapacitorCommunityAdmob is missing from the native Swift package. Run cap sync ios.');
+}
 
 const audioSource = await readFile(join(root, 'js', 'audio.js'), 'utf8');
 const audioPaths = [...new Set([...audioSource.matchAll(/url:\s*'([^']+)'/g)].map(match => match[1]))];
