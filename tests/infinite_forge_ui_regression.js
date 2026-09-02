@@ -16,8 +16,8 @@ assert.match(infinite, /帰還時消滅/, '奏貨が帰還時に消えること�
 assert.match(infinite, /EQUIPPED/, '装備中の装備をカードで識別する');
 assert.match(infinite, /残り奏貨/, '操作後の奏貨残額を事前表示する');
 assert.match(infinite, /isForgeMerge=function\(uid,materialUid=null\)/, '選択した同型素材を既存合成処理へ渡す');
-assert.match(infinite, /isForgeTransfer=function\(sourceUid,targetUid=null,opIndex=0\)/, '選択した移植元・移植先・OPを既存処理へ渡す');
-assert.match(infinite, /isForgeDelete=function\(uid,index=0\)/, '選択した削除OPを既存処理へ渡す');
+assert.match(infinite, /isForgeTransfer=async function\(sourceUid,targetUid=null,opIndex=0\)/, '選択した移植元・移植先・OPをゲーム内確認後に既存処理へ渡す');
+assert.match(infinite, /isForgeDelete=async function\(uid,index=0\)/, '選択した削除OPをゲーム内確認後に既存処理へ渡す');
 assert.match(startFlow, /infinite-forge-ready/, '工房単体のローカル確認導線を用意する');
 assert.match(infinite, /flags\.infiniteScoreWarningSeen = true/, '工房単体確認ではセリペス警告会話をスキップする');
 assert.match(infinite, /previous=panel\?\.querySelector\('\.is-forge-picker>div'\)\?\.scrollLeft/, '装備選択一覧の横スクロール位置を再描画前に保存する');
