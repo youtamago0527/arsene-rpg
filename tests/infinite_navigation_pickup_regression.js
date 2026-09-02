@@ -12,5 +12,7 @@ assert.match(infinite, /isRenderRoomResult\(`\$\{name\}を拾いました`,'LOOT
 assert.match(game, /!!D\.weapons\?\.\[item\.id\]/, '通常戦でも全武器DROPを取得通知の対象にする');
 assert.match(game, /WEAPON PICKED UP/, '武器取得通知を明示する');
 assert.match(game, /\$\{item\.name\}\$\{weapon \? 'を拾いました'/, '武器取得通知に実名を表示する');
+assert.match(infinite, /class="is-sell-equipped">装備中/, '異世界の売却一覧で装備中を明示する');
+assert.match(infinite, /は装備中です。\\n装備を外して売却しますか？/, '装備中の品を売る前に確認する');
 
 console.log('infinite navigation and weapon pickup regression: ok');
