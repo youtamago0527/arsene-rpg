@@ -1,0 +1,20 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const support=fs.readFileSync('js/infinite_support.js','utf8');
+const offer=fs.readFileSync('js/q_offer.js','utf8');
+const index=fs.readFileSync('index.html','utf8');
+
+assert.match(support,/arseneAdMob\?\.isNativeIOS/,'支援はiOSアプリ版だけに表示する');
+assert.match(support,/arseneQOffer\.show/,'既存の共通広告・スキップ基盤を利用する');
+assert.match(support,/bagExpansionUsed/,'RUN単位のバッグ拡張利用状態を保存する');
+assert.match(support,/Math\.max\(base,33\)/,'緊急拡張は最大33枠にする');
+assert.match(support,/shopCounter/,'ショップ遭遇単位のIDを保存する');
+assert.match(support,/rerollUsed/,'同一ショップで再抽選を一度に制限する');
+assert.match(support,/state\.gear=this\.isGenerateGear\(\)/,'通常装備生成テーブルで再抽選する');
+assert.match(support,/phase='defeatPending'/,'全滅装備を保険確定まで削除しない');
+assert.match(support,/insuranceAuthorized/,'広告完了後のみ装備選択を許可する');
+assert.match(support,/some\(x=>x\.uid===rescue\.uid\)/,'救出装備の二重保存を防ぐ');
+assert.match(offer,/infiniteReroll[\s\S]*infiniteInsurance[\s\S]*infiniteBag/,'支援3種を共通オファーへ登録する');
+assert.match(index,/q_offer\.js[^\n]+[\s\S]*infinite_support\.js/,'共通広告基盤の後に支援処理を読み込む');
+assert.doesNotMatch(support,/adSkipLicense\s*=/,'専用課金や既存購入権を上書きしない');
+console.log('infinite support regression: ok');
