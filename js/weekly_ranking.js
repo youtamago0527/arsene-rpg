@@ -1,8 +1,10 @@
 (function () {
   'use strict';
-  const API_URL = String(window.ARSENE_WEEKLY_API_URL || 'https://ranking-api.example.invalid').replace(/\/$/, '');
+  const CONFIG = window.ARSENE_WEEKLY_RANKING_CONFIG || {};
+  const API_URL = String(CONFIG.apiUrl || '').replace(/\/$/, '');
+  const ENABLED = CONFIG.enabled === true && /^https:\/\//.test(API_URL);
   const TOKEN_KEY = 'arsene.weeklyRanking.token.v1', PENDING_KEY = 'arsene.weeklyRanking.pending.v1', RECEIPTS_KEY = 'arsene.weeklyRanking.receipts.v1';
-  const isIOS = () => !!(window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === 'ios');
+  const isIOS = () => !!(ENABLED && window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === 'ios');
   const plugin = () => isIOS() && window.Capacitor?.Plugins?.ArseneGameCenter;
   const read = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch { return fallback; } };
   const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
@@ -105,6 +107,6 @@
     if (event.target.closest('[data-weekly-retry]')) void open(game);
     const claimButton = event.target.closest('[data-weekly-claim]'); if (claimButton) { claimButton.disabled = true; void claim(game, claimButton.dataset.weeklyClaim).then(() => open(game)).catch(error => { claimButton.disabled = false; window.arseneStartFlow?.toast(`受領保留：${error.message}`); }); }
   });
-  const boot = () => window.arseneGame?.isBegin ? install(window.arseneGame) : requestAnimationFrame(boot); boot();
+  const boot = () => window.arseneGame?.isBegin ? install(window.arseneGame) : requestAnimationFrame(boot); if (ENABLED) boot();
   window.ARSENE_WEEKLY_RANKING = { isIOS, open, flushPending, applyReceipt };
 })();

@@ -16,7 +16,8 @@ run nonceは「認証後に潜入を開始した」ことまでは証明しま�
 4. 32byte以上のランダム値を `npx wrangler secret put SESSION_SECRET` で登録します。値をファイルやGitへ保存しません。ローカルだけはgitignored `.dev.vars` を使います。
 5. `APPLE_BUNDLE_ID`、`ALLOWED_ORIGINS`、`GAME_CENTER_LEADERBOARD_ID` を実際の値へ変更します。本番CORSへ `*` を設定しません。
 6. `npx wrangler d1 migrations apply arsene-weekly-ranking --remote`、`npx wrangler deploy --dry-run`、`npx wrangler deploy` の順に実行します。
-7. 公開Worker URLをアプリbundle生成時の `window.ARSENE_WEEKLY_API_URL` に設定します。placeholderのままリリースしないでください。
+7. ゲームデザイナーが仮報酬を承認または差し替え、stagingで締め・受領試験を完了します。
+8. `js/weekly_ranking_config.js` の `apiUrl` を公開WorkerのHTTPS URLへ変更し、最後に `enabled: true` とします。初期状態はURLなし・無効であり、未設定のリリースには入口も通信も発生しません。
 
 CronはUTC日曜15:05（日本時間月曜00:05）です。00:00直後の遅延・再試行を許容し、直前週を締めます。Cron/管理用の公開HTTP endpointは設けていません。
 
