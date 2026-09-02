@@ -16,24 +16,31 @@
 @media(prefers-reduced-motion:reduce){.is-forge-header h2{filter:none}}
 
 /* スマホ本体では詳細を縦に読む。Codexの実機プレビュー配置とは分離する。 */
-.is-forge-detail-layout{grid-template-columns:minmax(108px,34%) minmax(0,66%)}
+.is-forge-detail-layout{grid-template-columns:minmax(132px,36%) minmax(0,64%)}
 .is-forge-selected{position:relative;top:auto}
 .is-forge-preview-column>small{font-size:0}
 .is-forge-preview-column>small::after{content:"PROCESS PREVIEW // 加工内容";font:700 6px monospace}
 
 /* 装備選択は一覧性を優先し、ゲーム内で使わない内部スロット名と仮アイコンを見せない。 */
 .is-forge-picker>div{align-items:flex-start;padding-bottom:5px}
-.is-forge-gear-card{flex-basis:96px;height:104px;min-height:0;padding:6px;overflow:hidden}
-.is-forge-gear-icon,.is-forge-gear-card>b+small{display:none}
+.is-forge-gear-card{flex-basis:112px;height:124px;min-height:0;padding:7px 6px;overflow:hidden}
+.is-forge-gear-icon,.is-forge-gear-card.selected .is-forge-gear-icon,.is-forge-gear-card>b+small{display:none!important}
 .is-forge-gear-card>b{margin-top:14px;font-size:8px}
 .is-forge-gear-card>strong{margin:1px 0;font-size:7px}
 .is-forge-card-stats{margin-top:1px;padding-top:2px}
 .is-forge-card-op{margin-top:2px}
 .is-forge-selected-art,.is-forge-selected>em{display:none}
-.is-forge-selected{padding:7px 6px}
-.is-forge-selected h3{margin-top:6px}
-.is-forge-selected>div{margin-top:4px}
-.is-forge-selected>p{margin-top:4px;padding-top:4px}
+.is-forge-selected{min-height:258px;padding:12px 9px;justify-content:flex-start}
+.is-forge-selected>i{margin-bottom:5px}
+.is-forge-selected>small{font-size:7px}
+.is-forge-selected h3{margin:12px 0 5px;font-size:12px;line-height:1.45}
+.is-forge-selected>strong{margin:2px 0;color:#d76cff;font-size:12px;line-height:1.4}
+.is-forge-selected>b{display:block;margin:2px 0;font-size:13px;line-height:1.35}
+.is-forge-selected>div{gap:6px;margin-top:10px}
+.is-forge-selected>div span{min-height:43px;padding:7px 4px;place-content:center}
+.is-forge-selected>div small{font-size:7px}
+.is-forge-selected>div b{font-size:13px}
+.is-forge-selected>p{margin-top:10px;padding-top:9px;font-size:8px;line-height:1.65}
 .is-forge-preview{padding:8px}
 .is-forge-preview>header{padding-bottom:5px}
 .is-forge-stat-table{margin-top:4px}
