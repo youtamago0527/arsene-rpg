@@ -372,9 +372,13 @@ window.ARSENE_DATA = {
     martialArtist: {
       id: 'martialArtist', name: '武道家', nameEn: 'MARTIAL ARTIST', description: '速度と多段攻撃でクリティカルを狙う。', signatureSkillId: 'burstFist', passiveUnlocks: { 5: 'p_gale', 10: 'p_vitalAim', 15: 'p_fortune' },
       // JOB特性：武器を外すと両手が拳になる。体術スケール（力50%＋素早さ50%）で殴る。
-      traits: { bareFists: { name: '無手の型', nameEn: 'BARE FISTS', rate: .125, rebirthStep: .015, max: .25, text: '素手なら両手が拳で2回攻撃（左手12.5%）', description: '武器を持たないほうが強い、武道家の本領。右手・左手が空のとき両手が拳になり、攻撃力は力と素早さの合計の50%になる。通常攻撃は右拳・左拳の2回攻撃になり、左拳の威力は12.5%。転生を重ねるほど左拳が強くなる。' } }, growthStats: ['agi', 'luk'], featureText: '素早さ・運を伸ばしやすいジョブ。会心率・素早い行動などに関係するパッシブを習得できる。',
+      traits: {
+        bareFists: { name: '無手の型', nameEn: 'BARE FISTS', rate: .125, rebirthStep: .015, max: .25, text: '素手なら両手が拳で2回攻撃（左手12.5%）', description: '武器を持たないほうが強い、武道家の本領。右手・左手が空のとき両手が拳になり、攻撃力は力と素早さの合計の50%になる。通常攻撃は右拳・左拳の2回攻撃になり、左拳の威力は12.5%。転生を重ねるほど左拳が強くなる。' },
+        equipmentAgiPenalty: { name: '無装の極意', nameEn: 'UNARMORED MASTERY', weaponPercent: 10, armorPerSlotPercent: 2, maxPercent: 20, text: '武器−10%／防具1枠ごと−2% AGI', description: '装備の重さを捨てるほど本来の速さを取り戻す。武器装備で素早さが10%、防具1枠につき2%低下する（最大20%）。素手・裸なら低下しない。' }
+      }, growthStats: ['agi', 'luk'], featureText: '素早さ・運を伸ばしやすいジョブ。会心率・素早い行動などに関係するパッシブを習得できる。',
       growth: { 1: { agi: 2 }, 2: { str: 2, maxHp: 4 }, 3: { agi: 2 }, 4: { str: 2 }, 5: { agi: 3 }, 6: { str: 2 }, 7: { critBonus: .02 }, 8: { agi: 3, str: 2 }, 9: { critBonus: .03 }, 10: { critBonus: .05, agi: 3 }, 11: { agi: 3 }, 12: { str: 3, critBonus: .02 }, 13: { agi: 4 }, 14: { str: 3 }, 15: { agi: 4, critBonus: .03 }, 16: { str: 4 }, 17: { agi: 4 }, 18: { str: 4, critBonus: .03 }, 19: { agi: 5 }, 20: { critBonus: .07, agi: 5, str: 4 } },
-      skillUnlocks: {}
+      // 現行ACTION枠は4つ。5技から役割を選び、最終奥義2種は予約データに留める。
+      skillUnlocks: { 1: 'burstFist' }
     },
     priest: {
       id: 'priest', name: '僧侶', nameEn: 'PRIEST', description: '精神力を活かして回復と光魔法を扱う。長く潜り続け、稼いで帰るのが得意。', signatureSkillId: 'heal', passiveUnlocks: { 1: 'p_tithe', 5: 'p_spirit', 10: 'p_healArt', 15: 'p_wardBarrier' }, traits: {}, growthStats: ['mnd', 'vit'], featureText: '獲得GOLDを増やし、確率再生と一戦一度のHP→MP変換で長く潜れる。弱い敵を残して待つだけでは資源を永久回復できない。',
@@ -400,9 +404,9 @@ window.ARSENE_DATA = {
     },
     // 特殊ジョブ。自身では成長せず、将来的に他ジョブの成長を盗む。
     phantomThief: {
-      id: 'phantomThief', name: 'ファントムシーフ', nameEn: 'PHANTOM THIEF', description: '異世界でのみ使用できる特殊JOB。通常ダンジョンでは使用できず、異世界への突入時に自動で変更される。',
+      id: 'phantomThief', name: 'ファントムシーフ', nameEn: 'PHANTOM THIEF', description: '他JOBのレベルアップ成長を常に半分引き継ぎ、MASTER時に固有技を盗む怪盗の本質。',
       signatureSkillId: null, passiveUnlocks: {}, growthStats: [],
-      featureText: '異世界専用の特殊JOB。通常ダンジョンでは使用できない。自身では成長せず、通常JOBの成長能力を常に50%引き継ぎ、MASTER時に固有スキルを獲得する。',
+      featureText: '自身では成長しない特殊ジョブ。通常JOBの成長能力を常に50%引き継ぎ、MASTER時に固有スキルを獲得する。',
       // 固有特性。倍率を持たない説明専用の特性なので rate は置かない。
       traits: { remix: { name: 'RE:MIX（リミックス）', nameEn: 'RE:MIX', text: '他JOBから盗んだ力を組み合わせ、自分だけの能力構成を作る', description: '他のJOBから盗んだ力を組み合わせ、自分だけの能力構成を作るPHANTOM THIEF固有の力。各JOBで育てた成長はすべて合算され、その50%がファントムシーフの能力として常に乗る。どのJOBをどれだけ育てたかが、そのまま自分の形になる。' } },
       special: true, noGrowth: true,
@@ -415,7 +419,9 @@ window.ARSENE_DATA = {
       passiveUnlocks: { 1: 'p_dualWield', 5: 'p_comboDance', 10: 'p_pursuitBlade', 15: 'p_danceForm' },
       // 双刃そのもののSTR50%＋AGI50%参照は武器データ側で管理する。
       // JOB特性ではなくPASSIVEへ分離したため、PHANTOM THIEFも枠を使えば二刀を再現できる。
-      traits: {},
+      traits: {
+        equipmentAgiPenalty: { name: '軽装双刃', nameEn: 'TWINBLADE LIGHTNESS', weaponPercent: 0, armorPerSlotPercent: 5, maxPercent: 25, text: '武器低下なし／防具1枠ごと−5% AGI', description: '二刀の重さを速度へ変える双刃士の身ごなし。武器では素早さが低下せず、防具1枠につき5%低下する（最大25%）。' }
+      },
       unlockCondition: { bossDefeated: 'myrthi' },
       // 会心率(critBonus)を直接配っていた枠はLUKへ置換した。率を配ると
       // 転生倍率と20%保持が複利で乗って天井に張り付くため、会心はLUK経由で伸ばす。
@@ -1076,8 +1082,15 @@ window.ARSENE_DATA = {
     blueEcho: { id: 'blueEcho', name: '蒼の残響', nameEn: 'BLUE ECHO', source: 'character', unlockLevel: 3, type: 'PASSIVE', kind: 'passive', target: 'self', mp: 0, powerText: '－', effectText: 'ターン開始時20%で魔力 +10%／2ターン。重複せず残り時間を更新', description: '戦いの中で魔力の波長を捉え、自らの魔力を高める。' },
     meditation: { id: 'meditation', name: '精神集中', nameEn: 'MEDITATION', source: 'character', unlockLevel: 5, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 3, powerText: '次の魔法攻撃 ×2.5', effect: { type: 'selfMagCharge', rate: 1.5 }, effectText: '次に使う魔法攻撃の威力+150%／クールタイム3ターン', description: '呼吸を整え、魔力を一点へ収束させる。次に使用する魔法攻撃の威力を2.5倍にする。' },
     powerCharge: { id: 'powerCharge', name: 'ちからため', nameEn: 'POWER CHARGE', source: 'job', jobId: 'warrior', unlockJobLevel: 1, type: 'ACTIVE', kind: 'support', target: 'self', mp: 0, cooldown: 3, powerText: '次の物理攻撃 ×3.5', effect: { type: 'selfAtkCharge', rate: 2.5 }, effectText: '次に使う物理攻撃の威力+250%／クールタイム3ターン', description: '全身に力を溜める。次に使用する物理攻撃の威力を大きく高める。' },
-    // 武道家の固有技。体術武器技（会心・先制・速度妨害）とは役割を分ける純粋な多段攻撃。
-    burstFist: { id: 'burstFist', name: 'ばくれつけん', nameEn: 'BURST FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 1, type: 'ACTIVE', kind: 'physical', target: 'single', randomTarget: true, mp: 6, power: 0.5, hits: 4, agiScale: 0, powerText: '攻撃力×0.5×4回', effectText: '生存敵からランダムに4回連続攻撃／各撃で個別クリティカル判定', description: '目にも留まらぬ拳の連打を叩き込む。武道家だけが扱える固有技。' },
+    // ── 武道家固有技＋体術武器学 ───────────────────────────
+    // ばくれつけんだけは装備不問のJOB固有技。震撃以降は体術武器学で習得する。
+    burstFist: { id: 'burstFist', name: 'ばくれつけん', nameEn: 'BURST FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 1, weaponIndependent: true, type: 'ACTIVE', kind: 'physical', target: 'single', randomTarget: true, mp: 6, power: 0.5, hits: 4, agiScale: 0, powerText: '攻撃力×0.5×4回', effectText: '装備不問／生存敵からランダムに4回連続攻撃／各撃で個別会心判定', description: '目にも留まらぬ連打を叩き込む。素手でも武器装備中でも使える武道家の固有技。' },
+    stunningPalm: { id: 'stunningPalm', name: '震撃', nameEn: 'STUNNING PALM', source: 'weapon', weaponType: 'martial', prerequisiteSkill: 'doubleClaw', requiredWeaponLevel: 5, sparkRate: null, type: 'ACTIVE', kind: 'physical', target: 'single', requiresBareFists: true, mp: 4, power: 1.1, agiScale: 0, effect: { type: 'enemyStun', chance: .45, bossChance: .16, overdriveChance: .06, turns: 1 }, powerText: '攻撃性能×1.1', effectText: '体術武器学／素手専用／45%でスタン、BOSS16%・OVERDRIVE6%', description: '掌底から衝撃を通し、敵の動きを一瞬止める。強敵ほど耐性が高く、連続では決まりにくい。' },
+    shortPower: { id: 'shortPower', name: '短勁', nameEn: 'SHORT POWER', source: 'weapon', weaponType: 'martial', prerequisiteSkill: 'stunningPalm', requiredWeaponLevel: 9, sparkRate: null, type: 'ACTIVE', kind: 'physical', target: 'single', requiresBareFists: true, mp: 7, power: .85, ignoreDef: .50, agiScale: 0, effect: { type: 'enemyDefDown', rate: .10, turns: 3 }, powerText: '攻撃性能×0.85', effectText: '体術武器学／素手専用／DEF50%貫通＋DEF−10%を3ターン', description: '至近距離から力を内側へ通す。威力を抑える代わりに防御を貫き、後続の拳が通る隙を作る。' },
+    tigerBreakFist: { id: 'tigerBreakFist', name: '猛虎破砕拳', nameEn: 'TIGER BREAK FIST', source: 'weapon', weaponType: 'martial', prerequisiteSkill: 'shortPower', requiredWeaponLevel: 13, sparkRate: null, type: 'ACTIVE', kind: 'physical', target: 'single', requiresBareFists: true, mp: 10, power: 1.2, agiScale: 0, effect: { type: 'selfStrStackAfterHit', rate: .05, maxStacks: 5 }, powerText: '攻撃性能×1.2', effectText: '体術武器学／素手専用／命中後、戦闘中STR+5%（最大5段階・+25%）', description: '猛虎の踏み込みで敵を砕き、戦いの中で肉体を研ぎ澄ます。命中するたび、その戦闘中の力が高まる。' },
+    gatheringQi: { id: 'gatheringQi', name: '集気法', nameEn: 'GATHERING QI', source: 'weapon', weaponType: 'martial', prerequisiteSkill: 'galeFist', requiredWeaponLevel: 15, sparkRank: 34, sparkFrom: { martialStrike: .5, galeFist: 2.0 }, type: 'ACTIVE', kind: 'support', target: 'self', requiresBareFists: true, mp: 8, cooldown: 3, powerText: '精神×1.8＋最大HP8%', effect: { type: 'hpRecover', baseHeal: 0, spiritScaling: 1.8, maxHpRate: .08 }, effectText: '体術武器学／素手専用／精神依存回復＋最大HP8%／CT3', description: '呼吸を整え、体内の気を巡らせる回復法。体術を修めて素手になれば、PHANTOM THIEFでも使用できる。' },
+    thousandHandKannon: { id: 'thousandHandKannon', name: '千手観音', nameEn: 'THOUSAND-HAND KANNON', source: 'job', jobId: 'martialArtist', unlockJobLevel: 25, type: 'ACTIVE', kind: 'physical', target: 'single', requiresBareFists: true, mp: 22, power: .30, hits: 8, ignoreDef: .20, agiScale: 0, powerText: '攻撃性能×0.30×8回', effectText: '予約：素手専用8連撃／各撃で個別会心判定', description: '無数の拳影を一体へ重ねる武道奥義。', devOnly: true },
+    dragonGodBlazingFist: { id: 'dragonGodBlazingFist', name: '龍神烈火拳', nameEn: 'DRAGON GOD BLAZING FIST', source: 'job', jobId: 'martialArtist', unlockJobLevel: 35, type: 'ACTIVE', kind: 'physical', target: 'single', requiresBareFists: true, mp: 30, hitPowers: [.45, .45, .55, .65, 1.10], ignoreDef: .35, agiScale: 0, powerText: '5連撃／合計3.2倍', effectText: '予約：素手専用最終奥義／最終打を大幅強化予定', description: '龍神の連撃を烈火の拳へ収束する、武道家の最終到達点。', devOnly: true },
     powerStrike: { id: 'powerStrike', name: '強撃', nameEn: 'POWER STRIKE', source: 'job', jobId: 'warrior', unlockJobLevel: 3, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 4, power: 4.2, agiScale: 0, powerText: '攻撃力×4.2', effectText: '通常攻撃より高威力', description: '力を込めた一撃。攻撃力を参照して敵単体へ物理ダメージを与える。' },
     breakEdge: { id: 'breakEdge', name: 'ブレイクエッジ', nameEn: 'BREAK EDGE', source: 'job', jobId: 'warrior', unlockJobLevel: 6, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 7, power: 3.5, agiScale: 0, effect: { type: 'enemyDefDown', rate: .20, turns: 2 }, powerText: '攻撃力×3.5', effectText: '敵防御力 -20%／2ターン', description: '防御を断つ斬撃。物理ダメージと同時に敵の防御力を低下させる。' },
     recklessEdge: { id: 'recklessEdge', name: '捨て身斬り', nameEn: 'RECKLESS EDGE', source: 'job', jobId: 'warrior', unlockJobLevel: 9, type: 'ACTIVE', kind: 'physical', target: 'single', mp: 10, power: 6.0, agiScale: 0, effect: { type: 'selfDefDown', rate: .20, turns: 2 }, powerText: '攻撃力×6.0', effectText: '使用後、自身の防御力 -20%／2ターン', description: '守りを捨てて放つ高威力の斬撃。' },
@@ -1116,10 +1129,16 @@ window.ARSENE_DATA = {
     magicRepulse: { id: 'magicRepulse', name: 'マジックリパルス', nameEn: 'MAGIC REPULSE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'guardImpact', mp: 7, kind: 'magical', damageType: 'magical', shieldFormula: 'magicRepulse', target: 'single', power: 1.0, powerText: '魔法防御力×1.2＋防御力×0.3', effectText: '魔法防御寄りの盾技', description: '魔力を盾面で反転させ、魔法防御性能から衝撃を生む。' },
     fortress: { id: 'fortress', name: 'フォートレス', nameEn: 'FORTRESS', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'magicRepulse', mp: 8, kind: 'support', target: 'self', effect: { type: 'fortress', reduction: .30, turns: 1 }, powerText: '被ダメージ -30%', effectText: '1ターン防御。軽減後ダメージはRESONANCEへ蓄積', description: '盾を大地へ固定し、攻撃を真正面から受け止める。' },
     revengeForce: { id: 'revengeForce', name: 'リベンジ・フォース', nameEn: 'REVENGE FORCE', source: 'weapon', type: 'ACTIVE', weaponType: 'shield', prerequisiteSkill: 'fortress', mp: 12, kind: 'physical', damageType: 'physical', shieldFormula: 'revenge', target: 'single', power: 1.65, powerText: '直前の被弾タイプに応じ防御力/魔法防御力参照', effectText: '物理被弾なら防御力、魔法被弾なら魔法防御力を強く参照', description: '直前に受けた攻撃の性質を読み、最適な防御性能で打ち返す盾学奥義。' },
-    resonanceBreak: { id: 'resonanceBreak', name: 'RESONANCE BREAK', nameEn: 'RESONANCE BREAK', remixName: 'RESONANCE', source: 'job', jobId: 'guardian', unlockJobLevel: 1, type: 'ACTIVE', kind: 'neutral', damageType: 'neutral', target: 'single', mp: 0, power: 1.0, ignoreDef: 1, unavoidable: true, powerText: '現在武器の攻撃性能×共鳴倍率', effectText: '全RESONANCE消費／防御力・魔法防御力・物理魔法耐性を無視／必中', description: '受けた痛みを共鳴へ変え、現在の武器性能から無属性の一撃を放つ。RE:MIXではACTION「RESONANCE」として装備中だけ共鳴が有効。' },    preciousSky: { id: 'preciousSky', name: 'プレシャススカイ', nameEn: 'PRECIOUS SKY', source: 'weapon', type: 'ACTIVE', weaponType: 'instrument', prerequisiteSkill: 'resonantNote', requiredWeaponLevel: 8, sparkRate: .035, guitarTreeId: 'versicrellGuitar', requiredWeaponId: 'parentGiftGuitar', mp: 12, kind: 'magical', damageType: 'magical', element: 'sound', target: 'all', power: 1.65, selfHealRate: .08, powerText: '器用さ参照×1.65（敵全体）', effectText: '敵全体へ音属性攻撃／与ダメージ後に最大HPの8%回復', description: '人として残った最初の音を、青空のような音圧へ変える。リコーダー系とは異なるギター専用武器技。' }
+    resonanceBreak: { id: 'resonanceBreak', name: 'RESONANCE BREAK', nameEn: 'RESONANCE BREAK', remixName: 'RESONANCE', source: 'job', jobId: 'guardian', unlockJobLevel: 1, type: 'ACTIVE', kind: 'neutral', damageType: 'neutral', target: 'single', mp: 0, power: 1.0, ignoreDef: 1, unavoidable: true, powerText: '現在武器の攻撃性能×共鳴倍率', effectText: '全RESONANCE消費／防御力・魔法防御力・物理魔法耐性を無視／必中', description: '受けた痛みを共鳴へ変え、現在の武器性能から無属性の一撃を放つ。RE:MIXではACTION「RESONANCE」として装備中だけ共鳴が有効。' },    preciousSky: { id: 'preciousSky', name: 'プレシャススカイ', nameEn: 'PRECIOUS SKY', source: 'weapon', type: 'ACTIVE', weaponType: 'instrument', prerequisiteSkill: 'resonantNote', requiredWeaponLevel: 8, sparkRate: .035, guitarTreeId: 'versicrellGuitar', mp: 12, kind: 'magical', damageType: 'magical', element: 'sound', target: 'all', power: 1.65, selfHealRate: .08, powerText: '器用さ参照×1.65（敵全体）', effectText: '敵全体へ音属性攻撃／与ダメージ後に最大HPの8%回復', description: '人として残った最初の音を、青空のような音圧へ変える。リコーダー系とは異なるギター専用武器技。' }
   },
   guitarSkillTrees: {
     versicrellGuitar: { id: 'versicrellGuitar', weaponId: 'parentGiftGuitar', name: 'SILVER CIRCLE GUITAR', skills: ['preciousSky', null, null, null] }
+  },
+  // D3以降、各ダンジョンへ1本ずつ潜ませる超希少ギター枠。
+  // 同階層のボス武器を約10%上回り、入手先は図鑑でも開示しない。
+  guitarSeries: {
+    policy: { beginsAtDungeon: 3, onePerDungeon: true, powerOverBossRate: 1.10, defaultDropChance: .002, archiveSourceHidden: true },
+    entries: [{ dungeonId: 'dungeon3', itemId: 'parentGiftGuitar', dropEnemyId: 'versicrell', skillTreeId: 'versicrellGuitar' }]
   },
   items: {
     potion: { id: 'potion', name: '回復薬', category: 'consumable', rarity: 'common', description: 'HPを30回復する。', effect: { hp: 30 } },
@@ -1272,7 +1291,7 @@ window.ARSENE_DATA = {
     sanctumGear: { id: 'sanctumGear', name: '聖堂歯車', nameEn: 'SANCTUM GEAR', category: 'material', rarity: 'rare', dungeonId: 'dungeon3', description: '崩壊した礼拝堂の自動奏機から採れる歯車。楽器と精密装備の中核素材。' },
     astralMercury: { id: 'astralMercury', name: '星銀水', nameEn: 'ASTRAL MERCURY', category: 'material', rarity: 'epic', dungeonId: 'dungeon3', description: 'メロクスが残す液体金属。極端に軽く、硬い。' },
     gildedCore: { id: 'gildedCore', name: '強欲の金核', nameEn: 'GILDED CORE', category: 'material', rarity: 'epic', dungeonId: 'dungeon3', description: '財貨を食らう怪異の黄金核。高級装備の触媒になる。' },
-    parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', category: 'equipment', slot: 'rightHand', rarity: 'epic', stars: 4, dungeonId: 'dungeon3', guitarSkillTree: 'versicrellGuitar', description: '昔、親に買ってもらったギター。少し変わった形をしているが、最初に触れた「音」は今でも重い。' },
+    parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, dungeonId: 'dungeon3', catalogDungeon: 'dungeon3', source: 'secretGuitar', guitarSkillTree: 'versicrellGuitar', archiveHint: '入手経路不明。どこかの怪異が、ごく稀に大切な一本を隠し持っているらしい。', description: '昔、親に買ってもらったギター。少し変わった形をしているが、最初に触れた「音」は今でも重い。' },
     voidHelm: { id: 'voidHelm', name: '虚空の兜', nameEn: 'VOID HELM', category: 'equipment', slot: 'head', rarity: 'epic', dungeonId: 'dungeon3', description: '崩界の深廊の素材で鍛えた兜。精神と防御を高める。' },
     abyssalArmor: { id: 'abyssalArmor', name: '深淵の鎧', nameEn: 'ABYSSAL ARMOR', category: 'equipment', slot: 'body', rarity: 'epic', dungeonId: 'dungeon3', description: '深淵鉄鉱を用いた最高位の鎧。強靭な防御力を誇る。' },
     phantomGauntlet: { id: 'phantomGauntlet', name: '幻影拳甲', nameEn: 'PHANTOM GAUNTLET', category: 'equipment', slot: 'arms', rarity: 'epic', dungeonId: 'dungeon3', description: '幻影核の力が宿る拳甲。攻撃力と俊敏を高める。' },
@@ -1355,7 +1374,7 @@ window.ARSENE_DATA = {
     d3TwinRight: { id: 'd3TwinRight', name: '裂界の双刃・右', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 22, bonuses: {}, effects: { criticalRateBonus: .02 } },
     d3TwinLeft: { id: 'd3TwinLeft', name: '裂界の双刃・左', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_void', battleSprite: null, attackMotion: 'slash', attackPower: 18, bonuses: {}, effects: { criticalRateBonus: .01 } },
     d3GuardianAegis: { id: 'd3GuardianAegis', name: '城塞核の盾', weaponType: 'shield', weaponSprite: 'shield_reprise', battleSprite: null, attackMotion: 'shieldBash', damageType: 'physical', defensePower: 42, magicDefensePower: 38, bonuses: {}, effects: { magicDamageReductionPercent: .08, physicalDamageReductionPercent: .06, resonanceGainPercent: .25 } },
-    parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', dungeonId: 'dungeon3', weaponType: 'instrument', battlePose: 'guitar', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', damageStat: 'dex', power: 4.0, guitarSkillTree: 'versicrellGuitar', bonuses: { dex: 10, mag: 5, critBonus: 0.04 } },
+    parentGiftGuitar: { id: 'parentGiftGuitar', name: '《親に買ってもらったギター》', nameEn: 'A GUITAR FROM MY PARENTS', dungeonId: 'dungeon3', weaponType: 'instrument', battlePose: 'guitar', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', damageStat: 'dex', magicAttackPower: 154, power: 4.8, guitarSeriesId: 'secretGuitar', guitarSkillTree: 'versicrellGuitar', bonuses: { dex: 18, mag: 10, agi: 6, critBonus: .06 }, effects: { criticalRateBonus: .06, magicDamagePercent: .08 } },
     myrthi_blade: { id: 'myrthi_blade', name: '黒紅刃ミルティア', nameEn: 'MYRTHI BLADE', seriesId: 'myrthi', dungeonId: 'dungeon2', weaponType: 'martial', weaponSubtype: 'dualBlade', weaponSprite: 'sword_myrthi', battleSprite: null, attackMotion: 'slash', attackPower: 32, bonuses: { str: 16, agi: 8, critBonus: .06 } }
   },
   accessories: {
@@ -1502,7 +1521,7 @@ window.ARSENE_DATA = {
     },
     zenakado: {
       id: 'zenakado', name: 'ゼナカド', enName: 'ZENAKADO — THE SOLOIST', kind: 'boss', encounter: 1,
-      title: '第一奏卿《孤高の独奏者》', element: '闇', weaknesses: ['光', '火'],
+      title: '独奏卿', element: '闇', weaknesses: ['光', '火'],
       sprite: 'assets/enemy-characters/zenakado/battle-idle-v3.png',
       stats: { maxHp: 640, atk: 28, def: 16, mag: 26, mnd: 16, dex: 24, agi: 24, spd: 24 },
       exp: 150, gold: { min: 100, max: 150 },
@@ -1965,7 +1984,7 @@ window.ARSENE_DATA = {
       sprite: 'assets/enemy-characters/versicrell/versicrell-form1-v1.png', spriteClass: 'versicrell-sprite versicrell-form1',
       stats: { maxHp: 3000, atk: 90, def: 84, mag: 96, mnd: 76, dex: 108, agi: 44, spd: 44 },
       exp: 360, gold: { min: 210, max: 300 },
-      dropTable: [{ itemId: 'voidEssence', chance: .50 }, { itemId: 'phantomCore', chance: .60 }, { itemId: 'parentGiftGuitar', chance: .006 }],
+      dropTable: [{ itemId: 'voidEssence', chance: .50 }, { itemId: 'phantomCore', chance: .60 }, { itemId: 'parentGiftGuitar', chance: .002 }],
       music: '音楽系/ダンジョン/ヴェルシクレルのテーマ1.mp3',
       musicPhase2: '音楽系/ダンジョン/ヴェルシクレルのテーマ2.mp3',
       form2: {
@@ -2007,7 +2026,7 @@ window.ARSENE_DATA = {
 
     myrthi: {
       id: 'myrthi', name: 'ミルティ', enName: 'MYRTHI', kind: 'boss', encounter: 1,
-      title: '第二奏卿《黒紅の双刃戦姫》', element: '物理', weaknesses: ['魔法'],
+      title: '黒紅の双刃戦姫', element: '物理', weaknesses: ['魔法'],
       sprite: 'assets/enemy-characters/myrthi/battle-idle-v1.jpg', spriteClass: 'myrthi-sprite',
       stats: { maxHp: 1760, atk: 100, def: 50, mag: 60, mnd: 52, dex: 60, agi: 52, spd: 52 },
       exp: 200, gold: { min: 150, max: 200 },

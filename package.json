@@ -5,7 +5,8 @@
   "description": "ARSÈNE REMIX web game and Capacitor iOS shell",
   "scripts": {
     "build": "node scripts/build-web.mjs",
-    "cap:sync": "pnpm run build && cap sync ios",
+    "cap:sync": "pnpm run build && cap sync ios && node scripts/verify-ios-bundle.mjs",
+    "verify:ios-bundle": "node scripts/verify-ios-bundle.mjs",
     "cap:open:ios": "cap open ios"
   },
   "dependencies": {

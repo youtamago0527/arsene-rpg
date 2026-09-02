@@ -1,15 +1,23 @@
 (() => {
   'use strict';
+  // 同名音源を差し替えてもWKWebViewの古いレスポンスを掴まないよう、
+  // BGM/SEの全ローカルURLへ同じリリース番号を付ける。
+  const AUDIO_ASSET_VERSION = '20260902.1';
+  const audioAssetUrl = path => {
+    const url = new URL(path, document.baseURI);
+    url.searchParams.set('av', AUDIO_ASSET_VERSION);
+    return url.href;
+  };
   // 用意された効果音ファイル。ここに載っている名前は合成音ではなくこちらを鳴らす。
   //   gain   … ファイルごとの音量差をならす
   //   offset … 先頭の無音を飛ばす秒数（MP3はエンコード時に無音が入るため）
   //   maxDur … 長いファイルを途中でフェードアウトさせる秒数
   //   rate   … 再生速度。同じ素材を流用して質感を変えるのに使う
   const SFX_FILES = {
-    critical:    { url: '音楽系/効果音/会心の一撃1.mp3', gain: .92, offset: .002, maxDur: 1.5 },
-    criticalHit: { url: '音楽系/効果音/会心の一撃1.mp3', gain: .92, offset: .002, maxDur: 1.5 },
-    evade:       { url: '音楽系/効果音/回避.mp3', gain: .86, offset: .002, maxDur: 1.2 },
-    playerHit:   { url: '音楽系/効果音/打撃6.mp3', gain: .90, offset: .002, maxDur: 1.2 },
+    critical:    { url: '音楽系/効果音/critical-hit-v2.mp3', gain: .92, offset: .002, maxDur: 1.5 },
+    criticalHit: { url: '音楽系/効果音/critical-hit-v2.mp3', gain: .92, offset: .002, maxDur: 1.5 },
+    evade:       { url: '音楽系/効果音/evade-v2.mp3', gain: .86, offset: .002, maxDur: 1.2 },
+    playerHit:   { url: '音楽系/効果音/enemy-hit-v2.mp3', gain: .90, offset: .002, maxDur: 1.2 },
     swordHit:    { url: '音楽系/効果音/剣で斬る2.mp3', gain: .90, offset: .050, maxDur: .9 },
     clawHit:     { url: '音楽系/効果音/爪通常.mp3',    gain: 1.10, offset: .100, maxDur: .9 },
     // ファイアボールは「飛んでいる最中」の音なので、着弾ではなく発射のタイミングで鳴らす
@@ -24,15 +32,20 @@
 
   class ArseneAudio {
     constructor(bgmPath) {
-      this.ctx = null; this.master = null; this.musicSource = null; this.musicGain = null; this.muted = false; this.started = false; this.settingsKey = 'arsene-rpg-audio-v1'; this.levels = this.loadLevels(); this.musicMaxVolume = matchMedia('(max-width:760px)').matches ? .18 : .22; this.musicVolume = this.musicMaxVolume * this.levels.bgm; this.fadeToken = 0;
-      this.music = new Audio(bgmPath); this.music.loop = true; this.music.preload = 'auto'; this.music.volume = this.musicVolume;
+      this.ctx = null; this.master = null; this.musicSource = null; this.musicGain = null; this.muted = false; this.started = false; this.settingsKey = 'arsene-rpg-audio-v1'; this.levels = this.loadLevels(); this.musicMaxVolume = matchMedia('(max-width:760px)').matches ? .18 : .22; this.musicVolume = this.musicMaxVolume * this.levels.bgm; this.fadeToken = 0; this.pendingSfx = new Set(); this.userActivated = false;
+      this.music = new Audio(audioAssetUrl(bgmPath)); this.music.loop = true; this.music.preload = 'auto'; this.music.volume = this.musicVolume;
       this.audioId = `${Date.now()}-${Math.random()}`; this.audioFocus = typeof BroadcastChannel === 'function' ? new BroadcastChannel('arsene-rpg-audio-focus') : null;
       if (this.audioFocus) this.audioFocus.onmessage = e => { if (e.data?.type === 'claim' && e.data.id !== this.audioId) { this.music.pause(); this.started = false; } };
+      const activate = () => { this.userActivated = true; this.unlock(); };
+      document.addEventListener('pointerdown', activate, { capture: true, once: true });
+      document.addEventListener('touchend', activate, { capture: true, once: true });
+      document.addEventListener('visibilitychange', () => { if (!document.hidden && this.userActivated && !this.muted) this.unlock(); });
     }
     async unlock() {
       if (!this.ctx) {
         const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
         this.ctx = new AC(); this.master = this.ctx.createGain(); this.master.gain.value = .72 * this.levels.sfx; this.master.connect(this.ctx.destination);
+        // ユーザー操作の同期区間を音源fetch待ちで失わない。SEのdecodeは背後で進める。
         this.preloadSfxFiles();
         // iOS Safari ignores HTMLMediaElement.volume. Route BGM through a
         // Web Audio gain node so the in-game slider also works on phones.
@@ -46,19 +59,42 @@
         } catch { this.musicSource = null; this.musicGain = null; this.applyMusicVolume(); }
       }
       if (this.ctx.state === 'suspended') await this.ctx.resume();
-      if (!this.started && !this.muted) { this.audioFocus?.postMessage({ type: 'claim', id: this.audioId }); this.started = true; this.music.play().catch(() => { this.started = false; }); }
+      if (!this.started && !this.muted) { this.audioFocus?.postMessage({ type: 'claim', id: this.audioId }); if (Number.isFinite(this.pendingMusicStartVolume)) this.setMusicOutput(this.pendingMusicStartVolume); this.started = true; this.music.play().catch(() => { this.started = false; }); }
     }
     // 武器種から直接鳴らす。読み込み前や未定義の武器種は false を返すので、呼び出し側で合成音へ落とせる。
     playWeaponAttack(weaponType) { return this.playSfxFile(WEAPON_SFX[weaponType]); }
     setMusicOutput(value) { const level = Math.max(0, value); if (this.musicGain) this.musicGain.gain.value = level; else { try { this.music.volume = Math.min(1, level); } catch {} } }
     getMusicOutput() { return this.musicGain ? this.musicGain.gain.value : this.music.volume; }
     applyMusicVolume() { this.setMusicOutput(this.muted ? 0 : this.musicVolume); }
-    async restartMusic() { this.fadeToken++; this.music.pause(); this.music.currentTime = 0; this.applyMusicVolume(); this.started = false; await this.unlock(); }
-    async playTrack(path) { this.fadeToken++; this.music.pause(); this.music.ontimeupdate = null; this.music.loop = true; this.music.src = path; this.music.load(); this.music.currentTime = 0; this.applyMusicVolume(); this.started = false; await this.unlock(); }
+    fadeMusicTo(target, duration = 180, token = this.fadeToken) {
+      const initial = this.getMusicOutput(), start = performance.now();
+      if (duration <= 0 || Math.abs(initial - target) < .001) { this.setMusicOutput(target); return Promise.resolve(token === this.fadeToken); }
+      return new Promise(resolve => {
+        const step = now => {
+          if (token !== this.fadeToken) { resolve(false); return; }
+          const p = Math.min(1, (now - start) / duration);
+          this.setMusicOutput(initial + (target - initial) * p);
+          if (p < 1) requestAnimationFrame(step); else resolve(true);
+        };
+        requestAnimationFrame(step);
+      });
+    }
+    async restartMusic() { const token = ++this.fadeToken; if (this.started && !this.music.paused) await this.fadeMusicTo(0, 160, token); if (token !== this.fadeToken) return; this.music.pause(); this.music.currentTime = 0; this.pendingMusicStartVolume = 0; this.started = false; await this.unlock(); delete this.pendingMusicStartVolume; if (token === this.fadeToken) await this.fadeMusicTo(this.muted ? 0 : this.musicVolume, 180, token); }
+    async playTrack(path) {
+      const targetUrl = audioAssetUrl(path);
+      if ((this.music.currentSrc || this.music.src) === targetUrl && this.started && !this.music.paused) { this.applyMusicVolume(); return; }
+      const token = ++this.fadeToken;
+      if (this.started && !this.music.paused) await this.fadeMusicTo(0, 180, token);
+      if (token !== this.fadeToken) return;
+      this.music.pause(); this.music.ontimeupdate = null; this.music.loop = true; this.music.src = targetUrl; this.music.load(); this.music.currentTime = 0; this.pendingMusicStartVolume = 0; this.setMusicOutput(0); this.started = false;
+      await this.unlock(); delete this.pendingMusicStartVolume;
+      if (token === this.fadeToken) await this.fadeMusicTo(this.muted ? 0 : this.musicVolume, 220, token);
+    }
     async playTimedLoop(path, loopAt = 100, fadeSeconds = 5) { await this.playTrack(path); this.music.loop = false; this.music.ontimeupdate = () => { const fadeStart = Math.max(0, loopAt - fadeSeconds), time = this.music.currentTime; if (time >= loopAt) { this.music.currentTime = 0; this.applyMusicVolume(); if (this.music.paused && !this.muted) this.music.play().catch(() => {}); return; } if (time >= fadeStart) this.setMusicOutput(this.musicVolume * Math.max(0, (loopAt - time) / fadeSeconds)); }; }
-    stopMusic(fadeMs = 500) {
-      if (!this.started) return; const token = ++this.fadeToken, start = performance.now(), initial = this.getMusicOutput();
-      const fade = now => { if (token !== this.fadeToken) return; const p = Math.min(1, (now - start) / fadeMs); this.setMusicOutput(initial * (1 - p)); if (p < 1) requestAnimationFrame(fade); else { this.music.pause(); this.music.currentTime = 0; this.applyMusicVolume(); this.started = false; } }; requestAnimationFrame(fade);
+    async stopMusic(fadeMs = 500) {
+      if (!this.started) return; const token = ++this.fadeToken;
+      const completed = await this.fadeMusicTo(0, fadeMs, token); if (!completed || token !== this.fadeToken) return;
+      this.music.pause(); this.music.currentTime = 0; this.applyMusicVolume(); this.started = false;
     }
     toggle() {
       this.muted = !this.muted; if (this.master) this.master.gain.value = this.muted ? 0 : .72 * this.levels.sfx;
@@ -81,11 +117,12 @@
     // 効果音ファイルを読み込んでデコードしておく。
     // 失敗しても握りつぶす。鳴らす側は合成音へフォールバックする。
     preloadSfxFiles() {
-      if (!this.ctx || this.sfxBuffers) return;
+      if (!this.ctx) return Promise.resolve();
+      if (this.sfxReady) return this.sfxReady;
       this.sfxBuffers = {};
       const urls = [...new Set(Object.values(SFX_FILES).map(f => f.url))];
-      urls.forEach(url => {
-        fetch(url)
+      this.sfxReady = Promise.all(urls.map(url =>
+        fetch(audioAssetUrl(url), { cache: 'no-store' })
           .then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status))))
           .then(buf => new Promise((res, rej) => {
             // Safari 系は Promise を返さない実装があるのでコールバック版で受ける
@@ -93,8 +130,9 @@
             if (ret && typeof ret.then === 'function') ret.then(res, rej);
           }))
           .then(decoded => { this.sfxBuffers[url] = decoded; })
-          .catch(() => { this.sfxBuffers[url] = null; });
-      });
+          .catch(() => { this.sfxBuffers[url] = null; })
+      ));
+      return this.sfxReady;
     }
     // ファイルの効果音を鳴らす。まだ読み込めていなければ false を返す。
     playSfxFile(name) {
@@ -140,8 +178,15 @@
     }
     sfx(name) {
       if (!this.ctx || this.muted) return;
-      // 用意された効果音ファイルがあればそれを優先。未読み込み・失敗時は合成音へ。
+      // 用意された効果音は旧合成音へ落とさない。初回デコード中なら完了後に1回だけ鳴らす。
       if (this.playSfxFile(name)) return;
+      if (SFX_FILES[name]) {
+        if (!this.pendingSfx.has(name)) {
+          this.pendingSfx.add(name);
+          this.sfxReady?.then(() => this.playSfxFile(name)).finally(() => this.pendingSfx.delete(name));
+        }
+        return;
+      }
       const chord = (notes, gap=.08) => notes.forEach((n,i)=>this.tone(n,.2,'sine',.1,1,i*gap));
       switch (name) {
         case 'ui': this.tone(620,.055,'square',.045,1.28); break;
