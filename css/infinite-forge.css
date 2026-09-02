@@ -16,7 +16,7 @@
 @media(prefers-reduced-motion:reduce){.is-forge-header h2{filter:none}}
 
 /* スマホ本体では詳細を縦に読む。Codexの実機プレビュー配置とは分離する。 */
-.is-forge-detail-layout{grid-template-columns:minmax(132px,36%) minmax(0,64%)}
+.is-forge-detail-layout{grid-template-columns:minmax(132px,36%) minmax(0,64%);align-items:stretch}
 .is-forge-selected{position:relative;top:auto}
 .is-forge-preview-column>small{font-size:0}
 .is-forge-preview-column>small::after{content:"PROCESS PREVIEW // 加工内容";font:700 6px monospace}
@@ -32,7 +32,7 @@
 .is-forge-gear-card.selected .is-forge-card-stats{display:flex!important}
 .is-forge-gear-card.selected .is-forge-card-op{display:block!important}
 .is-forge-selected-art,.is-forge-selected>em{display:none}
-.is-forge-selected{min-height:258px;padding:12px 9px;justify-content:flex-start}
+.is-forge-selected{box-sizing:border-box;height:100%;min-height:258px;padding:12px 9px;justify-content:flex-start}
 .is-forge-selected>i{margin-bottom:5px}
 .is-forge-selected>small{font-size:7px}
 .is-forge-selected h3{margin:12px 0 5px;font-size:12px;line-height:1.45}
