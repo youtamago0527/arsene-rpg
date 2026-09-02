@@ -3392,9 +3392,9 @@
     // つかなくなっていた。素材の入手は floating のログ表示だけで足りる。
     shouldAnnounceDrop(item) {
       if (item?.category !== 'equipment') return false;
-      return item.rarity === 'epic' || item.rarity === 'legendary';
+      return !!D.weapons?.[item.id] || item.rarity === 'epic' || item.rarity === 'legendary';
     }
-    announceRareDrop(item) { const layer = $('#rare-drop-layer'); if (!layer) return; this.audio.sfx('rareDrop'); const b = document.createElement('div'); b.className = `rare-drop-banner rarity-${item.rarity}`; b.innerHTML = `<small>${item.rarity === 'legendary' ? 'LEGENDARY DROP' : 'EPIC DROP'}</small><b>${item.name}</b>`; layer.appendChild(b); requestAnimationFrame(() => b.classList.add('show')); setTimeout(() => { b.classList.remove('show'); setTimeout(() => b.remove(), 420); }, 2400); }
+    announceRareDrop(item) { const layer = $('#rare-drop-layer'); if (!layer) return; this.audio.sfx('rareDrop'); const b = document.createElement('div'), weapon = !!D.weapons?.[item.id]; b.className = `rare-drop-banner rarity-${item.rarity}`; b.innerHTML = `<small>${weapon ? 'WEAPON PICKED UP' : item.rarity === 'legendary' ? 'LEGENDARY DROP' : 'EPIC DROP'}</small><b>${item.name}${weapon ? 'を拾いました' : ''}</b>`; layer.appendChild(b); requestAnimationFrame(() => b.classList.add('show')); setTimeout(() => { b.classList.remove('show'); setTimeout(() => b.remove(), 420); }, 2400); }
     async useConsumable(id) { const item = D.items[id], recovery = this.recoveryItemInfo(item, this.player?.stats), key = recovery?.key, maxKey = recovery?.maxKey; if (!item || !recovery || !(this.profile.inventory[id] > 0)) { this.setLog(`${item?.name || 'アイテム'}を持っていない。`); return; } if (this.player[key] >= this.player.stats[maxKey]) { this.setLog(`${key.toUpperCase()}は満タンだ。`); return; } this.lastBattleAction = { type: 'item', itemId: id }; this.locked = true; this.keepAutoControlVisible(); await this.beginPlayerTurn(); const heal = Math.min(recovery.amount, this.player.stats[maxKey] - this.player[key]); this.profile.inventory[id]--; this.player[key] += heal; this.persistVitals(); this.audio.sfx('heal'); this.setLog(`${item.name}を使った。${key.toUpperCase()}が${heal}回復！`); this.floating($('#ren'), `+${heal}`, 'heal'); this.updateHUD(); await this.battleSleep(650); await this.enemyOnlyTurn(); }
     async guardAction() {
       if (this.locked || this.finished) return;
