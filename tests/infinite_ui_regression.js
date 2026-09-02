@@ -8,6 +8,8 @@ const css = fs.readFileSync(path.join(root, 'css/infinite-score.css'), 'utf8');
 assert(score.includes('P.isShowLootPop'), 'loot acquisition pop is missing');
 assert(score.includes('を拾った'), 'loot pop copy is missing');
 assert(score.includes('P.isGameDialog'), 'in-game dialog layer is missing');
+assert(score.includes("const card=e.target.closest('[data-is-card]')"), 'enchant cards do not have a dedicated click route');
+assert(score.includes("card.dataset.isResolved='1';card.disabled=true;await g.isApplyCard"), 'enchant card selection can be submitted twice or remain over exploration');
 assert(score.includes('P.isForgeEnhance=async'), 'forge enhancement still uses native UI');
 assert(score.includes('P.isForgeTransfer=async'), 'forge transfer still uses native UI');
 assert(score.includes('P.isForgeDelete=async'), 'forge OP deletion still uses native UI');
@@ -16,6 +18,8 @@ assert(score.includes('P.isBuy=async'), 'shop bag-full notice still uses native 
 assert(score.includes('P.isSell=async'), 'shop equipped-item sale still uses native UI');
 assert(!gear.includes("P.isOpenMerge=function(){alert("), 'removed merge action still uses native alert');
 assert(css.includes('env(safe-area-inset-top)'), 'dialog/toast ignores iPhone safe area');
+assert(css.includes('#result.result-overlay{z-index:10010}'), 'battle/card results can render behind the fixed Infinite exploration panel');
+assert(css.includes('.is-game-dialog{z-index:10030;'), 'card enhancement dialogs can render behind the card result');
 assert(css.includes('@media(max-width:360px)'), 'narrow-screen layout correction is missing');
 const bagRender = score.slice(score.indexOf('P.isRenderBag = function'), score.indexOf('P.isGearValues = function'));
 const equipmentRender = score.slice(score.indexOf('P.isRenderEquipment=function'), score.indexOf('P.isRenderDebug=function'));
