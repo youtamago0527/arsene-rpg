@@ -24,6 +24,9 @@ assert.match(css, /overflow-x:auto/, '装備カードを横スクロール可能
 assert.match(css, /\.is-forge-gear-icon,\.is-forge-gear-card\.selected \.is-forge-gear-icon,\.is-forge-gear-card>b\+small\{display:none!important\}/, '選択・装備状態を問わず仮アイコンと内部スロット名を表示しない');
 assert.match(css, /\.is-forge-gear-card\.selected \.is-forge-card-stats\{display:flex!important\}/, '選択中カードの能力欄も通常カードと同じ並びにする');
 assert.match(css, /\.is-forge-gear-card\.selected \.is-forge-card-op\{display:block!important\}/, '選択中カードのOP欄も通常カードと同じ並びにする');
+assert.match(css, /\.is-forge-gear-card\.selected\{gap:0!important\}/, '選択状態の共通gapがカード内部へ混入しない');
+assert.match(css, /\.is-forge-gear-card\.selected>b\{[^}]+height:auto!important[^}]+line-height:normal!important/, '選択中カードでも装備名の高さを消さない');
+assert.match(css, /\.is-forge-gear-card\.selected \.is-forge-card-stats\{flex:0 0 auto!important;height:auto!important;min-height:0!important;[^}]+border:0!important/, '選択中カードの能力欄に大きな囲み枠を付けない');
 assert.match(css, /\.is-forge-detail-layout\{grid-template-columns:[^}]+;align-items:stretch\}/, '左右の詳細パネルを同じ高さに揃える');
 assert.match(css, /\.is-forge-selected\{box-sizing:border-box;height:100%/, '選択装備パネルを右側の加工内容と同じ高さまで伸ばす');
 assert.match(css, /env\(safe-area-inset-bottom/, 'iPhoneのセーフエリアを確保する');
