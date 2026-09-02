@@ -16,7 +16,8 @@
     dungeon2: { label: 'D2クリア',              battles:  229, maxHp: 224, jobLevel: 14 },
     dungeon3: { label: 'D3クリア（守護士解放）', battles:  508, maxHp: 400, jobLevel: 20 },
     dungeon4: { label: 'D4進行中',              battles:  914, maxHp: 656, jobLevel: 30 },
-    dungeon4Clear: { label: 'D4クリア',         battles: 1321, maxHp: 912, jobLevel: 40 }
+    dungeon4Clear: { label: 'D4クリア',         battles: 1321, maxHp: 912, jobLevel: 40 },
+    dungeon5Clear: { label: 'D5クリア',         battles: 1728, maxHp: 1168, jobLevel: 50 }
   };
 
   // 指定した段階のプレイヤー像を profile へ流し込む
