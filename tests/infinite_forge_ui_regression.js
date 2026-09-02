@@ -22,6 +22,11 @@ assert.match(startFlow, /infinite-forge-ready/, '工房単体のローカル確�
 assert.match(infinite, /flags\.infiniteScoreWarningSeen = true/, '工房単体確認ではセリペス警告会話をスキップする');
 assert.match(infinite, /previous=panel\?\.querySelector\('\.is-forge-picker>div'\)\?\.scrollLeft/, '装備選択一覧の横スクロール位置を再描画前に保存する');
 assert.match(infinite, /picker\.scrollLeft=previous;requestAnimationFrame/, '再描画後も装備選択一覧の横スクロール位置を復元する');
+assert.match(infinite, /isForgeCombinedOp=function\(targetOp,sourceOp\)/, '同一OP移植時の合成結果を計算する');
+assert.match(infinite, /value:\(Number\(targetOp\.value\)\|\|0\)\+\(Number\(sourceOp\.value\)\|\|0\)/, '同一OPは対象と素材の効果値を加算する');
+assert.match(infinite, /target\.ops\[same\]=combined/, '同一OPを素材OPで上書きせず強化結果へ置き換える');
+assert.match(infinite, /同一OP合成後：\$\{this\.isForgeOpText\(result\)\}/, '移植前のプレビューにも同一OPの強化結果を表示する');
+assert.match(infinite, /return `\$\{label\} \+\$\{value\}`/, '工房のOP表示ではR表記を出さない');
 for (const label of ['獲得経験値UP', '素材ドロップ率UP', '魔法与ダメージ', '被ダメージ軽減', '帰還札出現率UP', 'バッグ枠追加']) {
   assert.match(infiniteData, new RegExp(label), `異世界OP「${label}」を日本語表示する`);
 }
