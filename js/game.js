@@ -2981,6 +2981,10 @@
     shopMaxStack(item) { return item?.maxStack ?? 9; }
     shopPurchaseLimit(item) { const n = Number(item?.purchaseLimit); return Number.isFinite(n) && n >= 0 ? Math.floor(n) : Infinity; }
     shopPurchaseCount(id) { return Math.max(0, Math.floor(Number(this.profile.shopPurchases?.[id]) || 0)); }
+    restockKazuTakeout() {
+      this.profile.shopPurchases ||= {};
+      for (const id of D.shopItems || []) this.profile.shopPurchases[id] = 0;
+    }
     canBuyItem(id) {
       const item = D.items[id]; if (!item?.price) return false;
       if (this.profile.gold < item.price) return false;
@@ -3503,6 +3507,9 @@
       return true;
     }
     async victory() {
+      if (this.finished) return;
+      // 拠点の出入りではなく、戦闘を1回勝ち切った時だけカズの持ち帰り在庫を補充する。
+      this.restockKazuTakeout();
       const quick = !!this.quickResolving;
       this.profile.flags.consecutiveDefeats = 0; this.profile.flags.lastBattleResult = 'victory';
       this.finished = true; this.pauseAutoBattle(); this.audio.sfx('victory'); this.flashTitle('VICTORY', 'ALL SHADOWS ELIMINATED'); $('#ren').classList.add('victory'); await this.battleSleep(quick ? 120 : 1100);
@@ -3651,7 +3658,7 @@
       if (name === 'food') { const activeMeal = this.activeMealBuff(), makanai = D.foodMenu?.buffs?.makanai, sapporo = D.foodMenu?.buffs?.sapporoMiso, taiwan = D.foodMenu?.buffs?.taiwanMazesoba, price = this.mealPriceFor('makanai'), activeNote = activeMeal ? `<p class="meal-active-note">現在の効果：<b>${activeMeal.name}</b><span>別の麺を食べると、現在の効果は上書きになります。</span></p>` : '', adFoodOffer = window.arseneQOffer?.foodHTML?.() || '', sapporoUnlocked = this.isMealUnlocked('sapporoMiso'), sapporoPoor = this.profile.gold < this.mealPriceFor('sapporoMiso'), sapporoCard = sapporoUnlocked ? `<section class="food-special"><header><b>NEW MENU</b><span>ZENACAD CLEAR</span></header><div><strong>${sapporo.name}</strong><em>次の潜入中、獲得GOLD +10%</em><small>${sapporo.description}</small><button class="eat-food" data-eat-food="sapporoMiso" ${sapporoPoor ? 'disabled' : ''}>${sapporoPoor ? 'GOLD不足' : `${sapporo.price} GOLD で食べる`}</button></div></section>` : '', taiwanUnlocked = this.isMealUnlocked('taiwanMazesoba'), taiwanPoor = this.profile.gold < this.mealPriceFor('taiwanMazesoba'), taiwanNew = !!this.profile.flags.taiwanMazesobaNew, taiwanCard = taiwanUnlocked ? `<section class="food-special ${taiwanNew ? 'food-spark-new' : ''}"><header><b>${taiwanNew ? 'KAZU’S SPARK' : 'SPECIAL MENU'}</b><span>${taiwanNew ? 'NEW RECIPE' : 'GOLD BOOST'}</span></header><div><strong>${taiwan.name}</strong><em>次の潜入中、獲得GOLD +20%</em><small>${taiwan.description}</small><button class="eat-food" data-eat-food="taiwanMazesoba" ${taiwanPoor ? 'disabled' : ''}>${taiwanPoor ? 'GOLD不足' : `${taiwan.price} GOLD で食べる`}</button></div></section>` : '', coming = (D.foodMenu?.comingSoon || []).map(item => `<article class="food-coming-card" aria-disabled="true"><i aria-hidden="true"></i><b>${item.name}</b><span>COMING SOON</span></article>`).join('');
         // 売り物。所持数とは別に、セーブへ累計購入数を保持する。食べても在庫は復活しない。
         const shop = this.shopStock().map(it => { const have = this.profile.inventory[it.id] || 0, max = this.shopMaxStack(it), bought = this.shopPurchaseCount(it.id), limit = this.shopPurchaseLimit(it), soldOut = bought >= limit, isFull = have >= max, poor = this.profile.gold < it.price, eff = this.recoveryItemInfo(it)?.label || ''; return `<article class="shop-card${soldOut ? ' sold-out' : ''}"><div class="shop-info"><b>${it.name}</b><em>${eff}</em><small>${it.description}</small></div><div class="shop-buy"><span class="shop-price">${it.price} G</span><span class="shop-have">所持 ${have} / ${max}</span><span class="shop-have">購入 ${bought} / ${Number.isFinite(limit) ? limit : '∞'}</span><button data-buy-item="${it.id}" ${soldOut || isFull || poor ? 'disabled' : ''}>${soldOut ? '売り切れ' : isFull ? '所持上限' : poor ? 'GOLD不足' : '買う'}</button></div></article>`; }).join('');
-        panel.innerHTML = `<small>KAZU'S SPECIAL</small><h2>カズのまかない</h2>${activeNote}<div class="food-panel"><div class="food-bowl" aria-hidden="true"></div><div class="food-copy"><strong>${makanai.name}</strong><span>${makanai.description}</span><em>料金：所持GOLDの30％　<b>${price.toLocaleString('ja-JP')} GOLD</b></em><button class="eat-food" data-eat-food="makanai">まかないを食べる</button></div></div>${sapporoCard}${taiwanCard}<section class="food-shop"><header><b>持ち帰り</b><span>TAKEOUT</span></header><p class="shop-note">各商品は累計5個まで。使っても購入枠は戻らず、5個購入すると売り切れになります。</p><div class="shop-grid">${shop}</div></section><section class="food-coming"><header><b>NEXT MENU</b><span>COMING SOON</span></header><div>${coming}</div></section>`;
+        panel.innerHTML = `<small>KAZU'S SPECIAL</small><h2>カズのまかない</h2>${activeNote}<div class="food-panel"><div class="food-bowl" aria-hidden="true"></div><div class="food-copy"><strong>${makanai.name}</strong><span>${makanai.description}</span><em>料金：所持GOLDの30％　<b>${price.toLocaleString('ja-JP')} GOLD</b></em><button class="eat-food" data-eat-food="makanai">まかないを食べる</button></div></div>${sapporoCard}${taiwanCard}<section class="food-shop"><header><b>持ち帰り</b><span>TAKEOUT</span></header><p class="shop-note">各商品は1回の入荷につき5個、所持も5個まで。戦闘に1回勝利すると再入荷します。拠点を出入りしただけでは再入荷しません。</p><div class="shop-grid">${shop}</div></section><section class="food-coming"><header><b>NEXT MENU</b><span>COMING SOON</span></header><div>${coming}</div></section>`;
         if (adFoodOffer) (panel.querySelector('.meal-active-note') || panel.querySelector('h2'))?.insertAdjacentHTML('afterend', adFoodOffer);
         const rebirthTests = (D.foodMenu?.testItems || []).map(entry => {
           const item = D.items[entry.id], have = this.profile.inventory[entry.id] || 0, poor = this.profile.gold < entry.price;

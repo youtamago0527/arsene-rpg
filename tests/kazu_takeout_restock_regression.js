@@ -1,0 +1,11 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const source = fs.readFileSync(require('node:path').resolve(__dirname, '../js/game.js'), 'utf8');
+assert(source.includes('restockKazuTakeout()'), 'restock method missing');
+assert(source.includes('for (const id of D.shopItems || []) this.profile.shopPurchases[id] = 0'), 'takeout purchase counters must reset');
+const victory = source.indexOf('async victory()');
+const restock = source.indexOf('this.restockKazuTakeout();', victory);
+assert(victory >= 0 && restock > victory && restock - victory < 300, 'restock must happen after a completed victory');
+assert.equal((source.match(/restockKazuTakeout/g) || []).length, 2, 'restock must only be defined and called from victory');
+assert(source.includes('拠点を出入りしただけでは再入荷しません'), 'shop explanation must state that navigation does not restock');
+console.log('kazu takeout restock regression: ok');
