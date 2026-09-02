@@ -1,0 +1,14 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const game = fs.readFileSync(path.join(root, 'js/game.js'), 'utf8');
+const css = fs.readFileSync(path.join(root, 'css/menu.css'), 'utf8');
+assert(game.includes('data-equip-best'), 'best equipment button is missing');
+assert(game.includes('equipBestLoadout()'), 'best equipment button is not connected');
+assert(game.includes("{ id: 'attackPower', name: '攻撃力' }"), 'attack sort is missing');
+assert(game.includes("{ id: 'defensePower', name: '防御力' }"), 'defense sort is missing');
+assert(game.includes("{ id: 'magicDefensePower', name: '魔法防御力' }"), 'magic defense sort is missing');
+assert(game.includes("attackPower: 'attack', defensePower: 'defense', magicDefensePower: 'magicDefense'"), 'combat sort values are not connected');
+assert(css.includes('.equipment-best{'), 'best equipment button styling is missing');
+console.log('equipment best/sort regression: ok');

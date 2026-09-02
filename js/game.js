@@ -117,6 +117,8 @@
         if (equipWeaponTab) { this.equipWeaponType = equipWeaponTab.dataset.equipWeaponTab; this.selectedEquipmentId = null; this.audio.sfx('ui'); this.renderMenuPanel('equipment'); return; }
         const equipSort = e.target.closest('[data-equip-sort]');
         if (equipSort) { this.equipSort = equipSort.dataset.equipSort; this.audio.sfx('ui'); this.renderMenuPanel('equipment'); return; }
+        const equipBest = e.target.closest('[data-equip-best]');
+        if (equipBest) { this.equipBestLoadout(); return; }
         const unequip = e.target.closest('[data-unequip-slot]');
         if (unequip) { this.unequipSlot(unequip.dataset.unequipSlot); return; }
         const equipTab = e.target.closest('[data-equip-tab]');
@@ -4998,7 +5000,7 @@
         } else this.equipWeaponType = null;
         const sortKey = this.equipSort || 'default';
         if (sortKey !== 'default') list = [...list].sort((a, b) => this.equipSortValue(b, sortKey) - this.equipSortValue(a, sortKey) || (D.items[a]?.name || '').localeCompare(D.items[b]?.name || ''));
-        const sortOpts = [{ id: 'default', name: '標準' }, ...statusStatKeys.map(k => ({ id: k, name: statLabels[k] }))];
+        const sortOpts = [{ id: 'default', name: '標準' }, { id: 'attackPower', name: '攻撃力' }, { id: 'defensePower', name: '防御力' }, { id: 'magicDefensePower', name: '魔法防御力' }, ...statusStatKeys.map(k => ({ id: k, name: statLabels[k] }))];
         const sortHtml = `<div class="equip-sort"><span>並べ替え</span><div class="equip-sort-btns">${sortOpts.map(o => `<button data-equip-sort="${o.id}" class="${sortKey === o.id ? 'active' : ''}">${o.name}</button>`).join('')}</div></div>`;
         const weaponTabs = weaponTypes.length ? `<div class="equip-weapon-tabs" role="tablist" aria-label="武器学で絞り込み">${weaponTypes.map(type => { const mastery = this.masteryOf(type.id); return `<button type="button" role="tab" data-equip-weapon-tab="${type.id}" class="${this.equipWeaponType === type.id ? 'active' : ''}"><b>${type.name}</b><small>武器学 Lv.${mastery.level}</small></button>`; }).join('')}</div>` : '';
         const curId = this.profile.equipment[activeSlot];
@@ -5007,7 +5009,7 @@
         const preview = this.selectedEquipmentId ? `<section class="equipment-preview-overlay" role="dialog" aria-modal="true" aria-label="装備比較"><header><div><small>STATUS COMPARISON</small><b>能力比較</b></div><button type="button" data-equip-preview-close aria-label="候補一覧へ戻る">×</button></header>${this.equipmentPreviewHTML(this.selectedEquipmentId)}</section>` : '';
         workbench = `<section class="equipment-selector-overlay" role="dialog" aria-modal="true" aria-label="${slotDef?.name || '装備'}を選択"><header><div><small>SELECT EQUIPMENT</small><b>${slotDef?.name}の装備 <span>${slotDef?.enName}</span></b></div><button type="button" data-equip-slot-close aria-label="装備部位一覧へ戻る">×</button></header>${weaponTabs}${sortHtml}${unequipBtn}<div class="equipment-candidate-list">${cards || '<p class="item-empty">この部位に装備できるアイテムがありません。</p>'}</div>${preview}</section>`;
       }
-      panel.innerHTML = `<small>EQUIPMENT</small><h2>装備・ステータス</h2>${this.equipTabsHtml()}<div class="equipment-screen"><section class="equipment-slots-wrap"><h3>装備中 <span>CURRENT LOADOUT</span></h3><div class="equipment-slots">${slotHtml}</div></section>${!activeSlot ? `<section class="equipment-workbench">${workbench}</section>` : ''}${this.bossSetBonusSectionHTML()}</div>${activeSlot ? workbench : ''}`;
+      panel.innerHTML = `<small>EQUIPMENT</small><h2>装備・ステータス</h2>${this.equipTabsHtml()}<div class="equipment-screen"><section class="equipment-slots-wrap"><h3>装備中 <span>CURRENT LOADOUT</span><button type="button" class="equipment-best" data-equip-best>最強<small>BEST</small></button></h3><div class="equipment-slots">${slotHtml}</div></section>${!activeSlot ? `<section class="equipment-workbench">${workbench}</section>` : ''}${this.bossSetBonusSectionHTML()}</div>${activeSlot ? workbench : ''}`;
     }
     candidatesForSlot(slotId) {
       return Object.entries(this.profile.inventory).filter(([id, n]) => {
@@ -5089,7 +5091,19 @@
     }
     sanitizeLeftHandEquipment() { const id = this.profile?.equipment?.leftHand; if (id && !this.isLeftHandItemAllowed(id, this.profile.currentJob)) this.profile.equipment.leftHand = null; }
     sanitizeRightHandEquipment() { const id = this.profile?.equipment?.rightHand; if (!id || this.canEquipRightHand(id)) return; const preferred = this.weaponTypeDef(this.profile.preferredWeaponType)?.starterWeaponId, fallback = [preferred, this.defaultWeaponId()].find(wid => wid && (this.profile.inventory[wid] || 0) > 0 && this.canEquipRightHand(wid)); this.profile.equipment.rightHand = fallback || this.defaultWeaponId(); }
-    equipSortValue(id, key) { const before = this.totalStats(), item = D.items[id]; if (!item) return 0; const slot = this.equipSlot || item.slot; const after = this.totalStats({ ...this.profile.equipment, [slot]: id }); return after[key] - before[key]; }
+    equipSortValue(id, key) { const before = this.totalStats(), item = D.items[id]; if (!item) return 0; const slot = this.equipSlot || item.slot, equipment = { ...this.profile.equipment, [slot]: id }; const combatKey = { attackPower: 'attack', defensePower: 'defense', magicDefensePower: 'magicDefense' }[key]; if (combatKey) return this.equipmentCombatComparison(equipment)[combatKey]; const after = this.totalStats(equipment); return after[key] - before[key]; }
+    equipmentPowerScore(equipment = this.profile.equipment) { const stats=this.totalStats(equipment),combat=this.equipmentCombatComparison(equipment);return combat.attack*3+combat.defense*2+combat.magicDefense*2+stats.maxHp*.08+stats.maxMp*.06+(stats.agi||0)*.4+(stats.dex||0)*.25+(stats.critBonus||0)*100; }
+    equipBestLoadout() {
+      const slots=(D.equipmentSlots||[]).map(s=>s.id),ordered=['rightHand','leftHand',...slots.filter(s=>s!=='rightHand'&&s!=='leftHand')];
+      for(let pass=0;pass<2;pass++)for(const slot of ordered){
+        if(slot==='leftHand'&&this.isTwoHandedWeapon(this.profile.equipment.rightHand)){this.profile.equipment.leftHand=null;continue;}
+        const current=this.profile.equipment[slot],pool=[...new Set([current,...this.candidatesForSlot(slot)].filter(Boolean))].filter(id=>D.items[id]&&(this.profile.inventory[id]||0)>0&&!this.needsSpareCopy(id,slot));
+        if(!pool.length)continue;
+        this.profile.equipment[slot]=pool.reduce((best,id)=>this.equipmentPowerScore({...this.profile.equipment,[slot]:id})>this.equipmentPowerScore({...this.profile.equipment,[slot]:best})?id:best,pool[0]);
+        if(slot==='rightHand')this.sanitizeLeftHandEquipment();
+      }
+      this.sanitizeRightHandEquipment();this.sanitizeLeftHandEquipment();this.equipSlot=null;this.equipWeaponType=null;this.selectedEquipmentId=null;this.saveProfile();this.audio.sfx('confirm');this.renderMenuSummary();this.renderMenuPanel('equipment');window.arseneStartFlow?.toast('総合力が最も高い装備へ変更しました');
+    }
     equipDeltaSummary(id, slotId) {
       const before = this.totalStats(), after = this.totalStats({ ...this.profile.equipment, [slotId]: id });
       const parts = statusStatKeys.map(k => { const d = after[k] - before[k]; return d ? `<i class="${d > 0 ? 'up' : 'down'}">${statLabels[k]} ${d > 0 ? '+' : ''}${d}</i>` : ''; }).filter(Boolean);
