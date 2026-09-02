@@ -91,6 +91,8 @@
   };
   P.prepareLocalInfiniteForgeScenario = function () {
     this.prepareLocalInfiniteScoreScenario();
+    // 工房の単体確認では、初回だけのセリペス警告会話を再生しない。
+    this.profile.flags.infiniteScoreWarningSeen = true;
     this.isBegin([]);
     const run=this.isRun();run.floor=26;run.dungeonGold=1060;
     const first=this.isGenerateGear({stars:4});this.isAddLoot(first);

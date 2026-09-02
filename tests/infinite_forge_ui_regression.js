@@ -18,6 +18,7 @@ assert.match(infinite, /isForgeMerge=function\(uid,materialUid=null\)/, '選択�
 assert.match(infinite, /isForgeTransfer=function\(sourceUid,targetUid=null,opIndex=0\)/, '選択した移植元・移植先・OPを既存処理へ渡す');
 assert.match(infinite, /isForgeDelete=function\(uid,index=0\)/, '選択した削除OPを既存処理へ渡す');
 assert.match(startFlow, /infinite-forge-ready/, '工房単体のローカル確認導線を用意する');
+assert.match(infinite, /flags\.infiniteScoreWarningSeen = true/, '工房単体確認ではセリペス警告会話をスキップする');
 assert.match(css, /\.is-forge-detail-layout\{grid-template-columns:minmax\(108px,34%\) minmax\(0,66%\)\}/, '参考コード同様に装備と加工予測を横並びにする');
 assert.match(css, /overflow-x:auto/, '装備カードを横スクロール可能にする');
 assert.match(css, /\.is-forge-gear-icon,\.is-forge-gear-card>b\+small\{display:none\}/, '仮アイコンと内部スロット名を装備カードに表示しない');
