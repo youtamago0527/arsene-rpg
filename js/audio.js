@@ -1,5 +1,13 @@
 (() => {
   'use strict';
+  // 同名音源を差し替えてもWKWebViewの古いレスポンスを掴まないよう、
+  // BGM/SEの全ローカルURLへ同じリリース番号を付ける。
+  const AUDIO_ASSET_VERSION = '20260902.1';
+  const audioAssetUrl = path => {
+    const url = new URL(path, document.baseURI);
+    url.searchParams.set('av', AUDIO_ASSET_VERSION);
+    return url.href;
+  };
   // 用意された効果音ファイル。ここに載っている名前は合成音ではなくこちらを鳴らす。
   //   gain   … ファイルごとの音量差をならす
   //   offset … 先頭の無音を飛ばす秒数（MP3はエンコード時に無音が入るため）
@@ -24,16 +32,21 @@
 
   class ArseneAudio {
     constructor(bgmPath) {
-      this.ctx = null; this.master = null; this.musicSource = null; this.musicGain = null; this.muted = false; this.started = false; this.settingsKey = 'arsene-rpg-audio-v1'; this.levels = this.loadLevels(); this.musicMaxVolume = matchMedia('(max-width:760px)').matches ? .18 : .22; this.musicVolume = this.musicMaxVolume * this.levels.bgm; this.fadeToken = 0;
-      this.music = new Audio(bgmPath); this.music.loop = true; this.music.preload = 'auto'; this.music.volume = this.musicVolume;
+      this.ctx = null; this.master = null; this.musicSource = null; this.musicGain = null; this.muted = false; this.started = false; this.settingsKey = 'arsene-rpg-audio-v1'; this.levels = this.loadLevels(); this.musicMaxVolume = matchMedia('(max-width:760px)').matches ? .18 : .22; this.musicVolume = this.musicMaxVolume * this.levels.bgm; this.fadeToken = 0; this.pendingSfx = new Set(); this.userActivated = false;
+      this.music = new Audio(audioAssetUrl(bgmPath)); this.music.loop = true; this.music.preload = 'auto'; this.music.volume = this.musicVolume;
       this.audioId = `${Date.now()}-${Math.random()}`; this.audioFocus = typeof BroadcastChannel === 'function' ? new BroadcastChannel('arsene-rpg-audio-focus') : null;
       if (this.audioFocus) this.audioFocus.onmessage = e => { if (e.data?.type === 'claim' && e.data.id !== this.audioId) { this.music.pause(); this.started = false; } };
+      const activate = () => { this.userActivated = true; this.unlock(); };
+      document.addEventListener('pointerdown', activate, { capture: true, once: true });
+      document.addEventListener('touchend', activate, { capture: true, once: true });
+      document.addEventListener('visibilitychange', () => { if (!document.hidden && this.userActivated && !this.muted) this.unlock(); });
     }
     async unlock() {
       if (!this.ctx) {
         const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
         this.ctx = new AC(); this.master = this.ctx.createGain(); this.master.gain.value = .72 * this.levels.sfx; this.master.connect(this.ctx.destination);
-        await this.preloadSfxFiles();
+        // ユーザー操作の同期区間を音源fetch待ちで失わない。SEのdecodeは背後で進める。
+        this.preloadSfxFiles();
         // iOS Safari ignores HTMLMediaElement.volume. Route BGM through a
         // Web Audio gain node so the in-game slider also works on phones.
         try {
@@ -68,12 +81,12 @@
     }
     async restartMusic() { const token = ++this.fadeToken; if (this.started && !this.music.paused) await this.fadeMusicTo(0, 160, token); if (token !== this.fadeToken) return; this.music.pause(); this.music.currentTime = 0; this.pendingMusicStartVolume = 0; this.started = false; await this.unlock(); delete this.pendingMusicStartVolume; if (token === this.fadeToken) await this.fadeMusicTo(this.muted ? 0 : this.musicVolume, 180, token); }
     async playTrack(path) {
-      const targetUrl = new URL(path, document.baseURI).href;
+      const targetUrl = audioAssetUrl(path);
       if ((this.music.currentSrc || this.music.src) === targetUrl && this.started && !this.music.paused) { this.applyMusicVolume(); return; }
       const token = ++this.fadeToken;
       if (this.started && !this.music.paused) await this.fadeMusicTo(0, 180, token);
       if (token !== this.fadeToken) return;
-      this.music.pause(); this.music.ontimeupdate = null; this.music.loop = true; this.music.src = path; this.music.load(); this.music.currentTime = 0; this.pendingMusicStartVolume = 0; this.setMusicOutput(0); this.started = false;
+      this.music.pause(); this.music.ontimeupdate = null; this.music.loop = true; this.music.src = targetUrl; this.music.load(); this.music.currentTime = 0; this.pendingMusicStartVolume = 0; this.setMusicOutput(0); this.started = false;
       await this.unlock(); delete this.pendingMusicStartVolume;
       if (token === this.fadeToken) await this.fadeMusicTo(this.muted ? 0 : this.musicVolume, 220, token);
     }
@@ -109,7 +122,7 @@
       this.sfxBuffers = {};
       const urls = [...new Set(Object.values(SFX_FILES).map(f => f.url))];
       this.sfxReady = Promise.all(urls.map(url =>
-        fetch(url, { cache: 'no-store' })
+        fetch(audioAssetUrl(url), { cache: 'no-store' })
           .then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status))))
           .then(buf => new Promise((res, rej) => {
             // Safari 系は Promise を返さない実装があるのでコールバック版で受ける
@@ -168,7 +181,10 @@
       // 用意された効果音は旧合成音へ落とさない。初回デコード中なら完了後に1回だけ鳴らす。
       if (this.playSfxFile(name)) return;
       if (SFX_FILES[name]) {
-        this.sfxReady?.then(() => this.playSfxFile(name));
+        if (!this.pendingSfx.has(name)) {
+          this.pendingSfx.add(name);
+          this.sfxReady?.then(() => this.playSfxFile(name)).finally(() => this.pendingSfx.delete(name));
+        }
         return;
       }
       const chord = (notes, gap=.08) => notes.forEach((n,i)=>this.tone(n,.2,'sine',.1,1,i*gap));
