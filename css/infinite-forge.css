@@ -29,6 +29,8 @@
 .is-forge-gear-card>strong{margin:1px 0;font-size:7px}
 .is-forge-card-stats{margin-top:1px;padding-top:2px}
 .is-forge-card-op{margin-top:2px}
+.is-forge-gear-card.selected .is-forge-card-stats{display:flex!important}
+.is-forge-gear-card.selected .is-forge-card-op{display:block!important}
 .is-forge-selected-art,.is-forge-selected>em{display:none}
 .is-forge-selected{min-height:258px;padding:12px 9px;justify-content:flex-start}
 .is-forge-selected>i{margin-bottom:5px}
