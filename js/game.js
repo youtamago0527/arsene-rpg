@@ -1707,6 +1707,7 @@
     progressState() { const f = this.profile.flags, noelGoal = D.battleProgression?.noelEncounterWins || 3, zenakadoGoal = D.battleProgression?.zenakadoEncounterWins || 7; if (!f.noelFirstEncounterCleared) { const wins = Math.max(0, f.preNoelBattleWins || 0); return { phase: 'noel', wins, goal: noelGoal, ready: wins >= noelGoal, bossId: 'noelFirstEncounter', bossName: 'NOËL' }; } if (!f.zenakadoDefeated) { const wins = Math.max(0, f.postNoelBattleWins || 0); return { phase: 'zenakado', wins, goal: zenakadoGoal, ready: wins >= zenakadoGoal, bossId: 'zenakado', bossName: 'ZENAKADO' }; } return { phase: 'complete', wins: zenakadoGoal, goal: zenakadoGoal, ready: false, bossId: null, bossName: 'DUNGEON CLEAR' }; }
 
     startBattle() {
+      this.prepareBattleInteractionState();
       this.defeatResolving = false;
       this.closeBattleMenu(); this.cancelAutoPick(); this.battleMode = 'slime'; const stats = this.totalStats(), vitals = this.storedVitals(stats); this.player = this.freshBattlePlayer(stats, D.settings.healOnBattleStart ? stats.maxHp : vitals.hp, D.settings.healOnBattleStart ? stats.maxMp : vitals.mp);
       const dungeon = this.getDungeon(), dungeon2 = this.currentDungeonId === 'dungeon2', dungeon3 = this.currentDungeonId === 'dungeon3';
@@ -1737,6 +1738,7 @@
     // 曲の切り替えは各 start 関数の中でまとめて行う。
     playBossMusic(bossId) { this.audio.playTrack(this.bossMusicFor(bossId)); }
     startBossEncounter(forceBossId = null, forcePhase = null) {
+      this.prepareBattleInteractionState();
       this.defeatResolving = false;
       const progress = this.progressState();
       const bossId = forceBossId || progress.bossId, phase = forcePhase || progress.phase;
@@ -2301,7 +2303,19 @@
       const drawer = $('#command-drawer');
       if (drawer) { drawer.hidden = true; drawer.innerHTML = ''; drawer.style.removeProperty('top'); }
       const panel = $('#command-panel');
-      if (panel) { panel.inert = false; panel.classList.remove('drawer-open', 'turn-locked'); panel.innerHTML = ''; }
+      if (panel) { panel.inert = false; panel.classList.remove('drawer-open', 'turn-locked'); panel.innerHTML = ''; panel.style.pointerEvents = ''; }
+      this.commandActionRoot = panel || null;
+      document.getElementById('is-forge-modal')?.remove();
+    }
+    prepareBattleInteractionState() {
+      this.cleanupBattleTransientUI();
+      this.cancelAutoPick();
+      this.autoToggleBusy = false;
+      this.locked = false;
+      this.finished = false;
+      this.defeatResolving = false;
+      const result = $('#result');
+      if (result) { result.hidden = true; result.style.display = 'none'; result.style.pointerEvents = ''; }
     }
     renderBattleMenu() {
       const pop = $('#battle-menu-popover'); if (!pop) return;
