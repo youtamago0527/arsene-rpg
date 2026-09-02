@@ -130,6 +130,15 @@ window.ARSENE_HELP = [
     ]
   },
   {
+    id: 'infiniteScore', title: '無限奏廊と異世界工房', titleEn: 'INFINITE SCORE', lockedBy: 'otherWorld',
+    body: [
+      '無限奏廊では探索中に拾った異世界装備と異界素材を、低確率で現れる異世界工房で加工できます。',
+      '調律は異界の欠片を消費して強化値を＋1します。＋6以降の調律には異界の核も必要です。',
+      'OP移植は異界の欠片と異界の核を消費し、素材装備は消滅します。移植できるOPランクは移植先装備の★に応じて制限されます。',
+      'OP削除は異界の欠片10個を消費します。同型合成では素材にした同型装備が消滅します。'
+    ]
+  },
+  {
     id: 'enhance', title: '装備強化', titleEn: 'ENHANCE', lockedBy: 'enhance',
     body: [
       '同じ装備1個とGOLDを消費し、武器・防具を強化できます。',
