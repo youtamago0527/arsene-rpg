@@ -8,7 +8,9 @@ const game = fs.readFileSync(path.join(root, 'js', 'game.js'), 'utf8');
 
 assert.match(infinite, /this\.isBindLongPress\?\.\(panel\);/, '探索画面の方向ボタンに直接入力処理を結び直す');
 assert.match(infinite, /addEventListener\('pointerdown',resolve/, '方向ボタンはpointerdown時点で移動を確定する');
-assert.match(infinite, /isRouteInputLocked=true/, '方向ボタンの二重発火を防ぐ');
+assert.match(infinite, /querySelectorAll\('\.is-route-choice\[data-is-choice\]'\)/, '方向入力を矢印ボタンだけへ限定する');
+assert.doesNotMatch(infinite, /isRouteInputLocked/, '前画面の入力ロックが新しい矢印タップを破棄する');
+assert.match(infinite, /if\(btn\.dataset\.isResolved\)return/, '同じ矢印のpointerdownとclickを二重処理しない');
 assert.match(infinite, /this\.isShowRouteTransition\(direction,node\)/, '同じ背景へ移動しても進行が分かる演出を出す');
 const activeTreasure = infinite.slice(infinite.lastIndexOf('P.isTreasure=function()'), infinite.indexOf('P.isRoomResultHtml=function()', infinite.lastIndexOf('P.isTreasure=function()')));
 assert.match(activeTreasure, /isRenderRoomResult\('宝箱を発見',[\s\S]*action:'treasure-open',label:'宝箱を開ける'/, '宝箱背景で開封操作を提示する');
