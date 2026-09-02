@@ -14,4 +14,10 @@ assert(score.includes('P.isForgeDelete=async'), 'forge OP deletion still uses na
 assert(!gear.includes("P.isOpenMerge=function(){alert("), 'removed merge action still uses native alert');
 assert(css.includes('env(safe-area-inset-top)'), 'dialog/toast ignores iPhone safe area');
 assert(css.includes('@media(max-width:360px)'), 'narrow-screen layout correction is missing');
+const bagRender = score.slice(score.indexOf('P.isRenderBag = function'), score.indexOf('P.isGearValues = function'));
+const equipmentRender = score.slice(score.indexOf('P.isRenderEquipment=function'), score.indexOf('P.isRenderDebug=function'));
+assert(bagRender.includes('class="panel-home" data-is-action="explore">探索画面へ'), 'bag return action is not unified with the map');
+assert(equipmentRender.includes('class="panel-home" data-is-action="explore">探索画面へ'), 'equipment return action is not unified with the map');
+assert(!bagRender.includes('${this.isToolbar()}'), 'bag still renders the full exploration toolbar');
+assert(!equipmentRender.includes('${this.isToolbar()}'), 'equipment still renders the full exploration toolbar');
 console.log('infinite UI regression: ok');
