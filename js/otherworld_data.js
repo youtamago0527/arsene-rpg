@@ -70,7 +70,9 @@
     otherworldShard: { id: 'otherworldShard', name: '異界の欠片', nameEn: 'RIFT SHARD', category: 'material', rarity: 'rare',
       description: '異世界からこぼれ落ちた結晶片。向こう側の気配を帯びている。' },
     otherworldCore: { id: 'otherworldCore', name: '異界の核', nameEn: 'RIFT CORE', category: 'material', rarity: 'legendary',
-      description: '異世界の中心で脈打っていた核。極めて稀にしか手に入らない。' }
+      description: '異世界の中心で脈打っていた核。極めて稀にしか手に入らない。' },
+    protectionArcana: { id: 'protectionArcana', name: '保護のアルカナ', nameEn: 'ARCANA OF PROTECTION', category: 'special', rarity: 'legendary', noSell: true,
+      description: '異世界工房の調律前に使用すると、失敗時の装備消滅を防ぐ。通常所持品から直接使用できる。' }
   });
 
   // ── 異世界モンスター ────────────────────────────────────────
