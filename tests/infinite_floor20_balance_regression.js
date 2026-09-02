@@ -7,6 +7,7 @@ const baseline = fs.readFileSync('tests/progression-baseline.js', 'utf8');
 
 assert.match(data, /enemyScalePerFloor:\s*\.16/, '敵は1階ごとに線形16%強化する');
 assert.match(data, /returnMinFloor:\s*20/, 'RETURN解禁は20F');
+assert.match(data, /shopRate:\s*\.02/, '通常ショップの出現設定は旧8%の4分の1');
 assert.equal(1 + (20 - 1) * .16, 4.04, '20Fは基礎能力の4.04倍');
 assert.match(data, /minFloor:\s*1, maxFloor:\s*4, pool:\s*\['shadowSlime', 'nightBat', 'ratThief'\]/, '1〜4FはD1序盤敵だけ');
 assert.match(data, /minFloor:\s*5, maxFloor:\s*10, pool:\s*\['shadowSlime'.*'ghostBone'\]/, '5〜10FはD1敵だけ');
