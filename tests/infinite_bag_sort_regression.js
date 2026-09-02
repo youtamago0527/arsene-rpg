@@ -12,6 +12,9 @@ assert(score.includes("this.isLog('LOOT BAGを整頓')"), 'bag sort is not persi
 assert(css.includes('.is-bag-title-actions'), 'bag sort button layout is missing');
 assert(score.includes("isEquipped?'EQUIPPED'"), 'equipped gear badge is missing');
 assert(score.includes('aria-disabled="true">装備中'), 'equipped detail action is not disabled');
-assert(css.includes('button.equipped'), 'equipped detail blackout style is missing');
-assert(index.includes('infinite-score.css?v=0.3.16'), 'CSS cache bust was not updated');
+assert(css.includes('button.is-equipped'), 'equipped detail blackout style is missing');
+assert(!score.includes('is-bag-item${isEquipped?\' equipped\''), 'generic equipped class can collide with menu layout');
+assert(!score.includes('is-bag-detail${isEquipped?\' equipped\''), 'generic equipped class can collapse bag detail layout');
+assert(index.includes('infinite-score.css?v=0.3.17'), 'CSS cache bust was not updated');
+assert(index.includes('infinite_score.js?v=0.3.35'), 'bag markup cache bust was not updated');
 console.log('infinite bag sort regression: ok');
