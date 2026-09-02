@@ -12,6 +12,9 @@ const expected = { owPotion20:['hpRate',.2], owPotion40:['hpRate',.4], owPotion6
 for (const [id,[key,rate]] of Object.entries(expected)) { assert(D.items[id],`${id} is missing`); assert.equal(D.items[id].effect[key],rate); assert.equal(D.items[id].otherWorldItem,true); }
 assert.equal(D.infiniteScore.bagLimit,30);
 assert.equal(D.infiniteScore.recoveryItems.length,6);
+assert.equal(D.infiniteScore.recoveryDropRate,.05);
+assert(D.infiniteScore.recoveryItems.filter(row=>row.itemId.includes('40')).every(row=>row.minFloor===30),'mid recovery items must start at floor 30');
+assert(D.infiniteScore.recoveryItems.filter(row=>row.itemId.includes('60')).every(row=>row.minFloor===60),'high recovery items must start at floor 60');
 assert(!scoreSource.includes("hadReturn=this.isHasReturn(),stack="),'run loot must not stack');
 assert(scoreSource.includes("this.profile.inventory[x.itemId]=(this.profile.inventory[x.itemId]||0)+(x.count||1)"),'return must stack at home');
 assert(scoreSource.includes("this.profile.inventory[id]--"),'import must consume one per slot');

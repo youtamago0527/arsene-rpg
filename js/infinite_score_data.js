@@ -11,7 +11,7 @@
     stairBaseRate: 15, stairRateIncrease: 15, stairMaxRate: 100,
     currencyMode: 'dungeon', enemyScalePerFloor: .025,
     cardRate: .45, treasureRate: .18, shopRate: .08, trapRate: .10, gearDropRate: .14, currencyMultiplier: 1,
-    rareEnemyRate: .035, returnItemRate: .008, recoveryDropRate: .24, sublimationRate: .02,
+    rareEnemyRate: .035, returnItemRate: .008, recoveryDropRate: .05, sublimationRate: .02,
     chestRates: { wood: 70, silver: 25, gold: 5 },
     rarityRates: { common: 55, rare: 27, epic: 12, legendary: 5, mythic: 1 },
     rarity: {
@@ -55,10 +55,10 @@
     recoveryItems: [
       { itemId: 'owPotion20', weight: 34, minFloor: 1 },
       { itemId: 'owManaPotion20', weight: 30, minFloor: 1 },
-      { itemId: 'owPotion40', weight: 14, minFloor: 8 },
-      { itemId: 'owManaPotion40', weight: 12, minFloor: 8 },
-      { itemId: 'owPotion60', weight: 5, minFloor: 20 },
-      { itemId: 'owManaPotion60', weight: 5, minFloor: 20 }
+      { itemId: 'owPotion40', weight: 14, minFloor: 30 },
+      { itemId: 'owManaPotion40', weight: 12, minFloor: 30 },
+      { itemId: 'owPotion60', weight: 5, minFloor: 60 },
+      { itemId: 'owManaPotion60', weight: 5, minFloor: 60 }
     ]
   };
 
