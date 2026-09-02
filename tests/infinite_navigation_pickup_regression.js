@@ -11,6 +11,9 @@ assert.match(infinite, /addEventListener\('pointerdown',resolve/, '方向ボタ�
 assert.match(infinite, /isRouteInputLocked=true/, '方向ボタンの二重発火を防ぐ');
 assert.match(infinite, /this\.isShowRouteTransition\(direction,node\)/, '同じ背景へ移動しても進行が分かる演出を出す');
 assert.match(infinite, /isRenderRoomResult\(`\$\{name\}を拾いました`,'LOOT BAGへ収めた。','item'\)/, '宝箱装備は名称付きの取得画面を即時表示する');
+const activeTreasure = infinite.slice(infinite.lastIndexOf('P.isTreasure=function()'), infinite.indexOf('P.isRoomResultHtml=function()', infinite.lastIndexOf('P.isTreasure=function()')));
+assert.match(activeTreasure, /isRenderRoomResult\(`\$\{name\}を拾いました`,'LOOT BAGへ収めた。','item'\)/, '最後に有効な宝箱処理が中央取得POPを表示する');
+assert.doesNotMatch(activeTreasure, /isRenderBag\(/, '最後に有効な宝箱処理がバッグ画面へ遷移している');
 assert.match(game, /!!D\.weapons\?\.\[item\.id\]/, '通常戦でも全武器DROPを取得通知の対象にする');
 assert.match(game, /WEAPON PICKED UP/, '武器取得通知を明示する');
 assert.match(game, /\$\{item\.name\}\$\{weapon \? 'を拾いました'/, '武器取得通知に実名を表示する');
