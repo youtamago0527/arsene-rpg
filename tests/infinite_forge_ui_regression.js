@@ -15,7 +15,7 @@ assert.match(infinite, /バッグ \$\{used\} \/ \$\{limit\}/, '30枠バッグの
 assert.match(infinite, /帰還時消滅/, '奏貨が帰還時に消えることを明示する');
 assert.match(infinite, /EQUIPPED/, '装備中の装備をカードで識別する');
 assert.match(infinite, /残り奏貨/, '操作後の奏貨残額を事前表示する');
-assert.match(infinite, /isForgeMerge=function\(uid,materialUid=null\)/, '選択した同型素材を既存合成処理へ渡す');
+assert.match(infinite, /isForgeMerge=async function\(uid,materialUid=null\)/, '選択した同型素材を非同期モーダル経由で既存合成処理へ渡す');
 assert.match(infinite, /isForgeTransfer=async function\(sourceUid,targetUid=null,opIndex=0\)/, '選択した移植元・移植先・OPをゲーム内確認後に既存処理へ渡す');
 assert.match(infinite, /isForgeDelete=async function\(uid,index=0\)/, '選択した削除OPをゲーム内確認後に既存処理へ渡す');
 assert.match(startFlow, /infinite-forge-ready/, '工房単体のローカル確認導線を用意する');
