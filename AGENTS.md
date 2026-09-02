@@ -21,6 +21,8 @@
 - Treat `main` as the current browser baseline and preserve its browser-only changes.
 - Preserve iOS-only Capacitor, native advertising, safe-area, viewport, and bundle configuration on `feature/ios-capacitor`.
 - Compare staging work against both release branches, remove obsolete duplicate definitions, and keep save migrations or legacy IDs until compatibility is proven unnecessary.
+- Treat help as part of every gameplay and UI change. Before promotion, compare the implemented behavior with `js/help_data.js` and every contextual/tutorial help entry, update wording and controls, verify the help appears only after its feature unlocks, and ensure locked content is not spoiled from a fresh save.
+- Run the help regression test for every release integration, even when the staging task did not modify a help file. A behavior change with stale or prematurely visible help is not complete.
 - Run relevant regression tests, JavaScript syntax checks, the web build, and mobile/iOS regression checks before promotion.
 - Push without force. If either protected branch advanced during verification, stop, refetch, and repeat integration.
 
