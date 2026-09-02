@@ -24,6 +24,8 @@ assert.match(css, /overflow-x:auto/, '装備カードを横スクロール可能
 assert.match(css, /\.is-forge-gear-icon,\.is-forge-gear-card\.selected \.is-forge-gear-icon,\.is-forge-gear-card>b\+small\{display:none!important\}/, '選択・装備状態を問わず仮アイコンと内部スロット名を表示しない');
 assert.match(css, /\.is-forge-gear-card\.selected \.is-forge-card-stats\{display:flex!important\}/, '選択中カードの能力欄も通常カードと同じ並びにする');
 assert.match(css, /\.is-forge-gear-card\.selected \.is-forge-card-op\{display:block!important\}/, '選択中カードのOP欄も通常カードと同じ並びにする');
+assert.match(css, /\.is-forge-detail-layout\{grid-template-columns:[^}]+;align-items:stretch\}/, '左右の詳細パネルを同じ高さに揃える');
+assert.match(css, /\.is-forge-selected\{box-sizing:border-box;height:100%/, '選択装備パネルを右側の加工内容と同じ高さまで伸ばす');
 assert.match(css, /env\(safe-area-inset-bottom/, 'iPhoneのセーフエリアを確保する');
 assert.match(html, /css\/infinite-forge\.css/, '工房専用スタイルを読み込む');
 
