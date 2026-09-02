@@ -23,4 +23,6 @@ assert(bagRender.includes('class="panel-home" data-is-action="explore">探索画
 assert(equipmentRender.includes('class="panel-home" data-is-action="explore">探索画面へ'), 'equipment return action is not unified with the map');
 assert(!bagRender.includes('${this.isToolbar()}'), 'bag still renders the full exploration toolbar');
 assert(!equipmentRender.includes('${this.isToolbar()}'), 'equipment still renders the full exploration toolbar');
+assert(score.includes("if(r.pendingLoot&&document.getElementById('is-modal'))this.isShowBagFull()"), 'bag-full discard does not refresh the visible loot list');
+assert(css.includes('.is-dialog-choices button.danger b{text-align:center}'), 'danger confirmation label is not centered');
 console.log('infinite UI regression: ok');
