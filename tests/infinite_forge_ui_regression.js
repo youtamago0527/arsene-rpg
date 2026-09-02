@@ -27,6 +27,7 @@ assert.match(css, /\.is-forge-gear-card\.selected \.is-forge-card-op\{display:bl
 assert.match(css, /\.is-forge-gear-card\.selected\{gap:0!important\}/, '選択状態の共通gapがカード内部へ混入しない');
 assert.match(css, /\.is-forge-gear-card\.equipped\{display:flex!important;gap:0!important;margin-bottom:0!important\}/, '装備中の共通レイアウトが工房カードへ混入しない');
 assert.match(css, /\.is-forge-gear-card\.equipped \.is-forge-card-stats b\{font-size:inherit!important\}/, '装備中カードの能力数値を通常カードと同じ大きさにする');
+assert.match(css, /\.is-forge-gear-card\{flex-basis:112px;height:92px;/, '装備カード下部の空白を削り詳細パネルを上へ詰める');
 assert.match(css, /\.is-forge-gear-card\.equipped \.is-forge-card-stats\{display:flex!important;flex:0 0 auto!important;[^}]+border:0!important/, '装備中カードの能力欄も通常カードと同じ表示にする');
 assert.match(css, /\.is-forge-gear-card\.selected>b\{[^}]+height:auto!important[^}]+line-height:normal!important/, '選択中カードでも装備名の高さを消さない');
 assert.match(css, /\.is-forge-gear-card\.selected \.is-forge-card-stats\{flex:0 0 auto!important;height:auto!important;min-height:0!important;[^}]+border:0!important/, '選択中カードの能力欄に大きな囲み枠を付けない');
