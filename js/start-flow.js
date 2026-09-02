@@ -70,7 +70,7 @@
       const params = new URLSearchParams(location.search);
       const localHost = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
       const scenario = params.get('local');
-      if (!localHost || !['versicrell-ready', 'd3-route', 'd3-mid-ready', 'd3-final-ready', 'd4-ready', 'infinite-score-ready'].includes(scenario)) return false;
+      if (!localHost || !['versicrell-ready', 'd3-route', 'd3-mid-ready', 'd3-final-ready', 'd4-ready', 'infinite-score-ready', 'infinite-forge-ready'].includes(scenario)) return false;
       this.root.hidden = true;
       this.root.style.display = 'none';
       if (scenario === 'versicrell-ready') {
@@ -79,6 +79,8 @@
       } else if (scenario === 'infinite-score-ready') {
         this.game.prepareLocalInfiniteScoreScenario();
         this.game.showMenu('otherworld');
+      } else if (scenario === 'infinite-forge-ready') {
+        this.game.prepareLocalInfiniteForgeScenario();
       } else if (scenario === 'd4-ready') {
         this.game.prepareLocalD4Scenario();
         this.game.showMenu('dungeon-select');
