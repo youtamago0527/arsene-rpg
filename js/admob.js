@@ -38,7 +38,7 @@
     if (!await initialize()) { requestInFlight = false; return false; }
     const handles = [];
     let settled = false;
-    const timeout = setTimeout(() => finish(false), 120000);
+    let timeout = null;
     const cleanup = async () => {
       clearTimeout(timeout);
       requestInFlight = false;
@@ -51,6 +51,7 @@
         await cleanup();
         resolve(rewarded);
       };
+      timeout = setTimeout(() => finish(false), 120000);
       try {
         handles.push(await admob.addListener(events.rewarded, () => finish(true)));
         handles.push(await admob.addListener(events.dismissed, () => finish(false)));

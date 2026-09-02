@@ -55,7 +55,9 @@ assert.doesNotMatch(`${bridge}\n${plist}`, /ca-app-pub-(?!3940256099942544)[0-9]
   const first = nativeWindow.arseneAdMob.showRewarded();
   assert.equal(await nativeWindow.arseneAdMob.showRewarded(), false, '広告表示中の二重要求を拒否する');
   await new Promise(resolve => setImmediate(resolve));
-  listeners.get('onRewardedVideoAdReward')?.({ amount: 1, type: 'reward' });
+  const rewardCallback = listeners.get('onRewardedVideoAdReward');
+  rewardCallback?.({ amount: 1, type: 'reward' });
+  rewardCallback?.({ amount: 1, type: 'reward' });
   assert.equal(await first, true, 'Rewardedイベントで一度だけ成功する');
   assert.equal(initializeCalls, 1, 'SDK初期化を再利用する');
 
@@ -63,5 +65,30 @@ assert.doesNotMatch(`${bridge}\n${plist}`, /ca-app-pub-(?!3940256099942544)[0-9]
   await new Promise(resolve => setImmediate(resolve));
   listeners.get('onRewardedVideoAdDismissed')?.();
   assert.equal(await dismissed, false, '途中dismissでは成功しない');
+
+  const failedLoad = nativeWindow.arseneAdMob.showRewarded();
+  await new Promise(resolve => setImmediate(resolve));
+  listeners.get('onRewardedVideoAdFailedToLoad')?.();
+  assert.equal(await failedLoad, false, 'ロード失敗では成功しない');
+
+  const failedShow = nativeWindow.arseneAdMob.showRewarded();
+  await new Promise(resolve => setImmediate(resolve));
+  listeners.get('onRewardedVideoAdFailedToShow')?.();
+  assert.equal(await failedShow, false, '表示失敗では成功しない');
+
+  let timeoutCallback = null;
+  const timeoutListeners = new Map();
+  const timeoutPlugin = {
+    async initialize() {},
+    async addListener(name, callback) { timeoutListeners.set(name, callback); return { remove: async () => timeoutListeners.delete(name) }; },
+    async prepareRewardVideoAd() {},
+    async showRewardVideoAd() {}
+  };
+  const timeoutWindow = { addEventListener() {}, Capacitor:{ isNativePlatform:()=>true, getPlatform:()=> 'ios', isPluginAvailable:()=>true, Plugins:{AdMob:timeoutPlugin} } };
+  vm.runInNewContext(bridge, { window:timeoutWindow, console, setTimeout:callback => { timeoutCallback=callback; return 1; }, clearTimeout(){} });
+  const timedOut = timeoutWindow.arseneAdMob.showRewarded();
+  await new Promise(resolve => setImmediate(resolve));
+  timeoutCallback?.();
+  assert.equal(await timedOut, false, 'タイムアウトでは成功しない');
   console.log('AdMob reward regression checks passed.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
