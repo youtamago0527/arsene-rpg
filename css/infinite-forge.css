@@ -62,3 +62,9 @@
 .is-forge-note{margin:5px 0;padding:5px}
 .is-forge-cost{margin-top:5px;padding:5px}
 .is-forge-execute{min-height:45px;margin-top:5px}
+
+/* 参考UIの密度に合わせたコンパクトなタブ帯。 */
+.is-forge-tabs{padding:3px}
+.is-forge-tabs button{min-height:28px;padding:2px}
+.is-forge-picker{margin-top:6px}
+.is-forge-picker>header{margin-bottom:4px}
