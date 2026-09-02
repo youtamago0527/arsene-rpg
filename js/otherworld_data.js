@@ -157,7 +157,9 @@
     background: 'assets/bg/dungeon-battle-02.png',
     battlesPerRun: 10,              // BOSSを含めた1周の戦闘数
     interferenceMax: 2,             // 異界干渉力の最大値（1日あたりの侵入回数）
-    zakoArcanaRate: 0.01,           // 雑魚1体あたりのアルカナドロップ率
+    zakoShardRate: 0.35,            // 雑魚1体あたりの《異界の欠片》ドロップ率
+    zakoShardCount: 1,
+    zakoArcanaRate: 0,              // アルカナはBOSS・宝箱報酬のみ
     bossArcanaCount: 1,             // BOSS撃破で必ず入手するアルカナ個数
     rebirthArcanaRate: 0.005,       // BOSSからの《輪廻のアルカナ》ドロップ率
     bossId: 'ow_warden',

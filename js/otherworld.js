@@ -769,7 +769,7 @@
     bf.style.backgroundRepeat = 'no-repeat,no-repeat';
   };
 
-  // 異世界の勝利処理。EXP・GOLDは出さず、アルカナだけを配る。
+  // 異世界の勝利処理。EXP・GOLD・通常素材は出さず、異世界専用報酬だけを配る。
   const origVictory = P.victory;
   P.victory = async function () {
     if (!this.owRun) return origVictory.call(this);
@@ -791,11 +791,16 @@
       this.owShowChests(got);
       return;
     }
-    // 雑魚：1体ごとに低確率で本日のアルカナ
+    // 雑魚：通常ダンジョンのdropTableは使わず、異世界専用の欠片だけを抽選する。
     let n = 0;
-    const dropCount = Math.max(1, Number(cfg.arcanaDropCount) || 1);
-    for (const e of this.enemies) if (Math.random() < (cfg.zakoArcanaRate ?? 0.01)) n += dropCount;
-    if (n && todayId) { this.giveArcana(todayId, n); run.arcana += n; got.push(`${D().items[todayId].name} ×${n}`); }
+    const dropCount = Math.max(1, Number(cfg.zakoShardCount) || 1) * Math.max(1, Number(cfg.itemRewardMultiplier) || 1);
+    for (const e of this.enemies) if (Math.random() < (cfg.zakoShardRate ?? 0.35)) n += dropCount;
+    if (n) {
+      this.profile.inventory.otherworldShard = (this.profile.inventory.otherworldShard || 0) + n;
+      run.mats.otherworldShard = (run.mats.otherworldShard || 0) + n;
+      got.push(`${D().items.otherworldShard.name} ×${n}`);
+      this.saveProfile();
+    }
     this.persistVitals(); this.updateHUD();
     this.owShowStep(got);
   };
