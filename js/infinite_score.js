@@ -427,7 +427,8 @@
     if(this.battleMode!=='infiniteScore'||!this.isRun())return origGrantEnemyReward.call(this,enemy);
     const rewards=(this.battleRewards||={exp:0,gold:0,drops:{},levels:[],masteryResults:[],jobResults:[]}),baseExp=enemy.exp||0,exp=Math.round(baseExp*(1+this.mealExpBonusRate())),gold=0,levels=this.applyRewards({exp,gold:0,drops:{}}),job=this.grantJobExp(exp),run=this.isRun();
     run.dungeonGold+=enemy.stolenRunGold||0;
-    for(const [id,count] of enemy.rolledDrops||[])for(let i=0;i<count;i++)this.isAddLoot({uid:this.isUid('drop'),kind:D().items[id]?.category==='equipment'?'equipment':'item',itemId:id,count:1,imported:false,generated:false,plus:0,ops:[]});
+    // 原種モンスターの通常dropTableは無限奏廊へ持ち込まない。
+    // 奏廊装備・回復品・RETURN・異界素材は、それぞれ専用の勝利／イベント抽選だけで生成する。
     for(const loot of enemy.stolenRunLoot||[])this.isAddLoot(loot);
     rewards.exp=(rewards.exp||0)+exp;rewards.gold=(rewards.gold||0)+gold;rewards.levels||=[];rewards.levels.push(...levels);rewards.jobResults||=[];if(job)rewards.jobResults.push(job);
     if(job?.to>job?.from&&!this.quickResolving)this.queueGrowthBubble('JOB Lv.UP!',`${job.jobName} Lv.${job.from} → ${job.to}`);
