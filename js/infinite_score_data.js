@@ -37,14 +37,14 @@
       hpDrain: 'HP吸収', mpCostDown: '消費MP軽減', repeatChance: '追加発動率',
       treasureUp: '宝箱出現率UP', rareEnemyUp: 'レア敵出現率UP', returnUp: '帰還札出現率UP', stairUp: '階段発見率UP', bagPlus: 'バッグ枠追加'
     },
-    eventWeights: { encounter: 34, treasure: 18, trap: 10, item: 10, gold: 10, shop: 7, workshop: 3, rare: 3, card: 8 },
+    eventWeights: { encounter: 42, treasure: 18, trap: 10, item: 10, gold: 10, shop: 7, workshop: 3, rare: 3 },
     hints: {
       metal: { text: '鉄の匂いがする……', events: ['treasure', 'encounter', 'trap'] },
       herb: { text: '薬草のような香りがする……', events: ['item', 'shop', 'trap'] },
-      wind: { text: '冷たい風を感じる……', events: ['encounter', 'card', 'treasure'] },
+      wind: { text: '冷たい風を感じる……', events: ['encounter', 'treasure'] },
       beast: { text: '獣の気配がする……', events: ['encounter', 'rare', 'trap'] },
       sweet: { text: '甘い匂いが漂っている……', events: ['item', 'gold', 'shop'] },
-      gaze: { text: '何かがこちらを見ている……', events: ['rare', 'card', 'encounter'] }
+      gaze: { text: '何かがこちらを見ている……', events: ['rare', 'encounter'] }
     },
     cards: [
       { id: 'heal', name: '癒奏', text: '最大HPの20%回復', weight: 16 },
