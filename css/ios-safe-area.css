@@ -74,6 +74,23 @@ html.capacitor-native #game .battle-topbar{
 /* Infinite Score is fixed fullscreen; inset HUD and command/log bands only. */
 #menu-panel[data-panel^="infinite-score"],.is-explore-screen{height:var(--app-viewport-height)!important;min-height:var(--app-viewport-height)!important}
 .is-explore-screen .is-explore-top.battle-topbar{top:calc(var(--safe-top) + 8px)!important;right:calc(var(--safe-right) + 8px)!important;left:calc(var(--safe-left) + 8px)!important}
+/* Infinite subviews are fixed directly to the viewport, outside the hideout shell.
+   Give every scrollable subview its own safe content box. The forge already owns
+   the same insets in infinite-forge.css, so keep its outer panel edge-to-edge. */
+#menu-panel[data-panel^="infinite-score"]:not([data-panel="infinite-score"]):not([data-panel="infinite-score-workshop"]){
+  box-sizing:border-box!important;
+  padding-top:calc(var(--safe-top) + 10px)!important;
+  padding-right:max(10px,var(--safe-right))!important;
+  padding-bottom:calc(var(--safe-bottom) + 16px)!important;
+  padding-left:max(10px,var(--safe-left))!important;
+  scroll-padding-top:calc(var(--safe-top) + 10px);
+  scroll-padding-bottom:calc(var(--safe-bottom) + 16px);
+}
+#menu-panel[data-panel^="infinite-score"]:not([data-panel="infinite-score"])>.panel-home,
+#menu-panel[data-panel^="infinite-score"]:not([data-panel="infinite-score"]) .is-full-map-view>.panel-home{
+  top:max(8px,var(--safe-top))!important;
+}
+#menu-panel[data-panel="infinite-score-workshop"]{box-sizing:border-box!important;padding:0!important}
 /* Infinite Score already positions its command deck with --is-bottom-safe.
    Do not add a second percentage offset here: it breaks the native/PWA layout
    and also moves the relative log out of the player stack. */
