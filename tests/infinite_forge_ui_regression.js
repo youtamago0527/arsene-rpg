@@ -5,6 +5,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const infinite = fs.readFileSync(path.join(root, 'js', 'infinite_score.js'), 'utf8');
 const startFlow = fs.readFileSync(path.join(root, 'js', 'start-flow.js'), 'utf8');
+const infiniteData = fs.readFileSync(path.join(root, 'js', 'infinite_score_data.js'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'css', 'infinite-forge.css'), 'utf8');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
@@ -21,6 +22,9 @@ assert.match(startFlow, /infinite-forge-ready/, '工房単体のローカル確�
 assert.match(infinite, /flags\.infiniteScoreWarningSeen = true/, '工房単体確認ではセリペス警告会話をスキップする');
 assert.match(infinite, /previous=panel\?\.querySelector\('\.is-forge-picker>div'\)\?\.scrollLeft/, '装備選択一覧の横スクロール位置を再描画前に保存する');
 assert.match(infinite, /picker\.scrollLeft=previous;requestAnimationFrame/, '再描画後も装備選択一覧の横スクロール位置を復元する');
+for (const label of ['獲得経験値UP', '素材ドロップ率UP', '魔法与ダメージ', '被ダメージ軽減', '帰還札出現率UP', 'バッグ枠追加']) {
+  assert.match(infiniteData, new RegExp(label), `異世界OP「${label}」を日本語表示する`);
+}
 assert.match(css, /\.is-forge-detail-layout\{grid-template-columns:minmax\(132px,36%\) minmax\(0,64%\);align-items:stretch\}/, '参考コード同様に装備と加工予測を横並びにする');
 assert.match(css, /overflow-x:auto/, '装備カードを横スクロール可能にする');
 assert.match(css, /\.is-forge-gear-icon,\.is-forge-gear-card\.selected \.is-forge-gear-icon,\.is-forge-gear-card>b\+small\{display:none!important\}/, '選択・装備状態を問わず仮アイコンと内部スロット名を表示しない');
