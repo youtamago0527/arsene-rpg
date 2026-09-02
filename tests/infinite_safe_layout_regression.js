@@ -5,6 +5,7 @@ const root = path.resolve(__dirname, '..');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const safe = fs.readFileSync(path.join(root, 'css/ios-safe-area.css'), 'utf8');
 const score = fs.readFileSync(path.join(root, 'css/infinite-score.css'), 'utf8');
+const infinite = fs.readFileSync(path.join(root, 'js/infinite_score.js'), 'utf8');
 
 assert(index.includes("classList.add('standalone-app')"), 'home-screen standalone detection is missing');
 assert(index.includes('ios-safe-area.css?v=0.2.7'), 'safe-area cache bust was not updated');
@@ -13,5 +14,8 @@ assert(!safe.includes('.is-explore-log{bottom:calc(1.1%'), 'relative Infinite lo
 assert(safe.includes('html.standalone-app .hideout-screen'), 'standalone safe-area shell is missing');
 assert(score.includes('writing-mode:horizontal-tb'), 'equipped bag text direction is not locked');
 assert(score.includes('word-break:keep-all'), 'equipped bag labels can still collapse vertically');
+assert(infinite.includes('stealProgress=this.phantomStealProgress()'), 'exploration HUD does not use shared steal progress');
+assert(infinite.includes('<small>STEAL PROGRESS</small>'), 'exploration HUD steal progress label is missing');
+assert(!infinite.includes('${job} Lv.${jobLevel}'), 'phantom thief level is still shown in exploration HUD');
 
 console.log('infinite safe layout regression: ok');
