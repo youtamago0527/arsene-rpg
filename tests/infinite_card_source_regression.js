@@ -1,0 +1,12 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const score = fs.readFileSync(path.join(root, 'js/infinite_score.js'), 'utf8');
+const data = fs.readFileSync(path.join(root, 'js/infinite_score_data.js'), 'utf8');
+assert(!/eventWeights:\s*\{[^}]*\bcard\s*:/.test(data), 'movement event table still contains enchant cards');
+assert(!/events:\s*\[[^\]]*['"]card['"]/.test(data), 'route hints still resolve to enchant cards');
+assert(!score.includes("type='sublime';else if(this.isRand()"), 'movement still upgrades a route into an enchant card');
+assert(score.includes("else if(['card','returnCard','sublime'].includes(choice.type)){choice.type='encounter'"), 'legacy route cards are not migrated to encounters');
+assert(score.includes('const showCards=this.isRand()<cfg.cardRate'), 'battle victory enchant-card reward is missing');
+console.log('infinite card source regression: ok');
