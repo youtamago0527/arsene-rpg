@@ -69,7 +69,7 @@
   const oldFresh=P.freshProfile; P.freshProfile=function(){return normalize(oldFresh.call(this));};
   if (window.arseneGame?.profile) normalize(window.arseneGame.profile);
   P.owgEntry=function(uid){return (this.profile.otherWorldGear||[]).find(x=>x.uid===uid)||(this.isRun?.()?.lootBag||[]).find(x=>x.uid===uid);};
-  P.owgEquipped=function(){if(this.isRun?.())return Object.values(this.isRun().equipment||{}).map(uid=>this.owgEntry(uid)).filter(x=>x?.otherWorldGear);return Object.values(this.profile.otherWorldEquipment||{}).map(uid=>this.owgEntry(uid)).filter(Boolean);};
+  P.owgEquipped=function(){const run=this.profile?.infiniteScore?.active?this.isRun?.():null;if(run)return Object.values(run.equipment||{}).map(uid=>this.owgEntry(uid)).filter(x=>x?.otherWorldGear);return Object.values(this.profile.otherWorldEquipment||{}).map(uid=>(this.profile.otherWorldGear||[]).find(x=>x.uid===uid)).filter(Boolean);};
   P.owgDefinition=function(x){return this.equipmentDefinition?.(x?.itemId)||{};};
   P.owgName=function(x){const base=D.items[x.itemId]?.name||x.itemId, rare=(x.ops||[]).slice().sort((a,b)=>b.rank-a.rank)[0];return `${rare&&rare.rank>=5?`《${D.otherWorldGearOps.find(o=>o.key===rare.key)?.label||'異能'}の》`:''}${base}${x.uniqueSkillId?' — 奏技':''}`;};
   P.owgRollStar=function(floor){const bands=floor>=150?[0,10,60,30]:floor>=100?[5,25,55,15]:floor>=50?[15,40,38,7]:floor>=25?[35,45,18,2]:floor>=10?[60,32,7.5,.5]:[82,16,2,0],r=this.isRand()*100;let n=r;for(let i=0;i<4;i++){n-=bands[i];if(n<=0)return i+3;}return 3;};
