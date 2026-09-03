@@ -23,6 +23,6 @@ assert.match(otherworld, /for \(const jobId of p\.jobMastered \|\| \[\]\)[\s\S]*
   'recovered MASTER jobs must also recover PHANTOM STEAL state');
 assert.match(index, /js\/data\.js\?v=3\.12\.7/);
 assert.match(index, /js\/game\.js\?v=4\.13\.12/);
-assert.match(index, /js\/otherworld\.js\?v=0\.3\.7/);
+assert.match(index, /js\/otherworld\.js\?v=0\.3\.8/);
 
 console.log('job_level20_master_regression: ok');
