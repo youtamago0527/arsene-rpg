@@ -21,7 +21,7 @@ assert.match(game, /const currentMasterLevel = d5Cleared \? \(D\.jobLevelCapFina
   'save migration must restore MASTER only at 20/40/70 for the current story tier');
 assert.match(otherworld, /for \(const jobId of p\.jobMastered \|\| \[\]\)[\s\S]*p\.ptStealDone\[jobId\] = true;/,
   'recovered MASTER jobs must also recover PHANTOM STEAL state');
-assert.match(index, /js\/data\.js\?v=3\.12\.5/);
+assert.match(index, /js\/data\.js\?v=3\.12\.7/);
 assert.match(index, /js\/game\.js\?v=4\.13\.12/);
 assert.match(index, /js\/otherworld\.js\?v=0\.3\.7/);
 

@@ -116,7 +116,7 @@ window.ARSENE_HELP = [
     body: [
       'PHANTOM THIEFはJOB成長、通常のHP・MP成長、武器学成長が発生しない特殊JOBです。',
       '解放済みの通常JOBで育てた基礎能力を合算し、50％を反映します。京介のみ60％です。',
-      '通常JOBをLv20まで育てると固有ACTIONを盗みます。戦闘へ持ち込めるのはACTION 2個、PASSIVE 2個です。',
+      '通常JOBを現在の上限まで育ててMASTERにすると、初回に固有ACTIONを盗みます。戦闘へ持ち込めるのはACTION 2個、PASSIVE 2個です。',
       '武器学Lvと習得済み武器技は使えますが、PHANTOM THIEF中は成長しません。'
     ]
   },
@@ -179,7 +179,16 @@ window.ARSENE_HELP = [
     id: 'levelCap', title: 'JOBレベル上限', titleEn: 'LEVEL CAP', lockedBy: 'levelCap',
     body: [
       '全JOBのレベル上限がLv20からLv40へ上昇しています。',
+      '上限解放時は従来のMASTER表示が解除され、Lv40到達で再びMASTERになります。既に盗んだ固有ACTIONは失われません。',
       'Lv21以降は成長量が2倍です。転生はLv20以上でいつでも選べます。'
+    ]
+  },
+  {
+    id: 'levelCapFinal', title: 'JOBレベル上限Ⅱ', titleEn: 'LEVEL CAP II', lockedBy: 'levelCapFinal',
+    body: [
+      '全JOBのレベル上限がLv40からLv70へ上昇しています。',
+      '上限解放時は従来のMASTER表示が解除され、Lv70到達で再びMASTERになります。既に盗んだ固有ACTIONは失われません。',
+      '転生はLv20以上でいつでも選べます。'
     ]
   }
 ];
