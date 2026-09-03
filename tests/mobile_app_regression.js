@@ -8,6 +8,7 @@ const html = read('index.html');
 const safeArea = read('css/ios-safe-area.css');
 const fixes = read('css/fixes.css');
 const plist = read('ios/App/App/Info.plist');
+const appDelegate = read('ios/App/App/AppDelegate.swift');
 const buildScript = read('scripts/build-web.mjs');
 const packageJson = JSON.parse(read('package.json'));
 const bundleVerifier = read('scripts/verify-ios-bundle.mjs');
@@ -36,10 +37,11 @@ assert.match(fixes, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
 const phoneOrientation = plist.match(/<key>UISupportedInterfaceOrientations<\/key>\s*<array>([\s\S]*?)<\/array>/)?.[1] || '';
 const tabletOrientation = plist.match(/<key>UISupportedInterfaceOrientations~ipad<\/key>\s*<array>([\s\S]*?)<\/array>/)?.[1] || '';
 for (const section of [phoneOrientation, tabletOrientation]) {
-  assert(section.includes('UIInterfaceOrientationPortrait'), 'portrait must be supported');
-  assert(!section.includes('Landscape'), 'landscape must remain disabled for the fixed game canvas');
-  assert(!section.includes('PortraitUpsideDown'), 'upside-down must remain disabled');
+  for (const orientation of ['UIInterfaceOrientationPortrait', 'UIInterfaceOrientationPortraitUpsideDown', 'UIInterfaceOrientationLandscapeLeft', 'UIInterfaceOrientationLandscapeRight']) {
+    assert(section.includes(orientation), `App Store orientation declaration is missing: ${orientation}`);
+  }
 }
+assert.match(appDelegate, /supportedInterfaceOrientationsFor[\s\S]*return \.portrait/, 'runtime UI must remain portrait-only');
 
 assert.equal(capacitor.webDir, 'dist');
 assert.equal(capacitor.server?.iosScheme, 'https');

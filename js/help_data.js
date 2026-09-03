@@ -150,6 +150,14 @@ window.ARSENE_HELP = [
     ]
   },
   {
+    id: 'phantomShop', title: 'PHANTOM SHOP', titleEn: 'IN-APP PURCHASES', lockedBy: 'phantomShop',
+    body: [
+      'iOSアプリ版のPHANTOM SHOPでは、時短機能の永久解放と消費アイテムをApp Store決済で購入できます。購入成功が確認された場合だけ効果が付与されます。',
+      '永久商品の購入履歴は「購入を復元」から復元できます。広告スキップ券、異世界探索券、各アルカナなどの消費商品は復元対象外です。',
+      '購入がキャンセル・保留・失敗になった場合、効果は付与されません。表示価格はApp Storeの商品情報を正とします。'
+    ]
+  },
+  {
     id: 'enhance', title: '装備強化', titleEn: 'ENHANCE', lockedBy: 'enhance',
     body: [
       '同じ装備1個とGOLDを消費し、武器・防具を強化できます。',

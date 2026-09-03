@@ -11,6 +11,7 @@ const sentinels = [
   'css/ios-safe-area.css',
   'js/audio-runtime-20260904.js',
   'js/admob.js',
+  'js/phantom_shop.js',
   'js/data.js',
   'js/game.js'
 ];
@@ -29,6 +30,14 @@ if (!/<key>GADApplicationIdentifier<\/key>\s*<string>ca-app-pub-\d+~\d+<\/string
 const swiftPackage = await readFile(join(root, 'ios', 'App', 'CapApp-SPM', 'Package.swift'), 'utf8');
 if (!/CapacitorCommunityAdmob/.test(swiftPackage)) {
   throw new Error('CapacitorCommunityAdmob is missing from the native Swift package. Run cap sync ios.');
+}
+const storeKitPlugin = await readFile(join(root, 'ios', 'App', 'App', 'ArseneStoreKitPlugin.swift'), 'utf8');
+const sceneDelegate = await readFile(join(root, 'ios', 'App', 'App', 'SceneDelegate.swift'), 'utf8');
+if (!/Transaction\.currentEntitlements/.test(storeKitPlugin) || !/Transaction\.unfinished/.test(storeKitPlugin)) {
+  throw new Error('StoreKit purchase restore or unfinished transaction recovery is missing.');
+}
+if (!/registerPluginInstance\(ArseneStoreKitPlugin\(\)\)/.test(sceneDelegate)) {
+  throw new Error('ArseneStoreKitPlugin is not registered with the Capacitor bridge.');
 }
 
 const audioSource = await readFile(join(root, 'js', 'audio-runtime-20260904.js'), 'utf8');

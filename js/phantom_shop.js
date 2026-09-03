@@ -10,8 +10,20 @@
 (() => {
   'use strict';
 
-  // 裏ショップの品揃え。決済SDK接続前は、購入ボタンで効果だけを即時付与して
-  // セーブへ保存する（戦闘力や報酬量を直接増やす商品は置かない）。
+  const STORE_PRODUCTS = {
+    'time-complete-pass': { productId: 'com.arsene.remix.time_complete_pass', type: 'nonConsumable' },
+    'ad-skip-license': { productId: 'com.arsene.remix.ad_skip_license', type: 'nonConsumable' },
+    'ad-skip-tickets': { productId: 'com.arsene.remix.ad_skip_tickets_10', type: 'consumable' },
+    'auto3-license': { productId: 'com.arsene.remix.auto3_license', type: 'nonConsumable' },
+    'sweep-license': { productId: 'com.arsene.remix.sweep_license', type: 'nonConsumable' },
+    'otherworld-tickets': { productId: 'com.arsene.remix.otherworld_tickets_5', type: 'consumable' },
+    'rebirth-arcana': { productId: 'com.arsene.remix.rebirth_arcana_1', type: 'consumable' },
+    'protection-arcana': { productId: 'com.arsene.remix.protection_arcana_1', type: 'consumable' },
+    'blessed-protection-arcana': { productId: 'com.arsene.remix.blessed_protection_arcana_1', type: 'consumable' }
+  };
+  const STORE_ITEM_BY_PRODUCT = Object.fromEntries(Object.entries(STORE_PRODUCTS).map(([itemId, value]) => [value.productId, itemId]));
+
+  // 裏ショップの品揃え。効果の付与はStoreKitの検証済み取引を受け取った後だけ行う。
   const ITEMS = [
     {
       id: 'time-complete-pass', no: '01', kicker: 'TOP RECOMMEND', name: '怪盗の時短パス COMPLETE',
@@ -132,7 +144,11 @@
       this.shop = null;
       this.arcade = null;
       this.toasts = null;
+      this.purchaseBusy = false;
+      this.storeReady = false;
+      this.storeProducts = {};
       this.build();
+      this.bindStoreUpdates();
     }
 
     build() {
@@ -175,7 +191,8 @@
           </div>
           <p class="pm-shop-note">すべて時短専用。戦闘力・報酬量・利用上限は変化しません</p>
         </header>
-        <div class="pm-shop-list">${ITEMS.map(item => this.itemHTML(item)).join('')}</div>`;
+        <div class="pm-shop-list">${ITEMS.map(item => this.itemHTML(item)).join('')}</div>
+        <footer class="pm-arcade-foot"><button type="button" class="pm-btn-quiet" data-pm="restore">購入を復元</button></footer>`;
 
       // ── 選曲画面 ──
       const arcade = document.createElement('div');
@@ -211,6 +228,7 @@
         else if (action === 'play') this.play();
         else if (action === 'toggle') this.toggleItem(button.closest('.pm-item'));
         else if (action === 'buy') this.purchase(button.dataset.id);
+        else if (action === 'restore') this.restorePurchases();
         else if (action === 'track') this.playTrack(button.dataset.track);
       };
       popup.addEventListener('click', onClick);
@@ -229,6 +247,7 @@
 
     itemHTML(item) {
       const owned = this.isPermanentOwned(item.id), amount = this.consumableAmount(item.id);
+      const store = STORE_PRODUCTS[item.id], native = this.isNativeStore(), available = native && this.storeReady && !!this.storeProducts[store.productId];
       const status = owned ? '購入済み' : amount != null ? `所持 ${amount}` : '';
       const head = `
         <button type="button" class="pm-item-head" data-pm="toggle">
@@ -249,7 +268,7 @@
           ${item.description ? `<p>${esc(item.description)}</p>` : ''}
           ${item.stats ? `<div class="pm-item-stats">${item.stats.map(([k, v]) => `<span>${esc(k)}<b>${esc(v)}</b></span>`).join('')}</div>` : ''}
           ${status ? `<small class="pm-item-owned">${esc(status)}</small>` : ''}
-          <button type="button" class="pm-item-cta pm-cut-sm" style="${item.ctaStyle}" data-pm="buy" data-id="${esc(item.id)}" ${owned ? 'disabled' : ''}>${owned ? '✓ 購入済み' : esc(item.cta)}</button>
+          <button type="button" class="pm-item-cta pm-cut-sm" style="${item.ctaStyle}" data-pm="buy" data-id="${esc(item.id)}" ${owned || !available || this.purchaseBusy ? 'disabled' : ''}>${owned ? '✓ 購入済み' : !native ? 'iOSアプリ限定' : !this.storeReady ? 'App Store確認中…' : !available ? '現在購入できません' : esc(item.cta)}</button>
         </div></div>`;
       return item.featured
         ? `<article class="pm-item pm-item-featured pm-cut" data-id="${item.id}"><div class="pm-item-inner pm-cut">${head}${body}</div></article>`
@@ -317,42 +336,147 @@
       if (list) list.innerHTML = ITEMS.map(item => this.itemHTML(item)).join('');
     }
 
-    purchase(id) {
-      const g = window.arseneGame, p = this.premium(), item = ITEMS.find(entry => entry.id === id);
-      if (!g?.profile || !p || !item) { this.toast('購入できません', 'ゲームデータを読み込んでからお試しください'); return; }
-      if (this.isPermanentOwned(id)) { this.toast(item.name, '購入済みです'); return; }
+    isNativeStore() {
+      const cap = window.Capacitor;
+      return !!(cap?.isNativePlatform?.() && cap?.getPlatform?.() === 'ios' && cap?.Plugins?.ArseneStoreKit);
+    }
+
+    storePlugin() { return this.isNativeStore() ? window.Capacitor.Plugins.ArseneStoreKit : null; }
+
+    bindStoreUpdates() {
+      const store = this.storePlugin(); if (!store?.addListener) return;
+      store.addListener('transactionUpdated', async event => {
+        try {
+          const delivered = await this.deliverTransaction(event?.transaction);
+          if (!delivered) return;
+          this.refreshShopItems();
+          this.toast(ITEMS.find(item => item.id === delivered.itemId)?.name || '購入', delivered.result);
+        } catch {}
+      });
+    }
+
+    async loadStore() {
+      const store = this.storePlugin();
+      if (!store) { this.storeReady = true; this.refreshShopItems(); return; }
+      try {
+        const ids = Object.values(STORE_PRODUCTS).map(value => value.productId);
+        const result = await store.getProducts({ productIds: ids });
+        this.storeProducts = Object.fromEntries((result.products || [])
+          .filter(product => STORE_PRODUCTS[STORE_ITEM_BY_PRODUCT[product.productId]]?.type === product.type)
+          .map(product => [product.productId, product]));
+        for (const item of ITEMS) {
+          const product = this.storeProducts[STORE_PRODUCTS[item.id].productId];
+          if (!product?.displayPrice) continue;
+          item.priceLabel = product.displayPrice;
+          item.cta = item.cta.replace(/^¥[\d,]+/, product.displayPrice);
+        }
+        await this.recoverUnfinished();
+      } catch (error) {
+        this.toast('App Store', '商品情報を取得できませんでした');
+      } finally {
+        this.storeReady = true;
+        this.refreshShopItems();
+      }
+    }
+
+    applyPurchase(itemId) {
+      const g = window.arseneGame, p = this.premium(), item = ITEMS.find(entry => entry.id === itemId);
+      if (!g?.profile || !p || !item) return null;
       let result = '効果を反映しました';
-      if (id === 'time-complete-pass') {
+      if (itemId === 'time-complete-pass') {
         p.adSkipLicense = true; p.auto3License = true; p.sweepLicense = true;
         result = '広告スキップ・AUTO×3・一掃を永久解放';
-      } else if (id === 'ad-skip-license') {
+      } else if (itemId === 'ad-skip-license') {
         p.adSkipLicense = true; result = '広告スキップを永久解放';
-      } else if (id === 'ad-skip-tickets') {
+      } else if (itemId === 'ad-skip-tickets') {
         p.adSkipTickets = Math.max(0, Number(p.adSkipTickets) || 0) + 10; result = `広告スキップ券 ${p.adSkipTickets}回分`;
-      } else if (id === 'auto3-license') {
+      } else if (itemId === 'auto3-license') {
         p.auto3License = true; result = 'AUTO×3を永久解放';
-      } else if (id === 'sweep-license') {
+      } else if (itemId === 'sweep-license') {
         p.sweepLicense = true; result = '通常ダンジョンの一掃を永久解放';
-      } else if (id === 'otherworld-tickets') {
+      } else if (itemId === 'otherworld-tickets') {
         p.otherworldTickets = Math.max(0, Number(p.otherworldTickets) || 0) + 5; result = `異世界探索券 ${p.otherworldTickets}回分`;
-      } else if (id === 'rebirth-arcana') {
+      } else if (itemId === 'rebirth-arcana') {
         g.profile.inventory ||= {};
         g.profile.inventory.rebirthArcana = Math.max(0, Number(g.profile.inventory.rebirthArcana) || 0) + 1;
         result = `輪廻のアルカナ 所持${g.profile.inventory.rebirthArcana}個`;
-      } else if (id === 'protection-arcana') {
+      } else if (itemId === 'protection-arcana') {
         g.profile.inventory ||= {};
         g.profile.inventory.protectionArcana = Math.max(0, Number(g.profile.inventory.protectionArcana) || 0) + 1;
         result = '保護のアルカナ 所持' + g.profile.inventory.protectionArcana + '個';
-      } else if (id === 'blessed-protection-arcana') {
+      } else if (itemId === 'blessed-protection-arcana') {
         g.profile.inventory ||= {};
         g.profile.inventory.blessedProtectionArcana = Math.max(0, Number(g.profile.inventory.blessedProtectionArcana) || 0) + 1;
         result = '祝福された保護のアルカナ 所持' + g.profile.inventory.blessedProtectionArcana + '個';
-      } else return;
+      } else return null;
+      return result;
+    }
+
+    async deliverTransaction(transaction, restoring = false) {
+      const g = window.arseneGame, p = this.premium(), store = this.storePlugin();
+      const itemId = STORE_ITEM_BY_PRODUCT[transaction?.productId], txId = String(transaction?.transactionId || '');
+      if (!g?.profile || !p || !store || !itemId || !txId) throw new Error('invalid_transaction');
+      p.processedTransactions ||= {};
+      let result = '購入済みです';
+      if (!p.processedTransactions[txId]) {
+        if (restoring && STORE_PRODUCTS[itemId].type !== 'nonConsumable') return;
+        result = this.applyPurchase(itemId);
+        if (!result) throw new Error('delivery_failed');
+        p.processedTransactions[txId] = { productId: transaction.productId, deliveredAt: Date.now() };
+        g.saveProfile?.();
+      }
+      await store.finish({ transactionId: txId });
+      return { itemId, result };
+    }
+
+    async purchase(id) {
+      const item = ITEMS.find(entry => entry.id === id), storeInfo = STORE_PRODUCTS[id], store = this.storePlugin();
+      if (!item || !storeInfo || !store) { this.toast('購入できません', 'iOSアプリのApp Storeから購入してください'); return; }
+      if (this.purchaseBusy || this.isPermanentOwned(id)) return;
+      this.purchaseBusy = true; this.refreshShopItems();
+      try {
+        const response = await store.purchase({ productId: storeInfo.productId });
+        if (response.status === 'cancelled') { this.toast(item.name, '購入をキャンセルしました'); return; }
+        if (response.status === 'pending') { this.toast(item.name, '購入承認を待っています'); return; }
+        const delivered = await this.deliverTransaction(response.transaction);
+        if (!delivered) throw new Error('delivery_failed');
+        const result = delivered.result;
       g.saveProfile?.(); g.audio?.sfx?.('confirm');
       g.renderBattleMenu?.(); g.showMainCommands?.(); g.renderMenuSummary?.();
       if (document.querySelector('#menu-panel')?.dataset.panel === 'otherworld') g.renderOtherWorldPanel?.(document.querySelector('#menu-panel'));
       this.refreshShopItems();
       this.toast(item.name, result);
+      } catch (error) {
+        this.toast(item.name, '購入を完了できませんでした');
+      } finally {
+        this.purchaseBusy = false; this.refreshShopItems();
+      }
+    }
+
+    async recoverUnfinished() {
+      const store = this.storePlugin(); if (!store) return;
+      const response = await store.getUnfinished();
+      for (const transaction of response.transactions || []) await this.deliverTransaction(transaction);
+    }
+
+    async restorePurchases() {
+      const store = this.storePlugin();
+      if (!store || this.purchaseBusy) { this.toast('購入を復元', 'iOSアプリで利用できます'); return; }
+      this.purchaseBusy = true; this.refreshShopItems();
+      try {
+        const response = await store.restore();
+        let restored = 0;
+        for (const transaction of response.transactions || []) {
+          const delivered = await this.deliverTransaction(transaction, true);
+          if (delivered) restored++;
+        }
+        this.refreshShopItems();
+        this.toast('購入を復元', restored ? '永久ライセンスを復元しました' : '復元できる購入はありません');
+      } catch (error) {
+        this.toast('購入を復元', '復元に失敗しました');
+      } finally {
+        this.purchaseBusy = false; this.refreshShopItems();
+      }
     }
 
     // 開いている間はmax-heightを一切掛けない(CSS側で.open時にnone/overflow:visible)。
@@ -387,9 +511,15 @@
     openShop() {
       this.popup.hidden = true;
       this.shop.hidden = false;
+      const g = window.arseneGame;
+      if (g?.profile?.flags && !g.profile.flags.phantomShopUnlocked) {
+        g.profile.flags.phantomShopUnlocked = true;
+        g.saveProfile?.();
+      }
       this.refreshShopItems();
       this.shop.querySelector('.pm-shop-list').scrollTop = 0;
       window.arseneGame?.audio?.sfx?.('ui');
+      this.loadStore();
     }
     backToPopup() {
       this.shop.hidden = true;

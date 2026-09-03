@@ -1332,6 +1332,7 @@
       if (key === 'phantomThief') return this.isJobUnlocked('phantomThief');
       if (key === 'otherWorld') return !!f.otherWorldUnlocked;
       if (key === 'otherWorldAdvanced') return this.isBossDefeated('astact') || !!f.dungeon4Clear;
+      if (key === 'phantomShop') return !!f.phantomShopUnlocked;
       return true;
     }
     helpSectionHTML() {

@@ -2,25 +2,25 @@
 
 ## 現在の状態
 
-この準備ブランチではRewarded広告ユニットを本番IDへ差し替え済みです。iOS App IDはGoogle公式デモ値のままなので、このまま本番審査へ提出しません。
+この準備ブランチではRewarded広告ユニットとiOS App IDを本番IDへ差し替え済みです。
 
-- App ID: `ca-app-pub-3940256099942544~1458002511`
+- App ID: `ca-app-pub-2798969445522147~9914094555`
 - Rewarded ad unit: `ca-app-pub-2798969445522147/5643677056`
 - 広告形式: リワードのみ
 - ランキング機能: 今回のリリースには含めない
 
 ## 実機テスト
 
-1. 最新の `feature/ios-capacitor` を取得し、`pnpm install --frozen-lockfile`、`pnpm cap:sync` を実行する。
+1. 最新の `staging/ios-review-prep-20260903` を取得し、`pnpm install --frozen-lockfile`、`pnpm run cap:sync` を実行する。
 2. 広告を最後まで視聴した時だけ効果が1回付与されることを確認する。
 3. 途中で閉じる、オフライン、ロード失敗では、効果も利用回数も消費されないことを確認する。
 4. 同時に2回押しても広告が重複しないことを確認する。
 5. 初回の同意画面を確認し、同意できない場合は広告を要求しないことを確認する。
 6. タイトルと拠点の「設定 → データ」から広告プライバシー設定を開けることを確認する。
 
-## 本番ID差し替え
+## 本番ID
 
-AdMob管理画面からiOS App ID（`~`区切り）を取得する。差し替え先は `ios/App/App/Info.plist` の `GADApplicationIdentifier`。Rewarded Ad Unit ID（`/`区切り）は `js/admob.js` の `IOS_REWARDED_AD_ID` へ設定済み。
+AdMob管理画面のiOS App ID（`~`区切り）は `ios/App/App/Info.plist` の `GADApplicationIdentifier`、Rewarded Ad Unit ID（`/`区切り）は `js/admob.js` の `IOS_REWARDED_AD_ID` へ設定済み。
 
 差し替え後に `pnpm verify:ios-release` を実行し、デモIDが1つも残っていないことを確認する。本番広告の実機確認はAdMobへテスト端末登録した端末だけで行い、端末IDをソースへ保存しない。
 
