@@ -2,7 +2,7 @@
   'use strict';
   // 同名音源を差し替えてもWKWebViewの古いレスポンスを掴まないよう、
   // BGM/SEの全ローカルURLへ同じリリース番号を付ける。
-  const AUDIO_ASSET_VERSION = '20260903.3';
+  const AUDIO_ASSET_VERSION = '20260903.4';
   const audioAssetUrl = path => {
     const url = new URL(path, document.baseURI);
     url.searchParams.set('av', AUDIO_ASSET_VERSION);
@@ -14,10 +14,6 @@
   //   maxDur … 長いファイルを途中でフェードアウトさせる秒数
   //   rate   … 再生速度。同じ素材を流用して質感を変えるのに使う
   const SFX_FILES = {
-    critical:    { url: '音楽系/効果音/critical-hit-v2.mp3', gain: .92, offset: .002, maxDur: 1.5 },
-    criticalHit: { url: '音楽系/効果音/critical-hit-v2.mp3', gain: .92, offset: .002, maxDur: 1.5 },
-    evade:       { url: '音楽系/効果音/evade-v2.mp3', gain: .86, offset: .002, maxDur: 1.2 },
-    playerHit:   { url: '音楽系/効果音/enemy-hit-v2.mp3', gain: .90, offset: .002, maxDur: 1.2 },
     swordHit:    { url: '音楽系/効果音/剣で斬る2.mp3', gain: .90, offset: .050, maxDur: .9 },
     clawHit:     { url: '音楽系/効果音/爪通常.mp3',    gain: 1.10, offset: .100, maxDur: .9 },
     // ファイアボールは「飛んでいる最中」の音なので、着弾ではなく発射のタイミングで鳴らす
