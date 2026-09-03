@@ -12,5 +12,8 @@ if (!game.includes("scoreId = isD4 ? 'staccato' : 'ostinato'")) throw new Error(
 if (!shop.includes("scoreId: 'reprise'")) throw new Error('REPRISE track unlock is missing');
 if (!shop.includes("audio: '音楽系/隠し音ゲー/赤狐の怪盗.mp3'")) throw new Error('REPRISE audio mapping is missing');
 if (!fs.existsSync(path.join(root, '音楽系', '隠し音ゲー', '赤狐の怪盗.mp3'))) throw new Error('REPRISE audio asset is missing');
+if (!shop.includes("scoreId: 'staccato'")) throw new Error('STACCATO track unlock is missing');
+if (!shop.includes("audio: '音楽系/隠し音ゲー/Qの予告状-Phantom Letter Q-.mp3'")) throw new Error('STACCATO audio mapping is missing');
+if (!fs.existsSync(path.join(root, '音楽系', '隠し音ゲー', 'Qの予告状-Phantom Letter Q-.mp3'))) throw new Error('STACCATO audio asset is missing');
 
 console.log('secret music score regression: ok');
