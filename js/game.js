@@ -1324,6 +1324,7 @@
       if (key === 'guardian') return this.isJobUnlocked('guardian');
       if (key === 'enhance') return (f.dungeon2BattleWins || 0) >= 15;
       if (key === 'levelCap') return !!f.jobLevelCapUnlocked;
+      if (key === 'levelCapFinal') return this.isBossDefeated('ostina') || !!f.dungeon5Clear;
       if (key === 'rebirth') return this.rebirthUnlocked();
       if (key === 'phantomThief') return this.isJobUnlocked('phantomThief');
       if (key === 'otherWorld') return !!f.otherWorldUnlocked;
