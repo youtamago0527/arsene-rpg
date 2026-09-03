@@ -1,0 +1,16 @@
+.enemy-d4MidBoss.form-2 .enemy-visual::after {
+  content: '';
+  position: absolute;
+  inset: 4% 2%;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 38%, rgba(212, 0, 35, .34), transparent 34%), conic-gradient(from 20deg, transparent, rgba(143, 0, 22, .18), transparent 28%);
+  filter: blur(5px);
+  animation: fegoria-pulse 2.2s ease-in-out infinite alternate;
+}
+.enemy-d4MidBoss.fegoria-sparkler-1 .enemy-visual { filter: drop-shadow(0 0 8px rgba(255, 88, 44, .5)); }
+.enemy-d4MidBoss.fegoria-sparkler-2 .enemy-visual { filter: drop-shadow(0 0 15px rgba(255, 50, 35, .72)); }
+.enemy-d4MidBoss.fegoria-sparkler-3 .enemy-visual { filter: drop-shadow(0 0 25px rgba(255, 20, 24, .95)) saturate(1.35); }
+.enemy-d4MidBoss.fegoria-transforming .enemy-visual { animation: fegoria-transform .8s ease-in-out both; }
+@keyframes fegoria-pulse { to { opacity: .45; transform: scale(1.035) rotate(2deg); } }
+@keyframes fegoria-transform { 0% { opacity: 1; filter: brightness(1); } 45% { opacity: .08; filter: brightness(.2) saturate(2); } 100% { opacity: 1; filter: brightness(1.15) saturate(1.25); } }
+@media (prefers-reduced-motion: reduce) { .enemy-d4MidBoss.form-2 .enemy-visual::after, .enemy-d4MidBoss.fegoria-transforming .enemy-visual { animation: none; } }
