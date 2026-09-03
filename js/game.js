@@ -1750,7 +1750,7 @@
       const vitals = this.storedVitals(stats); this.player = this.freshBattlePlayer(stats, vitals.hp, vitals.mp);
       const baseBossStats = template.dynamicScale ? { maxHp: stats.maxHp * template.dynamicScale, atk: Math.max(stats.str, stats.mag) * template.dynamicScale, def: stats.def * template.dynamicScale, mag: stats.mag * template.dynamicScale, mnd: stats.mnd * template.dynamicScale, spd: stats.agi * template.dynamicScale } : { ...template.stats };
       const bossStats = this.applyBossOverdriveStats ? this.applyBossOverdriveStats(bossId, baseBossStats) : baseBossStats;
-      const bossRuntime = template.id === 'd4MidBoss' ? { form: 1, sparklerPhase: 0, hideUntil: 0, despairTurns: 0, despairStep: 0, hasUsedDespairDays: false } : template.id === 'd5MidBoss' ? { form: 1 } : {};
+      const bossRuntime = template.id === 'd4MidBoss' ? { form: 1, sparklerPhase: 0, hideUntil: 0, despairTurns: 0, despairStep: 0, hasUsedDespairDays: false } : template.id === 'd5MidBoss' ? { form: 1, phaseTurn: 0, regenTurns: 0, lastNestuaTick: 0 } : {};
       this.enemies = [{ ...template, uid: `${template.id}-boss`, label: '', stats: bossStats, hp: bossStats.maxHp, alive: true, bindResistance: template.bindResistance ?? .35, bindTurns: 0, ...bossRuntime }];
       this.turn = 1; this.locked = false; this.finished = false; this.resetBattleLog(); this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [] }; $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyDungeonBackground();
       const bossArrival = this.battleMode === 'noel'
@@ -1852,18 +1852,95 @@
       this.audio.stopMusic(260);
       const nextForm = Math.min(3, (enemy.form || 1) + 1), form = D.enemies.d5MidBoss[`form${nextForm}`];
       this.flashTitle('BATTLE COMPLETE...', 'THE HUNT CONTINUES'); await this.battleSleep(650);
-      if (typeof this.playNoiseSequence === 'function') await this.playNoiseSequence([
-        { who: '毒律の追跡者', text: nextForm === 2 ? 'まだだ……この旋律は、止まらない。' : '肉体など、とうに捨てた。' },
-        { big: nextForm === 2 ? 'SECOND MOVEMENT.' : 'FINAL MOVEMENT.' }
-      ]);
+      const firstStory = !this.isBossDefeated('d5MidBoss');
+      const phase2Lines = firstStory ? [
+        { who: '？？？', text: '……っ……。' },
+        { who: '？？？', text: 'やめろ……。' },
+        { who: '？？？', text: '俺の……身体……。' },
+        { big: 'SECOND MOVEMENT.' }
+      ] : [{ big: 'SECOND MOVEMENT.' }];
+      const phase3First = firstStory && !this.profile.flags.nestuaPhase3SceneSeen;
+      const phase3Lines = phase3First ? [
+        { who: '？？？', text: '……当たり前が……' },
+        { who: '？？？', text: '当たり前じゃないなんて……' },
+        { who: '？？？', text: '誰が……決めたのさ……。' },
+        { who: '？？？', text: '……傷に、触れた……。' },
+        { who: '？？？', text: 'まだ僕は……ここで……' },
+        { who: '？？？', text: '戦い続けなきゃならないのですか……？' },
+        { who: '？？？', text: '……いやだ……。' },
+        { who: '？？？', text: 'やめろ……！' },
+        { who: '？？？', text: 'もう……戦いたくない……！' },
+        { big: '「助けてくれ――！」' },
+        { big: 'FINAL MOVEMENT.' }
+      ] : [{ big: 'FINAL MOVEMENT.' }];
+      if (phase3First) { this.profile.flags.nestuaPhase3SceneSeen = true; this.saveProfile(); }
+      const lines = nextForm === 2 ? phase2Lines : phase3Lines;
+      if (typeof this.playNoiseSequence === 'function') await this.playNoiseSequence(lines);
+      else for (const line of lines) { this.setLog(line.text || line.big); await this.battleSleep(650); }
       const formStats = this.applyBossOverdriveStats ? this.applyBossOverdriveStats('d5MidBoss', { ...form.stats }) : { ...form.stats };
-      Object.assign(enemy, { name: form.name, sprite: form.sprite, battleScale: form.battleScale, stats: formStats, hp: formStats.maxHp, alive: true, form: nextForm, rolledDrops: null });
+      Object.assign(enemy, { name: form.name, title: form.title, sprite: form.sprite, battleScale: form.battleScale, stats: formStats, hp: formStats.maxHp, alive: true, form: nextForm, phaseTurn: 0, regenTurns: 0, rolledDrops: null });
       this.renderEnemies(); this.updateHUD(); this.playBossMusic('d5MidBoss', nextForm);
       this.flashTitle(nextForm === 2 ? 'SECOND FORM' : 'THIRD FORM', `D5 MID BOSS // PHASE ${nextForm}`);
-      this.setLog(nextForm === 2 ? '侵蝕が全身へ広がり、追跡者の力が増幅した！' : '追跡者は異形の奏獣へ変貌した！');
+      this.setLog(nextForm === 2 ? '侵蝕が全身へ広がり、NESTUAの力が増幅した！' : 'NESTUAは巨大な完全異形へ変貌した！');
       await this.battleSleep(900); this.turn++; this.locked = false; this.showMainCommands();
     }
     async transformPendingBoss(enemy) { if (this.battleMode === 'versicrell') return this.transformVersicrell(enemy); if (this.battleMode === 'd4MidBoss') return this.transformFegoria(enemy); if (this.battleMode === 'd5MidBoss') return this.transformD5MidBoss(enemy); }
+    async nestuaStrike(enemy, name, { magical = false, multiplier = 1, hits = 1, clearBuffs = false, echo = false } = {}) {
+      const el = document.getElementById(enemy.uid), ren = $('#ren');
+      this.flashTitle(name, magical ? 'DISTORTED JAZZ' : 'CRIMSON RIFF'); this.setLog(`NESTUAの${name}！`);
+      let dealt = 0;
+      for (let i = 0; i < hits && this.player.hp > 0; i++) {
+        this.audio.sfx(magical ? 'dark' : 'slash'); el?.classList.add('enemy-attacking'); await this.battleSleep(hits > 1 ? 180 : 360);
+        const power = magical ? enemy.stats.mag : enemy.stats.atk, raw = this.enemyRawDamage(magical ? 'magical' : 'physical', power, 1);
+        const outcome = this.rollEnemyAttackOutcome(enemy, { id: name, kind: magical ? 'magic' : 'physical' });
+        if (!outcome.hit) { this.triggerEvade(enemy, 'player', { name }, { source: 'nestua' }); this.floating(ren, 'EVADE', 'miss'); }
+        else { ren.classList.add('hit'); this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(Math.max(1, Math.round(raw * multiplier + roll(-2, 3))), magical ? 'magical' : 'physical'); dealt += actual; this.floating(ren, actual, 'enemy-damage'); }
+        this.updateHUD(); await this.battleSleep(hits > 1 ? 210 : 420); el?.classList.remove('enemy-attacking'); ren.classList.remove('hit');
+      }
+      if (clearBuffs) {
+        const guard = this.player.buffs.guardUntil === this.turn ? { guardUntil: this.player.buffs.guardUntil, guardReduction: this.player.buffs.guardReduction } : {};
+        this.player.buffs = guard; this.setLog('ナッシングが強化効果を消し去った！'); this.updateHUD();
+      }
+      if (echo && dealt > 0) {
+        this.player.nestuaEchoes = [{ turn: this.turn + 1, damage: Math.max(1, Math.round(dealt * .5)) }, { turn: this.turn + 2, damage: Math.max(1, Math.round(dealt * .25)) }];
+        this.setLog('消えない残響が身体に刻まれた……。');
+      }
+    }
+    async nestuaStatusTick(enemy) {
+      if (enemy.lastNestuaTick === this.turn) return;
+      enemy.lastNestuaTick = this.turn;
+      if ((enemy.regenTurns || 0) > 0) {
+        const heal = Math.min(Math.round(enemy.stats.maxHp * .04), enemy.stats.maxHp - enemy.hp); enemy.regenTurns--;
+        if (heal > 0) { enemy.hp += heal; this.floating(document.getElementById(enemy.uid), `+${heal}`, 'heal'); this.setLog(`《悪徳の美学》がNESTUAのHPを${heal}回復。`); this.updateHUD(); await this.battleSleep(320); }
+      }
+      const echoes = this.player.nestuaEchoes || [], due = echoes.filter(e => e.turn <= this.turn), future = echoes.filter(e => e.turn > this.turn);
+      this.player.nestuaEchoes = future;
+      for (const echo of due) { const actual = Math.min(this.player.hp, echo.damage); this.player.hp = Math.max(0, this.player.hp - actual); this.audio.sfx('dark'); this.floating($('#ren'), actual, 'enemy-damage'); this.setLog(`《5月の残響》が${actual}ダメージを反復した！`); this.updateHUD(); await this.battleSleep(350); }
+    }
+    async nestuaWhats(enemy) {
+      const guarded = this.player.buffs?.guardUntil === this.turn, damage = guarded ? 250 : 500, actual = Math.min(this.player.hp, damage);
+      this.flashTitle("What's Are You Doing?", guarded ? 'FIXED 500 // GUARD 250' : 'FIXED DAMAGE 500'); this.audio.sfx('critical');
+      this.player.hp = Math.max(0, this.player.hp - actual); this.persistVitals(); this.floating($('#ren'), actual, 'enemy-damage');
+      this.setLog(`NESTUAのWhat's Are You Doing?――${actual}固定ダメージ！`); this.updateHUD(); await this.battleSleep(650);
+    }
+    async bossAttackNestua(enemy) {
+      await this.nestuaStatusTick(enemy); if (this.player.hp <= 0) return;
+      const phase = enemy.form || 1;
+      if (phase === 3) {
+        enemy.phaseTurn = (enemy.phaseTurn || 0) + 1;
+        if (enemy.phaseTurn >= 3 && (enemy.phaseTurn - 3) % 4 === 0) { await this.nestuaWhats(enemy); return; }
+      }
+      const act = async () => {
+        const r = Math.random();
+        if (phase >= 3 && !(enemy.regenTurns > 0) && r < .18) { enemy.regenTurns = 3; this.flashTitle('悪徳の美学', 'REGENERATION // 3T'); this.audio.sfx('dark'); this.setLog('黒赤い外殻が脈動し、NESTUAの再生が始まった！'); this.updateHUD(); await this.battleSleep(520); return; }
+        if (phase >= 2 && r < .44) { await this.nestuaStrike(enemy, 'T.クライム', { multiplier: .48, hits: 3 }); return; }
+        if (phase >= 2 && r < .66) { await this.nestuaStrike(enemy, '5月の残響', { magical: true, multiplier: .82, echo: true }); return; }
+        if (r < .82) { await this.nestuaStrike(enemy, 'ナッシング', { magical: true, multiplier: .88, clearBuffs: true }); return; }
+        await this.nestuaStrike(enemy, 'Mr.エリック', { magical: true, multiplier: 1.08 });
+      };
+      const actions = phase === 3 ? 2 : 1;
+      for (let i = 0; i < actions && this.player.hp > 0; i++) await act();
+    }
     async applyVersicrellMovement(enemy, mode) {
       enemy.movement = mode; enemy.defBuffUntil = 0; enemy.mdefBuffUntil = 0; enemy.defBuffRate = 0; enemy.mdefBuffRate = 0;
       if (mode === 'first') { enemy.defBuffUntil = 99999; enemy.defBuffRate = .50; enemy.movementActionsLeft = 3; this.flashTitle('FIRST MOVEMENT', '《銀環奏・剛》 防御力 +50%'); this.setLog('銀環が肉体を包み、物理防御を高めた！'); }
@@ -3373,6 +3450,7 @@
     }
     async bossAttack(enemy) {
       if (enemy.id === 'd4MidBoss') { await this.bossAttackFegoria(enemy); return; }
+      if (enemy.id === 'd5MidBoss') { await this.bossAttackNestua(enemy); return; }
       if (enemy.id === 'myrthi') { await this.bossAttackMyrthi(enemy); return; }
       if (enemy.id === 'versicrell') { await this.bossAttackVersicrell(enemy); return; }
       if (enemy.id === 'seripes') { await this.bossAttackSeripes(enemy); return; }
@@ -3699,6 +3777,38 @@
       if (this.battleMode === 'myrthi') { const firstClear = !this.isBossDefeated('myrthi'), firstScore = !this.profile.musicScores?.rhythm, myrthiReward = this.grantMyrthiFirstReward(); this.markBossDefeated('myrthi'); this.profile.flags.dungeon2BattleWins = (this.profile.flags.dungeon2BattleWins || 0) + 1; this.profile.flags.dungeon2Clear = true; this.profile.musicScores ||= {}; if (firstScore) this.profile.musicScores.rhythm = true; this.noteBossRematchSnapshot('myrthi'); this.saveProfile(); const keyItems = myrthiReward ? [myrthiReward.item, myrthiReward.extraItem].filter(Boolean) : []; const unlocks = myrthiReward?.job ? [`NEW JOB　${myrthiReward.job.name}`, 'REBIRTH UNLOCKED'] : []; this.showBossRewardSequence({ title: 'VICTORY', copy: '黒紅の双刃戦姫ミルティを打ち倒した。', kicker: 'BOSS CLEARED', html: rewardBlock }, [firstScore && { title: 'SCORE GET', copy: '盗んだ旋律は、プライベートモードで演奏できる。', kicker: 'PHANTOM SCORE', html: this.scoreGetHTML('rhythm') }, firstClear && { title: 'KEY ITEM GET', copy: '双刃士の力と、輪廻への鍵を盗み出した。', kicker: 'STOLEN REWARDS', html: this.bossKeyRewardHTML(keyItems, unlocks) }, firstClear && { title: 'JOB TUTORIAL', copy: '解放されたJOBの戦い方を確認する。', kicker: 'DUAL BLADE', html: this.jobUnlockTutorialHTML('dualBlade') }, firstClear && { title: 'PHANTOM STEAL', copy: '奪った戦姫の力を、工房の製法へ変換した。', kicker: 'NEW RECIPES STOLEN', html: this.bossSeriesUnlockHTML('myrthi') }]); return; }
       if (this.battleMode === 'versicrell') { const firstClear = !this.isBossDefeated('versicrell'); this.markBossDefeated('versicrell'); this.noteBossRematchSnapshot('versicrell'); this.saveProfile(); const note = firstClear ? '<div class="boss-recipe-unlock"><small>MID BOSS CLEARED</small><b>SILVER CIRCLE BROKEN</b><strong>D3後半ルート解放</strong><span>ヴェルシクレルの銀環を突破した。崩界の深廊をさらに進める。</span></div>' : ''; this.showResult('VICTORY', '《銀環異奏体》ヴェルシクレルを撃破した！', 'SILVER CIRCLE // COMPLETE', `${rewardBlock}${note}`); this.offerRepeatBossMaterialDrop(D.enemies.versicrell, firstClear); return; }
       if (this.battleMode === 'seripes') { const firstClear = !this.isBossDefeated('seripes'), firstScore = !this.profile.musicScores?.reprise, unlocked = this.grantSeripesFirstReward(); this.markBossDefeated('seripes'); this.profile.musicScores ||= {}; if (firstScore) this.profile.musicScores.reprise = true; this.noteBossRematchSnapshot('seripes'); this.saveProfile(); const keyItems = firstClear ? [D.items.guardianProof, D.items.guardianAegis] : []; const unlocks = firstClear ? ['NEW JOB　守護士', 'NEW WEAPON MASTERY　盾学'] : []; this.flashTitle('REPRISE...', 'THE AEGIS SHATTERS'); this.showBossRewardSequence({ title: 'VICTORY', copy: '不落の反奏騎士セリペスの盾が白い光となって砕けた。', kicker: 'THIRD MAESTRI DEFEATED', html: rewardBlock }, [firstScore && { title: 'SCORE GET', copy: '盗んだ旋律は、プライベートモードで演奏できる。', kicker: 'PHANTOM SCORE', html: this.scoreGetHTML('reprise') }, firstClear && { title: 'KEY ITEM GET', copy: '守護士の証と反奏の白盾を盗み出した。', kicker: 'STOLEN REWARDS', html: this.bossKeyRewardHTML(keyItems, unlocks) }, firstClear && { title: 'JOB TUTORIAL', copy: '解放されたJOBの戦い方を確認する。', kicker: 'GUARDIAN', html: this.jobUnlockTutorialHTML('guardian') }, firstClear && { title: 'PHANTOM STEAL', copy: '奪った守護者の力を、工房の製法へ変換した。', kicker: 'NEW RECIPES STOLEN', html: this.bossSeriesUnlockHTML('seripes', ' 守護士・戦士向けの装備が製作可能。') }, firstClear && { title: 'LEVEL CAP UP', copy: '限界を超えた成長データを解析。全JOBの器がさらに広がった。', kicker: 'JOB LIMIT BREAK', html: `<div class="boss-recipe-unlock"><small>JOB LEVEL CAP</small><b>Lv.20 → Lv.40</b><strong>全JOBのレベル上限が解放された</strong><span>Lv21以降は成長量が2倍になる。転生はこれまで通りLv20以降いつでも選べる。</span></div>` }]); return; }
+      if (this.battleMode === 'd5MidBoss') {
+        const e = D.enemies.d5MidBoss, firstClear = !this.isBossDefeated('d5MidBoss');
+        this.markBossDefeated('d5MidBoss'); this.noteBossRematchSnapshot('d5MidBoss');
+        if (firstClear) {
+          this.profile.flags.nestuaIdentityRevealed = true; this.saveProfile();
+          const lines = [
+            { sys: 'NESTUA // SIGNAL LOST' },
+            { who: '？？？', text: '……終わった……のか。' },
+            { sys: 'IDENTITY RESTORED // 刹那' },
+            { who: '刹那', text: 'ずっと……分からなかった。' },
+            { who: '刹那', text: '当たり前が、当たり前じゃなくなって……。' },
+            { who: '刹那', text: '傷ついても……また……戦わされて……。' },
+            { who: '刹那', text: 'だから……ずっと思ってた。' },
+            { who: '刹那', text: 'まだ僕はここで、戦い続けなきゃならないのですか……って。' },
+            { who: '刹那', text: '……もう、戦わなくていいんだな。' },
+            { who: '刹那', text: '……ありがとう。' },
+            { who: '刹那', text: 'あの化け物の中で、俺は何度も同じ瞬間を繰り返していた。' },
+            { who: '刹那', text: '痛みも、音も、記憶も……終わるたびに最初へ戻された。' },
+            { who: '刹那', text: 'でも時々、俺のものじゃない声が混ざった。助けを呼ぶ声だ。' },
+            { who: '刹那', text: '俺をこうした何かは、人の傷と記憶を使って異形を作っている。' },
+            { who: '刹那', text: '誰が何のためにやっているかまでは……分からない。' },
+            { who: '刹那', text: 'でも……気をつけろ。' },
+            { who: '刹那', text: '俺だけじゃない。' },
+            { big: '「この先にも――まだいる。」' }
+          ];
+          if (typeof this.playNoiseSequence === 'function') await this.playNoiseSequence(lines);
+          else for (const line of lines) { this.setLog(line.text || line.big || line.sys); await this.battleSleep(650); }
+        } else this.saveProfile();
+        const note = firstClear ? '<div class="boss-recipe-unlock"><small>IDENTITY RESTORED</small><b>NESTUA // 刹那</b><strong>人間だった異形</strong><span>封鎖された後半ルートが解放された。この先にも同じ境遇の人間がいるかもしれない。</span></div>' : '';
+        this.showResult('VICTORY', firstClear ? 'NESTUAの異形を崩し、刹那を救い出した。' : 'NESTUAを撃破した！', 'MID BOSS // COMPLETE', `${rewardBlock}${note}`);
+        this.offerRepeatBossMaterialDrop(e, firstClear); return;
+      }
       if ((D.dungeons || []).some(dungeon => dungeon.midBossId === this.battleMode)) { const e = D.enemies[this.battleMode], firstClear = !this.isBossDefeated(this.battleMode); this.markBossDefeated(this.battleMode); this.noteBossRematchSnapshot(this.battleMode); this.saveProfile(); const note = firstClear ? `<div class="boss-recipe-unlock"><small>MID BOSS CLEARED</small><b>ROUTE OPEN</b><strong>${e.name} 撃破</strong><span>封鎖された後半ルートが解放された。</span></div>` : ''; this.showResult('VICTORY', `${e.name}を撃破した！`, 'MID BOSS // COMPLETE', `${rewardBlock}${note}`); this.offerRepeatBossMaterialDrop(e, firstClear); return; }
       if (['astact', 'ostina'].includes(this.battleMode)) { const bossId = this.battleMode, isD4 = bossId === 'astact', dungeonId = isD4 ? 'dungeon4' : 'dungeon5', jobId = isD4 ? 'ronin' : 'hunter', proofId = isD4 ? 'roninProof' : 'hunterProof', scoreId = isD4 ? 'staccato' : 'ostinato', firstClear = !this.isBossDefeated(bossId), firstScore = !this.profile.musicScores?.[scoreId]; this.markBossDefeated(bossId); this.profile.flags[`${dungeonId}Clear`] = true; this.profile.musicScores ||= {}; if (firstScore) this.profile.musicScores[scoreId] = true; if (firstClear) { this.profile.inventory[proofId] = Math.max(1, this.profile.inventory[proofId] || 0); this.profile.unlockedJobs = [...new Set([...(this.profile.unlockedJobs || []), jobId])]; this.profile.jobs[jobId] ||= { level: 1, exp: 0 }; if (!isD4) { this.profile.weaponMastery.bow ||= { level: 1, exp: 0 }; this.profile.inventory.d5HunterBow = Math.max(1, this.profile.inventory.d5HunterBow || 0); } } this.noteBossRematchSnapshot(bossId); this.saveProfile(); const e = D.enemies[bossId], keyItems = firstClear ? [D.items[proofId], !isD4 && D.items.d5HunterBow].filter(Boolean) : [], unlocks = firstClear ? [`NEW JOB　${D.jobs[jobId]?.name || jobId}`, !isD4 ? 'NEW WEAPON MASTERY　弓学' : '刀技は剣武器学を共有'] : []; this.showBossRewardSequence({ title: 'VICTORY', copy: `${e.title || ''}${e.name}を打ち倒した。`, kicker: isD4 ? 'FOURTH MAESTRI DEFEATED' : 'FIFTH MAESTRI DEFEATED', html: rewardBlock }, [firstScore && { title: 'SCORE GET', copy: '盗んだ旋律は、プライベートモードで演奏できる。', kicker: 'PHANTOM SCORE', html: this.scoreGetHTML(scoreId) }, firstClear && { title: 'KEY ITEM GET', copy: '新たなJOBへ至る証を盗み出した。', kicker: 'STOLEN REWARDS', html: this.bossKeyRewardHTML(keyItems, unlocks) }, firstClear && { title: 'JOB TUTORIAL', copy: '解放されたJOBの戦い方を確認する。', kicker: (D.jobs[jobId]?.nameEn || jobId).toUpperCase(), html: this.jobUnlockTutorialHTML(jobId) }]); return; }
       if (milestone) this.showStagedMilestone(rewardBlock, milestone);

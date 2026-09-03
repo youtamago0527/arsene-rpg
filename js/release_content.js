@@ -96,15 +96,16 @@
   D.enemies.d4MidBoss.music = '音楽系/戦闘用/D4中ボス第一形態.mp3';
   D.enemies.d4MidBoss.form2.music = '音楽系/戦闘用/D4中ボス第二形態.mp3';
   Object.assign(D.enemies.d5MidBoss, {
+    name: 'NESTUA', nameEn: 'NESTUA', title: '《ネストゥア》', role: 'MID BOSS / THREE FORMS',
     sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form1.png',
     phaseCount: 3,
     battleScale: 1.12,
     form2: {
-      name: '毒律の追跡者', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form2.png', battleScale: 1.16,
+      name: 'NESTUA', title: '《ネストゥア》', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form2.png', battleScale: 1.16,
       stats: { maxHp: 42900, atk: 728, def: 650, mag: 754, mnd: 676, dex: 546, agi: 135, spd: 135 }
     },
     form3: {
-      name: '毒律の追跡者', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form3.png', battleScale: 1.2,
+      name: 'NESTUA', title: '《ネストゥア》', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form3.png', battleScale: 1.2,
       stats: { maxHp: 64350, atk: 1092, def: 975, mag: 1131, mnd: 1014, dex: 819, agi: 203, spd: 203 }
     }
   });
