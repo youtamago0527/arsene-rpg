@@ -3691,7 +3691,7 @@
       return `<section class="job-unlock-tutorial"><header><small>JOB TUTORIAL</small><b>${job.name}</b><span>${job.nameEn || jobId}</span></header><p>${guide.role}</p><div><small>おすすめ運用</small><strong>${guide.build}</strong></div><ul>${(guide.tips || []).map(tip => `<li>${tip}</li>`).join('')}</ul>${proof ? `<footer>《${proof.name}》の力が解放された</footer>` : ''}</section>`;
     }
     showBossRewardSequence(victory, stages = []) {
-      const secretMusicScores = ['CADENZA', 'REPRISE', 'STACCATO', 'OSTINATO'];
+      const secretMusicScores = ['CADENZA', 'RHYTHM', 'REPRISE', 'STACCATO', 'OSTINATO'];
       const queue = stages.filter(stage => stage?.html).map(stage => (
         stage.kicker === 'PHANTOM SCORE' && secretMusicScores.some(title => stage.html.includes(`<strong>${title}</strong>`))
           ? { ...stage, copy: '盗んだ旋律は、隠し音ゲーで演奏できる。' }
