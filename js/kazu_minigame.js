@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const SONG = encodeURI('音楽系/OP/零時侵蝕.mp3');
+  const DEFAULT_TRACK = { id: 'reijishinshoku', title: '零時侵蝕', subtitle: 'ZERO HOUR INVASION', audio: '音楽系/OP/零時侵蝕.mp3' };
   const PLAY_LENGTH = 100;
   const APPROACH = 1.72;
   const WINDOWS = { perfect: .05, great: .095, good: .165, miss: .205 };
@@ -26,6 +26,7 @@
       this.tapCount = 0;
       this.tapTimer = 0;
       this.judgeTimer = 0;
+      this.track = DEFAULT_TRACK;
       this.resizeHandler = () => this.resize();
       this.keyHandler = e => this.onKey(e);
       this.build();
@@ -103,9 +104,12 @@
       });
     }
 
-    open() {
+    open(track = DEFAULT_TRACK) {
       this.game = window.arseneGame;
       if (!this.game || !this.root.hidden) return;
+      this.track = { ...DEFAULT_TRACK, ...(track || {}) };
+      this.root.setAttribute('aria-label', `${this.track.title} リズムゲーム`);
+      this.root.querySelector('.kazu-rhythm-title strong').textContent = this.track.title;
       this.root.hidden = false;
       document.body.style.overflow = 'hidden';
       this.showIntro();
@@ -116,9 +120,10 @@
     }
 
     showIntro() {
-      const best = Number(this.game?.profile?.flags?.kazuRhythmHighScore || 0);
+      const flags = this.game?.profile?.flags || {};
+      const best = Number(flags.kazuRhythmHighScores?.[this.track.id] || (this.track.id === 'reijishinshoku' ? flags.kazuRhythmHighScore : 0) || 0);
       this.cover.hidden = false;
-      this.setCover(`<div class="kazu-rhythm-card"><small>SECRET MUSIC GAME // RANDOM</small><h2>零時侵蝕<em>ZERO HOUR INVASION</em></h2><p>表拍・裏拍・2個同時押しを盗め。<br>レーン配置はプレイごとに変化します。${best ? `<br><b>HIGH SCORE ${String(best).padStart(7, '0')}</b>` : ''}</p><button type="button" data-rhythm-action="start">GAME START</button><button type="button" class="secondary" data-rhythm-action="exit">拠点へ戻る</button></div>`);
+      this.setCover(`<div class="kazu-rhythm-card"><small>SECRET MUSIC GAME // RANDOM</small><h2>${this.track.title}<em>${this.track.subtitle || ''}</em></h2><p>表拍・裏拍・2個同時押しを盗め。<br>レーン配置はプレイごとに変化します。${best ? `<br><b>HIGH SCORE ${String(best).padStart(7, '0')}</b>` : ''}</p><button type="button" data-rhythm-action="start">GAME START</button><button type="button" class="secondary" data-rhythm-action="exit">拠点へ戻る</button></div>`);
     }
 
     setCover(html) {
@@ -155,7 +160,7 @@
       if (this.root.hidden) { this.preparing = false; return; }
       this.resetPlayState();
       try {
-        await this.game.audio.playTrack(SONG);
+        await this.game.audio.playTrack(encodeURI(this.track.audio));
         this.game.audio.music.loop = false;
         this.game.audio.music.ontimeupdate = null;
         this.game.audio.music.addEventListener('ended', this.songEnded = () => this.finish(), { once: true });
@@ -194,7 +199,7 @@
     }
 
     async analyzeSong() {
-      const response = await fetch(SONG);
+      const response = await fetch(encodeURI(this.track.audio));
       if (!response.ok) throw new Error(`audio ${response.status}`);
       const raw = await response.arrayBuffer();
       const context = this.game.audio.ctx;
@@ -395,7 +400,9 @@
       const accuracy = Math.round(weighted / total * 1000) / 10;
       const flags = this.game.profile.flags || (this.game.profile.flags = {});
       flags.kazuRhythmPlayed = Number(flags.kazuRhythmPlayed || 0) + 1;
-      flags.kazuRhythmHighScore = Math.max(Number(flags.kazuRhythmHighScore || 0), this.score);
+      flags.kazuRhythmHighScores ||= {};
+      flags.kazuRhythmHighScores[this.track.id] = Math.max(Number(flags.kazuRhythmHighScores[this.track.id] || 0), this.score);
+      if (this.track.id === 'reijishinshoku') flags.kazuRhythmHighScore = flags.kazuRhythmHighScores[this.track.id];
       flags.kazuRhythmMaxCombo = Math.max(Number(flags.kazuRhythmMaxCombo || 0), this.maxCombo);
       this.game.saveProfile();
       this.cover.hidden = false;
