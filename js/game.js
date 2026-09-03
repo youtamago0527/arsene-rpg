@@ -5265,6 +5265,7 @@
       switch (key) {
         case 'always': return true;
         case 'new_game': return (f.preNoelBattleWins || 0) === 0 && (f.postNoelBattleWins || 0) === 0;
+        case 'early_phantom_shop': return !f.noelFirstEncounterCleared;
         case 'after_first_battle': return (f.preNoelBattleWins || 0) >= 1 && (f.preNoelBattleWins || 0) <= 3 && !f.noelFirstEncounterCleared;
         case 'low_hp': { const t = this.totalStats(), v = this.storedVitals(t); return v.hp <= Math.ceil(t.maxHp * 0.30); }
         case 'just_defeated': return f.lastBattleResult === 'defeat';

@@ -1,5 +1,10 @@
 window.KAZU_DIALOGUES = [
   { id:'new_game_01', condition:'new_game', priority:60, once:true, dialogues:['よう、目ぇ覚めたか。ここが俺の店や、しばらく世話になり。','まずは近くのダンジョンで慣れとき。飯は出す、死なんと帰ってきいや。'] },
+  // 序盤はカズ自身を連打する隠し導線と、PHANTOM SHOPの存在を段階的に案内する。
+  // 3件を別のonce台詞にして、初回説明の後から数回にわたって高頻度で出す。
+  { id:'early_phantom_shop_01', condition:'early_phantom_shop', priority:59, once:true, dialogues:['俺に触っても意味ないからな？ ……一回だけなら、やけど。'] },
+  { id:'early_phantom_shop_02', condition:'early_phantom_shop', priority:58, once:true, dialogues:['この店、表に出してへん品もある。俺を三回つついたら《PHANTOM SHOP》を見せたるわ。'] },
+  { id:'early_phantom_shop_03', condition:'early_phantom_shop', priority:57, once:true, dialogues:['時短したいなら《PHANTOM SHOP》や。俺を三回タップして、買い物を選び。音ゲーもそこから入れるで。'] },
   { id:'after_first_battle_01', condition:'after_first_battle', priority:50, once:false, dialogues:['生きて帰ってきたやん。上出来やで。','初戦でそれなら悪うない。続けりゃちゃんと強うなるわ。','腹減ったまま潜ったらあかんで。まず食べてき。'] },
   { id:'low_hp_01', condition:'low_hp', priority:70, once:false, dialogues:['そのHPで行く気かいな。まかない食べてからおいでや。','無茶したらあかん。回復して、装備も見直しとき。','死ぬより一杯食う方が安うつく。ほんまやで。'] },
   { id:'consecutive_defeats_01', condition:'consecutive_defeats', priority:75, once:false, dialogues:['負けが続いとるな。焦らんでええ、装備と技を組み直そか。','怪異は逃げへん。育てて、作って、もう一回や。','考えて勝つんが怪盗やろ。気合いだけではあきまへんがな。'] },
