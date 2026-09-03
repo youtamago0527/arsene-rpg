@@ -3,7 +3,7 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
-const audio = fs.readFileSync(path.join(root, 'js', 'audio-runtime-20260903.js'), 'utf8');
+const audio = fs.readFileSync(path.join(root, 'js', 'audio-runtime-20260904.js'), 'utf8');
 const fx = fs.readFileSync(path.join(root, 'js', 'battle_fx.js'), 'utf8');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
@@ -21,7 +21,9 @@ for (const legacy of ['会心の一撃1.mp3', '回避.mp3', '打撃6.mp3', 'crit
   if (fs.existsSync(path.join(root, '音楽系', '効果音', legacy))) throw new Error(`legacy SFX remains: ${legacy}`);
 }
 if (fs.existsSync(path.join(root, 'js', 'audio.js'))) throw new Error('legacy audio runtime remains');
-if (!index.includes('js/audio-runtime-20260903.js?v=1.0.2')) throw new Error('fresh audio runtime is not loaded');
+if (!index.includes('js/audio-runtime-20260904.js?v=1.0.3')) throw new Error('fresh audio runtime is not loaded');
+if (!audio.includes("getPlatform?.() === 'ios'")) throw new Error('native iOS SFX route is missing');
+if (!audio.includes('new Audio(new URL(def.url, document.baseURI).href)')) throw new Error('native iOS must play formal SFX files directly');
 if (!audio.includes("playerHit:   { url: 'assets/audio/sfx/enemy-strike-sample-20260904.mp3'")) throw new Error('enemy attack must use the supplied 打撃6 sample');
 if ([...audio.matchAll(/url:\s*'([^']+)'/g)].some(match => /[^\x00-\x7F]/.test(match[1]))) throw new Error('sampled SFX paths must remain ASCII-only for WKWebView');
 if (!fx.includes("staff: null")) throw new Error('staff swing can double-play its projectile sound');

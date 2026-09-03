@@ -11,7 +11,7 @@ const plist = read('ios/App/App/Info.plist');
 const buildScript = read('scripts/build-web.mjs');
 const packageJson = JSON.parse(read('package.json'));
 const bundleVerifier = read('scripts/verify-ios-bundle.mjs');
-const audio = read('js/audio-runtime-20260903.js');
+const audio = read('js/audio-runtime-20260904.js');
 const capacitor = JSON.parse(read('capacitor.config.json'));
 
 assert.match(html, /width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover/);
@@ -47,7 +47,7 @@ assert(!buildScript.includes('readdir(root'), 'unreferenced root artwork must no
 assert.match(packageJson.scripts['cap:sync'], /verify-ios-bundle\.mjs/);
 assert.match(bundleVerifier, /stale iOS bundle/);
 assert.match(bundleVerifier, /css\/battle-ui-v2\.css/);
-assert.match(bundleVerifier, /js\/audio-runtime-20260903\.js/);
+assert.match(bundleVerifier, /js\/audio-runtime-20260904\.js/);
 assert.match(bundleVerifier, /forbiddenNativeAssets/);
 assert.match(audio, /AUDIO_ASSET_VERSION/);
 assert.match(audio, /searchParams\.set\('av'/);

@@ -2,7 +2,7 @@
   'use strict';
   // 同名音源を差し替えてもWKWebViewの古いレスポンスを掴まないよう、
   // BGM/SEの全ローカルURLへ同じリリース番号を付ける。
-  const AUDIO_ASSET_VERSION = '20260904.2';
+  const AUDIO_ASSET_VERSION = '20260904.3';
   const audioAssetUrl = path => {
     const url = new URL(path, document.baseURI);
     url.searchParams.set('av', AUDIO_ASSET_VERSION);
@@ -33,6 +33,8 @@
   class ArseneAudio {
     constructor(bgmPath) {
       this.ctx = null; this.master = null; this.musicSource = null; this.musicGain = null; this.muted = false; this.started = false; this.settingsKey = 'arsene-rpg-audio-v1'; this.levels = this.loadLevels(); this.musicMaxVolume = matchMedia('(max-width:760px)').matches ? .18 : .22; this.musicVolume = this.musicMaxVolume * this.levels.bgm; this.fadeToken = 0; this.userActivated = false;
+      this.nativeIos = !!(window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === 'ios');
+      this.nativeSfxPlayers = new Set();
       this.music = new Audio(audioAssetUrl(bgmPath)); this.music.loop = true; this.music.preload = 'auto'; this.music.volume = this.musicVolume;
       this.audioId = `${Date.now()}-${Math.random()}`; this.audioFocus = typeof BroadcastChannel === 'function' ? new BroadcastChannel('arsene-rpg-audio-focus') : null;
       if (this.audioFocus) this.audioFocus.onmessage = e => { if (e.data?.type === 'claim' && e.data.id !== this.audioId) { this.music.pause(); this.started = false; } };
@@ -136,7 +138,24 @@
     }
     // ファイルの効果音を鳴らす。まだ読み込めていなければ false を返す。
     playSfxFile(name) {
-      const def = SFX_FILES[name]; if (!def || !this.ctx || this.muted) return false;
+      const def = SFX_FILES[name]; if (!def || this.muted) return false;
+      // WKWebViewではfetchしたMP3のdecodeAudioDataが端末依存で失敗し、
+      // 旧合成音へ落ちることがある。iOSネイティブ版は、BGMと同じく
+      // HTMLMediaElementへローカルMP3を直接渡して確実に正式SEを鳴らす。
+      if (this.nativeIos) {
+        const media = new Audio(new URL(def.url, document.baseURI).href);
+        media.preload = 'auto';
+        media.playbackRate = def.rate || 1;
+        try { media.volume = Math.min(1, (def.gain ?? 1) * this.levels.sfx); } catch {}
+        this.nativeSfxPlayers.add(media);
+        const cleanup = () => { media.pause(); media.removeAttribute('src'); this.nativeSfxPlayers.delete(media); };
+        media.addEventListener('ended', cleanup, { once: true });
+        media.addEventListener('error', cleanup, { once: true });
+        media.play().catch(cleanup);
+        if (Number.isFinite(def.maxDur)) setTimeout(cleanup, Math.ceil(def.maxDur * 1000));
+        return true;
+      }
+      if (!this.ctx) return false;
       const buf = this.sfxBuffers?.[def.url]; if (!buf) return false;
       const src = this.ctx.createBufferSource(), g = this.ctx.createGain();
       src.buffer = buf; src.playbackRate.value = def.rate || 1;

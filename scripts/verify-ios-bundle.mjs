@@ -9,7 +9,7 @@ const sentinels = [
   'index.html',
   'css/battle-ui-v2.css',
   'css/ios-safe-area.css',
-  'js/audio-runtime-20260903.js',
+  'js/audio-runtime-20260904.js',
   'js/admob.js',
   'js/data.js',
   'js/game.js'
@@ -31,7 +31,7 @@ if (!/CapacitorCommunityAdmob/.test(swiftPackage)) {
   throw new Error('CapacitorCommunityAdmob is missing from the native Swift package. Run cap sync ios.');
 }
 
-const audioSource = await readFile(join(root, 'js', 'audio-runtime-20260903.js'), 'utf8');
+const audioSource = await readFile(join(root, 'js', 'audio-runtime-20260904.js'), 'utf8');
 const audioPaths = [...new Set([...audioSource.matchAll(/url:\s*'([^']+)'/g)].map(match => match[1]))];
 for (const relative of audioPaths) {
   await readFile(join(root, relative));
@@ -41,6 +41,7 @@ for (const relative of audioPaths) {
 
 const forbiddenNativeAssets = [
   'js/audio.js',
+  'js/audio-runtime-20260903.js',
   '音楽系/効果音/会心の一撃1.mp3',
   '音楽系/効果音/回避.mp3',
   '音楽系/効果音/打撃6.mp3',
