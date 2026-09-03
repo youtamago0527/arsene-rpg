@@ -1734,7 +1734,7 @@
     // 曲を足すときは data.js の敵に music を書くだけで済む。
     bossMusicFor(bossId, form = 1) {
       const enemy = D.enemies[bossId];
-      const track = form >= 2 ? (enemy?.form2?.music || enemy?.music) : enemy?.music;
+      const track = form >= 3 ? (enemy?.form3?.music || enemy?.form2?.music || enemy?.music) : form >= 2 ? (enemy?.form2?.music || enemy?.music) : enemy?.music;
       return track ? encodeURI(track) : this.bossMusic;
     }
     // ボス戦の開始点はメニュー・再戦・ダンジョン内と複数あるので、
@@ -1750,7 +1750,7 @@
       const vitals = this.storedVitals(stats); this.player = this.freshBattlePlayer(stats, vitals.hp, vitals.mp);
       const baseBossStats = template.dynamicScale ? { maxHp: stats.maxHp * template.dynamicScale, atk: Math.max(stats.str, stats.mag) * template.dynamicScale, def: stats.def * template.dynamicScale, mag: stats.mag * template.dynamicScale, mnd: stats.mnd * template.dynamicScale, spd: stats.agi * template.dynamicScale } : { ...template.stats };
       const bossStats = this.applyBossOverdriveStats ? this.applyBossOverdriveStats(bossId, baseBossStats) : baseBossStats;
-      const bossRuntime = template.id === 'd4MidBoss' ? { form: 1, sparklerPhase: 0, hideUntil: 0, despairTurns: 0, despairStep: 0, hasUsedDespairDays: false } : {};
+      const bossRuntime = template.id === 'd4MidBoss' ? { form: 1, sparklerPhase: 0, hideUntil: 0, despairTurns: 0, despairStep: 0, hasUsedDespairDays: false } : template.id === 'd5MidBoss' ? { form: 1 } : {};
       this.enemies = [{ ...template, uid: `${template.id}-boss`, label: '', stats: bossStats, hp: bossStats.maxHp, alive: true, bindResistance: template.bindResistance ?? .35, bindTurns: 0, ...bossRuntime }];
       this.turn = 1; this.locked = false; this.finished = false; this.resetBattleLog(); this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [] }; $('#menu-screen').hidden = true; $('#menu-screen').style.display = 'none'; $('#game').hidden = false; $('#game').style.display = 'grid'; $('#result').hidden = true; $('#result').style.display = 'none'; $('#ren').className = 'ren fighter idle'; this.applySetBattleVisual(); this.applyDungeonBackground();
       const bossArrival = this.battleMode === 'noel'
@@ -1829,7 +1829,7 @@
       this.flashTitle('SECOND FORM', 'GUITAR AXE // SILVER CIRCLE'); this.setLog('銀環が暴走し、異形の奏者がギターを逆さに構えた！'); await this.battleSleep(900);
       this.turn++; this.locked = false; this.showMainCommands();
     }
-    isPendingBossTransform(enemy) { return !!enemy && enemy.form === 1 && ((this.battleMode === 'versicrell' && enemy.id === 'versicrell') || (this.battleMode === 'd4MidBoss' && enemy.id === 'd4MidBoss')); }
+    isPendingBossTransform(enemy) { return !!enemy && ((enemy.form === 1 && ((this.battleMode === 'versicrell' && enemy.id === 'versicrell') || (this.battleMode === 'd4MidBoss' && enemy.id === 'd4MidBoss'))) || (this.battleMode === 'd5MidBoss' && enemy.id === 'd5MidBoss' && enemy.form < 3)); }
     async transformFegoria(enemy) {
       this.audio.stopMusic(260);
       const el = document.getElementById(enemy.uid); el?.classList.add('fegoria-transforming');
@@ -1848,7 +1848,22 @@
       this.flashTitle('SECOND FORM', 'FEGOLIA // HIDE AND SEEK'); this.setLog('紅葉と墨が崩れ合い、フェゴリアは形を失った。'); await this.battleSleep(900);
       this.turn++; this.locked = false; this.showMainCommands();
     }
-    async transformPendingBoss(enemy) { if (this.battleMode === 'versicrell') return this.transformVersicrell(enemy); if (this.battleMode === 'd4MidBoss') return this.transformFegoria(enemy); }
+    async transformD5MidBoss(enemy) {
+      this.audio.stopMusic(260);
+      const nextForm = Math.min(3, (enemy.form || 1) + 1), form = D.enemies.d5MidBoss[`form${nextForm}`];
+      this.flashTitle('BATTLE COMPLETE...', 'THE HUNT CONTINUES'); await this.battleSleep(650);
+      if (typeof this.playNoiseSequence === 'function') await this.playNoiseSequence([
+        { who: '毒律の追跡者', text: nextForm === 2 ? 'まだだ……この旋律は、止まらない。' : '肉体など、とうに捨てた。' },
+        { big: nextForm === 2 ? 'SECOND MOVEMENT.' : 'FINAL MOVEMENT.' }
+      ]);
+      const formStats = this.applyBossOverdriveStats ? this.applyBossOverdriveStats('d5MidBoss', { ...form.stats }) : { ...form.stats };
+      Object.assign(enemy, { name: form.name, sprite: form.sprite, battleScale: form.battleScale, stats: formStats, hp: formStats.maxHp, alive: true, form: nextForm, rolledDrops: null });
+      this.renderEnemies(); this.updateHUD(); this.playBossMusic('d5MidBoss', nextForm);
+      this.flashTitle(nextForm === 2 ? 'SECOND FORM' : 'THIRD FORM', `D5 MID BOSS // PHASE ${nextForm}`);
+      this.setLog(nextForm === 2 ? '侵蝕が全身へ広がり、追跡者の力が増幅した！' : '追跡者は異形の奏獣へ変貌した！');
+      await this.battleSleep(900); this.turn++; this.locked = false; this.showMainCommands();
+    }
+    async transformPendingBoss(enemy) { if (this.battleMode === 'versicrell') return this.transformVersicrell(enemy); if (this.battleMode === 'd4MidBoss') return this.transformFegoria(enemy); if (this.battleMode === 'd5MidBoss') return this.transformD5MidBoss(enemy); }
     async applyVersicrellMovement(enemy, mode) {
       enemy.movement = mode; enemy.defBuffUntil = 0; enemy.mdefBuffUntil = 0; enemy.defBuffRate = 0; enemy.mdefBuffRate = 0;
       if (mode === 'first') { enemy.defBuffUntil = 99999; enemy.defBuffRate = .50; enemy.movementActionsLeft = 3; this.flashTitle('FIRST MOVEMENT', '《銀環奏・剛》 防御力 +50%'); this.setLog('銀環が肉体を包み、物理防御を高めた！'); }
