@@ -13,7 +13,7 @@ assert.match(dialogues, /俺を三回つついたら《PHANTOM SHOP》/);
 assert.match(dialogues, /俺を三回タップして、買い物を選び/);
 assert.match(game, /case 'early_phantom_shop': return !f\.noelFirstEncounterCleared;/,
   'shop hints must be frequent only during the opening section');
-assert.match(index, /js\/kazu_dialogues\.js\?v=0\.2\.1/);
+assert.match(index, /js\/kazu_dialogues\.js\?v=0\.1\.4/);
 assert.match(index, /js\/game\.js\?v=4\.13\.15/);
 
 console.log('kazu_phantom_shop_guidance_regression: ok');
