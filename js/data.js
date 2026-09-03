@@ -714,7 +714,7 @@ window.ARSENE_DATA = {
   musicScores: {
     cadenzaLoot: { id: 'cadenzaLoot', title: 'CADENZA', subtitle: '絶望の戦利品', artist: 'ZENAKADO', use: 'secretMusicGame', unlockBoss: 'zenacad', description: '独奏卿ゼナカドから盗み出した禁断の楽譜。隠し音ゲーで演奏可能。' },
     rhythm: { id: 'rhythm', title: 'RHYTHM', subtitle: '道化師の楽園', artist: 'MYRTHI', use: 'privateMode', unlockBoss: 'myrthi', description: '黒紅の双刃戦姫ミルティから盗み出したリズムスコア。プライベートモードで演奏可能。' },
-    reprise: { id: 'reprise', title: 'REPRISE', subtitle: '赤狐の怪盗', artist: 'SERIPES', use: 'privateMode', unlockBoss: 'seripes', description: '不落の反奏騎士セリペスから盗み出した反奏の楽譜。プライベートモードで演奏可能。' }
+    reprise: { id: 'reprise', title: 'REPRISE', subtitle: '赤狐の怪盗', artist: 'SERIPES', use: 'secretMusicGame', unlockBoss: 'seripes', description: '不落の反奏騎士セリペスから盗み出した反奏の楽譜。隠し音ゲーで演奏可能。' }
   },
   bossEquipmentSeries: {
     zenacad: {
