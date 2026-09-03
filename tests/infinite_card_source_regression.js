@@ -8,5 +8,7 @@ assert(!/eventWeights:\s*\{[^}]*\bcard\s*:/.test(data), 'movement event table st
 assert(!/events:\s*\[[^\]]*['"]card['"]/.test(data), 'route hints still resolve to enchant cards');
 assert(!score.includes("type='sublime';else if(this.isRand()"), 'movement still upgrades a route into an enchant card');
 assert(score.includes("else if(['card','returnCard','sublime'].includes(choice.type)){choice.type='encounter'"), 'legacy route cards are not migrated to encounters');
+assert(score.includes('delete weights.card'), 'legacy route card weight is not removed');
+assert.match(score, /weights\.encounter=.*cfg\.cardRate/, 'legacy card weight must be folded into encounters to preserve route probabilities');
 assert(score.includes('const showCards=this.isRand()<cfg.cardRate'), 'battle victory enchant-card reward is missing');
 console.log('infinite card source regression: ok');

@@ -7,7 +7,7 @@
   const publish = value => {
     if (!value || typeof value !== 'object') return value;
     delete value.devOnly; delete value.futureOnly;
-    value.contentState = 'released'; value.balanceState = 'earlyAccess';
+    value.contentState = 'released'; value.balanceState = 'released';
     return value;
   };
   D.futureContent.releaseFlags.d4Released = true;
@@ -29,7 +29,7 @@
     moonEdgeOre: { id: 'moonEdgeOre', name: '月刃鉱', category: 'material', rarity: 'rare', description: '刃のような月光を宿す鉱石。' },
     hunterThread: { id: 'hunterThread', name: '狩律糸', category: 'material', rarity: 'rare', description: '反復する魔力を編み込んだD5の糸。' },
     venomCore: { id: 'venomCore', name: '毒奏核', category: 'material', rarity: 'epic', description: '毒と炎の拍を閉じ込めた魔核。' },
-    roninProof: { id: 'roninProof', name: '浪士の証', nameEn: 'PROOF OF THE RONIN', category: 'key', rarity: 'epic', description: '一瞬を見切り、返す者の証。' },
+    roninProof: { id: 'roninProof', name: '刀術士の証', nameEn: 'PROOF OF THE RONIN', category: 'key', rarity: 'epic', description: '一瞬を見切り、返す者の証。' },
     hunterProof: { id: 'hunterProof', name: '狩人の証', nameEn: 'PROOF OF THE HUNTER', category: 'key', rarity: 'epic', description: '弱りを見逃さず、仕留める者の証。' },
     splurgeGuitar: { id: 'splurgeGuitar', name: '《奮発して買ったギター》', nameEn: 'THE GUITAR I SPLURGED ON', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, dungeonId: 'dungeon4', catalogDungeon: 'dungeon4', source: 'secretGuitar', guitarSkillTree: 'versicrellGuitar', archiveHint: '入手経路不明。値札の気配だけが、断月のどこかに微かに残っている。', description: 'フェゴリアが惜しみなく金を注ぎ込んだ特注ギター。銀環の系譜を継ぐ音を、さらに強烈な出力で叩きつける。' },
     d4MoonKatana: { id: 'd4MoonKatana', name: '月鋼の刀', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 2, catalogDungeon: 'dungeon4', description: '月刃鉱を打った、扱いやすい工房刀。' },
@@ -83,7 +83,7 @@
 
   const floor = (id, name, nameEn, wins, bg, materials, scale, pool) => ({
     id, name, nameEn, winsToClear: wins, background: bg, thumbnail: bg, materials,
-    description: '装備・JOB・回復資源を組み替えながら進むEarly Access攻略層。', enemyScale: scale,
+    description: '装備・JOB・回復資源を組み替えながら進む正式攻略層。', enemyScale: scale,
     encounterProgression: [{ minWins: 0, count: [2, 3], pool }]
   });
   const d3bg = ['assets/bg/dungeon3/d3f3-ruined-chapel.webp', 'assets/bg/dungeon3/d3f4-innermost-throne.webp'];

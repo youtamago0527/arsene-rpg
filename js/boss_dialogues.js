@@ -111,7 +111,7 @@
     const nextStages = [...stages];
     if (id === 'seripes') nextStages.unshift({
       title: 'NEW PATHS UNLOCKED', copy: 'セリペスが守っていた二つの扉が開いた。', kicker: 'TWO DOORS OPENED',
-      html: '<div class="boss-recipe-unlock"><small>NEW JOB UNLOCKED</small><b>《守護士》</b><strong>NEW CONTENT UNLOCKED</strong><span>《異世界・無限奏廊》<br>PHANTOM THIEF ONLY</span></div>'
+      html: '<div class="boss-recipe-unlock"><small>NEW JOB UNLOCKED</small><b>《守護士》</b><strong>NEW CONTENT UNLOCKED</strong><span>《無限奏廊》<br>PHANTOM THIEF ONLY</span></div>'
     });
     this.locked = true;
     this.playBossDialogue(story.outro).then(() => origRewardSequence.call(this, victory, nextStages));

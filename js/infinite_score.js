@@ -376,9 +376,13 @@
   };
   P.isEventTable = function () {
     const cfg=this.isEffectiveCfg(), weights={...(this.isCfg().eventWeights||{})};
-    for(const [event,key] of [['treasure','treasureRate'],['rare','rareEnemyRate'],['shop','shopRate'],['trap','trapRate'],['card','cardRate']]) {
+    for(const [event,key] of [['treasure','treasureRate'],['rare','rareEnemyRate'],['shop','shopRate'],['trap','trapRate']]) {
       if(Number.isFinite(Number(cfg[key]))) weights[event]=Math.max(0,Number(cfg[key])*100);
     }
+    // 奏命カードは勝利後にだけ抽選する。旧探索カード重み45は実際には戦闘へ
+    // 置換されていたため、遭遇率とショップ実効約1.4%を保つ戦闘重みとして統合する。
+    weights.encounter=Math.max(0,Number(weights.encounter)||0)+Math.max(0,Number(cfg.cardRate)||0)*100;
+    delete weights.card;
     weights.workshop=Math.min(6,3+Math.floor(Math.max(0,(this.isRun()?.floor||1)-1)/25));
     return Object.entries(weights).map(([id,weight])=>({id,weight}));
   };

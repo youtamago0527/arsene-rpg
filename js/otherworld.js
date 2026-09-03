@@ -384,7 +384,7 @@
   };
 
   // ════════════════════════════════════════════════════════════
-  // D1クリア → NOISE演出 → PHANTOM THIEF / 異世界 解放
+  // D1クリア → NOISE演出 → PHANTOM THIEF / 曜日異世界ダンジョン解放
   // ════════════════════════════════════════════════════════════
   const origStageOne = P.grantStageOneReward;
   P.grantStageOneReward = function () {
@@ -422,10 +422,10 @@
     { big: 'PHANTOM THIEF' },
     { who: 'レニーフォックス', text: 'そいつは普通のJOBとは、ちょっとばかり勝手が違う。' },
     { sys: '特殊JOB《PHANTOM THIEF》が解放されました。' },
-    { sys: '《異世界》が解放されました。' }
+    { sys: '《曜日異世界ダンジョン》が解放されました。' }
   ];
 
-  // 汎用NOISEシーケンス。異世界解放だけでなく、ボス変身などからも同じ演出を再利用する。
+  // 汎用NOISEシーケンス。曜日異世界ダンジョン解放だけでなく、ボス変身などからも同じ演出を再利用する。
   P.playNoiseSequence = function (lines, options = {}) {
     if (document.getElementById('ow-noise')) return Promise.resolve(false);
     return new Promise(resolve => {

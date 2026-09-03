@@ -79,7 +79,7 @@
   D.futureJobIds = ['ronin', 'hunter', 'runeLancer', 'darkKnight'];
   Object.assign(D.jobs, {
     ronin: {
-      id: 'ronin', name: '浪士（仮）', nameEn: 'RONIN', description: '刀と見切りで攻撃を避け、反撃へ変える高速カウンターJOB。',
+      id: 'ronin', name: '刀術士', nameEn: 'RONIN', description: '刀と見切りで攻撃を避け、反撃へ変える高速カウンターJOB。',
       signatureSkillId: 'afterimageClone', passiveUnlocks: { 5: 'p_returnBlade', 10: 'p_zanshin', 15: 'p_instantEdge' },
       traits: { insight: { name: '見切り', nameEn: 'INSIGHT', type: 'agiEvasionEfficiency', rate: .20, description: '固定回避率ではなく、既存の素早さ回避性能を20%強化する。' } },
       attackScaling: { str: 1.0, agi: .3 }, simulationAssumptions: { maintainSignatureBuff: true },
@@ -189,7 +189,7 @@
   });
 
   Object.assign(D.items, {
-    roninProof: { id: 'roninProof', name: '浪士の証', nameEn: 'PROOF OF THE RONIN', category: 'key', rarity: 'epic', description: 'アスタクトから盗み出す、刀と見切りを継ぐ資格の証。', ...DEV },
+    roninProof: { id: 'roninProof', name: '刀術士の証', nameEn: 'PROOF OF THE RONIN', category: 'key', rarity: 'epic', description: 'アスタクトから盗み出す、刀と見切りを継ぐ資格の証。', ...DEV },
     hunterProof: { id: 'hunterProof', name: '狩人の証', nameEn: 'PROOF OF THE HUNTER', category: 'key', rarity: 'epic', description: 'オスティナから盗み出す、反復の狩律を断つ者の証。', ...DEV },
     runeLancerProof: { id: 'runeLancerProof', name: '紋槍士の証', nameEn: 'PROOF OF THE RUNE LANCER', category: 'key', rarity: 'epic', description: 'クロマティアから盗み出す、五属性の紋を束ねる証。', ...DEV },
     darkKnightProof: { id: 'darkKnightProof', name: '暗黒騎士の証', nameEn: 'PROOF OF THE DARK KNIGHT', category: 'key', rarity: 'epic', description: 'エクレイムから盗み出す、生命を暗黒へ変える者の証。', ...DEV },
