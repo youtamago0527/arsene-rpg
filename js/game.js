@@ -1735,13 +1735,14 @@
     }
     // ボスのBGM。敵データに music があればそれを、無ければ共通のボス戦BGMを使う。
     // 曲を足すときは data.js の敵に music を書くだけで済む。
-    bossMusicFor(bossId) {
-      const track = D.enemies[bossId]?.music;
+    bossMusicFor(bossId, form = 1) {
+      const enemy = D.enemies[bossId];
+      const track = form >= 2 ? (enemy?.form2?.music || enemy?.music) : enemy?.music;
       return track ? encodeURI(track) : this.bossMusic;
     }
     // ボス戦の開始点はメニュー・再戦・ダンジョン内と複数あるので、
     // 曲の切り替えは各 start 関数の中でまとめて行う。
-    playBossMusic(bossId) { this.audio.playTrack(this.bossMusicFor(bossId)); }
+    playBossMusic(bossId, form = 1) { this.audio.playTrack(this.bossMusicFor(bossId, form)); }
     startBossEncounter(forceBossId = null, forcePhase = null) {
       this.prepareBattleInteractionState();
       this.defeatResolving = false;
@@ -1846,7 +1847,7 @@
       if (typeof this.playNoiseSequence === 'function') await this.playNoiseSequence(lines); else for (const line of lines) { this.setLog(line.text || line.big); await this.battleSleep(650); }
       const form = D.enemies.d4MidBoss.form2;
       Object.assign(enemy, { name: form.name, title: form.title, sprite: form.sprite, battleScale: form.battleScale, stats: { ...form.stats }, hp: form.stats.maxHp, alive: true, form: 2, sparklerPhase: 0, hideUntil: 0, despairTurns: 0, despairStep: 0, hasUsedDespairDays: false, rolledDrops: null });
-      this.renderEnemies(); this.updateHUD(); this.playBossMusic('d4MidBoss');
+      this.renderEnemies(); this.updateHUD(); this.playBossMusic('d4MidBoss', 2);
       this.flashTitle('SECOND FORM', 'FEGOLIA // HIDE AND SEEK'); this.setLog('紅葉と墨が崩れ合い、フェゴリアは形を失った。'); await this.battleSleep(900);
       this.turn++; this.locked = false; this.showMainCommands();
     }
@@ -3728,7 +3729,7 @@
     showGameOverOrRevive(copy, kicker, html) { const showGameOver = () => { this.clearBossOverdriveChallenge?.(); this.showResult('GAME OVER', copy, kicker, html); }; if (!this.showReviveOfferIfAvailable(showGameOver)) showGameOver(); }
     showReviveOfferIfAvailable(onDecline) { const offer = window.arseneQOffer; if (!offer?.canUse?.('revive')) return false; return offer.show('revive', { onGrant: () => this.reviveAfterAdNoise(), onClose: onDecline }); }
     reviveAfterAdNoise() { return this.reviveAfterDefeat(); }
-    reviveAfterDefeat() { const maxHp = this.player?.stats?.maxHp || this.totalStats().maxHp; this.finished = false; this.defeatResolving = false; this.locked = false; this.player.hp = Math.max(1, Math.ceil(maxHp * .5)); this.persistVitals(); const result = $('#result'); result.hidden = true; result.style.display = 'none'; $('#ren').classList.remove('down'); $('#ren').classList.add('idle'); const dungeon = this.getDungeon(this.currentDungeonId), track = this.owRun ? (this.otherWorldMusic || this.bossMusic) : (dungeon?.music || this.battleMusic); this.audio.playTrack(track); this.updateHUD(); this.setLog(`${this.playerName()}はHP50%で立ち上がった！`); this.flashTitle('REVIVE', 'PHANTOM RISES AGAIN'); this.showMainCommands(); }
+    reviveAfterDefeat() { const maxHp = this.player?.stats?.maxHp || this.totalStats().maxHp; this.finished = false; this.defeatResolving = false; this.locked = false; this.player.hp = Math.max(1, Math.ceil(maxHp * .5)); this.persistVitals(); const result = $('#result'); result.hidden = true; result.style.display = 'none'; $('#ren').classList.remove('down'); $('#ren').classList.add('idle'); const dungeon = this.getDungeon(this.currentDungeonId), bossTrack = this.battleMode !== 'slime' ? this.bossMusicFor(this.battleMode, this.enemies?.[0]?.form || 1) : null, track = this.owRun ? (this.otherWorldMusic || this.bossMusic) : (bossTrack || dungeon?.music || this.battleMusic); this.audio.playTrack(track); this.updateHUD(); this.setLog(`${this.playerName()}はHP50%で立ち上がった！`); this.flashTitle('REVIVE', 'PHANTOM RISES AGAIN'); this.showMainCommands(); }
     showResult(title, copy, kicker, html) { this.cleanupBattleTransientUI(); this.pauseAutoBattle(); this.locked = true; this.resultContinue = null; $('#result-title').textContent = title; $('#result-copy').textContent = copy; $('#result-kicker').textContent = kicker; $('#rewards').innerHTML = html; const resultMenu = $('#result-menu'); resultMenu.hidden = false; resultMenu.style.display = ''; resultMenu.innerHTML = '拠点へ <span>HIDEOUT</span>'; $('#result').hidden = false; $('#result').style.display = 'grid'; }
     showStagedMilestone(rewardBlock, milestone) { this.showResult('VICTORY', '闇を切り裂き、戦利品を獲得した。', 'BATTLE COMPLETE', rewardBlock); this.resultContinue = () => this.showMilestonePopup(milestone); $('#result-menu').innerHTML = '次へ <span>NEXT</span>'; }
     showMilestonePopup(milestone) {

@@ -81,6 +81,9 @@
     ostina: enemy('ostina', 'オスティナ', 'dungeon5', D.enemies.shatteredDiva.sprite, { maxHp: 63360, atk: 700, def: 620, mag: 730, mnd: 640, dex: 500, agi: 126, spd: 126 }, 2400, { min: 1650, max: 2100 }, [{ itemId: 'venomCore', chance: 1 }, { itemId: 'hunterThread', chance: 1 }], [{ id: 'soulBolt', name: 'OSTINATO', kind: 'magic', weight: .48 }, { id: 'attack', name: '狩律射', kind: 'physical', weight: .32 }, { id: 'shadowBolt', name: '反復毒奏', kind: 'magic', weight: .20 }], { kind: 'boss', bossRank: 'dungeonBoss', title: '第五奏卿《反復の狩律》', role: 'BOSS / DOT & DEBUFF', battleScale: 1.2 })
   });
 
+  D.enemies.d4MidBoss.music = '音楽系/戦闘用/D4中ボス第一形態.mp3';
+  D.enemies.d4MidBoss.form2.music = '音楽系/戦闘用/D4中ボス第二形態.mp3';
+
   const floor = (id, name, nameEn, wins, bg, materials, scale, pool) => ({
     id, name, nameEn, winsToClear: wins, background: bg, thumbnail: bg, materials,
     description: '装備・JOB・回復資源を組み替えながら進む正式攻略層。', enemyScale: scale,
