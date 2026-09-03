@@ -12,7 +12,7 @@
     // D3クリア直後では20Fが壁、D5クリア相当でようやく到達できる基準。
     // 線形+16%/Fにより 10F=2.44倍、20F=4.04倍、100F=16.84倍。
     currencyMode: 'dungeon', enemyScalePerFloor: .16, returnMinFloor: 20,
-    cardRate: .45, treasureRate: .18, shopRate: .02, trapRate: .10, gearDropRate: .14, currencyMultiplier: 1,
+    cardRate: .45, battleCardRate: .20, treasureRate: .18, shopRate: .02, trapRate: .10, gearDropRate: .14, currencyMultiplier: 1,
     rareEnemyRate: .035, returnItemRate: .008, recoveryDropRate: .05, sublimationRate: .02,
     chestRates: { wood: 70, silver: 25, gold: 5 },
     rarityRates: { common: 55, rare: 27, epic: 12, legendary: 5, mythic: 1 },
