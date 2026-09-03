@@ -3671,7 +3671,7 @@
       html += `<div class="drop-list"><h3>DROPS</h3>${drops.length ? drops.map(([id,n]) => { const i=D.items[id]; return `<p class="rarity-${i.rarity}">${i.name}<b>×${n}</b></p>`; }).join('') : '<p>ドロップなし</p>'}</div>`;
       levels.forEach(l => { const keys = ['maxHp','maxMp','mag','mnd','str','vit']; html += `<div class="level-up"><h3>LEVEL UP!</h3><strong>LV ${l.from} → ${l.to}</strong><div>${keys.map(k => `<span>${statLabels[k]} <b>${l.before[k]} → ${l.after[k]}</b></span>`).join('')}</div></div>`; }); return html;
     }
-    scoreGetHTML(id) { const score = D.musicScores?.[id]; return score ? `<div class="score-get"><small>SCORE GET</small><strong>${score.title}</strong><b>（${score.subtitle}）</b><span>隠し音ゲーで演奏可能になった</span><em>SECRET MUSIC GAME</em></div>` : ''; }
+    scoreGetHTML(id) { const score = D.musicScores?.[id]; if (!score) return ''; const secretMusic = score.use === 'secretMusicGame'; return `<div class="score-get"><small>SCORE GET</small><strong>${score.title}</strong><b>（${score.subtitle}）</b><span>${secretMusic ? '隠し音ゲー' : 'プライベートモード'}で演奏可能になった</span><em>${secretMusic ? 'SECRET MUSIC GAME' : 'PRIVATE MODE ITEM'}</em></div>`; }
     bossKeyRewardHTML(items = [], unlocks = []) {
       const entries = items.filter(Boolean);
       if (!entries.length && !unlocks.length) return '';
@@ -3691,7 +3691,12 @@
       return `<section class="job-unlock-tutorial"><header><small>JOB TUTORIAL</small><b>${job.name}</b><span>${job.nameEn || jobId}</span></header><p>${guide.role}</p><div><small>おすすめ運用</small><strong>${guide.build}</strong></div><ul>${(guide.tips || []).map(tip => `<li>${tip}</li>`).join('')}</ul>${proof ? `<footer>《${proof.name}》の力が解放された</footer>` : ''}</section>`;
     }
     showBossRewardSequence(victory, stages = []) {
-      const queue = stages.filter(stage => stage?.html);
+      const secretMusicScores = ['CADENZA', 'REPRISE', 'OSTINATO'];
+      const queue = stages.filter(stage => stage?.html).map(stage => (
+        stage.kicker === 'PHANTOM SCORE' && secretMusicScores.some(title => stage.html.includes(`<strong>${title}</strong>`))
+          ? { ...stage, copy: '盗んだ旋律は、隠し音ゲーで演奏できる。' }
+          : stage
+      ));
       const showStage = index => {
         const stage = queue[index];
         this.showResult(stage.title, stage.copy, stage.kicker, stage.html);
