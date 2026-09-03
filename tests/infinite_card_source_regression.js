@@ -10,5 +10,6 @@ assert(!score.includes("type='sublime';else if(this.isRand()"), 'movement still 
 assert(score.includes("else if(['card','returnCard','sublime'].includes(choice.type)){choice.type='encounter'"), 'legacy route cards are not migrated to encounters');
 assert(score.includes('delete weights.card'), 'legacy route card weight is not removed');
 assert.match(score, /weights\.encounter=.*cfg\.cardRate/, 'legacy card weight must be folded into encounters to preserve route probabilities');
-assert(score.includes('const showCards=this.isRand()<cfg.cardRate'), 'battle victory enchant-card reward is missing');
+assert.match(data, /battleCardRate:\s*\.20/, 'battle victory enchant-card rate must be 20%');
+assert(score.includes('const showCards=this.isRand()<Math.max(0,Number(cfg.battleCardRate) || 0)'), 'battle victory enchant-card reward must use its dedicated rate');
 console.log('infinite card source regression: ok');
