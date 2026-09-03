@@ -227,13 +227,15 @@
     trackHTML(track) {
       const unlocked = this.isTrackUnlocked(track);
       const score = unlocked ? this.highScore(track.id) : null;
+      const displayTitle = unlocked ? track.title : '？？？？？？';
+      const displayGenre = unlocked ? track.genre : 'UNKNOWN SCORE';
       return `
         <button type="button" class="pm-track pm-cut${unlocked ? '' : ' locked'}"
                 data-pm="track" data-track="${track.id}" ${unlocked ? '' : 'disabled'}>
           <span class="pm-track-no" style="color:${track.accent};background:${tint(track.accent, '26')};border:1px solid ${tint(track.accent, '80')}">${esc(track.no)}</span>
           <span class="pm-track-main">
-            <small>BPM ${track.bpm} / ${esc(track.genre)}${track.length !== '—' ? ` / ${track.length}` : ''}</small>
-            <b>${esc(track.title)}</b>
+            <small>${unlocked ? `BPM ${track.bpm} / ${esc(displayGenre)}${track.length !== '—' ? ` / ${track.length}` : ''}` : esc(displayGenre)}</small>
+            <b>${esc(displayTitle)}</b>
             <span class="pm-track-diff" style="color:${track.accent};border:1px solid ${track.accent};background:${tint(track.accent, '1a')}">${esc(track.diff)} ${esc(track.level)}</span>
           </span>
           <span class="pm-track-score">${unlocked

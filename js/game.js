@@ -3683,7 +3683,7 @@
       html += `<div class="drop-list"><h3>DROPS</h3>${drops.length ? drops.map(([id,n]) => { const i=D.items[id]; return `<p class="rarity-${i.rarity}">${i.name}<b>×${n}</b></p>`; }).join('') : '<p>ドロップなし</p>'}</div>`;
       levels.forEach(l => { const keys = ['maxHp','maxMp','mag','mnd','str','vit']; html += `<div class="level-up"><h3>LEVEL UP!</h3><strong>LV ${l.from} → ${l.to}</strong><div>${keys.map(k => `<span>${statLabels[k]} <b>${l.before[k]} → ${l.after[k]}</b></span>`).join('')}</div></div>`; }); return html;
     }
-    scoreGetHTML(id) { const score = D.musicScores?.[id]; return score ? `<div class="score-get"><small>SCORE GET</small><strong>${score.title}</strong><b>（${score.subtitle}）</b><span>隠し音ゲーで演奏可能になった</span><em>SECRET MUSIC GAME</em></div>` : ''; }
+    scoreGetHTML(id) { const score = D.musicScores?.[id]; if (!score) return ''; const secret = score.use === 'secretMusicGame'; return `<div class="score-get"><small>SCORE GET</small><strong>${score.title}</strong><b>（${score.subtitle}）</b><span>${secret ? '隠し音ゲー' : 'プライベートモード'}で演奏可能になった</span><em>${secret ? 'SECRET MUSIC GAME' : 'PRIVATE MODE ITEM'}</em></div>`; }
     bossKeyRewardHTML(items = [], unlocks = []) {
       const entries = items.filter(Boolean);
       if (!entries.length && !unlocks.length) return '';
