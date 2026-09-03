@@ -8,21 +8,22 @@ const fx = fs.readFileSync(path.join(root, 'js', 'battle_fx.js'), 'utf8');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 const formal = {
-  swordHit: '剣で斬る2.mp3', clawHit: '爪通常.mp3', fireFlight: '杖通常.mp3',
-  noteHit: '楽器通常.mp3', heal: 'ヒール.mp3',
+  swordHit: 'sword-hit-sample-20260904.mp3', clawHit: 'claw-hit-sample-20260904.mp3', fireFlight: 'staff-fire-sample-20260904.mp3',
+  noteHit: 'instrument-hit-sample-20260904.mp3', heal: 'heal-sample-20260904.mp3',
   playerHit: 'enemy-strike-sample-20260904.mp3', evade: 'evade-sample-20260904.mp3',
   criticalHit: 'critical-sample-20260904.mp3'
 };
 for (const [key, file] of Object.entries(formal)) {
   if (!audio.includes(`${key}:`) || !audio.includes(file)) throw new Error(`${key} formal asset is not registered`);
-  if (!fs.existsSync(path.join(root, '音楽系', '効果音', file))) throw new Error(`${key} formal asset file is missing: ${file}`);
+  if (!fs.existsSync(path.join(root, 'assets', 'audio', 'sfx', file))) throw new Error(`${key} formal asset file is missing: ${file}`);
 }
-for (const legacy of ['会心の一撃1.mp3', '回避.mp3', '打撃6.mp3', 'critical-hit-v2.mp3', 'enemy-hit-v2.mp3', 'evade-v2.mp3']) {
+for (const legacy of ['会心の一撃1.mp3', '回避.mp3', '打撃6.mp3', 'critical-hit-v2.mp3', 'enemy-hit-v2.mp3', 'evade-v2.mp3', '剣で斬る2.mp3', '爪通常.mp3', '杖通常.mp3', '楽器通常.mp3', 'ヒール.mp3', '逃げる.mp3', 'パッシブ発動音.mp3']) {
   if (fs.existsSync(path.join(root, '音楽系', '効果音', legacy))) throw new Error(`legacy SFX remains: ${legacy}`);
 }
 if (fs.existsSync(path.join(root, 'js', 'audio.js'))) throw new Error('legacy audio runtime remains');
-if (!index.includes('js/audio-runtime-20260903.js?v=1.0.1')) throw new Error('fresh audio runtime is not loaded');
-if (!audio.includes("playerHit:   { url: '音楽系/効果音/enemy-strike-sample-20260904.mp3'")) throw new Error('enemy attack must use the supplied 打撃6 sample');
+if (!index.includes('js/audio-runtime-20260903.js?v=1.0.2')) throw new Error('fresh audio runtime is not loaded');
+if (!audio.includes("playerHit:   { url: 'assets/audio/sfx/enemy-strike-sample-20260904.mp3'")) throw new Error('enemy attack must use the supplied 打撃6 sample');
+if ([...audio.matchAll(/url:\s*'([^']+)'/g)].some(match => /[^\x00-\x7F]/.test(match[1]))) throw new Error('sampled SFX paths must remain ASCII-only for WKWebView');
 if (!fx.includes("staff: null")) throw new Error('staff swing can double-play its projectile sound');
 if (!fx.includes("this.audio?.sfx?.('fireFlight')")) throw new Error('staff projectile does not use the formal flight sound');
 if (!fx.includes("shield: 'playerHit'")) throw new Error('shield impact does not share the enemy impact sound');
