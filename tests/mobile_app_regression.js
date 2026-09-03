@@ -53,7 +53,8 @@ assert.match(audio, /searchParams\.set\('av'/);
 assert.match(audio, /visibilitychange/);
 assert.doesNotMatch(audio, /await this\.preloadSfxFiles\(\)/, 'user gesture must not wait for SFX downloads before resuming audio');
 assert.match(audio, /if \(!this\.ctx\) this\.unlock\(\)/, 'SFX calls must recover an uninitialized iOS AudioContext');
-assert.match(audio, /if \(!this\.playSfxFile\(name\)\) this\.sfx\(name, true\)/, 'sample decode failures must fall back to synthesized SFX');
+assert.match(audio, /未準備の初回だけは同名の合成音を即時再生/, 'sample decode delay must fall back to synthesized SFX immediately');
+assert.doesNotMatch(audio, /sfxReady\s*\?*\.then\(\(\)\s*=>\s*\{?\s*if\s*\(!this\.playSfxFile/, 'an old combat SFX must not replay after its animation');
 
 const localRefs = [...html.matchAll(/(?:src|href)="([^"?#]+)(?:\?[^"#]*)?"/g)]
   .map(match => match[1])
