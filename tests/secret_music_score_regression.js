@@ -18,10 +18,11 @@ if (!shop.includes("audio: '音楽系/隠し音ゲー/赤狐の怪盗.mp3'")) th
 if (!shop.includes("scoreId: 'staccato'")) throw new Error('STACCATO track unlock is missing');
 if (!shop.includes("audio: '音楽系/隠し音ゲー/Qの予告状-Phantom Letter Q-.mp3'")) throw new Error('STACCATO audio mapping is missing');
 const rhythm = fs.readFileSync(path.join(root, 'js', 'kazu_minigame.js'), 'utf8');
-for (const itemId of ['arcanaMagic', 'arcanaGale', 'arcanaGuard', 'arcanaLuck', 'arcanaDext']) {
+for (const itemId of ['rebirthArcana', 'arcanaMagic', 'arcanaGale', 'arcanaGuard', 'arcanaLuck', 'arcanaDext']) {
   if (!rhythm.includes(`itemId: '${itemId}'`)) throw new Error(`${itemId} S-rank reward is missing`);
 }
 if (!rhythm.includes("accuracy >= 95 ? 'S'")) throw new Error('S-E rank thresholds are missing');
 if (!rhythm.includes('kazuRhythmSRewards')) throw new Error('first-clear S reward guard is missing');
+if (!rhythm.includes("S_REWARDS[this.track.scoreId || this.track.id]")) throw new Error('default-track S reward lookup is missing');
 
 console.log('secret music score regression: ok');

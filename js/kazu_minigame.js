@@ -8,6 +8,7 @@
   const COLORS = ['#3ba9ff', '#a46bff', '#f3f7ff', '#ff557c', '#ffd15a'];
   const KEY_LABELS = ['A', 'S', 'D', 'F', 'G'];
   const S_REWARDS = {
+    reijishinshoku: { itemId: 'rebirthArcana', name: '輪廻のアルカナ', stat: '転生' },
     cadenzaLoot: { itemId: 'arcanaMagic', name: '魔導のアルカナ', stat: '魔力' },
     rhythm: { itemId: 'arcanaGale', name: '疾風のアルカナ', stat: '素早さ' },
     reprise: { itemId: 'arcanaGuard', name: '堅牢のアルカナ', stat: '体力' },
@@ -416,7 +417,7 @@
       const rankOrder = ['E', 'D', 'C', 'B', 'A', 'S'];
       const previousRank = flags.kazuRhythmBestRanks[this.track.id] || 'E';
       if (rankOrder.indexOf(rank) > rankOrder.indexOf(previousRank)) flags.kazuRhythmBestRanks[this.track.id] = rank;
-      const reward = S_REWARDS[this.track.scoreId];
+      const reward = S_REWARDS[this.track.scoreId || this.track.id];
       flags.kazuRhythmSRewards ||= {};
       let firstSReward = null;
       if (rank === 'S' && reward && !flags.kazuRhythmSRewards[this.track.id]) {
@@ -427,7 +428,8 @@
       }
       this.game.saveProfile();
       this.cover.hidden = false;
-      this.setCover(`<div class="kazu-rhythm-card"><small>PERFORMANCE COMPLETE</small><h2 class="kazu-rhythm-rank rank-${rank.toLowerCase()}">${rank}<em>${rank === 'S' ? 'PHANTOM PERFECT' : rank === 'A' ? 'BRILLIANT STEAL' : 'PERFORMANCE RANK'}</em></h2><div class="kazu-rhythm-results"><div><small>SCORE</small><strong>${String(this.score).padStart(7, '0')}</strong></div><div><small>ACCURACY</small><strong>${accuracy.toFixed(1)}%</strong></div><div><small>MAX COMBO</small><strong>${this.maxCombo}</strong></div><div><small>PERFECT</small><strong>${this.counts.perfect}</strong></div></div>${firstSReward ? `<div class="kazu-rhythm-s-reward"><small>FIRST S RANK REWARD</small><strong>${firstSReward.name} ×5</strong><span>使用すると《${firstSReward.stat}》が1個につき永久に+1</span></div>` : rank === 'S' && reward ? `<div class="kazu-rhythm-s-reward claimed"><small>S RANK CLEARED</small><strong>初回報酬は獲得済み</strong></div>` : ''}<button type="button" data-rhythm-action="start">REPLAY</button><button type="button" class="secondary" data-rhythm-action="exit">拠点へ戻る</button></div>`);
+      const rewardEffect = firstSReward?.itemId === 'rebirthArcana' ? 'JOB Lv20以降の転生時に1個消費' : firstSReward ? `使用すると《${firstSReward.stat}》が1個につき永久に+1` : '';
+      this.setCover(`<div class="kazu-rhythm-card"><small>PERFORMANCE COMPLETE</small><h2 class="kazu-rhythm-rank rank-${rank.toLowerCase()}">${rank}<em>${rank === 'S' ? 'PHANTOM PERFECT' : rank === 'A' ? 'BRILLIANT STEAL' : 'PERFORMANCE RANK'}</em></h2><div class="kazu-rhythm-results"><div><small>SCORE</small><strong>${String(this.score).padStart(7, '0')}</strong></div><div><small>ACCURACY</small><strong>${accuracy.toFixed(1)}%</strong></div><div><small>MAX COMBO</small><strong>${this.maxCombo}</strong></div><div><small>PERFECT</small><strong>${this.counts.perfect}</strong></div></div>${firstSReward ? `<div class="kazu-rhythm-s-reward"><small>FIRST S RANK REWARD</small><strong>${firstSReward.name} ×5</strong><span>${rewardEffect}</span></div>` : rank === 'S' && reward ? `<div class="kazu-rhythm-s-reward claimed"><small>S RANK CLEARED</small><strong>初回報酬は獲得済み</strong></div>` : ''}<button type="button" data-rhythm-action="start">REPLAY</button><button type="button" class="secondary" data-rhythm-action="exit">拠点へ戻る</button></div>`);
     }
 
     // pointerdown で閉じると、その直後の click が下の拠点へ抜けてしまい、
