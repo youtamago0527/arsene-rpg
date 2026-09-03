@@ -24,5 +24,6 @@ for (const itemId of ['rebirthArcana', 'arcanaMagic', 'arcanaGale', 'arcanaGuard
 if (!rhythm.includes("accuracy >= 95 ? 'S'")) throw new Error('S-E rank thresholds are missing');
 if (!rhythm.includes('kazuRhythmSRewards')) throw new Error('first-clear S reward guard is missing');
 if (!rhythm.includes("S_REWARDS[this.track.scoreId || this.track.id]")) throw new Error('default-track S reward lookup is missing');
+if (!rhythm.includes("itemId: 'rebirthArcana', name: '輪廻のアルカナ', stat: '転生', count: 1")) throw new Error('opening S reward must be exactly one Rebirth Arcana');
 
 console.log('secret music score regression: ok');
