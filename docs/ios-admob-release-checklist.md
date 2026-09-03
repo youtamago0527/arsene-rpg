@@ -2,10 +2,10 @@
 
 ## 現在の状態
 
-この準備ブランチではGoogle公式デモIDを維持しています。実機テストは安全にできますが、このまま本番審査へ提出しません。
+この準備ブランチではRewarded広告ユニットを本番IDへ差し替え済みです。iOS App IDはGoogle公式デモ値のままなので、このまま本番審査へ提出しません。
 
 - App ID: `ca-app-pub-3940256099942544~1458002511`
-- Rewarded ad unit: `ca-app-pub-3940256099942544/1712485313`
+- Rewarded ad unit: `ca-app-pub-2798969445522147/5643677056`
 - 広告形式: リワードのみ
 - ランキング機能: 今回のリリースには含めない
 
@@ -20,7 +20,7 @@
 
 ## 本番ID差し替え
 
-AdMob管理画面からiOS App IDとRewarded Ad Unit IDを取得する。差し替え先は `ios/App/App/Info.plist` の `GADApplicationIdentifier` と `js/admob.js` の `IOS_REWARDED_AD_ID`。
+AdMob管理画面からiOS App ID（`~`区切り）を取得する。差し替え先は `ios/App/App/Info.plist` の `GADApplicationIdentifier`。Rewarded Ad Unit ID（`/`区切り）は `js/admob.js` の `IOS_REWARDED_AD_ID` へ設定済み。
 
 差し替え後に `pnpm verify:ios-release` を実行し、デモIDが1つも残っていないことを確認する。本番広告の実機確認はAdMobへテスト端末登録した端末だけで行い、端末IDをソースへ保存しない。
 

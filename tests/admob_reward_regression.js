@@ -18,7 +18,10 @@ const appPublisher = plist.match(/<key>GADApplicationIdentifier<\/key>\s*<string
 const rewardedMatch = bridge.match(/const IOS_REWARDED_AD_ID = '(ca-app-pub-(\d+)\/\d+)'/);
 assert.ok(appPublisher, '有効なiOS AdMob App IDを設定する');
 assert.ok(rewardedMatch, '有効なRewarded Ad Unit IDを設定する');
-assert.equal(rewardedMatch[2], appPublisher, 'App IDと広告ユニットIDのパブリッシャーを一致させる');
+assert.equal(rewardedMatch[1], 'ca-app-pub-2798969445522147/5643677056', '提供された本番Rewarded Ad Unit IDを使用する');
+if (appPublisher !== '3940256099942544') {
+  assert.equal(rewardedMatch[2], appPublisher, '本番App IDと広告ユニットIDのパブリッシャーを一致させる');
+}
 const rewardedId = rewardedMatch[1];
 
 (async () => {

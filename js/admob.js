@@ -1,6 +1,6 @@
 /* iOS AdMob bridge. Browser builds never call the native plugin. */
 (function () {
-  const IOS_REWARDED_AD_ID = 'ca-app-pub-3940256099942544/1712485313';
+  const IOS_REWARDED_AD_ID = 'ca-app-pub-2798969445522147/5643677056';
   const events = {
     rewarded: 'onRewardedVideoAdReward',
     dismissed: 'onRewardedVideoAdDismissed',
