@@ -380,6 +380,15 @@
           profile.flags.dungeon5Clear = true;
           profile.flags.ostinaFirstClearRewardClaimed = true;
         }
+        // 上限解放時はいったん全JOBのMASTERを解除する。旧セーブにも各段階を一度だけ適用し、
+        // 新しい上限へすでに到達済みのJOBだけ、その場でMASTERへ再認定する。
+        if (d3Cleared && !profile.flags.jobMasterReset40Applied) { profile.jobMastered = []; profile.flags.jobMasterReset40Applied = true; }
+        if (d5Cleared && !profile.flags.jobMasterReset70Applied) { profile.jobMastered = []; profile.flags.jobMasterReset70Applied = true; }
+        const currentMasterLevel = d5Cleared ? (D.jobLevelCapFinal || 70) : d3Cleared ? (D.jobLevelCapExtended || 40) : (D.jobLevelCap || 20);
+        for (const [id, progress] of Object.entries(profile.jobs || {})) {
+          if (!D.jobs[id] || this.isNoGrowthJob(id) || D.jobs[id].noGrowth || (progress?.level || 1) < currentMasterLevel) continue;
+          if (!profile.jobMastered.includes(id)) profile.jobMastered.push(id);
+        }
         profile.unlockedJobs = [...new Set(profile.unlockedJobs || [])].filter(id => (id !== 'magicKnight' || d1Cleared) && (id !== 'dualBlade' || d2Cleared) && (id !== 'guardian' || d3Cleared));
         if (d1Cleared && !profile.unlockedJobs.includes('magicKnight')) profile.unlockedJobs.push('magicKnight');
         if (d2Cleared && !profile.unlockedJobs.includes('dualBlade')) profile.unlockedJobs.push('dualBlade');
@@ -406,13 +415,6 @@
         if (futureJobs.has(profile.currentJob)) profile.currentJob = profile.initialJob && !futureJobs.has(profile.initialJob) ? profile.initialJob : 'mage';
         // DEV TOOLSで予約データを試したセーブを通常画面へ戻しても、名称や技が漏れないようにする。
         profile.jobMastered = (profile.jobMastered || []).filter(id => !futureJobs.has(id));
-        // JOB MASTERは育成上限ではなく従来通りLv20。D3後に上限が40へ伸びても
-        // MASTER/PHANTOM STEAL済み状態を失わないよう、旧セーブも到達Lvから復元する。
-        const jobMasterLevel = D.jobLevelCap || 20;
-        for (const [id, progress] of Object.entries(profile.jobs || {})) {
-          if (!D.jobs[id] || this.isNoGrowthJob(id) || D.jobs[id].noGrowth || (progress?.level || 1) < jobMasterLevel) continue;
-          if (!profile.jobMastered.includes(id)) profile.jobMastered.push(id);
-        }
         for (const key of ['learnedJobSkills', 'learnedWeaponSkills', 'learnedPassives', 'activeSkills', 'equippedPassives', 'ptActionSlots', 'ptPassiveSlots']) {
           if (!Array.isArray(profile[key])) continue;
           const slots = key === 'equippedPassives' || key.endsWith('Slots');
@@ -1205,10 +1207,11 @@
       for (const [key, value] of Object.entries(growth)) record[key] = Math.max(Number(record[key]) || 0, Number(value) || 0);
     }
     rebirthUnlocked() { return !!this.profile.flags.rebirthUnlocked; }
-    // セリペス撃破で解放される限界突破帯（Lv20〜40）。転生の可否は従来通り
+    // D3でLv40、D5でLv70へ段階解放。転生の可否は従来通り
     // jobLevelCap(20)基準のcanRebirthが見るため、ここを変えても転生条件には影響しない。
     jobLevelCapUnlocked() { return !!this.profile.flags.jobLevelCapUnlocked; }
-    effectiveJobLevelCap() { return this.jobLevelCapUnlocked() ? (D.jobLevelCapExtended || 40) : (D.jobLevelCap || 20); }
+    effectiveJobLevelCap() { return this.isBossDefeated('ostina') || this.profile.flags.dungeon5Clear ? (D.jobLevelCapFinal || 70) : this.jobLevelCapUnlocked() ? (D.jobLevelCapExtended || 40) : (D.jobLevelCap || 20); }
+    resetJobMasteryForCap(flag) { if (this.profile.flags[flag]) return false; this.profile.jobMastered = []; this.profile.flags[flag] = true; return true; }
     canRebirth(jobId) {
       const lv = this.profile.jobs?.[jobId]?.level || 1, cap = D.jobLevelCap || 20;
       if (!this.rebirthUnlocked()) return { ok: false, reason: '転生はまだ解放されていません。' };
@@ -1264,6 +1267,7 @@
       const first = !this.profile.flags.seripesFirstClearRewardClaimed, jobUnlocked = this.unlockJob('guardian');
       this.profile.flags.guardianUnlocked = true; this.profile.flags.shieldUnlocked = true;
       this.profile.flags.jobLevelCapUnlocked = true;
+      this.resetJobMasteryForCap('jobMasterReset40Applied');
       if (first) { this.profile.flags.seripesFirstClearRewardClaimed = true; this.profile.inventory.guardianProof = (this.profile.inventory.guardianProof || 0) + 1; this.profile.inventory.guardianAegis = (this.profile.inventory.guardianAegis || 0) + 1; this.recordEquipmentDiscovery(['guardianAegis']); }
       this.saveProfile(); return { first, jobUnlocked, job: D.jobs.guardian, weaponType: this.weaponTypeDef('shield'), weapon: D.items.guardianAegis };
     }
@@ -1672,7 +1676,7 @@
       }); return result;
     }
     isBossDefeated(id) { return !!(this.profile.bossDefeated?.[id] || (id === 'zenacad' && this.profile.flags.zenakadoDefeated)); }
-    markBossDefeated(id) { this.profile.bossDefeated ||= {}; this.profile.bossDefeated[id] = true; if (id === 'zenacad') this.profile.flags.zenakadoDefeated = true; }
+    markBossDefeated(id) { const first = !this.isBossDefeated(id); this.profile.bossDefeated ||= {}; this.profile.bossDefeated[id] = true; if (id === 'zenacad') this.profile.flags.zenakadoDefeated = true; if (first && id === 'ostina') this.resetJobMasteryForCap('jobMasterReset70Applied'); }
     isBossSeriesUnlocked(series) { if (!this.isPlayerContentVisible(series)) return false; const bossId = series?.unlockCondition?.bossDefeated; return !!bossId && this.isBossDefeated(bossId); }
     unlockedBossSeries() { return Object.values(D.bossEquipmentSeries || {}).filter(series => this.isBossSeriesUnlocked(series)); }
     equippedSeriesCount(seriesId, equipment = this.profile.equipment) { return Object.values(equipment).filter(id => id && (D.items[id]?.seriesId === seriesId || this.equipmentDefinition(id)?.seriesId === seriesId)).length; }
@@ -3653,7 +3657,7 @@
       const raw = Math.max(0, amount) / 4 + (progress.expCarry || 0), gained = Math.floor(raw);
       progress.expCarry = raw - gained; progress.exp += gained;
       while (progress.level < cap) { const need = this.jobExpNeeded(progress.level); if (!need || progress.exp < need) break; progress.exp -= need; progress.level++; }
-      const masterLevel = D.jobLevelCap || 20;
+      const masterLevel = cap;
       if (progress.level >= masterLevel) this.markJobMastered(jobId);
       if (progress.level >= cap) { progress.exp = 0; progress.expCarry = 0; }
       const gainedLevels = progress.level - from;
