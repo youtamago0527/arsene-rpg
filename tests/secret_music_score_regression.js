@@ -24,5 +24,6 @@ for (const itemId of ['arcanaMagic', 'arcanaGale', 'arcanaGuard', 'arcanaLuck', 
 }
 if (!rhythm.includes("accuracy >= 95 ? 'S'")) throw new Error('S-E rank thresholds are missing');
 if (!rhythm.includes('kazuRhythmSRewards')) throw new Error('first-clear S reward guard is missing');
+if (!rhythm.includes("!flags.kazuRhythmBestRanks[this.track.id] ||")) throw new Error('first E rank must also be saved');
 
 console.log('secret music score regression: ok');
