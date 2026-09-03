@@ -77,11 +77,13 @@
   const TRACKS = [
     {
       id: 'reijishinshoku', no: '01', title: '零時侵蝕', bpm: 170, length: '4:37',
-      genre: 'OPENING THEME', diff: 'HARD', level: '08', accent: '#fb7185', playable: true
+      genre: 'OPENING THEME', diff: 'HARD', level: '08', accent: '#fb7185', playable: true,
+      audio: '音楽系/OP/零時侵蝕.mp3', subtitle: 'ZERO HOUR INVASION'
     },
     {
-      id: 'neon-labyrinth', no: '02', title: 'Neon Labyrinth', bpm: 172, length: '—',
-      genre: 'CYBER TRANCE', diff: 'EXPERT', level: '12', accent: '#c084fc', playable: false
+      id: 'cadenza-loot', no: '02', title: '絶望の戦利品 -LOOT-', bpm: '—', length: '4:33',
+      genre: 'PHANTOM SCORE', diff: 'EXPERT', level: '10', accent: '#c084fc', playable: true,
+      scoreId: 'cadenzaLoot', audio: '音楽系/隠し音ゲー/絶望の戦利品-LOOT-.mp3', subtitle: 'CADENZA'
     },
     {
       id: 'phantom-overdrive', no: '03', title: 'PHANTOM OVERDRIVE', bpm: 200, length: '—',
@@ -223,24 +225,33 @@
     }
 
     trackHTML(track) {
-      const score = track.playable ? this.highScore() : null;
+      const unlocked = this.isTrackUnlocked(track);
+      const score = unlocked ? this.highScore(track.id) : null;
       return `
-        <button type="button" class="pm-track pm-cut${track.playable ? '' : ' locked'}"
-                data-pm="track" data-track="${track.id}" ${track.playable ? '' : 'disabled'}>
+        <button type="button" class="pm-track pm-cut${unlocked ? '' : ' locked'}"
+                data-pm="track" data-track="${track.id}" ${unlocked ? '' : 'disabled'}>
           <span class="pm-track-no" style="color:${track.accent};background:${tint(track.accent, '26')};border:1px solid ${tint(track.accent, '80')}">${esc(track.no)}</span>
           <span class="pm-track-main">
             <small>BPM ${track.bpm} / ${esc(track.genre)}${track.length !== '—' ? ` / ${track.length}` : ''}</small>
             <b>${esc(track.title)}</b>
             <span class="pm-track-diff" style="color:${track.accent};border:1px solid ${track.accent};background:${tint(track.accent, '1a')}">${esc(track.diff)} ${esc(track.level)}</span>
           </span>
-          <span class="pm-track-score">${track.playable
+          <span class="pm-track-score">${unlocked
             ? `HIGH SCORE<b style="color:${track.accent}">${score.toLocaleString()}</b>`
-            : `<em>LOCKED</em><b style="color:${track.accent}">COMING SOON</b>`}</span>
+            : `<em>LOCKED</em><b style="color:${track.accent}">${track.scoreId ? 'SCORE REQUIRED' : 'COMING SOON'}</b>`}</span>
         </button>`;
     }
 
-    // 音ゲー側が保存しているハイスコアをそのまま出す。
-    highScore() { return Number(window.arseneGame?.profile?.flags?.kazuRhythmHighScore || 0); }
+    isTrackUnlocked(track) {
+      if (!track?.playable) return false;
+      return !track.scoreId || !!window.arseneGame?.profile?.musicScores?.[track.scoreId];
+    }
+
+    // 曲ごとのハイスコア。旧セーブの零時侵蝕スコアもそのまま引き継ぐ。
+    highScore(id = 'reijishinshoku') {
+      const flags = window.arseneGame?.profile?.flags || {};
+      return Number(flags.kazuRhythmHighScores?.[id] || (id === 'reijishinshoku' ? flags.kazuRhythmHighScore : 0) || 0);
+    }
 
     premium() {
       const g = window.arseneGame;
@@ -347,6 +358,7 @@
     play() {
       this.popup.hidden = true;
       this.arcade.hidden = false;
+      this.arcade.querySelector('.pm-track-list').innerHTML = TRACKS.map(track => this.trackHTML(track)).join('');
       this.arcade.querySelector('.pm-track-list').scrollTop = 0;
       this.refreshScores();
       window.arseneGame?.audio?.sfx?.('ui');
@@ -354,16 +366,18 @@
 
     // 選曲画面を開くたびにハイスコアを引き直す。
     refreshScores() {
-      const el = this.arcade.querySelector('.pm-track[data-track="reijishinshoku"] .pm-track-score b');
-      if (el) el.textContent = this.highScore().toLocaleString();
+      TRACKS.forEach(track => {
+        const el = this.arcade.querySelector(`.pm-track[data-track="${track.id}"] .pm-track-score b`);
+        if (el && this.isTrackUnlocked(track)) el.textContent = this.highScore(track.id).toLocaleString();
+      });
     }
 
     playTrack(id) {
       const track = TRACKS.find(t => t.id === id);
-      if (!track?.playable) return;
+      if (!this.isTrackUnlocked(track)) return;
       this.close();
       const rhythm = window.kazuRhythmGame;
-      if (rhythm?.open) rhythm.open();
+      if (rhythm?.open) rhythm.open(track);
       else this.toast(track.title, '読み込みに失敗しました');
     }
 
