@@ -1,11 +1,11 @@
-// ARSÈNE RPG / 無限奏廊 - INFINITE SCORE (DEBUG)
+// ARSÈNE RPG / 無限奏廊 - INFINITE SCORE
 (() => {
   'use strict';
   const D = window.ARSENE_DATA;
   if (!D) return;
 
   D.infiniteScore = {
-    id: 'infiniteScore', name: '無限奏廊', nameEn: 'INFINITE SCORE', debugOnly: true,
+    id: 'infiniteScore', name: '無限奏廊', nameEn: 'INFINITE SCORE',
     bagLimit: 30, equippedUsesBag: true, maxFloor: 9999,
     mapRows: 8, mapWidth: 3,
     stairBaseRate: 15, stairRateIncrease: 15, stairMaxRate: 100,

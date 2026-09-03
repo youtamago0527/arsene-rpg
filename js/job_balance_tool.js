@@ -97,7 +97,7 @@
     const ids = new Set([basicId]);
     for (const skill of Object.values(D.skills || {})) {
       if (skill.source !== 'weapon' || skill.weaponType !== weaponType || skill.type === 'PASSIVE') continue;
-      // 刀は剣学を共有するが、浪士の検証では刀Spark Familyだけを使用する。
+      // 刀は剣学を共有するが、刀術士の検証では刀Spark Familyだけを使用する。
       if (weaponSubtype && skill.weaponSubtype !== weaponSubtype) continue;
       // 通常JOBが将来予約の刀技を先取りしないようにする。
       if (!weaponSubtype && skill.weaponSubtype) continue;
