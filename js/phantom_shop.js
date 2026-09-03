@@ -86,8 +86,9 @@
       scoreId: 'cadenzaLoot', audio: '音楽系/隠し音ゲー/絶望の戦利品-LOOT-.mp3', subtitle: 'CADENZA'
     },
     {
-      id: 'phantom-overdrive', no: '03', title: 'PHANTOM OVERDRIVE', bpm: 200, length: '—',
-      genre: 'HARDCORE', diff: 'PHANTOM', level: '15', accent: '#22d3ee', playable: false
+      id: 'ostinato-labyrinth', no: '03', title: '月影の迷宮 -Labyrinth-', bpm: '—', length: '4:26',
+      genre: 'PHANTOM SCORE', diff: 'PHANTOM', level: '12', accent: '#22d3ee', playable: true,
+      scoreId: 'ostinato', audio: '音楽系/隠し音ゲー/月影の迷宮-Labyrinth-.mp3', subtitle: 'OSTINATO'
     }
   ];
 
