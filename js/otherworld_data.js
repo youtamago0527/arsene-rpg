@@ -89,6 +89,7 @@
     ai: (D.enemies[srcId] || {}).ai || [{ id: 'attack', name: '歪んだ一撃', kind: 'physical', weight: 1 }]
   });
   const doubleStats = stats => Object.fromEntries(Object.entries(stats).map(([key, value]) => [key, value * 2]));
+  const advancedStats = stats => Object.fromEntries(Object.entries(stats).map(([key, value]) => [key, value * 8]));
   const beginnerStats = {
     slime:  { maxHp: 240, atk: 26, def: 18, mag: 20, mnd: 18, spd: 8 },
     mage:   { maxHp: 225, atk: 20, def: 16, mag: 32, mnd: 22, spd: 12 },
@@ -112,6 +113,13 @@
     ow_mid_bat:    ow('ow_mid_bat',    'hushMoth',      '深歪ハッシュ',   doubleStats(beginnerStats.bat),    'hue-rotate(145deg) saturate(1.8) brightness(1.05)'),
     ow_mid_rat:    ow('ow_mid_rat',    'mutedHound',    '深歪ハウンド',   doubleStats(beginnerStats.rat),    'hue-rotate(320deg) saturate(1.6) contrast(1.1)'),
     ow_mid_bone:   ow('ow_mid_bone',   'silentKnight',  '深歪の静騎士',   doubleStats(beginnerStats.bone),   'hue-rotate(55deg) saturate(1.7) brightness(1.08)'),
+    // 上級：中級の4倍。既存怪異の姿を別の色相へ歪め、編成は毎戦ランダムにする。
+    ow_high_slime:  ow('ow_high_slime',  'reverbSlime',  '極歪リバーブ', advancedStats(beginnerStats.slime),  'hue-rotate(25deg) saturate(2.2) contrast(1.25) brightness(.95)'),
+    ow_high_mage:   ow('ow_high_mage',   'echoWraith',   '極歪の残響霊', advancedStats(beginnerStats.mage),   'hue-rotate(335deg) saturate(2.15) contrast(1.3)'),
+    ow_high_goblin: ow('ow_high_goblin', 'chimeImp',     '極歪チャイム', advancedStats(beginnerStats.goblin), 'hue-rotate(35deg) saturate(2.3) contrast(1.35)'),
+    ow_high_bat:    ow('ow_high_bat',    'hushMoth',     '極歪ハッシュ', advancedStats(beginnerStats.bat),    'hue-rotate(260deg) saturate(2.25) brightness(1.1)'),
+    ow_high_rat:    ow('ow_high_rat',    'mutedHound',   '極歪ハウンド', advancedStats(beginnerStats.rat),    'hue-rotate(75deg) saturate(2.2) contrast(1.28)'),
+    ow_high_bone:   ow('ow_high_bone',   'silentKnight', '極歪の静騎士', advancedStats(beginnerStats.bone),   'hue-rotate(175deg) saturate(2.3) contrast(1.3)'),
     ow_warden: {
       id: 'ow_warden', name: '異界の門番', enName: 'RIFT WARDEN', title: '境界に立つ者',
       dungeonId: 'otherWorld', otherWorld: true, isBoss: true,
@@ -139,6 +147,20 @@
         { id: 'clubSmash', name: '深層断裂', kind: 'physical', weight: .30 },
         { id: 'shadowBolt', name: '深淵の奔流', kind: 'magic', weight: .25 }
       ]
+    },
+    ow_high_warden: {
+      id: 'ow_high_warden', name: '異界の極門番', enName: 'ABYSS RIFT WARDEN', title: '極層境界に立つ者',
+      dungeonId: 'otherWorld', otherWorld: true, isBoss: true,
+      element: '虚', weaknesses: ['光'], resistances: ['闇'],
+      sprite: (D.enemies.d4MidBoss || D.enemies.silenceWarden || {}).sprite || OW_SPRITE,
+      spriteFilter: 'hue-rotate(35deg) saturate(2.35) contrast(1.35) brightness(.95)',
+      battleScale: Math.max(1.4, (D.enemies.d4MidBoss || D.enemies.silenceWarden || {}).battleScale || 1),
+      stats: advancedStats(beginnerStats.boss), exp: 0, gold: { min: 0, max: 0 }, dropTable: [],
+      ai: (D.enemies.d4MidBoss || D.enemies.silenceWarden || {}).ai || [
+        { id: 'attack', name: '極界の一撃', kind: 'physical', weight: .45 },
+        { id: 'clubSmash', name: '極層断裂', kind: 'physical', weight: .30 },
+        { id: 'shadowBolt', name: '深淵の奔流', kind: 'magic', weight: .25 }
+      ]
     }
   });
 
@@ -146,7 +168,8 @@
   // 通常D2相当の刺激値とし、門番は中ボス級。追加敵を作る場合も必ず同時に設定する。
   const otherWorldSparkLevels = {
     ow_slime: 14, ow_mage: 16, ow_goblin: 17, ow_bat: 16, ow_rat: 16, ow_bone: 18, ow_warden: 25,
-    ow_mid_slime: 24, ow_mid_mage: 26, ow_mid_goblin: 27, ow_mid_bat: 26, ow_mid_rat: 26, ow_mid_bone: 28, ow_mid_warden: 35
+    ow_mid_slime: 24, ow_mid_mage: 26, ow_mid_goblin: 27, ow_mid_bat: 26, ow_mid_rat: 26, ow_mid_bone: 28, ow_mid_warden: 35,
+    ow_high_slime: 44, ow_high_mage: 46, ow_high_goblin: 47, ow_high_bat: 46, ow_high_rat: 46, ow_high_bone: 48, ow_high_warden: 55
   };
   Object.entries(otherWorldSparkLevels).forEach(([id, level]) => { if (D.enemies[id]) D.enemies[id].sparkLevel = level; });
   D.enemySparkLevels = { ...(D.enemySparkLevels || {}), ...otherWorldSparkLevels };
@@ -196,6 +219,16 @@
         { minWins: 0, count: [1, 2], pool: [{ id: 'ow_mid_slime', weight: 4 }, { id: 'ow_mid_bat', weight: 3 }, { id: 'ow_mid_rat', weight: 2 }] },
         { minWins: 3, count: [1, 2], pool: [{ id: 'ow_mid_slime', weight: 3 }, { id: 'ow_mid_mage', weight: 3 }, { id: 'ow_mid_rat', weight: 3 }, { id: 'ow_mid_bone', weight: 2 }] },
         { minWins: 6, count: [2, 2], pool: [{ id: 'ow_mid_goblin', weight: 3 }, { id: 'ow_mid_bone', weight: 3 }, { id: 'ow_mid_mage', weight: 2 }, { id: 'ow_mid_bat', weight: 2 }] }
+      ]
+    },
+    {
+      id: 'otherWorldAdvanced', difficulty: 'advanced', name: '曜日ダンジョン・上級', nameEn: 'WEEKLY RIFT // ADVANCED',
+      description: 'D4クリア後に開く極層。色違い怪異がランダムに出現し、能力は中級の4倍。雑魚戦・BOSS戦とも本日のアルカナを4個獲得。',
+      unlockBossId: 'astact', battlesPerRun: 10, bossId: 'ow_high_warden', bossArcanaCount: 4, zakoArcanaCount: 4, arcanaDropCount: 4, itemRewardMultiplier: 4,
+      encounterProgression: [
+        { minWins: 0, count: [1, 2], pool: [{ id: 'ow_high_slime', weight: 1 }, { id: 'ow_high_mage', weight: 1 }, { id: 'ow_high_goblin', weight: 1 }, { id: 'ow_high_bat', weight: 1 }, { id: 'ow_high_rat', weight: 1 }, { id: 'ow_high_bone', weight: 1 }] },
+        { minWins: 3, count: [1, 2], pool: [{ id: 'ow_high_slime', weight: 1 }, { id: 'ow_high_mage', weight: 1 }, { id: 'ow_high_goblin', weight: 1 }, { id: 'ow_high_bat', weight: 1 }, { id: 'ow_high_rat', weight: 1 }, { id: 'ow_high_bone', weight: 1 }] },
+        { minWins: 6, count: [2, 2], pool: [{ id: 'ow_high_slime', weight: 1 }, { id: 'ow_high_mage', weight: 1 }, { id: 'ow_high_goblin', weight: 1 }, { id: 'ow_high_bat', weight: 1 }, { id: 'ow_high_rat', weight: 1 }, { id: 'ow_high_bone', weight: 1 }] }
       ]
     }
   ];
