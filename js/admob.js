@@ -48,6 +48,9 @@
     await initialize();
     try {
       await admob.showPrivacyOptionsForm();
+      const consent = await admob.requestConsentInfo();
+      canRequestAds = consent?.canRequestAds === true;
+      initialization = Promise.resolve(canRequestAds);
       return true;
     } catch (error) {
       console.warn('AdMob privacy options failed.', error);
