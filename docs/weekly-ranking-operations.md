@@ -16,8 +16,10 @@ run nonceは「認証後に潜入を開始した」ことまでは証明しま�
 4. 32byte以上のランダム値を `npx wrangler secret put SESSION_SECRET` で登録します。値をファイルやGitへ保存しません。ローカルだけはgitignored `.dev.vars` を使います。
 5. `APPLE_BUNDLE_ID`、`ALLOWED_ORIGINS`、`GAME_CENTER_LEADERBOARD_ID` を実際の値へ変更します。本番CORSへ `*` を設定しません。
 6. `npx wrangler d1 migrations apply arsene-weekly-ranking --remote`、`npx wrangler deploy --dry-run`、`npx wrangler deploy` の順に実行します。
-7. ゲームデザイナーが仮報酬を承認または差し替え、stagingで締め・受領試験を完了します。
-8. `js/weekly_ranking_config.js` の `apiUrl` を公開WorkerのHTTPS URLへ変更し、最後に `enabled: true` とします。初期状態はURLなし・無効であり、未設定のリリースには入口も通信も発生しません。
+7. `docs/weekly-ranking-reward-input.md` の表を確定し、`reward-rules.template.sql`から新しい番号のmigrationを作ります。仮値やtemplateを本番へ適用しません。
+8. staging D1で報酬を`enabled=0`のまま投入し、締め・受領・再実行・応答消失試験を完了します。承認後の別migrationで有効化し、`REWARDS_CONFIGURED=true`にします。
+9. Workerで`RANKING_ENABLED=true`を設定してstaging APIを確認します。本番では先にWorker gateを開き、ヘルス確認後にクライアントを進めます。
+10. `js/weekly_ranking_config.js` の `apiUrl` を公開WorkerのHTTPS URLへ変更し、最後に `enabled: true` とします。初期状態はURLなし・無効であり、未設定のリリースには入口・認証・通信が発生しません。
 
 CronはUTC日曜15:05（日本時間月曜00:05）です。00:00直後の遅延・再試行を許容し、直前週を締めます。Cron/管理用の公開HTTP endpointは設けていません。
 
@@ -44,6 +46,17 @@ Cronは `npx wrangler dev --test-scheduled` 後、`/cdn-cgi/handler/scheduled?ti
 
 ## 報酬変更、再実行、障害復旧
 
-初期報酬はmigration内の明示的な仮設定です。変更時は新しい `active_from_week` の `reward_rules` を追加し、過去週の規則を上書きしません。締めは `weekly_results` と `reward_grants` の一意制約および `INSERT OR IGNORE` により冪等です。同じ週を再実行しても二重grantは発生しません。
+初期migrationは報酬を一切seedしません。変更時は新しい `active_from_week` の `reward_rules` を追加し、過去週の規則を上書きしません。締めは `weekly_results` と `reward_grants` の一意制約および `INSERT OR IGNORE` により冪等です。同じ週を再実行しても二重grantは発生しません。
 
 障害時はまずWorker logsを確認し、D1をexportしてから修復します。Cron再実行はWranglerローカルscheduled endpoint相当をstagingで確認後、Cloudflare DashboardのCron testまたは一時的な保護済み運用スクリプトから同じscheduled handlerを実行します。公開の管理endpointは追加しません。Worker version障害は `wrangler versions list` で確認して `wrangler rollback <VERSION_ID>`、D1は事前exportから復旧します。受領済みgrantを未受領へ戻す場合は、端末が既に加算済みの可能性があるため `reward_claims` とreceiptの照合なしに `claimed_at` を消さないでください。
+
+## 本番変更・ロールバック順序
+
+1. 現行Worker version ID、D1 schema、`weekly_scores`・`reward_grants`・`reward_claims`をexportし、件数を記録します。
+2. staging専用Worker/D1へmigrationを適用し、VitestとTestFlight E2Eを通します。既存Pages projectや本番D1は操作しません。
+3. 本番D1へmigrationを適用し、schemaと報酬ruleをread-only queryで照合します。gateはfalseのままです。
+4. Workerをdeployし、503 `service_disabled`、CORS拒否、ログを確認します。
+5. 承認済み報酬だけを有効化し、Workerの2つのgateをtrueにします。実機で認証・run開始・RETURN・順位・claim再送を確認します。
+6. 最後にアプリ側URLとgateを有効にしたbuildをTestFlightへ出します。
+
+障害時はアプリgateまたはWorker gateを即時falseにし、書き込みを止めます。コード障害は直前versionへrollbackします。migrationは原則ロールフォワードで修復し、D1 restoreが必要な場合は新DBへ復元してbindingを切替えます。切替前後のclaimをreceipt IDで照合し、重複加算を避けます。

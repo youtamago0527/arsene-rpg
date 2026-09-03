@@ -3,7 +3,13 @@ import { sha256, signToken, verifyGameCenterSignature, verifyToken } from './cry
 
 type Session = { playerId: number; gamePlayerId: string; exp: number };
 type Json = Record<string, unknown>;
-type RuntimeEnv = Env & { SESSION_SECRET: string };
+type RuntimeEnv = Omit<Env, 'RANKING_ENABLED' | 'REWARDS_CONFIGURED' | 'APP_ATTEST_MODE' | 'ALLOWED_ORIGINS'> & {
+  SESSION_SECRET: string;
+  RANKING_ENABLED: string;
+  REWARDS_CONFIGURED: string;
+  APP_ATTEST_MODE: string;
+  ALLOWED_ORIGINS: string;
+};
 
 const json = (body: Json, status = 200, headers: HeadersInit = {}) => Response.json(body, { status, headers });
 const now = () => Date.now();
@@ -12,7 +18,22 @@ const bearer = (request: Request) => request.headers.get('authorization')?.match
 
 async function body(request: Request): Promise<Json> {
   if (Number(request.headers.get('content-length') || 0) > 16384) throw new Error('payload_too_large');
-  const parsed: unknown = await request.json();
+  if (!request.body) throw new Error('invalid_json');
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > 16384) { await reader.cancel(); throw new Error('payload_too_large'); }
+    chunks.push(value);
+  }
+  const joined = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { joined.set(chunk, offset); offset += chunk.byteLength; }
+  let parsed: unknown;
+  try { parsed = JSON.parse(new TextDecoder().decode(joined)); } catch { throw new Error('invalid_json'); }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('invalid_json');
   return parsed as Json;
 }
@@ -30,6 +51,12 @@ async function rateLimit(env: RuntimeEnv, bucket: string, subject: string, limit
   return (row?.request_count || 0) <= limit;
 }
 
+function serviceEnabled(env: RuntimeEnv) {
+  return env.RANKING_ENABLED === 'true' && env.REWARDS_CONFIGURED === 'true' && env.APP_ATTEST_MODE !== 'required' && typeof env.SESSION_SECRET === 'string' && new TextEncoder().encode(env.SESSION_SECRET).byteLength >= 32;
+}
+
+const limited = () => json({ error: 'rate_limited' }, 429, { 'Retry-After': '60' });
+
 function cors(request: Request, env: RuntimeEnv): Record<string, string> {
   const origin = request.headers.get('origin') || '';
   const allowed = env.ALLOWED_ORIGINS.split(',').map(x => x.trim()).filter(Boolean);
@@ -38,7 +65,7 @@ function cors(request: Request, env: RuntimeEnv): Record<string, string> {
 
 async function authenticate(request: Request, env: RuntimeEnv) {
   const ip = request.headers.get('cf-connecting-ip') || 'unknown';
-  if (!await rateLimit(env, 'auth', ip, 10)) return json({ error: 'rate_limited' }, 429);
+  if (!await rateLimit(env, 'auth', ip, 10)) return limited();
   const data = await body(request);
   const playerId = String(data.playerId || ''), timestamp = Number(data.timestamp);
   if (!playerId || !Number.isSafeInteger(timestamp) || Math.abs(now() - timestamp) > 5 * 60_000) return json({ error: 'invalid_or_stale_identity' }, 400);
@@ -57,26 +84,33 @@ async function authenticate(request: Request, env: RuntimeEnv) {
 }
 
 async function startRun(request: Request, env: RuntimeEnv, auth: Session) {
-  if (!await rateLimit(env, 'run', String(auth.playerId), 20)) return json({ error: 'rate_limited' }, 429);
+  if (!await rateLimit(env, 'run', String(auth.playerId), 20)) return limited();
   if (String(env.APP_ATTEST_MODE) === 'required' && !request.headers.get('x-app-attest')) return json({ error: 'app_attest_required' }, 403);
   const week = weekAt(now()), nonce = crypto.randomUUID();
-  await env.DB.prepare('INSERT INTO run_nonces(nonce,player_id,week_id,started_at,expires_at,attest_key_id) VALUES(?,?,?,?,?,?)')
+  await env.DB.prepare('INSERT INTO run_nonces(nonce,player_id,week_id,started_at,expires_at,app_attest_key_hint) VALUES(?,?,?,?,?,?)')
     .bind(nonce, auth.playerId, week.id, now(), week.endMs + 15 * 60_000, request.headers.get('x-app-attest')).run();
   return json({ runNonce: nonce, week });
 }
 
 async function submitScore(request: Request, env: RuntimeEnv, auth: Session) {
-  if (!await rateLimit(env, 'score', String(auth.playerId), 30)) return json({ error: 'rate_limited' }, 429);
+  if (!await rateLimit(env, 'score', String(auth.playerId), 30)) return limited();
   const data = await body(request), floor = Number(data.floor), nonce = String(data.runNonce || ''), current = weekAt(now());
   if (!Number.isSafeInteger(floor) || floor < 1 || floor > 1_000_000 || !nonce) return json({ error: 'invalid_score' }, 400);
-  const run = await env.DB.prepare('SELECT week_id,claimed_at,expires_at FROM run_nonces WHERE nonce=? AND player_id=?').bind(nonce, auth.playerId).first<{ week_id: string; claimed_at: number | null; expires_at: number }>();
-  if (!run || run.claimed_at || run.expires_at < now() || run.week_id !== current.id) return json({ error: 'invalid_run_proof' }, 409);
-  await env.DB.batch([
-    env.DB.prepare('UPDATE run_nonces SET claimed_at=? WHERE nonce=? AND claimed_at IS NULL').bind(now(), nonce),
-    env.DB.prepare(`INSERT INTO weekly_scores(week_id,player_id,max_floor,achieved_at,run_nonce,proof_version) VALUES(?,?,?,?,?,1)
+  const prior = await env.DB.prepare('SELECT max_floor FROM weekly_scores WHERE run_nonce=? AND player_id=?').bind(nonce, auth.playerId).first<{ max_floor: number }>();
+  if (prior) return json({ accepted: true, replayed: true, bestFloor: prior.max_floor, week: current, leaderboardId: env.GAME_CENTER_LEADERBOARD_ID });
+  const consumedAt = now(), submissionId = crypto.randomUUID();
+  const results = await env.DB.batch([
+    env.DB.prepare('UPDATE run_nonces SET claimed_at=?,submission_id=? WHERE nonce=? AND player_id=? AND claimed_at IS NULL AND expires_at>=? AND week_id=?').bind(consumedAt, submissionId, nonce, auth.playerId, consumedAt, current.id),
+    env.DB.prepare(`INSERT INTO weekly_scores(week_id,player_id,max_floor,achieved_at,run_nonce,proof_version)
+      SELECT ?,?,?,?,r.nonce,1 FROM run_nonces r WHERE r.nonce=? AND r.player_id=? AND r.submission_id=?
       ON CONFLICT(week_id,player_id) DO UPDATE SET max_floor=excluded.max_floor,achieved_at=excluded.achieved_at,run_nonce=excluded.run_nonce
-      WHERE excluded.max_floor>weekly_scores.max_floor`).bind(current.id, auth.playerId, floor, now(), nonce)
+      WHERE excluded.max_floor>weekly_scores.max_floor`).bind(current.id, auth.playerId, floor, consumedAt, nonce, auth.playerId, submissionId)
   ]);
+  if ((results[0].meta.changes || 0) !== 1) {
+    const replay = await env.DB.prepare('SELECT max_floor FROM weekly_scores WHERE run_nonce=? AND player_id=?').bind(nonce, auth.playerId).first<{ max_floor: number }>();
+    if (replay) return json({ accepted: true, replayed: true, bestFloor: replay.max_floor, week: current, leaderboardId: env.GAME_CENTER_LEADERBOARD_ID });
+    return json({ error: 'invalid_run_proof' }, 409);
+  }
   const score = await env.DB.prepare('SELECT max_floor FROM weekly_scores WHERE week_id=? AND player_id=?').bind(current.id, auth.playerId).first<{ max_floor: number }>();
   return json({ accepted: true, bestFloor: score?.max_floor || floor, week: current, leaderboardId: env.GAME_CENTER_LEADERBOARD_ID });
 }
@@ -96,10 +130,11 @@ async function gifts(env: RuntimeEnv, auth: Session) {
 }
 
 async function claim(request: Request, env: RuntimeEnv, auth: Session) {
+  if (!await rateLimit(env, 'claim', String(auth.playerId), 20)) return limited();
   const data = await body(request), grantId = String(data.grantId || ''), claimId = String(data.claimId || '');
   if (!grantId || !/^[0-9a-f-]{36}$/i.test(claimId)) return json({ error: 'invalid_claim' }, 400);
-  const existing = await env.DB.prepare('SELECT receipt FROM reward_claims WHERE claim_id=? AND player_id=?').bind(claimId, auth.playerId).first<{ receipt: string }>();
-  if (existing) return json({ claimed: true, receipt: JSON.parse(existing.receipt) });
+  const existing = await env.DB.prepare('SELECT grant_id,receipt FROM reward_claims WHERE claim_id=? AND player_id=?').bind(claimId, auth.playerId).first<{ grant_id: string; receipt: string }>();
+  if (existing) return existing.grant_id === grantId ? json({ claimed: true, replayed: true, receipt: JSON.parse(existing.receipt) }) : json({ error: 'claim_id_conflict' }, 409);
   const grant = await env.DB.prepare('SELECT id,item_id itemId,quantity,label,claimed_at claimedAt,claim_receipt claimReceipt FROM reward_grants WHERE id=? AND player_id=?').bind(grantId, auth.playerId).first<{ id: string; itemId: string; quantity: number; label: string; claimedAt: number | null; claimReceipt: string | null }>();
   if (!grant) return json({ error: 'grant_not_found' }, 404);
   if (grant.claimedAt && grant.claimReceipt) return json({ claimed: true, receipt: JSON.parse(grant.claimReceipt) });
@@ -144,10 +179,12 @@ export default {
   async fetch(request, env) {
     const headers = cors(request, env);
     if (request.method === 'OPTIONS') return Object.keys(headers).length ? new Response(null, { status: 204, headers }) : json({ error: 'origin_not_allowed' }, 403);
-    try { const response = await route(request, env); for (const [key, value] of Object.entries(headers)) response.headers.set(key, value); response.headers.set('Cache-Control', 'no-store'); return response; }
+    if (!serviceEnabled(env)) return json({ error: 'service_disabled' }, 503, { ...headers, 'Cache-Control': 'no-store' });
+    try { const response = await route(request, env); for (const [key, value] of Object.entries(headers)) response.headers.set(key, value); response.headers.set('Cache-Control', 'no-store'); response.headers.set('X-Content-Type-Options', 'nosniff'); return response; }
     catch (error) { console.error(JSON.stringify({ message: 'request_failed', path: new URL(request.url).pathname, error: error instanceof Error ? error.message : String(error) })); return json({ error: 'internal_error' }, 500, headers); }
   },
   async scheduled(controller, env, ctx) {
+    if (!serviceEnabled(env)) { console.log(JSON.stringify({ message: 'weekly_finalize_skipped', reason: 'service_disabled' })); return; }
     ctx.waitUntil((async () => {
       const result = await finalizeWeek(env, controller.scheduledTime);
       await env.DB.batch([

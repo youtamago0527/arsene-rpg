@@ -9,12 +9,14 @@
     "APPLE_BUNDLE_ID": "com.arsene.remix",
     "GAME_CENTER_LEADERBOARD_ID": "com.arsene.remix.infinite.weekly.floor",
     "ALLOWED_ORIGINS": "https://localhost,capacitor://localhost",
-    "APP_ATTEST_MODE": "optional"
+    "APP_ATTEST_MODE": "optional",
+    "RANKING_ENABLED": "false",
+    "REWARDS_CONFIGURED": "false"
   },
   "d1_databases": [{
     "binding": "DB",
     "database_name": "arsene-weekly-ranking",
-    "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+    "database_id": "00000000-0000-0000-0000-000000000000",
     "migrations_dir": "migrations"
   }],
   "triggers": { "crons": ["5 15 * * 0"] },

@@ -13,10 +13,18 @@ assert.match(client, /CONFIG\.enabled === true.*https:/s, '有効化とHTTPS API
 assert.match(client, /lastResult === 'return'.*submitReturn/s, '正常帰還後だけ送信する');
 assert.match(client, /weeklyRunNonce/, 'サーバー発行run nonceを接続する');
 assert.match(client, /PENDING_KEY.*flushPending/s, '圏外時の送信保留を持つ');
+assert.match(client, /CLAIMS_KEY.*flushClaims/s, '受領応答消失時も同じclaim IDで再送する');
+assert.match(client, /addEventListener\('online'.*flushPending.*flushClaims/s, 'オンライン復帰時にscoreとclaimを再送する');
 assert.match(client, /RECEIPTS_KEY.*includes\(receipt\.receiptId\)/s, 'receipt単位で二重加算を防ぐ');
 assert.match(client, /weeklyRewardReceipts\.push\(receipt\.receiptId\)[\s\S]*game\.saveProfile\(\)/, '所持品加算とreceipt適用記録を同じsaveへ保存する');
 assert.match(migration, /PRIMARY KEY \(week_id, player_id\)/, '週・playerのスコアを一意にする');
 assert.match(migration, /UNIQUE\(week_id, player_id, reward_key\)/, '報酬grantを冪等にする');
+assert.doesNotMatch(migration, /INSERT INTO reward_rules/, '未確定報酬を初期migrationへseedしない');
+assert.match(migration, /enabled INTEGER NOT NULL DEFAULT 0/, '報酬ルールは安全側で無効にする');
+const worker = fs.readFileSync('services/weekly-ranking/src/index.ts', 'utf8');
+assert.match(worker, /RANKING_ENABLED === 'true'.*REWARDS_CONFIGURED === 'true'.*SESSION_SECRET/s, 'Worker側も全設定が揃うまで無効にする');
+assert.match(worker, /APP_ATTEST_MODE !== 'required'/, 'server assertion検証前はApp Attest requiredで起動させない');
+assert.match(worker, /submission_id.*claimed_at IS NULL/s, 'run nonceを原子的に一度だけ消費する');
 assert.match(infinite, /lastResult:'defeat'/, '死亡状態との区別を維持する');
 assert(html.includes('js/weekly_ranking.js'), 'ランキングクライアントをbundleへ含める');
 assert(html.indexOf('weekly_ranking_config.js') < html.indexOf('weekly_ranking.js'), '設定をクライアントより先に読み込む');

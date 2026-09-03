@@ -21,7 +21,8 @@ CREATE TABLE run_nonces (
   started_at INTEGER NOT NULL,
   expires_at INTEGER NOT NULL,
   claimed_at INTEGER,
-  attest_key_id TEXT
+  submission_id TEXT UNIQUE,
+  app_attest_key_hint TEXT
 );
 
 CREATE TABLE weekly_scores (
@@ -53,7 +54,7 @@ CREATE TABLE reward_rules (
   item_id TEXT NOT NULL,
   quantity INTEGER NOT NULL CHECK(quantity > 0),
   label TEXT NOT NULL,
-  enabled INTEGER NOT NULL DEFAULT 1,
+  enabled INTEGER NOT NULL DEFAULT 0 CHECK(enabled IN (0,1)),
   UNIQUE(active_from_week, reward_key)
 );
 
@@ -93,9 +94,5 @@ CREATE INDEX idx_grants_player_unclaimed ON reward_grants(player_id, claimed_at,
 CREATE INDEX idx_nonces_player_week ON run_nonces(player_id, week_id, claimed_at);
 CREATE INDEX idx_replays_expiry ON auth_replays(expires_at);
 
--- 仮報酬。active_from_week と内容をDBで差し替えればアプリ更新は不要。
-INSERT INTO reward_rules(active_from_week,min_rank,max_rank,reward_key,item_id,quantity,label) VALUES
-('2026-08-31',1,1,'weekly-first','rebirthArcana',3,'週間1位報酬（仮）'),
-('2026-08-31',2,3,'weekly-top3','rebirthArcana',2,'週間TOP3報酬（仮）'),
-('2026-08-31',4,10,'weekly-top10','protectionArcana',3,'週間TOP10報酬（仮）'),
-('2026-08-31',11,100,'weekly-top100','protectionArcana',1,'週間TOP100報酬（仮）');
+-- Reward rules are intentionally not seeded. Production enablement requires a
+-- separately reviewed reward migration and REWARDS_CONFIGURED=true.

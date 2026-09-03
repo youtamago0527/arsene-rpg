@@ -3,20 +3,25 @@
   const CONFIG = window.ARSENE_WEEKLY_RANKING_CONFIG || {};
   const API_URL = String(CONFIG.apiUrl || '').replace(/\/$/, '');
   const ENABLED = CONFIG.enabled === true && /^https:\/\//.test(API_URL);
-  const TOKEN_KEY = 'arsene.weeklyRanking.token.v1', PENDING_KEY = 'arsene.weeklyRanking.pending.v1', RECEIPTS_KEY = 'arsene.weeklyRanking.receipts.v1';
+  const TOKEN_KEY = 'arsene.weeklyRanking.token.v1', PENDING_KEY = 'arsene.weeklyRanking.pending.v1', CLAIMS_KEY = 'arsene.weeklyRanking.claims.v1', RECEIPTS_KEY = 'arsene.weeklyRanking.receipts.v1';
   const isIOS = () => !!(ENABLED && window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === 'ios');
   const plugin = () => isIOS() && window.Capacitor?.Plugins?.ArseneGameCenter;
   const read = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch { return fallback; } };
   const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-  const state = { token: sessionStorage.getItem(TOKEN_KEY) || '', status: '', last: null };
+  const state = { token: sessionStorage.getItem(TOKEN_KEY) || '', status: '', last: null, authPromise: null };
+
+  async function ensureAuthenticated() {
+    if (!state.authPromise) state.authPromise = authenticate().finally(() => { state.authPromise = null; });
+    return state.authPromise;
+  }
 
   async function request(path, options = {}, retryAuth = true) {
-    if (!state.token && path !== '/v1/auth/game-center') await authenticate();
+    if (!state.token && path !== '/v1/auth/game-center') await ensureAuthenticated();
     const response = await fetch(`${API_URL}${path}`, { ...options, headers: { 'Content-Type': 'application/json', ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}), ...(options.headers || {}) } });
-    if (response.status === 401 && retryAuth) { state.token = ''; sessionStorage.removeItem(TOKEN_KEY); await authenticate(); return request(path, options, false); }
+    if (response.status === 401 && retryAuth) { state.token = ''; sessionStorage.removeItem(TOKEN_KEY); await ensureAuthenticated(); return request(path, options, false); }
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) { const error = new Error(data.error || `HTTP ${response.status}`); error.status = response.status; error.code = data.error; throw error; }
+    if (!response.ok) { const error = new Error(data.error || `HTTP ${response.status}`); error.status = response.status; error.code = data.error; error.retryAfter = Number(response.headers.get('Retry-After') || 0); throw error; }
     return data;
   }
 
@@ -35,13 +40,13 @@
     try {
       const attest = await plugin()?.appAttestStatus?.().catch(() => null);
       const data = await request('/v1/runs/start', { method: 'POST', body: '{}', headers: attest?.keyId ? { 'X-App-Attest': attest.keyId } : {} });
-      const run = game.isRun?.(); if (run?.active) { run.weeklyRunNonce = data.runNonce; run.weeklyEligible = true; game.saveProfile(); }
+      const run = game.isRun?.(); if (run?.active) { run.weeklyRunNonce = data.runNonce; run.weeklyRunExpiresAt = data.week?.endMs; run.weeklyEligible = true; game.saveProfile(); }
     } catch (error) { state.status = `ランキング保留：${error.message}`; }
   }
 
-  async function submitReturn(floor, runNonce) {
+  async function submitReturn(floor, runNonce, expiresAt) {
     if (!runNonce) return;
-    const pending = read(PENDING_KEY, []), record = { floor, runNonce, queuedAt: Date.now() };
+    const pending = read(PENDING_KEY, []), record = { floor, runNonce, expiresAt: Number(expiresAt || 0), queuedAt: Date.now(), attempts: 0 };
     if (!pending.some(x => x.runNonce === runNonce)) { pending.push(record); write(PENDING_KEY, pending); }
     await flushPending();
   }
@@ -49,8 +54,9 @@
   async function flushPending() {
     const pending = read(PENDING_KEY, []), keep = [];
     for (const score of pending) {
-      try { const data = await request('/v1/scores', { method: 'POST', body: JSON.stringify(score) }); await plugin()?.submitScore?.({ score: data.bestFloor, leaderboardId: data.leaderboardId }).catch(() => {}); }
-      catch (error) { if (![400, 409].includes(error.status)) keep.push(score); state.status = [400, 409].includes(error.status) ? `期限切れ記録を破棄：${error.message}` : `スコア送信保留：${error.message}`; }
+      if (score.expiresAt && score.expiresAt + 15 * 60_000 < Date.now()) { state.status = '期限切れ記録を破棄しました'; continue; }
+      try { const data = await request('/v1/scores', { method: 'POST', body: JSON.stringify({ floor: score.floor, runNonce: score.runNonce }) }); await plugin()?.submitScore?.({ score: data.bestFloor, leaderboardId: data.leaderboardId }).catch(() => {}); }
+      catch (error) { const terminal = error.status === 400 || (error.status === 409 && error.code === 'invalid_run_proof'); if (!terminal) keep.push({ ...score, attempts: Number(score.attempts || 0) + 1 }); state.status = terminal ? `期限切れ記録を破棄：${error.message}` : `スコア送信保留：${error.message}`; }
     }
     write(PENDING_KEY, keep);
   }
@@ -69,10 +75,24 @@
     return true;
   }
 
+  async function flushClaims(game) {
+    const claims = read(CLAIMS_KEY, []), keep = [];
+    for (const intent of claims) {
+      try {
+        const data = await request('/v1/gifts/claim', { method: 'POST', body: JSON.stringify(intent) });
+        if (applyReceipt(game, data.receipt)) window.arseneStartFlow?.toast(`${data.receipt.label}を受け取りました`);
+      } catch (error) {
+        if (!(error.status === 400 || error.status === 404 || error.code === 'claim_id_conflict')) keep.push(intent);
+        state.status = `受領保留：${error.message}`;
+      }
+    }
+    write(CLAIMS_KEY, keep);
+  }
+
   async function claim(game, grantId) {
-    const claimId = crypto.randomUUID(), data = await request('/v1/gifts/claim', { method: 'POST', body: JSON.stringify({ grantId, claimId }) });
-    if (applyReceipt(game, data.receipt)) window.arseneStartFlow?.toast(`${data.receipt.label}を受け取りました`);
-    return data;
+    const claims = read(CLAIMS_KEY, []);
+    if (!claims.some(x => x.grantId === grantId)) { claims.push({ grantId, claimId: crypto.randomUUID() }); write(CLAIMS_KEY, claims); }
+    await flushClaims(game);
   }
 
   const remaining = endMs => { const ms = Math.max(0, endMs - Date.now()), d = Math.floor(ms / 86400000), h = Math.floor(ms % 86400000 / 3600000), m = Math.floor(ms % 3600000 / 60000); return `${d}日 ${h}時間 ${m}分`; };
@@ -83,7 +103,7 @@
     modal.innerHTML = '<section role="dialog" aria-modal="true"><button data-weekly-close>×</button><small>INFINITE SCORE // WEEKLY</small><h2>週間ランキング</h2><p class="weekly-loading">Game Centerへ接続中…</p></section>';
     document.body.appendChild(modal);
     try {
-      await flushPending();
+      await Promise.all([flushPending(), flushClaims(game)]);
       const [ranking, gifts] = await Promise.all([request('/v1/rankings/weekly'), request('/v1/gifts')]); state.last = ranking;
       const rows = ranking.rows.map(row => `<li${row.rank === ranking.me?.rank ? ' class="me"' : ''}><b>${row.rank}</b><span>${esc(row.displayName)}</span><strong>F${row.maxFloor}</strong></li>`).join('');
       const giftRows = gifts.gifts.map(g => `<li><span><b>${esc(g.label)}</b><small>${esc(g.itemId)} ×${g.quantity}</small></span><button data-weekly-claim="${esc(g.id)}">受け取る</button></li>`).join('');
@@ -96,8 +116,8 @@
     const nav = document.getElementById('menu-nav');
     if (nav && !nav.querySelector('[data-weekly-ranking]')) nav.insertAdjacentHTML('beforeend', '<button data-weekly-ranking><i>R</i><b>週間ランキング</b><span>WEEKLY</span><small>順位・プレゼントBOX</small></button>');
     const begin = game.isBegin; game.isBegin = function (...args) { const result = begin.apply(this, args); if (this.isRun?.()) void startRun(this); return result; };
-    const returned = game.isReturnRun; game.isReturnRun = function (...args) { const run = this.isRun?.(), floor = run?.floor, nonce = run?.weeklyEligible && run?.weeklyRunNonce; const result = returned.apply(this, args); if (this.profile?.infiniteScore?.lastResult === 'return' && nonce) void submitReturn(floor, nonce); return result; };
-    void flushPending();
+    const returned = game.isReturnRun; game.isReturnRun = function (...args) { const run = this.isRun?.(), floor = run?.floor, nonce = run?.weeklyEligible && run?.weeklyRunNonce, expiresAt = run?.weeklyRunExpiresAt; const result = returned.apply(this, args); if (this.profile?.infiniteScore?.lastResult === 'return' && nonce) void submitReturn(floor, nonce, expiresAt); return result; };
+    void Promise.all([flushPending(), flushClaims(game)]);
   }
 
   document.addEventListener('click', event => {
@@ -107,6 +127,7 @@
     if (event.target.closest('[data-weekly-retry]')) void open(game);
     const claimButton = event.target.closest('[data-weekly-claim]'); if (claimButton) { claimButton.disabled = true; void claim(game, claimButton.dataset.weeklyClaim).then(() => open(game)).catch(error => { claimButton.disabled = false; window.arseneStartFlow?.toast(`受領保留：${error.message}`); }); }
   });
+  window.addEventListener('online', () => { const game = window.arseneGame; if (game) void Promise.all([flushPending(), flushClaims(game)]); });
   const boot = () => window.arseneGame?.isBegin ? install(window.arseneGame) : requestAnimationFrame(boot); if (ENABLED) boot();
-  window.ARSENE_WEEKLY_RANKING = { isIOS, open, flushPending, applyReceipt };
+  window.ARSENE_WEEKLY_RANKING = { isIOS, open, flushPending, flushClaims, applyReceipt };
 })();
