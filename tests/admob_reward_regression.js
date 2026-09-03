@@ -11,9 +11,15 @@ assert.match(bridge, /isPluginAvailable\?\.\('AdMob'\)/, '未登録プラグイ�
 assert.match(bridge, /onRewardedVideoAdReward[\s\S]*finish\(true\)/, 'Rewardedイベントだけを成功扱いする');
 assert.match(bridge, /onRewardedVideoAdDismissed[\s\S]*finish\(false\)/, '途中dismissでは報酬を付与しない');
 assert.match(bridge, /requestInFlight[\s\S]*if \(requestInFlight\) return false/, '広告要求の多重起動を防ぐ');
+assert.match(bridge, /requestConsentInfo\(\)[\s\S]*showConsentForm\(\)[\s\S]*canRequestAds/, '同意確認後だけ広告を要求する');
+assert.match(bridge, /showPrivacyOptionsForm\(\)/, '広告プライバシー設定を再表示できる');
 assert.match(offer, /showAd\.then\(rewarded => \{[\s\S]*if \(generation !== offerGeneration\) return;[\s\S]*if \(!rewarded\)[\s\S]*return;[\s\S]*api\.grant\(type\)/, '広告成功と現行generationの両方を満たした時だけ付与する');
-assert.match(plist, /<key>GADApplicationIdentifier<\/key>\s*<string>ca-app-pub-3940256099942544~1458002511<\/string>/, '公式iOSテストApp IDを設定する');
-assert.doesNotMatch(`${bridge}\n${plist}`, /ca-app-pub-(?!3940256099942544)[0-9]+[~/][0-9]+/, 'Google公式テスト以外の広告IDを含めない');
+const appPublisher = plist.match(/<key>GADApplicationIdentifier<\/key>\s*<string>ca-app-pub-(\d+)~\d+<\/string>/)?.[1];
+const rewardedMatch = bridge.match(/const IOS_REWARDED_AD_ID = '(ca-app-pub-(\d+)\/\d+)'/);
+assert.ok(appPublisher, '有効なiOS AdMob App IDを設定する');
+assert.ok(rewardedMatch, '有効なRewarded Ad Unit IDを設定する');
+assert.equal(rewardedMatch[2], appPublisher, 'App IDと広告ユニットIDのパブリッシャーを一致させる');
+const rewardedId = rewardedMatch[1];
 
 (async () => {
   let browserPluginRead = false;
@@ -31,15 +37,29 @@ assert.doesNotMatch(`${bridge}\n${plist}`, /ca-app-pub-(?!3940256099942544)[0-9]
   assert.equal(await browserWindow.arseneAdMob.showRewarded(), false, 'ブラウザでは広告を表示しない');
   assert.equal(browserPluginRead, false, 'ブラウザでプラグインを参照しない');
 
+  let deniedPrepareCalls = 0;
+  const deniedPlugin = {
+    async initialize() {},
+    async requestConsentInfo() { return { status: 'REQUIRED', isConsentFormAvailable: true, canRequestAds: false }; },
+    async showConsentForm() { return { status: 'OBTAINED', canRequestAds: false }; },
+    async prepareRewardVideoAd() { deniedPrepareCalls++; }
+  };
+  const deniedWindow = { addEventListener() {}, Capacitor:{ isNativePlatform:()=>true, getPlatform:()=> 'ios', isPluginAvailable:()=>true, Plugins:{AdMob:deniedPlugin} } };
+  vm.runInNewContext(bridge, { window:deniedWindow, console, setTimeout, clearTimeout });
+  assert.equal(await deniedWindow.arseneAdMob.showRewarded(), false, '広告リクエスト不可なら表示しない');
+  assert.equal(deniedPrepareCalls, 0, '同意ゲート前に広告をロードしない');
+
   const listeners = new Map();
   let initializeCalls = 0;
   const plugin = {
     async initialize() { initializeCalls++; },
+    async requestConsentInfo() { return { status: 'NOT_REQUIRED', canRequestAds: true }; },
+    async showPrivacyOptionsForm() {},
     async addListener(name, callback) {
       listeners.set(name, callback);
       return { remove: async () => { if (listeners.get(name) === callback) listeners.delete(name); } };
     },
-    async prepareRewardVideoAd(options) { assert.equal(options.adId, 'ca-app-pub-3940256099942544/1712485313'); },
+    async prepareRewardVideoAd(options) { assert.equal(options.adId, rewardedId); },
     async showRewardVideoAd() {}
   };
   const nativeWindow = {
@@ -80,6 +100,7 @@ assert.doesNotMatch(`${bridge}\n${plist}`, /ca-app-pub-(?!3940256099942544)[0-9]
   const timeoutListeners = new Map();
   const timeoutPlugin = {
     async initialize() {},
+    async requestConsentInfo() { return { status: 'NOT_REQUIRED', canRequestAds: true }; },
     async addListener(name, callback) { timeoutListeners.set(name, callback); return { remove: async () => timeoutListeners.delete(name) }; },
     async prepareRewardVideoAd() {},
     async showRewardVideoAd() {}

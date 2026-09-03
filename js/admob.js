@@ -1,6 +1,6 @@
 /* iOS AdMob bridge. Browser builds never call the native plugin. */
 (function () {
-  const IOS_REWARDED_TEST_ID = 'ca-app-pub-3940256099942544/1712485313';
+  const IOS_REWARDED_AD_ID = 'ca-app-pub-3940256099942544/1712485313';
   const events = {
     rewarded: 'onRewardedVideoAdReward',
     dismissed: 'onRewardedVideoAdDismissed',
@@ -9,6 +9,7 @@
   };
   let initialization = null;
   let requestInFlight = false;
+  let canRequestAds = false;
 
   function capacitor() { return window.Capacitor; }
   function isNativeIOS() {
@@ -23,12 +24,35 @@
   async function initialize() {
     const admob = plugin();
     if (!admob) return false;
-    if (!initialization) initialization = admob.initialize().then(() => true).catch(error => {
-      initialization = null;
-      console.warn('AdMob initialization failed.', error);
-      return false;
-    });
+    if (!initialization) initialization = (async () => {
+      try {
+        await admob.initialize();
+        let consent = await admob.requestConsentInfo();
+        if (consent?.isConsentFormAvailable && consent?.status === 'REQUIRED') {
+          consent = await admob.showConsentForm();
+        }
+        canRequestAds = consent?.canRequestAds === true;
+        return canRequestAds;
+      } catch (error) {
+        initialization = null;
+        canRequestAds = false;
+        console.warn('AdMob initialization or consent failed.', error);
+        return false;
+      }
+    })();
     return initialization;
+  }
+  async function showPrivacyOptions() {
+    const admob = plugin();
+    if (!admob) return false;
+    await initialize();
+    try {
+      await admob.showPrivacyOptionsForm();
+      return true;
+    } catch (error) {
+      console.warn('AdMob privacy options failed.', error);
+      return false;
+    }
   }
   async function showRewarded() {
     if (requestInFlight) return false;
@@ -57,7 +81,7 @@
         handles.push(await admob.addListener(events.dismissed, () => finish(false)));
         handles.push(await admob.addListener(events.failedToLoad, () => finish(false)));
         handles.push(await admob.addListener(events.failedToShow, () => finish(false)));
-        await admob.prepareRewardVideoAd({ adId: IOS_REWARDED_TEST_ID });
+        await admob.prepareRewardVideoAd({ adId: IOS_REWARDED_AD_ID });
         if (!settled) admob.showRewardVideoAd().catch(() => finish(false));
       } catch (error) {
         console.warn('Rewarded ad failed.', error);
@@ -66,6 +90,6 @@
     });
   }
 
-  window.arseneAdMob = { isNativeIOS, initialize, showRewarded, rewardedTestId: IOS_REWARDED_TEST_ID };
+  window.arseneAdMob = { isNativeIOS, initialize, showRewarded, showPrivacyOptions };
   window.addEventListener('load', () => { if (isNativeIOS()) initialize(); });
 })();

@@ -7,6 +7,7 @@
     "build": "node scripts/build-web.mjs",
     "cap:sync": "pnpm run build && cap sync ios && node scripts/verify-ios-bundle.mjs",
     "verify:ios-bundle": "node scripts/verify-ios-bundle.mjs",
+    "verify:ios-release": "node scripts/verify-ios-release.mjs",
     "cap:open:ios": "cap open ios"
   },
   "dependencies": {

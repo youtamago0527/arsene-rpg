@@ -147,6 +147,8 @@
         if (watchOpening) { window.arseneStartFlow?.watchOpening(); return; }
         const resetData = e.target.closest('[data-reset-data]');
         if (resetData) { if (window.confirm('すべてのゲーム進行データを消去しますか？')) { localStorage.removeItem(D.settings.saveKey); localStorage.removeItem(this.saveTransferMetaKey()); location.reload(); } return; }
+        const privacyOptions = e.target.closest('[data-ad-privacy-options]');
+        if (privacyOptions) { const shown = await window.arseneAdMob?.showPrivacyOptions?.(); window.arseneStartFlow?.toast(shown ? 'プライバシー設定を開きました' : '現在はプライバシー設定を開けません'); return; }
         const exportSave = e.target.closest('[data-export-save]');
         if (exportSave) { this.saveTransferMode = this.saveTransferMode === 'export' ? null : 'export'; if (this.saveTransferMode === 'export') { this.saveTransferExportCode = this.encodeSaveTransferCode(); navigator.clipboard?.writeText(this.saveTransferExportCode).then(() => window.arseneStartFlow?.toast('コードをコピーしました')).catch(() => {}); } this.renderMenuPanel('system'); return; }
         const importSaveToggle = e.target.closest('[data-import-save]');
@@ -1285,9 +1287,10 @@
       } else if (this.systemTab === 'debug') {
         body = this.debugTabHTML();
       } else {
+        const adPrivacy = window.arseneAdMob?.isNativeIOS?.() ? `<section class="sound-settings"><header><b>広告のプライバシー設定</b><span>同意内容はいつでも確認・変更できます</span></header><div class="system-actions"><button data-ad-privacy-options>プライバシー設定を開く<span>AD PRIVACY OPTIONS</span></button></div></section>` : '';
         body = `<div class="system-actions"><button data-watch-opening>WATCH OPENING<span>オープニングを再生</span></button><button class="danger" data-reset-data>DATA RESET<span>セーブデータを消去</span></button></div>
           <section class="sound-settings save-transfer"><header><b>セーブデータの引き継ぎ</b><span>別ブラウザ・別URLでも復元できます</span></header><p class="save-transfer-note">「コードを書き出す」で表示される文字列をコピーし、別のブラウザ側の設定画面で「コードを読み込む」に貼り付けてください。</p><div class="system-actions"><button data-export-save>コードを書き出す<span>EXPORT CODE</span></button><button data-import-save>コードを読み込む<span>IMPORT CODE</span></button></div>${this.saveTransferMode === 'export' ? `<div class="save-transfer-box"><textarea readonly rows="4" data-transfer-output onclick="this.select()">${this.saveTransferExportCode || ''}</textarea><small>自動でコピーしました。コピーされない場合は上の文字列を選択してコピーしてください。</small></div>` : ''}${this.saveTransferMode === 'import' ? `<div class="save-transfer-box"><textarea rows="4" placeholder="ここにコードを貼り付け" data-transfer-input></textarea><button data-import-save-confirm>この内容で読み込む</button></div>` : ''}</section>
-          <div class="hideout-feature system-info"><article><b>自動セーブ</b><span>ジョブ・武器学・装備・所持品・GOLD・解放状態をこの端末に保存中。</span></article><article><b>EARLY ACCESS Ver.0.1</b><span>DUNGEON 1–5 AVAILABLE</span></article></div>`;
+          ${adPrivacy}<div class="hideout-feature system-info"><article><b>自動セーブ</b><span>ジョブ・武器学・装備・所持品・GOLD・解放状態をこの端末に保存中。</span></article><article><b>EARLY ACCESS Ver.0.1</b><span>DUNGEON 1–5 AVAILABLE</span></article></div>`;
       }
       panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>AUDIO & SYSTEM</small><h2>設定</h2><div class="item-tabs sys-tabs">${tabHtml}</div><div class="sys-body">${body}</div>`;
     }

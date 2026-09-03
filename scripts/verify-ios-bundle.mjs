@@ -26,9 +26,7 @@ const verifyTriplet = async relative => {
 await Promise.all(sentinels.map(verifyTriplet));
 
 const plist = await readFile(join(root, 'ios', 'App', 'App', 'Info.plist'), 'utf8');
-if (!/<key>GADApplicationIdentifier<\/key>\s*<string>ca-app-pub-3940256099942544~1458002511<\/string>/.test(plist)) {
-  throw new Error('iOS Info.plist is missing the Google demo AdMob app ID.');
-}
+if (!/<key>GADApplicationIdentifier<\/key>\s*<string>ca-app-pub-\d+~\d+<\/string>/.test(plist)) throw new Error('iOS Info.plist is missing a valid AdMob app ID.');
 const swiftPackage = await readFile(join(root, 'ios', 'App', 'CapApp-SPM', 'Package.swift'), 'utf8');
 if (!/CapacitorCommunityAdmob/.test(swiftPackage)) {
   throw new Error('CapacitorCommunityAdmob is missing from the native Swift package. Run cap sync ios.');
