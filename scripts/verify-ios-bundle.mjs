@@ -1,4 +1,4 @@
-import { access, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 
@@ -18,7 +18,6 @@ const sentinels = [
 const hash = async path => createHash('sha256').update(await readFile(path)).digest('hex');
 const verifyTriplet = async relative => {
   const paths = [join(root, relative), join(dist, relative), join(native, relative)];
-  await Promise.all(paths.map(access));
   const hashes = await Promise.all(paths.map(hash));
   if (new Set(hashes).size !== 1) throw new Error(`stale iOS bundle: ${relative}`);
 };
@@ -35,9 +34,9 @@ if (!/CapacitorCommunityAdmob/.test(swiftPackage)) {
 const audioSource = await readFile(join(root, 'js', 'audio-runtime-20260903.js'), 'utf8');
 const audioPaths = [...new Set([...audioSource.matchAll(/url:\s*'([^']+)'/g)].map(match => match[1]))];
 for (const relative of audioPaths) {
-  await access(join(root, relative));
-  await access(join(dist, relative));
-  await access(join(native, relative));
+  await readFile(join(root, relative));
+  await readFile(join(dist, relative));
+  await readFile(join(native, relative));
 }
 
 const forbiddenNativeAssets = [
@@ -50,9 +49,9 @@ const forbiddenNativeAssets = [
   '音楽系/効果音/evade-v2.mp3'
 ];
 for (const relative of forbiddenNativeAssets) {
-  await access(join(native, relative)).then(
+  await readFile(join(native, relative)).then(
     () => { throw new Error(`stale forbidden iOS asset: ${relative}`); },
-    () => {}
+    error => { if (error?.code !== 'ENOENT') throw error; }
   );
 }
 
