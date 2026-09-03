@@ -47,6 +47,13 @@ const forbiddenNativeAssets = [
   '音楽系/効果音/critical-hit-v2.mp3',
   '音楽系/効果音/enemy-hit-v2.mp3',
   '音楽系/効果音/evade-v2.mp3'
+  ,'音楽系/効果音/剣で斬る2.mp3'
+  ,'音楽系/効果音/爪通常.mp3'
+  ,'音楽系/効果音/杖通常.mp3'
+  ,'音楽系/効果音/楽器通常.mp3'
+  ,'音楽系/効果音/ヒール.mp3'
+  ,'音楽系/効果音/逃げる.mp3'
+  ,'音楽系/効果音/パッシブ発動音.mp3'
 ];
 for (const relative of forbiddenNativeAssets) {
   await readFile(join(native, relative)).then(

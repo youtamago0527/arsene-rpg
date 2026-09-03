@@ -2,7 +2,7 @@
   'use strict';
   // 同名音源を差し替えてもWKWebViewの古いレスポンスを掴まないよう、
   // BGM/SEの全ローカルURLへ同じリリース番号を付ける。
-  const AUDIO_ASSET_VERSION = '20260904.1';
+  const AUDIO_ASSET_VERSION = '20260904.2';
   const audioAssetUrl = path => {
     const url = new URL(path, document.baseURI);
     url.searchParams.set('av', AUDIO_ASSET_VERSION);
@@ -14,18 +14,18 @@
   //   maxDur … 長いファイルを途中でフェードアウトさせる秒数
   //   rate   … 再生速度。同じ素材を流用して質感を変えるのに使う
   const SFX_FILES = {
-    critical:    { url: '音楽系/効果音/critical-sample-20260904.mp3', gain: .92, offset: .002, maxDur: 1.5 },
-    criticalHit: { url: '音楽系/効果音/critical-sample-20260904.mp3', gain: .92, offset: .002, maxDur: 1.5 },
-    evade:       { url: '音楽系/効果音/evade-sample-20260904.mp3', gain: .86, offset: .002, maxDur: 1.2 },
-    playerHit:   { url: '音楽系/効果音/enemy-strike-sample-20260904.mp3', gain: .90, offset: .002, maxDur: 1.2 },
-    swordHit:    { url: '音楽系/効果音/剣で斬る2.mp3', gain: .90, offset: .050, maxDur: .9 },
-    clawHit:     { url: '音楽系/効果音/爪通常.mp3',    gain: 1.10, offset: .100, maxDur: .9 },
+    critical:    { url: 'assets/audio/sfx/critical-sample-20260904.mp3', gain: .92, offset: .002, maxDur: 1.5 },
+    criticalHit: { url: 'assets/audio/sfx/critical-sample-20260904.mp3', gain: .92, offset: .002, maxDur: 1.5 },
+    evade:       { url: 'assets/audio/sfx/evade-sample-20260904.mp3', gain: .86, offset: .002, maxDur: 1.2 },
+    playerHit:   { url: 'assets/audio/sfx/enemy-strike-sample-20260904.mp3', gain: .90, offset: .002, maxDur: 1.2 },
+    swordHit:    { url: 'assets/audio/sfx/sword-hit-sample-20260904.mp3', gain: .90, offset: .050, maxDur: .9 },
+    clawHit:     { url: 'assets/audio/sfx/claw-hit-sample-20260904.mp3', gain: 1.10, offset: .100, maxDur: .9 },
     // ファイアボールは「飛んでいる最中」の音なので、着弾ではなく発射のタイミングで鳴らす
-    fireFlight:  { url: '音楽系/効果音/杖通常.mp3',    gain: .36, offset: .010, maxDur: .60 },
-    noteHit:     { url: '音楽系/効果音/楽器通常.mp3',  gain: .88, offset: .002, maxDur: 1.4 },
-    heal:        { url: '音楽系/効果音/ヒール.mp3',    gain: .95, offset: .002, maxDur: 1.95 },
-    escape:      { url: '音楽系/効果音/逃げる.mp3',    gain: .68, offset: .028, maxDur: 1.2 },
-    passiveProc: { url: '音楽系/効果音/パッシブ発動音.mp3', gain: .78, offset: .018, maxDur: 1.9 }
+    fireFlight:  { url: 'assets/audio/sfx/staff-fire-sample-20260904.mp3', gain: .36, offset: .010, maxDur: .60 },
+    noteHit:     { url: 'assets/audio/sfx/instrument-hit-sample-20260904.mp3', gain: .88, offset: .002, maxDur: 1.4 },
+    heal:        { url: 'assets/audio/sfx/heal-sample-20260904.mp3', gain: .95, offset: .002, maxDur: 1.95 },
+    escape:      { url: 'assets/audio/sfx/escape-sample-20260904.mp3', gain: .68, offset: .028, maxDur: 1.2 },
+    passiveProc: { url: 'assets/audio/sfx/passive-proc-sample-20260904.mp3', gain: .78, offset: .018, maxDur: 1.9 }
   };
   // 武器種 → 効果音名。左手の追撃など、武器種から直接鳴らしたい場所で使う
   const WEAPON_SFX = { sword: 'swordHit', martial: 'clawHit', staff: 'fireFlight', instrument: 'noteHit', shield: 'playerHit' };
