@@ -2,7 +2,7 @@
   'use strict';
   // 同名音源を差し替えてもWKWebViewの古いレスポンスを掴まないよう、
   // BGM/SEの全ローカルURLへ同じリリース番号を付ける。
-  const AUDIO_ASSET_VERSION = '20260903.2';
+  const AUDIO_ASSET_VERSION = '20260903.3';
   const audioAssetUrl = path => {
     const url = new URL(path, document.baseURI);
     url.searchParams.set('av', AUDIO_ASSET_VERSION);
@@ -32,7 +32,7 @@
 
   class ArseneAudio {
     constructor(bgmPath) {
-      this.ctx = null; this.master = null; this.musicSource = null; this.musicGain = null; this.muted = false; this.started = false; this.settingsKey = 'arsene-rpg-audio-v1'; this.levels = this.loadLevels(); this.musicMaxVolume = matchMedia('(max-width:760px)').matches ? .18 : .22; this.musicVolume = this.musicMaxVolume * this.levels.bgm; this.fadeToken = 0; this.pendingSfx = new Set(); this.userActivated = false;
+      this.ctx = null; this.master = null; this.musicSource = null; this.musicGain = null; this.muted = false; this.started = false; this.settingsKey = 'arsene-rpg-audio-v1'; this.levels = this.loadLevels(); this.musicMaxVolume = matchMedia('(max-width:760px)').matches ? .18 : .22; this.musicVolume = this.musicMaxVolume * this.levels.bgm; this.fadeToken = 0; this.userActivated = false;
       this.music = new Audio(audioAssetUrl(bgmPath)); this.music.loop = true; this.music.preload = 'auto'; this.music.volume = this.musicVolume;
       this.audioId = `${Date.now()}-${Math.random()}`; this.audioFocus = typeof BroadcastChannel === 'function' ? new BroadcastChannel('arsene-rpg-audio-focus') : null;
       if (this.audioFocus) this.audioFocus.onmessage = e => { if (e.data?.type === 'claim' && e.data.id !== this.audioId) { this.music.pause(); this.started = false; } };
@@ -176,7 +176,7 @@
       g.gain.exponentialRampToValueAtTime(.0001, t + duration);
       src.connect(f); f.connect(g); g.connect(this.master); src.start(t);
     }
-    sfx(name, forceSynthetic = false) {
+    sfx(name) {
       // iOSでは復帰直後などにAudioContextが未生成・suspendedへ戻ることがある。
       // 呼び出し側の取りこぼしで無音にならないよう、SE側でも毎回復帰を試みる。
       if (!this.ctx) this.unlock();
@@ -185,15 +185,9 @@
       // 実音源が読めればそれを鳴らす。WKWebViewでfetch/decodeに失敗した場合は
       // 同名の合成音へ落とし、戦闘音や回復音が丸ごと消えないようにする。
       if (this.playSfxFile(name)) return;
-      if (SFX_FILES[name] && !forceSynthetic) {
-        if (!this.pendingSfx.has(name)) {
-          this.pendingSfx.add(name);
-          this.sfxReady
-            ?.then(() => { if (!this.playSfxFile(name)) this.sfx(name, true); })
-            .finally(() => this.pendingSfx.delete(name));
-        }
-        return;
-      }
+      // デコード待ちのSEを数百ms後に鳴らすと、攻撃演出が終わった後から音だけが
+      // 再生される。未準備の初回だけは同名の合成音を即時再生し、次回以降は
+      // デコード済みの正式音源へ自然に切り替える。
       const chord = (notes, gap=.08) => notes.forEach((n,i)=>this.tone(n,.2,'sine',.1,1,i*gap));
       switch (name) {
         case 'ui': this.tone(620,.055,'square',.045,1.28); break;

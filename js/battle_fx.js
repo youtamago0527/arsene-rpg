@@ -54,7 +54,10 @@
     if (!ren) return;
     ren.classList.add(`fx-swing-${type}`);
     setTimeout(() => ren.classList.remove(`fx-swing-${type}`), 420);
-    this.audio?.sfx?.({ sword: 'swordSwing', martial: 'clawSwing', staff: 'fireCast', instrument: 'noteSwing', shield: 'shieldSwing' }[type] || 'swordSwing');
+    // 杖の通常攻撃は直後の magicProjectile() が、火球の発射位置と同時に
+    // 正式音源 fireFlight を鳴らす。ここで重ねると二重再生になる。
+    const swingSfx = { sword: 'swordSwing', martial: 'clawSwing', staff: null, instrument: 'noteSwing', shield: 'shieldSwing' }[type] ?? 'swordSwing';
+    if (swingSfx) this.audio?.sfx?.(swingSfx);
     if (type === 'instrument') this.fxNoteBurst(ren);
   };
 
