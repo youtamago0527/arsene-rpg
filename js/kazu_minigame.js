@@ -415,7 +415,7 @@
       flags.kazuRhythmBestRanks ||= {};
       const rankOrder = ['E', 'D', 'C', 'B', 'A', 'S'];
       const previousRank = flags.kazuRhythmBestRanks[this.track.id] || 'E';
-      if (rankOrder.indexOf(rank) > rankOrder.indexOf(previousRank)) flags.kazuRhythmBestRanks[this.track.id] = rank;
+      if (!flags.kazuRhythmBestRanks[this.track.id] || rankOrder.indexOf(rank) > rankOrder.indexOf(previousRank)) flags.kazuRhythmBestRanks[this.track.id] = rank;
       const reward = S_REWARDS[this.track.scoreId];
       flags.kazuRhythmSRewards ||= {};
       let firstSReward = null;
