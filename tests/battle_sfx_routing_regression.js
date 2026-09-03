@@ -3,8 +3,9 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
-const audio = fs.readFileSync(path.join(root, 'js', 'audio.js'), 'utf8');
+const audio = fs.readFileSync(path.join(root, 'js', 'audio-runtime-20260903.js'), 'utf8');
 const fx = fs.readFileSync(path.join(root, 'js', 'battle_fx.js'), 'utf8');
+const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 const formal = {
   swordHit: '剣で斬る2.mp3', clawHit: '爪通常.mp3', fireFlight: '杖通常.mp3',
@@ -17,6 +18,8 @@ for (const [key, file] of Object.entries(formal)) {
 for (const legacy of ['会心の一撃1.mp3', '回避.mp3', '打撃6.mp3', 'critical-hit-v2.mp3', 'enemy-hit-v2.mp3', 'evade-v2.mp3']) {
   if (fs.existsSync(path.join(root, '音楽系', '効果音', legacy))) throw new Error(`legacy SFX remains: ${legacy}`);
 }
+if (fs.existsSync(path.join(root, 'js', 'audio.js'))) throw new Error('legacy audio runtime remains');
+if (!index.includes('js/audio-runtime-20260903.js?v=1.0.0')) throw new Error('fresh audio runtime is not loaded');
 for (const synthesized of ['critical', 'criticalHit', 'playerHit', 'evade']) {
   if (new RegExp(`\\b${synthesized}\\s*:`).test(audio.split('const SFX_FILES = {')[1].split('};')[0])) throw new Error(`${synthesized} must not route to a legacy sampled file`);
 }
