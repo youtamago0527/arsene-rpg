@@ -13,6 +13,10 @@ const formal = {
 };
 for (const [key, file] of Object.entries(formal)) {
   if (!audio.includes(`${key}:`) || !audio.includes(file)) throw new Error(`${key} formal asset is not registered`);
+  if (!fs.existsSync(path.join(root, '音楽系', '効果音', file))) throw new Error(`${key} formal asset file is missing: ${file}`);
+}
+for (const legacy of ['会心の一撃1.mp3', '回避.mp3', '打撃6.mp3']) {
+  if (fs.existsSync(path.join(root, '音楽系', '効果音', legacy))) throw new Error(`legacy SFX remains: ${legacy}`);
 }
 if (!fx.includes("staff: null")) throw new Error('staff swing can double-play its projectile sound');
 if (!fx.includes("this.audio?.sfx?.('fireFlight')")) throw new Error('staff projectile does not use the formal flight sound');
