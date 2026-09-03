@@ -54,6 +54,14 @@
     p.ptStolenActions ||= [];    // 盗んだACTION（保存は無制限）
     p.ptStealDone ||= {};        // JOBごとのSTEAL済みフラグ（重複STEAL禁止）
     p.arcanaGains ||= {};        // アルカナで恒久上昇させた量（内訳表示用）
+    // 上限40対応前にLv20へ到達していたセーブにも、MASTER固有ACTIONを復元する。
+    const signatureActions = D().phantomThief?.signatureActions || {};
+    for (const jobId of p.jobMastered || []) {
+      if (jobId === 'phantomThief') continue;
+      const actionId = signatureActions[jobId];
+      if (actionId && D().skills[actionId] && !p.ptStolenActions.includes(actionId)) p.ptStolenActions.push(actionId);
+      p.ptStealDone[jobId] = true;
+    }
     if (!Array.isArray(p.ptActionSlots)) p.ptActionSlots = [null, null];
     // 潜入中フラグが残っている＝正常な踏破・撤退・敗北処理を通らず終了した。
     // 有効なチェックポイントがあれば消費を戻さず再開待ちにする。壊れている場合だけ返還する。
