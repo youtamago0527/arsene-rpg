@@ -152,8 +152,7 @@ public final class ArseneStoreKitPlugin: CAPPlugin, CAPBridgedPlugin {
             "originalTransactionId": String(transaction.originalID),
             "productId": transaction.productID,
             "purchaseDate": Self.dateFormatter.string(from: transaction.purchaseDate),
-            "ownershipType": String(describing: transaction.ownershipType),
-            "jwsRepresentation": transaction.jwsRepresentation
+            "ownershipType": String(describing: transaction.ownershipType)
         ]
         if let expirationDate = transaction.expirationDate {
             payload["expirationDate"] = Self.dateFormatter.string(from: expirationDate)
