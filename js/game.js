@@ -406,6 +406,13 @@
         if (futureJobs.has(profile.currentJob)) profile.currentJob = profile.initialJob && !futureJobs.has(profile.initialJob) ? profile.initialJob : 'mage';
         // DEV TOOLSで予約データを試したセーブを通常画面へ戻しても、名称や技が漏れないようにする。
         profile.jobMastered = (profile.jobMastered || []).filter(id => !futureJobs.has(id));
+        // JOB MASTERは育成上限ではなく従来通りLv20。D3後に上限が40へ伸びても
+        // MASTER/PHANTOM STEAL済み状態を失わないよう、旧セーブも到達Lvから復元する。
+        const jobMasterLevel = D.jobLevelCap || 20;
+        for (const [id, progress] of Object.entries(profile.jobs || {})) {
+          if (!D.jobs[id] || this.isNoGrowthJob(id) || D.jobs[id].noGrowth || (progress?.level || 1) < jobMasterLevel) continue;
+          if (!profile.jobMastered.includes(id)) profile.jobMastered.push(id);
+        }
         for (const key of ['learnedJobSkills', 'learnedWeaponSkills', 'learnedPassives', 'activeSkills', 'equippedPassives', 'ptActionSlots', 'ptPassiveSlots']) {
           if (!Array.isArray(profile[key])) continue;
           const slots = key === 'equippedPassives' || key.endsWith('Slots');
@@ -3646,7 +3653,9 @@
       const raw = Math.max(0, amount) / 4 + (progress.expCarry || 0), gained = Math.floor(raw);
       progress.expCarry = raw - gained; progress.exp += gained;
       while (progress.level < cap) { const need = this.jobExpNeeded(progress.level); if (!need || progress.exp < need) break; progress.exp -= need; progress.level++; }
-      if (progress.level >= cap) { progress.exp = 0; progress.expCarry = 0; this.markJobMastered(jobId); }
+      const masterLevel = D.jobLevelCap || 20;
+      if (progress.level >= masterLevel) this.markJobMastered(jobId);
+      if (progress.level >= cap) { progress.exp = 0; progress.expCarry = 0; }
       const gainedLevels = progress.level - from;
       // Lv21〜40（限界突破帯）で得た分だけ成長量を2倍にする。1回のEXP付与で20を跨いだ場合も
       // 跨いだ範囲だけ正しく2倍になるよう、通常帯と突破帯の到達レベル数を分けて数える。
@@ -3654,7 +3663,7 @@
       const overLevels = Math.max(0, progress.level - Math.max(from, 20));
       const weightedLevels = normalLevels + overLevels * 2;
       const statGain = gainedLevels > 0 ? this.applyJobLevelGrowth(jobId, weightedLevels) : null;
-      if (progress.level >= cap) this.recordPhantomGrowth(jobId);
+      if (progress.level >= masterLevel) this.recordPhantomGrowth(jobId);
       const newPassives = gainedLevels > 0 ? this.grantJobPassives(jobId, progress.level) : [];
       const reinforcedPassives = gainedLevels > 0 ? this.reinforceJobPassives(jobId, progress.level) : [];
       this.syncSkillUnlocks();
