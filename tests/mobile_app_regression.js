@@ -52,6 +52,8 @@ assert.match(audio, /AUDIO_ASSET_VERSION/);
 assert.match(audio, /searchParams\.set\('av'/);
 assert.match(audio, /visibilitychange/);
 assert.doesNotMatch(audio, /await this\.preloadSfxFiles\(\)/, 'user gesture must not wait for SFX downloads before resuming audio');
+assert.match(audio, /if \(!this\.ctx\) this\.unlock\(\)/, 'SFX calls must recover an uninitialized iOS AudioContext');
+assert.match(audio, /if \(!this\.playSfxFile\(name\)\) this\.sfx\(name, true\)/, 'sample decode failures must fall back to synthesized SFX');
 
 const localRefs = [...html.matchAll(/(?:src|href)="([^"?#]+)(?:\?[^"#]*)?"/g)]
   .map(match => match[1])
