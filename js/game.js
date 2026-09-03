@@ -1331,6 +1331,7 @@
       if (key === 'rebirth') return this.rebirthUnlocked();
       if (key === 'phantomThief') return this.isJobUnlocked('phantomThief');
       if (key === 'otherWorld') return !!f.otherWorldUnlocked;
+      if (key === 'otherWorldAdvanced') return this.isBossDefeated('astact') || !!f.dungeon4Clear;
       return true;
     }
     helpSectionHTML() {
