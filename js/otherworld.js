@@ -607,8 +607,8 @@
           <p>${esc(item?.description || '')}</p>
           <div class="ow-mode-stats">
             <span><small>1周</small><b>${cfg.battlesPerRun ?? 10} 戦</b></span>
-            <span><small>難易度</small><b>初級 / 中級</b></span>
-            <span><small>中級報酬</small><b>ITEM ×2</b></span>
+            <span><small>難易度</small><b>初級 / 中級 / 上級</b></span>
+            <span><small>上級解放</small><b>D4 CLEAR</b></span>
             <span><small>EXP / GOLD</small><b>なし</b></span>
           </div>
           ${canGo
@@ -627,13 +627,19 @@
     return [{ id: cfg.id || 'otherWorld', name: '境界の裂け目', nameEn: 'BOUNDARY RIFT', description: cfg.description, background: todayBackground, available: true }];
   };
 
+  P.owDungeonUnlocked = function (dungeon) {
+    if (!dungeon?.unlockBossId) return true;
+    return !!(this.isBossDefeated?.(dungeon.unlockBossId) || this.profile?.flags?.dungeon4Clear);
+  };
+
   P.renderOwDungeonSelect = function (panel) {
     const inf = this.owInterference(), arcana = this.owTodayArcana();
     const cards = this.owDungeonChoices().map(d => {
       const cfg = this.owRunCfg(d.id), reward = cfg.bossArcanaCount ?? 1, mult = cfg.itemRewardMultiplier ?? 1;
-      return `<button class="ow-dungeon-card active" data-lenny="enter" data-ow-dungeon="${esc(d.id)}">
+      const unlocked = this.owDungeonUnlocked(d);
+      return `<button class="ow-dungeon-card ${unlocked ? 'active' : 'locked'}" ${unlocked ? `data-lenny="enter" data-ow-dungeon="${esc(d.id)}"` : 'disabled'}>
       <i class="ow-dungeon-thumb" style="background-image:url('${esc(d.background || this.owTodayBackground())}')"></i><div><small>${esc(d.nameEn || 'OTHER WORLD')}</small><strong>${esc(d.name)}</strong>
-      <span>${esc(d.description || '')}</span><em>${cfg.battlesPerRun ?? 10} BATTLES ／ ${esc(arcana?.name || '本日のアルカナ')} ×${reward}確定${mult > 1 ? ` ／ ITEM ×${mult}` : ''}</em></div></button>`;
+      <span>${unlocked ? esc(d.description || '') : 'D4クリアで解放'}</span><em>${unlocked ? `${cfg.battlesPerRun ?? 10} BATTLES ／ ${esc(arcana?.name || '本日のアルカナ')} ×${reward}確定${cfg.zakoArcanaCount ? ` ／ 雑魚戦 ×${cfg.zakoArcanaCount}` : ''}${mult > 1 ? ` ／ ITEM ×${mult}` : ''}` : 'LOCKED // CLEAR D4'}</em></div></button>`;
     }).join('');
     panel.innerHTML = `<button class="panel-home" data-menu="lenny">レニーへ戻る</button>
       <small>RIFT DESTINATION</small><h2>異世界ダンジョン選択</h2>
@@ -662,6 +668,8 @@
   };
 
   P.owSelectDungeon = function (dungeonId = null) {
+    const selected = this.owDungeonChoices().find(d => d.id === dungeonId);
+    if (selected && !this.owDungeonUnlocked(selected)) { window.arseneStartFlow?.toast?.('上級はD4クリア後に解放されます'); return; }
     if (this.isPhantomThief()) { this.profile.otherWorldReturnJob ||= this.profile.lastNormalJob || this.profile.initialJob || 'mage'; this.saveProfile(); this.owEnter(dungeonId); return; }
     this.pendingOwDungeonId = dungeonId || this.owDungeonChoices()[0]?.id || null;
     this.renderMenuPanel('otherworld-job-confirm');
@@ -714,6 +722,7 @@
     const inf = this.owInterference();
     if (inf.left <= 0) return;
     const selected = this.owDungeonChoices().find(d => d.id === dungeonId) || this.owDungeonChoices()[0];
+    if (!this.owDungeonUnlocked(selected)) { window.arseneStartFlow?.toast?.('上級はD4クリア後に解放されます'); this.renderMenuPanel('otherworld-select'); return; }
     const cfg = this.owRunCfg(selected?.id);
     const usedPremiumTicket = inf.dailyLeft <= 0;
     if (usedPremiumTicket) {
@@ -798,6 +807,11 @@
       }
       this.owShowChests(got);
       return;
+    }
+    const zakoArcanaCount = Math.max(0, Number(cfg.zakoArcanaCount) || 0);
+    if (todayId && zakoArcanaCount) {
+      this.giveArcana(todayId, zakoArcanaCount); run.arcana += zakoArcanaCount;
+      got.push(`${D().items[todayId].name} ×${zakoArcanaCount}`);
     }
     // 雑魚：通常ダンジョンのdropTableは使わず、異世界専用の欠片だけを抽選する。
     let n = 0;
