@@ -206,7 +206,7 @@
   });
 
   Object.assign(D.musicScores, {
-    staccato: { id: 'staccato', title: 'STACCATO', subtitle: 'Qの予告状', artist: 'ASTACT', use: 'privateMode', unlockBoss: 'astact', releaseFlag: 'd4Released', description: 'アスタクトから盗み出す、瞬断の合図を刻む予告状の楽曲。プライベートモードで演奏可能。', ...DEV },
+    staccato: { id: 'staccato', title: 'STACCATO', subtitle: 'Qの予告状', artist: 'ASTACT', use: 'secretMusicGame', unlockBoss: 'astact', releaseFlag: 'd4Released', description: 'アスタクトから盗み出す、瞬断の合図を刻む予告状の楽曲。隠し音ゲーで演奏可能。', ...DEV },
     ostinato: { id: 'ostinato', title: 'OSTINATO', subtitle: '月影の迷宮', artist: 'OSTINA', use: 'secretMusicGame', unlockBoss: 'ostina', releaseFlag: 'd5Released', description: 'オスティナから盗み出す、月影の迷宮を執拗な反復で巡る楽曲。隠し音ゲーで演奏可能。', ...DEV },
     chromatic: { id: 'chromatic', title: 'CHROMATIC', subtitle: '星霞の理由', artist: 'CHROMATIA', use: 'privateMode', unlockBoss: 'chromatia', releaseFlag: 'd6Released', description: 'クロマティアから盗み出す、五色の星霞を辿る楽曲。プライベートモードで演奏可能。', ...DEV },
     requiem: { id: 'requiem', title: 'REQUIEM', subtitle: '終幕の凱歌', artist: 'ECLAIM', use: 'privateMode', unlockBoss: 'eclaim', releaseFlag: 'd7Released', description: 'エクレイムから盗み出す、終幕を勝利へ塗り替える鎮魂の楽曲。プライベートモードで演奏可能。', ...DEV }
