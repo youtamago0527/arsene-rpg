@@ -176,14 +176,21 @@
       g.gain.exponentialRampToValueAtTime(.0001, t + duration);
       src.connect(f); f.connect(g); g.connect(this.master); src.start(t);
     }
-    sfx(name) {
+    sfx(name, forceSynthetic = false) {
+      // iOSでは復帰直後などにAudioContextが未生成・suspendedへ戻ることがある。
+      // 呼び出し側の取りこぼしで無音にならないよう、SE側でも毎回復帰を試みる。
+      if (!this.ctx) this.unlock();
       if (!this.ctx || this.muted) return;
-      // 用意された効果音は旧合成音へ落とさない。初回デコード中なら完了後に1回だけ鳴らす。
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      // 実音源が読めればそれを鳴らす。WKWebViewでfetch/decodeに失敗した場合は
+      // 同名の合成音へ落とし、戦闘音や回復音が丸ごと消えないようにする。
       if (this.playSfxFile(name)) return;
-      if (SFX_FILES[name]) {
+      if (SFX_FILES[name] && !forceSynthetic) {
         if (!this.pendingSfx.has(name)) {
           this.pendingSfx.add(name);
-          this.sfxReady?.then(() => this.playSfxFile(name)).finally(() => this.pendingSfx.delete(name));
+          this.sfxReady
+            ?.then(() => { if (!this.playSfxFile(name)) this.sfx(name, true); })
+            .finally(() => this.pendingSfx.delete(name));
         }
         return;
       }
