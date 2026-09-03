@@ -11,6 +11,7 @@ const labyrinthAudio = path.join('音楽系', '隠し音ゲー', '月影の迷�
 
 assert(data.includes("use: 'secretMusicGame'"), 'CADENZA must unlock the secret rhythm track');
 assert(shop.includes("scoreId: 'cadenzaLoot'"), 'LOOT track must require the CADENZA score');
+assert(shop.includes("scoreId: 'rhythm'"), 'Clown Paradise track must require the RHYTHM score');
 assert(shop.includes("scoreId: 'ostinato'"), 'Labyrinth track must require the OSTINATO score');
 assert(shop.includes("scoreId: 'reprise'"), 'Red Fox track must require the REPRISE score');
 assert(shop.includes("scoreId: 'staccato'"), 'Phantom Letter track must require the STACCATO score');
@@ -18,6 +19,7 @@ assert(shop.includes("const displayTitle = unlocked ? track.title : '？？？�
 assert(rhythm.includes('kazuRhythmHighScores?.[this.track.id]'), 'high scores must be stored per track');
 assert(game.includes("score.use === 'secretMusicGame'"), 'score reward destination must be selected per score');
 assert(fs.existsSync(audio), 'LOOT audio asset is missing');
+assert(fs.existsSync(path.join('音楽系', '隠し音ゲー', '道化師の楽園.mp3')), 'Clown Paradise audio asset is missing');
 assert(fs.existsSync(labyrinthAudio), 'Labyrinth audio asset is missing');
 assert(fs.existsSync(path.join('音楽系', '隠し音ゲー', '赤狐の怪盗.mp3')), 'Red Fox audio asset is missing');
 assert(fs.existsSync(path.join('音楽系', '隠し音ゲー', 'Qの予告状-Phantom Letter Q-.mp3')), 'Phantom Letter audio asset is missing');
