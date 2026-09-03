@@ -102,14 +102,19 @@
       scoreId: 'cadenzaLoot', audio: '音楽系/隠し音ゲー/絶望の戦利品-LOOT-.mp3', subtitle: 'CADENZA'
     },
     {
-      id: 'ostinato-labyrinth', no: '03', title: '月影の迷宮 -Labyrinth-', bpm: '—', length: '4:26',
-      genre: 'PHANTOM SCORE', diff: 'PHANTOM', level: '12', accent: '#22d3ee', playable: true,
-      scoreId: 'ostinato', audio: '音楽系/隠し音ゲー/月影の迷宮-Labyrinth-.mp3', subtitle: 'OSTINATO'
-    },
-    {
-      id: 'reprise-red-fox', no: '04', title: '赤狐の怪盗', bpm: '—', length: '3:53',
+      id: 'reprise-red-fox', no: '03', title: '赤狐の怪盗', bpm: '—', length: '3:53',
       genre: 'PHANTOM SCORE', diff: 'EXPERT', level: '11', accent: '#fb7185', playable: true,
       scoreId: 'reprise', audio: '音楽系/隠し音ゲー/赤狐の怪盗.mp3', subtitle: 'REPRISE'
+    },
+    {
+      id: 'staccato-phantom-letter', no: '04', title: 'Qの予告状 -Phantom Letter “Q”-', bpm: '—', length: '3:28',
+      genre: 'PHANTOM SCORE', diff: 'PHANTOM', level: '13', accent: '#ef4444', playable: true,
+      scoreId: 'staccato', audio: '音楽系/隠し音ゲー/Qの予告状-Phantom Letter Q-.mp3', subtitle: 'STACCATO'
+    },
+    {
+      id: 'ostinato-labyrinth', no: '05', title: '月影の迷宮 -Labyrinth-', bpm: '—', length: '4:26',
+      genre: 'PHANTOM SCORE', diff: 'PHANTOM', level: '12', accent: '#22d3ee', playable: true,
+      scoreId: 'ostinato', audio: '音楽系/隠し音ゲー/月影の迷宮-Labyrinth-.mp3', subtitle: 'OSTINATO'
     }
   ];
 
