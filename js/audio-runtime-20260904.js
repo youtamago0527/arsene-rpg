@@ -2,7 +2,7 @@
   'use strict';
   // 同名音源を差し替えてもWKWebViewの古いレスポンスを掴まないよう、
   // BGM/SEの全ローカルURLへ同じリリース番号を付ける。
-  const AUDIO_ASSET_VERSION = '20260904.3';
+  const AUDIO_ASSET_VERSION = '20260904.4';
   const audioAssetUrl = path => {
     const url = new URL(path, document.baseURI);
     url.searchParams.set('av', AUDIO_ASSET_VERSION);
@@ -14,18 +14,18 @@
   //   maxDur … 長いファイルを途中でフェードアウトさせる秒数
   //   rate   … 再生速度。同じ素材を流用して質感を変えるのに使う
   const SFX_FILES = {
-    critical:    { url: 'assets/audio/sfx/critical-sample-20260904.mp3', gain: .92, offset: .002, maxDur: 1.5 },
-    criticalHit: { url: 'assets/audio/sfx/critical-sample-20260904.mp3', gain: .92, offset: .002, maxDur: 1.5 },
-    evade:       { url: 'assets/audio/sfx/evade-sample-20260904.mp3', gain: .86, offset: .002, maxDur: 1.2 },
-    playerHit:   { url: 'assets/audio/sfx/enemy-strike-sample-20260904.mp3', gain: .90, offset: .002, maxDur: 1.2 },
-    swordHit:    { url: 'assets/audio/sfx/sword-hit-sample-20260904.mp3', gain: .90, offset: .050, maxDur: .9 },
-    clawHit:     { url: 'assets/audio/sfx/claw-hit-sample-20260904.mp3', gain: 1.10, offset: .100, maxDur: .9 },
+    critical:    { url: 'assets/audio/sfx/critical-sample-20260904.mp3', gain: .72, offset: .002, maxDur: 1.25, cooldownMs: 100, maxVoices: 2 },
+    criticalHit: { url: 'assets/audio/sfx/critical-sample-20260904.mp3', gain: .72, offset: .002, maxDur: 1.25, cooldownMs: 100, maxVoices: 2 },
+    evade:       { url: 'assets/audio/sfx/evade-sample-20260904.mp3', gain: .56, offset: .002, maxDur: .95, cooldownMs: 100, maxVoices: 2 },
+    playerHit:   { url: 'assets/audio/sfx/enemy-strike-sample-20260904.mp3', gain: .66, offset: .002, maxDur: .95, cooldownMs: 75, maxVoices: 2 },
+    swordHit:    { url: 'assets/audio/sfx/sword-hit-sample-20260904.mp3', gain: .66, offset: .050, maxDur: .78, cooldownMs: 45, maxVoices: 2 },
+    clawHit:     { url: 'assets/audio/sfx/claw-hit-sample-20260904.mp3', gain: .68, offset: .100, maxDur: .72, cooldownMs: 42, maxVoices: 2 },
     // ファイアボールは「飛んでいる最中」の音なので、着弾ではなく発射のタイミングで鳴らす
-    fireFlight:  { url: 'assets/audio/sfx/staff-fire-sample-20260904.mp3', gain: .36, offset: .010, maxDur: .60 },
-    noteHit:     { url: 'assets/audio/sfx/instrument-hit-sample-20260904.mp3', gain: .88, offset: .002, maxDur: 1.4 },
-    heal:        { url: 'assets/audio/sfx/heal-sample-20260904.mp3', gain: .95, offset: .002, maxDur: 1.95 },
-    escape:      { url: 'assets/audio/sfx/escape-sample-20260904.mp3', gain: .68, offset: .028, maxDur: 1.2 },
-    passiveProc: { url: 'assets/audio/sfx/passive-proc-sample-20260904.mp3', gain: .78, offset: .018, maxDur: 1.9 }
+    fireFlight:  { url: 'assets/audio/sfx/staff-fire-sample-20260904.mp3', gain: .30, offset: .010, maxDur: .55, cooldownMs: 55, maxVoices: 2 },
+    noteHit:     { url: 'assets/audio/sfx/instrument-hit-sample-20260904.mp3', gain: .58, offset: .002, maxDur: 1.05, cooldownMs: 65, maxVoices: 2 },
+    heal:        { url: 'assets/audio/sfx/heal-sample-20260904.mp3', gain: .50, offset: .002, maxDur: 1.35, cooldownMs: 180, maxVoices: 1 },
+    escape:      { url: 'assets/audio/sfx/escape-sample-20260904.mp3', gain: .48, offset: .028, maxDur: 1.0, cooldownMs: 300, maxVoices: 1 },
+    passiveProc: { url: 'assets/audio/sfx/passive-proc-sample-20260904.mp3', gain: .34, offset: .018, maxDur: 1.2, cooldownMs: 420, maxVoices: 1 }
   };
   // 武器種 → 効果音名。左手の追撃など、武器種から直接鳴らしたい場所で使う
   const WEAPON_SFX = { sword: 'swordHit', martial: 'clawHit', staff: 'fireFlight', instrument: 'noteHit', shield: 'playerHit' };
@@ -35,6 +35,7 @@
       this.ctx = null; this.master = null; this.musicSource = null; this.musicGain = null; this.muted = false; this.started = false; this.settingsKey = 'arsene-rpg-audio-v1'; this.levels = this.loadLevels(); this.musicMaxVolume = matchMedia('(max-width:760px)').matches ? .18 : .22; this.musicVolume = this.musicMaxVolume * this.levels.bgm; this.fadeToken = 0; this.userActivated = false;
       this.nativeIos = !!(window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === 'ios');
       this.nativeSfxPlayers = new Set();
+      this.nativeSfxByName = new Map(); this.lastSfxAt = new Map(); this.maxNativeSfxPlayers = 10;
       this.music = new Audio(audioAssetUrl(bgmPath)); this.music.loop = true; this.music.preload = 'auto'; this.music.volume = this.musicVolume;
       this.audioId = `${Date.now()}-${Math.random()}`; this.audioFocus = typeof BroadcastChannel === 'function' ? new BroadcastChannel('arsene-rpg-audio-focus') : null;
       if (this.audioFocus) this.audioFocus.onmessage = e => { if (e.data?.type === 'claim' && e.data.id !== this.audioId) { this.music.pause(); this.started = false; } };
@@ -138,21 +139,52 @@
     }
     // ファイルの効果音を鳴らす。まだ読み込めていなければ false を返す。
     playSfxFile(name) {
-      const def = SFX_FILES[name]; if (!def || this.muted) return false;
+      const def = SFX_FILES[name]; if (!def || this.muted || this.levels.sfx <= 0) return false;
       // WKWebViewではfetchしたMP3のdecodeAudioDataが端末依存で失敗し、
       // 旧合成音へ落ちることがある。iOSネイティブ版は、BGMと同じく
       // HTMLMediaElementへローカルMP3を直接渡して確実に正式SEを鳴らす。
       if (this.nativeIos) {
-        const media = new Audio(new URL(def.url, document.baseURI).href);
+        if (!this.ctx || !this.master) return false;
+        const now = performance.now();
+        if (now - (this.lastSfxAt.get(name) ?? -Infinity) < (def.cooldownMs || 0)) return true;
+        this.lastSfxAt.set(name, now);
+        const voices = this.nativeSfxByName.get(name) || new Set();
+        if (voices.size >= (def.maxVoices || 2)) voices.values().next().value?.cleanup();
+        if (this.nativeSfxPlayers.size >= this.maxNativeSfxPlayers) this.nativeSfxPlayers.values().next().value?.cleanup();
+        const media = new Audio(audioAssetUrl(def.url));
         media.preload = 'auto';
         media.playbackRate = def.rate || 1;
-        try { media.volume = Math.min(1, (def.gain ?? 1) * this.levels.sfx); } catch {}
-        this.nativeSfxPlayers.add(media);
-        const cleanup = () => { media.pause(); media.removeAttribute('src'); this.nativeSfxPlayers.delete(media); };
+        // WKWebView ignores HTMLMediaElement.volume. Keep the element at unity and
+        // route it through Web Audio; the shared master gain then applies the SE
+        // slider to sampled and synthesized sounds identically, including true 0%.
+        let source, gain;
+        try {
+          source = this.ctx.createMediaElementSource(media); gain = this.ctx.createGain();
+          gain.gain.value = def.gain ?? 1; source.connect(gain); gain.connect(this.master);
+          media.volume = 1;
+        } catch { return false; }
+        const player = { media, source, gain, cleanup: null };
+        const cleanup = () => {
+          if (!this.nativeSfxPlayers.has(player)) return;
+          media.pause(); media.removeAttribute('src'); source.disconnect(); gain.disconnect();
+          this.nativeSfxPlayers.delete(player); voices.delete(player);
+          if (!voices.size) this.nativeSfxByName.delete(name);
+        };
+        player.cleanup = cleanup; this.nativeSfxPlayers.add(player); voices.add(player); this.nativeSfxByName.set(name, voices);
         media.addEventListener('ended', cleanup, { once: true });
         media.addEventListener('error', cleanup, { once: true });
+        try { media.currentTime = def.offset || 0; } catch {}
         media.play().catch(cleanup);
-        if (Number.isFinite(def.maxDur)) setTimeout(cleanup, Math.ceil(def.maxDur * 1000));
+        if (Number.isFinite(def.maxDur)) {
+          const fadeAt = Math.max(0, def.maxDur - .08);
+          setTimeout(() => {
+            if (!this.nativeSfxPlayers.has(player)) return;
+            const t = this.ctx.currentTime;
+            gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(Math.max(.0001, gain.gain.value), t);
+            gain.gain.exponentialRampToValueAtTime(.0001, t + .08);
+          }, Math.ceil(fadeAt * 1000));
+          setTimeout(cleanup, Math.ceil(def.maxDur * 1000));
+        }
         return true;
       }
       if (!this.ctx) return false;
