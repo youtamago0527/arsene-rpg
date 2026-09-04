@@ -5333,6 +5333,16 @@
   window.BattleGame = BattleGame; // 異世界モジュールから prototype を拡張するため公開する
   addEventListener('DOMContentLoaded', () => {
     window.arseneGame = new BattleGame();
+    // Native/PWA launches are game surfaces: suppress iOS long-press selection and
+    // the system "Search Web" menu, while keeping save-code/name inputs editable.
+    if (document.documentElement.matches('.capacitor-native,.standalone-app')) {
+      document.addEventListener('contextmenu', event => {
+        if (!event.target.closest('input,textarea,[contenteditable="true"]')) event.preventDefault();
+      }, { capture: true });
+      document.addEventListener('selectstart', event => {
+        if (!event.target.closest('input,textarea,[contenteditable="true"]')) event.preventDefault();
+      }, { capture: true });
+    }
     // 敵名オートフィットの再計算トリガー: 初回表示・Webフォント読み込み完了・
     // 画面回転／リサイズのいずれでも、現在表示中の名札だけを再測定する。
     const enemyLayer = document.getElementById('enemies');
