@@ -3735,21 +3735,32 @@
     offerRepeatBossMaterialDrop(enemy, firstClear) {
       if (firstClear || !enemy || !window.arseneQOffer?.canUse?.('bossDrop')) return false;
       const rows = this.bossMaterialDropRows(enemy); if (!rows.length) return false;
-      setTimeout(() => window.arseneQOffer.show('bossDrop', {
-        title: `${enemy.name} 素材追跡`,
-        copy: '広告を見て、このボスの素材だけをもう一度追加抽選する。装備品は対象外。',
-        onGrant: () => {
-          const drops = {};
-          rows.forEach(row => { if (Math.random() < clamp(Number(row.chance) || 0, 0, 1)) drops[row.itemId] = (drops[row.itemId] || 0) + 1; });
-          const entries = Object.entries(drops);
-          if (!entries.length) { window.arseneStartFlow?.toast?.('追加抽選：素材は見つからなかった'); return; }
-          this.applyRewards({ exp: 0, gold: 0, drops });
-          entries.forEach(([id, n]) => { this.battleRewards.drops[id] = (this.battleRewards.drops[id] || 0) + n; });
-          const names = entries.map(([id, n]) => `${D.items[id]?.name || id} ×${n}`).join(' / ');
-          document.querySelector('#rewards')?.insertAdjacentHTML('beforeend', `<div class="boss-result-note"><b>Q'S OFFER // BOSS MATERIAL</b><br>${names}</div>`);
-          window.arseneStartFlow?.toast?.(`追加素材：${names}`);
-        }
-      }), 450);
+      const battleMode = this.battleMode;
+      let opened = false;
+      const open = () => {
+        if (opened || this.battleMode !== battleMode) return true;
+        const result = document.querySelector('#result');
+        if (!result || result.hidden || result.style.display === 'none') return false;
+        opened = !!window.arseneQOffer.show('bossDrop', {
+          title: `${enemy.name} 素材追跡`,
+          copy: '広告を見て、このボスの素材だけをもう一度追加抽選する。装備品は対象外。',
+          onGrant: () => {
+            const drops = {};
+            rows.forEach(row => { if (Math.random() < clamp(Number(row.chance) || 0, 0, 1)) drops[row.itemId] = (drops[row.itemId] || 0) + 1; });
+            const entries = Object.entries(drops);
+            if (!entries.length) { window.arseneStartFlow?.toast?.('追加抽選：素材は見つからなかった'); return; }
+            this.applyRewards({ exp: 0, gold: 0, drops });
+            entries.forEach(([id, n]) => { this.battleRewards.drops[id] = (this.battleRewards.drops[id] || 0) + n; });
+            const names = entries.map(([id, n]) => `${D.items[id]?.name || id} ×${n}`).join(' / ');
+            document.querySelector('#rewards')?.insertAdjacentHTML('beforeend', `<div class="boss-result-note"><b>Q'S OFFER // BOSS MATERIAL</b><br>${names}</div>`);
+            window.arseneStartFlow?.toast?.(`追加素材：${names}`);
+          }
+        });
+        return opened;
+      };
+      // ボス固有の勝利演出が同時に結果画面を差し替える場合があるため、
+      // 1回の固定遅延に依存せず、結果画面が安定するまで短時間だけ再試行する。
+      [450, 1000, 1800].forEach(delay => setTimeout(() => { if (!opened) open(); }, delay));
       return true;
     }
     async victory() {
