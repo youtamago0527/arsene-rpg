@@ -12,6 +12,6 @@ for (const text of ['ドロップした素材', '同じ装備', '＋3', '100％'
 assert.match(game, /battleMode === 'noel'[\s\S]*?showBossRewardSequence\([\s\S]*?workshopUnlockTutorialHTML\(\)/, 'Noel defeat must sequence unlock and workshop guide');
 assert.ok(css.includes('.workshop-unlock-tutorial'), 'workshop guide styles must exist');
 assert.ok(index.includes('css/menu.css?v=0.9.5'), 'menu CSS cache version must be bumped');
-assert.ok(index.includes('js/game.js?v=4.13.15'), 'game JS cache version must include the Noel tutorial');
+assert.ok(index.includes('js/game.js?v=4.13.16'), 'game JS cache version must include the Noel tutorial');
 
 console.log('noel workshop tutorial regression: ok');

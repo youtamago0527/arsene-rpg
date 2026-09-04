@@ -19,10 +19,14 @@ assert.match(game, /jobMasterReset40Applied[\s\S]*jobMasterReset70Applied/,
   'D3 and D5 must each clear the previous MASTER tier once');
 assert.match(game, /const currentMasterLevel = d5Cleared \? \(D\.jobLevelCapFinal \|\| 70\) : d3Cleared \? \(D\.jobLevelCapExtended \|\| 40\) : \(D\.jobLevelCap \|\| 20\);/,
   'save migration must restore MASTER only at 20/40/70 for the current story tier');
+assert.ok((game.match(/jneed = jlv >= jcap \? null : this\.jobExpNeeded\(jlv\)/g) || []).length >= 3,
+  'HUD, hideout, and status must display MASTER at the currently unlocked cap');
+assert.match(game, /cap = this\.effectiveJobLevelCap\(\), need = p\.level >= cap \? null : this\.jobExpNeeded\(p\.level\)/,
+  'JOB detail must display MASTER at the currently unlocked cap');
 assert.match(otherworld, /for \(const jobId of p\.jobMastered \|\| \[\]\)[\s\S]*p\.ptStealDone\[jobId\] = true;/,
   'recovered MASTER jobs must also recover PHANTOM STEAL state');
 assert.match(index, /js\/data\.js\?v=3\.12\.5/);
-assert.match(index, /js\/game\.js\?v=4\.13\.12/);
+assert.match(index, /js\/game\.js\?v=4\.13\.16/);
 assert.match(index, /js\/otherworld\.js\?v=0\.3\.7/);
 
 console.log('job_level20_master_regression: ok');

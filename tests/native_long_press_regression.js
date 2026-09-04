@@ -14,6 +14,6 @@ assert.match(game, /closest\('input,textarea,\[contenteditable="true"\]'\)/, 'ed
 assert.match(kazu, /hotspot\.addEventListener\('click',[\s\S]*?this\.tapCount \+= 1;[\s\S]*?this\.tapCount >= 3/, 'Kazu three-tap click flow must remain intact');
 assert.doesNotMatch(game.match(/matches\('\.capacitor-native,\.standalone-app'\)[\s\S]*?\n    }/)?.[0] || '', /addEventListener\('click'/, 'long-press guard must not intercept taps/clicks');
 assert.ok(index.includes('css/game.css?v=0.5.8'));
-assert.ok(index.includes('js/game.js?v=4.13.15'));
+assert.ok(index.includes('js/game.js?v=4.13.16'));
 
 console.log('native long press regression: ok');
