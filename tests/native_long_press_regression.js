@@ -6,9 +6,9 @@ const kazu = fs.readFileSync('js/kazu_minigame.js', 'utf8');
 const css = fs.readFileSync('css/game.css', 'utf8');
 const index = fs.readFileSync('index.html', 'utf8');
 
-assert.match(css, /\.capacitor-native body[^}]*-webkit-user-select:none[^}]*-webkit-touch-callout:none/, 'native game surface must suppress iOS selection/callout');
-assert.match(css, /\.standalone-app body[^}]*-webkit-user-select:none[^}]*-webkit-touch-callout:none/, 'home-screen app must suppress iOS selection/callout');
-assert.match(css, /input,textarea,\[contenteditable="true"\][^}]*user-select:text/, 'editable controls must remain selectable');
+assert.match(css, /\.capacitor-native body,\.capacitor-native body \*[^}]*-webkit-user-select:none!important[^}]*-webkit-touch-callout:none!important/, 'every native game descendant must suppress iOS selection/callout');
+assert.match(css, /\.standalone-app body,\.standalone-app body \*[^}]*user-select:none!important[^}]*-webkit-touch-callout:none!important/, 'every home-screen app descendant must suppress iOS selection/callout');
+assert.match(css, /input,textarea,\[contenteditable="true"\][^}]*user-select:text!important/, 'editable controls must remain selectable');
 assert.match(game, /matches\('\.capacitor-native,\.standalone-app'\)[\s\S]*?addEventListener\('contextmenu'[\s\S]*?addEventListener\('selectstart'/, 'native/PWA must block long-press menus and selection');
 assert.match(game, /closest\('input,textarea,\[contenteditable="true"\]'\)/, 'editable controls must be exempt from event blocking');
 assert.match(kazu, /hotspot\.addEventListener\('click',[\s\S]*?this\.tapCount \+= 1;[\s\S]*?this\.tapCount >= 3/, 'Kazu three-tap click flow must remain intact');
