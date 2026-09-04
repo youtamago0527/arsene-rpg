@@ -2360,10 +2360,19 @@
         strip.innerHTML = chips.join(''); strip.dataset.statusOwner = `${e.name}${e.label || ''}`; strip.dataset.enemyUid = e.uid; strip.tabIndex = 0; strip.setAttribute('role', 'button'); strip.title = 'タップで敵の状態と解析情報を確認'; strip.onclick = event => { event.preventDefault(); event.stopPropagation(); this.showStatusGroup(strip.dataset.statusOwner, strip); };
       });
     }
-    resetBattleLog() { this.clearQuickResultPopup(); this.battleLogHistory = []; this.battleEvents = []; this.battleLogExpanded = false; this.lastBattleAction = null; $('#log')?.classList.remove('expanded'); }
+    resetBattleLog() { this.closeLogOverlay(); this.clearQuickResultPopup(); this.battleLogHistory = []; this.battleEvents = []; this.battleLogExpanded = false; this.lastBattleAction = null; $('#log')?.classList.remove('expanded'); }
     setLog(text) { if (!text) return; this.battleLogHistory ||= []; this.battleLogHistory.push(text); if (this.battleLogHistory.length > 100) this.battleLogHistory.shift(); this.renderBattleLog(); }
-    renderBattleLog() { const log = $('#log'); if (!log) return; const rows = this.battleLogExpanded ? this.battleLogHistory : this.battleLogHistory.slice(-5); log.innerHTML = `<small>COMBAT LOG // ${this.battleLogExpanded ? 'TAP TO CLOSE' : 'TAP FOR HISTORY'}</small><div class="battle-log-lines">${rows.map(t => `<p>${t}</p>`).join('')}</div>`; log.scrollTop = this.battleLogExpanded ? log.scrollHeight : 0; }
-    toggleBattleLog() { this.battleLogExpanded = !this.battleLogExpanded; $('#log')?.classList.toggle('expanded', this.battleLogExpanded); this.renderBattleLog(); }
+    renderBattleLog() { const log = $('#log'); if (!log) return; const rows = this.battleLogHistory.slice(-5); log.innerHTML = `<small>COMBAT LOG // TAP FOR HISTORY</small><div class="battle-log-lines">${rows.map(t => `<p>${t}</p>`).join('')}</div>`; if (this.battleLogExpanded) { const content = document.querySelector('#arsene-log-overlay .arsene-log-content'); if (content) content.innerHTML = this.battleLogHistory.map(t => `<p>${t}</p>`).join(''); } }
+    closeLogOverlay() { document.getElementById('arsene-log-overlay')?.remove(); this.battleLogExpanded = false; this.isExploreLogExpanded = false; }
+    showLogOverlay(title, html) {
+      document.getElementById('arsene-log-overlay')?.remove();
+      const overlay = document.createElement('div'); overlay.id = 'arsene-log-overlay'; overlay.className = 'arsene-log-overlay';
+      overlay.innerHTML = `<section role="dialog" aria-modal="true" aria-label="${title}"><header><b>${title}</b><button type="button" data-log-close>閉じる ×</button></header><div class="arsene-log-content">${html}</div></section>`;
+      overlay.addEventListener('click', e => { if (e.target === overlay || e.target.closest('[data-log-close]')) { this.closeLogOverlay(); this.renderBattleLog(); } });
+      overlay.addEventListener('keydown', e => { if (e.key === 'Escape') { this.closeLogOverlay(); this.renderBattleLog(); } });
+      document.body.appendChild(overlay); overlay.querySelector('[data-log-close]').focus();
+    }
+    toggleBattleLog() { if (this.battleLogExpanded) { this.closeLogOverlay(); this.renderBattleLog(); return; } this.battleLogExpanded = true; this.showLogOverlay('BATTLE LOG', this.battleLogHistory.map(t => `<p>${t}</p>`).join('')); }
     clearQuickResultPopup() { $('#quick-result-popup')?.remove(); }
     showQuickResultPopup() {
       const report = this.battleRewards?.quickReport, field = $('#battlefield'); if (!report || !field) return;
@@ -2408,6 +2417,7 @@
       button?.setAttribute('aria-expanded', 'false');
     }
     cleanupBattleTransientUI() {
+      this.closeLogOverlay();
       this.closeBattleMenu();
       this.cancelAutoPick();
       window.arseneQOffer?.closeActive?.();
