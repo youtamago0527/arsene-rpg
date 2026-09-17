@@ -299,10 +299,24 @@
       if (list) list.innerHTML = ITEMS.map(item => this.itemHTML(item)).join('');
     }
 
-    purchase(id) {
+    async purchase(id) {
       const g = window.arseneGame, p = this.premium(), item = ITEMS.find(entry => entry.id === id);
       if (!g?.profile || !p || !item) { this.toast('購入できません', 'ゲームデータを読み込んでからお試しください'); return; }
       if (this.isPermanentOwned(id)) { this.toast(item.name, '購入済みです'); return; }
+      this.toast(item.name, 'Stripeの安全な決済画面を開いています…');
+      try {
+        const response = await fetch('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ itemId: id }) });
+        const checkout = await response.json();
+        if (!response.ok || !checkout.url) throw new Error(checkout.error || '決済を開始できませんでした');
+        location.assign(checkout.url);
+      } catch (error) {
+        this.toast('決済を開始できません', error.message || '時間をおいて再度お試しください');
+      }
+    }
+
+    grantPurchase(id) {
+      const g = window.arseneGame, p = this.premium(), item = ITEMS.find(entry => entry.id === id);
+      if (!g?.profile || !p || !item) return;
       let result = '効果を反映しました';
       if (id === 'time-complete-pass') {
         p.adSkipLicense = true; p.auto3License = true; p.sweepLicense = true;
@@ -327,6 +341,23 @@
       if (document.querySelector('#menu-panel')?.dataset.panel === 'otherworld') g.renderOtherWorldPanel?.(document.querySelector('#menu-panel'));
       this.refreshShopItems();
       this.toast(item.name, result);
+    }
+
+    async claimCompletedCheckout() {
+      const params = new URLSearchParams(location.search), sessionId = params.get('session_id');
+      if (params.get('checkout') !== 'success' || !sessionId) return;
+      try {
+        const response = await fetch(`/api/checkout-status?session_id=${encodeURIComponent(sessionId)}`);
+        const checkout = await response.json();
+        if (!response.ok || !checkout.paid || !ITEMS.some(item => item.id === checkout.itemId)) throw new Error(checkout.error || '決済を確認できませんでした');
+        this.grantPurchase(checkout.itemId);
+      } catch (error) {
+        this.toast('決済を確認できません', error.message || '決済状況を確認してから再試行してください');
+      } finally {
+        params.delete('checkout'); params.delete('session_id');
+        const query = params.toString();
+        history.replaceState({}, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
+      }
     }
 
     // 開いている間はmax-heightを一切掛けない(CSS側で.open時にnone/overflow:visible)。
@@ -408,7 +439,7 @@
     }
   }
 
-  const init = () => { if (!window.phantomSecret) window.phantomSecret = new PhantomSecret(); };
+  const init = () => { if (!window.phantomSecret) window.phantomSecret = new PhantomSecret(); window.phantomSecret.claimCompletedCheckout(); };
   if (document.readyState === 'loading') addEventListener('DOMContentLoaded', init);
   else init();
 })();
