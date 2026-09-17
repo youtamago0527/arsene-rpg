@@ -68,6 +68,22 @@
       stats: [['■ 獲得数', '1個'], ['■ 使用条件', 'JOB Lv20'], ['■ 直接能力上昇', 'なし']],
       cta: '¥200 で1個購入', action: '購入',
       ctaStyle: 'background:linear-gradient(90deg,#f0abfc,#f472b6,#c084fc);color:#020617'
+    },
+    {
+      id: 'protection-arcana', no: '08', kicker: 'ENCHANT PROTECTION', name: '保護のアルカナ ×1',
+      priceLabel: '¥200', accent: '#60a5fa',
+      description: '武器強化前に使用します。失敗時も武器とOPを残しますが、強化値は3段階低下します（最低+0）。成功・失敗を問わず1個消費し、素材武器とGOLDも消費されます。',
+      stats: [['■ 失敗時', '武器維持／強化値−3'], ['■ 使用時', '抽選前に1個消費']],
+      cta: '¥200 で1個購入', action: '購入',
+      ctaStyle: 'background:linear-gradient(90deg,#60a5fa,#38bdf8,#818cf8);color:#020617'
+    },
+    {
+      id: 'blessed-protection-arcana', no: '09', kicker: 'BLESSED PROTECTION', name: '祝福された保護のアルカナ ×1',
+      priceLabel: '¥500', accent: '#fbbf24',
+      description: '武器強化前に使用します。失敗時も武器・OP・現在の強化値を維持します。成功・失敗を問わず1個消費し、素材武器とGOLDも消費されます。',
+      stats: [['■ 失敗時', '武器・強化値を維持'], ['■ 使用時', '抽選前に1個消費']],
+      cta: '¥500 で1個購入', action: '購入',
+      ctaStyle: 'background:linear-gradient(90deg,#fde68a,#fbbf24,#f59e0b);color:#1c1100'
     }
   ];
 
@@ -77,33 +93,15 @@
   const TRACKS = [
     {
       id: 'reijishinshoku', no: '01', title: '零時侵蝕', bpm: 170, length: '4:37',
-      genre: 'OPENING THEME', diff: 'HARD', level: '08', accent: '#fb7185', playable: true,
-      audio: '音楽系/OP/零時侵蝕.mp3', subtitle: 'ZERO HOUR INVASION'
+      genre: 'OPENING THEME', diff: 'HARD', level: '08', accent: '#fb7185', playable: true
     },
     {
-      id: 'cadenza-loot', no: '02', title: '絶望の戦利品 -LOOT-', bpm: '—', length: '4:33',
-      genre: 'PHANTOM SCORE', diff: 'EXPERT', level: '10', accent: '#c084fc', playable: true,
-      scoreId: 'cadenzaLoot', audio: '音楽系/隠し音ゲー/絶望の戦利品-LOOT-.mp3', subtitle: 'CADENZA'
+      id: 'neon-labyrinth', no: '02', title: 'Neon Labyrinth', bpm: 172, length: '—',
+      genre: 'CYBER TRANCE', diff: 'EXPERT', level: '12', accent: '#c084fc', playable: false
     },
     {
-      id: 'rhythm-clown-paradise', no: '03', title: '道化師の楽園', bpm: '—', length: '3:19',
-      genre: 'PHANTOM SCORE', diff: 'EXPERT', level: '10', accent: '#f43f5e', playable: true,
-      scoreId: 'rhythm', audio: '音楽系/隠し音ゲー/道化師の楽園.mp3', subtitle: 'RHYTHM'
-    },
-    {
-      id: 'reprise-red-fox', no: '04', title: '赤狐の怪盗', bpm: '—', length: '3:53',
-      genre: 'PHANTOM SCORE', diff: 'EXPERT', level: '11', accent: '#fb7185', playable: true,
-      scoreId: 'reprise', audio: '音楽系/隠し音ゲー/赤狐の怪盗.mp3', subtitle: 'REPRISE'
-    },
-    {
-      id: 'staccato-phantom-letter', no: '05', title: 'Qの予告状 -Phantom Letter “Q”-', bpm: '—', length: '3:28',
-      genre: 'PHANTOM SCORE', diff: 'PHANTOM', level: '13', accent: '#ef4444', playable: true,
-      scoreId: 'staccato', audio: '音楽系/隠し音ゲー/Qの予告状-Phantom Letter Q-.mp3', subtitle: 'STACCATO'
-    },
-    {
-      id: 'ostinato-labyrinth', no: '06', title: '月影の迷宮 -Labyrinth-', bpm: '—', length: '4:26',
-      genre: 'PHANTOM SCORE', diff: 'PHANTOM', level: '12', accent: '#22d3ee', playable: true,
-      scoreId: 'ostinato', audio: '音楽系/隠し音ゲー/月影の迷宮-Labyrinth-.mp3', subtitle: 'OSTINATO'
+      id: 'phantom-overdrive', no: '03', title: 'PHANTOM OVERDRIVE', bpm: 200, length: '—',
+      genre: 'HARDCORE', diff: 'PHANTOM', level: '15', accent: '#22d3ee', playable: false
     }
   ];
 
@@ -241,35 +239,24 @@
     }
 
     trackHTML(track) {
-      const unlocked = this.isTrackUnlocked(track);
-      const score = unlocked ? this.highScore(track.id) : null;
-      const displayTitle = unlocked ? track.title : '？？？？？？';
-      const displayGenre = unlocked ? track.genre : 'UNKNOWN SCORE';
+      const score = track.playable ? this.highScore() : null;
       return `
-        <button type="button" class="pm-track pm-cut${unlocked ? '' : ' locked'}"
-                data-pm="track" data-track="${track.id}" ${unlocked ? '' : 'disabled'}>
+        <button type="button" class="pm-track pm-cut${track.playable ? '' : ' locked'}"
+                data-pm="track" data-track="${track.id}" ${track.playable ? '' : 'disabled'}>
           <span class="pm-track-no" style="color:${track.accent};background:${tint(track.accent, '26')};border:1px solid ${tint(track.accent, '80')}">${esc(track.no)}</span>
           <span class="pm-track-main">
-            <small>${unlocked ? `BPM ${track.bpm} / ${esc(displayGenre)}${track.length !== '—' ? ` / ${track.length}` : ''}` : esc(displayGenre)}</small>
-            <b>${esc(displayTitle)}</b>
+            <small>BPM ${track.bpm} / ${esc(track.genre)}${track.length !== '—' ? ` / ${track.length}` : ''}</small>
+            <b>${esc(track.title)}</b>
             <span class="pm-track-diff" style="color:${track.accent};border:1px solid ${track.accent};background:${tint(track.accent, '1a')}">${esc(track.diff)} ${esc(track.level)}</span>
           </span>
-          <span class="pm-track-score">${unlocked
+          <span class="pm-track-score">${track.playable
             ? `HIGH SCORE<b style="color:${track.accent}">${score.toLocaleString()}</b>`
-            : `<em>LOCKED</em><b style="color:${track.accent}">${track.scoreId ? 'SCORE REQUIRED' : 'COMING SOON'}</b>`}</span>
+            : `<em>LOCKED</em><b style="color:${track.accent}">COMING SOON</b>`}</span>
         </button>`;
     }
 
-    isTrackUnlocked(track) {
-      if (!track?.playable) return false;
-      return !track.scoreId || !!window.arseneGame?.profile?.musicScores?.[track.scoreId];
-    }
-
-    // 曲ごとのハイスコア。旧セーブの零時侵蝕スコアもそのまま引き継ぐ。
-    highScore(id = 'reijishinshoku') {
-      const flags = window.arseneGame?.profile?.flags || {};
-      return Number(flags.kazuRhythmHighScores?.[id] || (id === 'reijishinshoku' ? flags.kazuRhythmHighScore : 0) || 0);
-    }
+    // 音ゲー側が保存しているハイスコアをそのまま出す。
+    highScore() { return Number(window.arseneGame?.profile?.flags?.kazuRhythmHighScore || 0); }
 
     premium() {
       const g = window.arseneGame;
@@ -291,6 +278,8 @@
       if (id === 'ad-skip-tickets') return Math.max(0, Number(p.adSkipTickets) || 0);
       if (id === 'otherworld-tickets') return Math.max(0, Number(p.otherworldTickets) || 0);
       if (id === 'rebirth-arcana') return Math.max(0, Number(g.profile.inventory?.rebirthArcana) || 0);
+      if (id === 'protection-arcana') return Math.max(0, Number(g.profile.inventory?.protectionArcana) || 0);
+      if (id === 'blessed-protection-arcana') return Math.max(0, Number(g.profile.inventory?.blessedProtectionArcana) || 0);
       return null;
     }
 
@@ -305,7 +294,11 @@
       if (this.isPermanentOwned(id)) { this.toast(item.name, '購入済みです'); return; }
       this.toast(item.name, 'Stripeの安全な決済画面を開いています…');
       try {
-        const response = await fetch('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ itemId: id }) });
+        const response = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ itemId: id })
+        });
         const checkout = await response.json();
         if (!response.ok || !checkout.url) throw new Error(checkout.error || '決済を開始できませんでした');
         location.assign(checkout.url);
@@ -335,6 +328,14 @@
         g.profile.inventory ||= {};
         g.profile.inventory.rebirthArcana = Math.max(0, Number(g.profile.inventory.rebirthArcana) || 0) + 1;
         result = `輪廻のアルカナ 所持${g.profile.inventory.rebirthArcana}個`;
+      } else if (id === 'protection-arcana') {
+        g.profile.inventory ||= {};
+        g.profile.inventory.protectionArcana = Math.max(0, Number(g.profile.inventory.protectionArcana) || 0) + 1;
+        result = '保護のアルカナ 所持' + g.profile.inventory.protectionArcana + '個';
+      } else if (id === 'blessed-protection-arcana') {
+        g.profile.inventory ||= {};
+        g.profile.inventory.blessedProtectionArcana = Math.max(0, Number(g.profile.inventory.blessedProtectionArcana) || 0) + 1;
+        result = '祝福された保護のアルカナ 所持' + g.profile.inventory.blessedProtectionArcana + '個';
       } else return;
       g.saveProfile?.(); g.audio?.sfx?.('confirm');
       g.renderBattleMenu?.(); g.showMainCommands?.(); g.renderMenuSummary?.();
@@ -344,7 +345,17 @@
     }
 
     async claimCompletedCheckout() {
-      const params = new URLSearchParams(location.search), sessionId = params.get('session_id');
+      const params = new URLSearchParams(location.search);
+      const sessionId = params.get('session_id');
+      const returnToShop = params.get('return') === 'shop';
+      if (params.get('checkout') === 'cancelled' && returnToShop) {
+        params.delete('checkout'); params.delete('return');
+        const query = params.toString();
+        history.replaceState({}, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
+        this.openShop();
+        this.toast('決済を中止しました', '商品は購入されていません');
+        return;
+      }
       if (params.get('checkout') !== 'success' || !sessionId) return;
       try {
         const response = await fetch(`/api/checkout-status?session_id=${encodeURIComponent(sessionId)}`);
@@ -354,9 +365,10 @@
       } catch (error) {
         this.toast('決済を確認できません', error.message || '決済状況を確認してから再試行してください');
       } finally {
-        params.delete('checkout'); params.delete('session_id');
+        params.delete('checkout'); params.delete('session_id'); params.delete('return');
         const query = params.toString();
         history.replaceState({}, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
+        if (returnToShop) this.openShop();
       }
     }
 
@@ -407,7 +419,6 @@
     play() {
       this.popup.hidden = true;
       this.arcade.hidden = false;
-      this.arcade.querySelector('.pm-track-list').innerHTML = TRACKS.map(track => this.trackHTML(track)).join('');
       this.arcade.querySelector('.pm-track-list').scrollTop = 0;
       this.refreshScores();
       window.arseneGame?.audio?.sfx?.('ui');
@@ -415,18 +426,16 @@
 
     // 選曲画面を開くたびにハイスコアを引き直す。
     refreshScores() {
-      TRACKS.forEach(track => {
-        const el = this.arcade.querySelector(`.pm-track[data-track="${track.id}"] .pm-track-score b`);
-        if (el && this.isTrackUnlocked(track)) el.textContent = this.highScore(track.id).toLocaleString();
-      });
+      const el = this.arcade.querySelector('.pm-track[data-track="reijishinshoku"] .pm-track-score b');
+      if (el) el.textContent = this.highScore().toLocaleString();
     }
 
     playTrack(id) {
       const track = TRACKS.find(t => t.id === id);
-      if (!this.isTrackUnlocked(track)) return;
+      if (!track?.playable) return;
       this.close();
       const rhythm = window.kazuRhythmGame;
-      if (rhythm?.open) rhythm.open(track);
+      if (rhythm?.open) rhythm.open();
       else this.toast(track.title, '読み込みに失敗しました');
     }
 
@@ -439,7 +448,10 @@
     }
   }
 
-  const init = () => { if (!window.phantomSecret) window.phantomSecret = new PhantomSecret(); window.phantomSecret.claimCompletedCheckout(); };
+  const init = () => {
+    if (!window.phantomSecret) window.phantomSecret = new PhantomSecret();
+    window.phantomSecret.claimCompletedCheckout();
+  };
   if (document.readyState === 'loading') addEventListener('DOMContentLoaded', init);
   else init();
 })();
