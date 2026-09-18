@@ -22,6 +22,8 @@
     'blessed-protection-arcana': { productId: 'com.arsene.remix.blessed_protection_arcana_1', type: 'consumable' }
   };
   const STORE_ITEM_BY_PRODUCT = Object.fromEntries(Object.entries(STORE_PRODUCTS).map(([itemId, value]) => [value.productId, itemId]));
+  const WEB_RESTORE_KEY_STORAGE = 'arsene-web-store-restore-v1';
+  const WEB_CLAIM_TOKEN_STORAGE = 'arsene-web-store-claim-v1';
 
   // 裏ショップの品揃え。効果の付与はStoreKitの検証済み取引を受け取った後だけ行う。
   const ITEMS = [
@@ -147,6 +149,9 @@
       this.purchaseBusy = false;
       this.storeReady = false;
       this.storeProducts = {};
+      this.webProducts = {};
+      this.webStoreLoadPromise = null;
+      this.webRecoveryPromise = null;
       this.build();
       this.bindStoreUpdates();
     }
@@ -192,7 +197,7 @@
           <p class="pm-shop-note">すべて時短専用。戦闘力・報酬量・利用上限は変化しません</p>
         </header>
         <div class="pm-shop-list">${ITEMS.map(item => this.itemHTML(item)).join('')}</div>
-        <footer class="pm-arcade-foot"><button type="button" class="pm-btn-quiet" data-pm="restore">購入を復元</button></footer>`;
+        <footer class="pm-arcade-foot"><button type="button" class="pm-btn-quiet" data-pm="restore">購入を復元</button>${this.isWebStore() ? '<button type="button" class="pm-btn-quiet" data-pm="restore-key">復元キーを表示</button>' : ''}</footer>`;
 
       // ── 選曲画面 ──
       const arcade = document.createElement('div');
@@ -229,6 +234,7 @@
         else if (action === 'toggle') this.toggleItem(button.closest('.pm-item'));
         else if (action === 'buy') this.purchase(button.dataset.id);
         else if (action === 'restore') this.restorePurchases();
+        else if (action === 'restore-key') this.showRestoreKey();
         else if (action === 'track') this.playTrack(button.dataset.track);
       };
       popup.addEventListener('click', onClick);
@@ -247,7 +253,8 @@
 
     itemHTML(item) {
       const owned = this.isPermanentOwned(item.id), amount = this.consumableAmount(item.id);
-      const store = STORE_PRODUCTS[item.id], native = this.isNativeStore(), available = native && this.storeReady && !!this.storeProducts[store.productId];
+      const store = STORE_PRODUCTS[item.id], native = this.isNativeStore(), web = this.isWebStore();
+      const available = this.storeReady && (native ? !!this.storeProducts[store.productId] : web ? !!this.webProducts[item.id] : false);
       const status = owned ? '購入済み' : amount != null ? `所持 ${amount}` : '';
       const head = `
         <button type="button" class="pm-item-head" data-pm="toggle">
@@ -268,7 +275,7 @@
           ${item.description ? `<p>${esc(item.description)}</p>` : ''}
           ${item.stats ? `<div class="pm-item-stats">${item.stats.map(([k, v]) => `<span>${esc(k)}<b>${esc(v)}</b></span>`).join('')}</div>` : ''}
           ${status ? `<small class="pm-item-owned">${esc(status)}</small>` : ''}
-          <button type="button" class="pm-item-cta pm-cut-sm" style="${item.ctaStyle}" data-pm="buy" data-id="${esc(item.id)}" ${owned || !available || this.purchaseBusy ? 'disabled' : ''}>${owned ? '✓ 購入済み' : !native ? 'iOSアプリ限定' : !this.storeReady ? 'App Store確認中…' : !available ? '現在購入できません' : esc(item.cta)}</button>
+          <button type="button" class="pm-item-cta pm-cut-sm" style="${item.ctaStyle}" data-pm="buy" data-id="${esc(item.id)}" ${owned || !available || this.purchaseBusy ? 'disabled' : ''}>${owned ? '✓ 購入済み' : !this.storeReady ? (web ? 'Stripe確認中…' : 'App Store確認中…') : !available ? '現在購入できません' : esc(item.cta)}</button>
         </div></div>`;
       return item.featured
         ? `<article class="pm-item pm-item-featured pm-cut" data-id="${item.id}"><div class="pm-item-inner pm-cut">${head}${body}</div></article>`
@@ -343,6 +350,30 @@
 
     storePlugin() { return this.isNativeStore() ? window.Capacitor.Plugins.ArseneStoreKit : null; }
 
+    isWebStore() { return !window.Capacitor?.isNativePlatform?.(); }
+
+    async webRequest(path, options = {}) {
+      const restoreKey = localStorage.getItem(WEB_RESTORE_KEY_STORAGE) || '';
+      const response = await fetch(path, {
+        ...options,
+        headers: { ...(options.headers || {}), ...(restoreKey ? { authorization: `Bearer ${restoreKey}` } : {}) }
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'Web決済サービスへ接続できませんでした');
+      return payload;
+    }
+
+    async ensureWebIdentity() {
+      let restoreKey = localStorage.getItem(WEB_RESTORE_KEY_STORAGE);
+      if (restoreKey) return restoreKey;
+      const response = await fetch('/api/store/identity', { method: 'POST' });
+      const payload = await response.json();
+      if (!response.ok || !payload.restoreKey) throw new Error(payload.error || '復元キーを発行できませんでした');
+      restoreKey = payload.restoreKey;
+      localStorage.setItem(WEB_RESTORE_KEY_STORAGE, restoreKey);
+      return restoreKey;
+    }
+
     bindStoreUpdates() {
       const store = this.storePlugin(); if (!store?.addListener) return;
       store.addListener('transactionUpdated', async event => {
@@ -357,7 +388,10 @@
 
     async loadStore() {
       const store = this.storePlugin();
-      if (!store) { this.storeReady = true; this.refreshShopItems(); return; }
+      if (!store) {
+        if (!this.isWebStore()) { this.storeReady = true; this.refreshShopItems(); return; }
+        return this.loadWebStore();
+      }
       try {
         const ids = Object.values(STORE_PRODUCTS).map(value => value.productId);
         const result = await store.getProducts({ productIds: ids });
@@ -373,6 +407,33 @@
         await this.recoverUnfinished();
       } catch (error) {
         this.toast('App Store', '商品情報を取得できませんでした');
+      } finally {
+        this.storeReady = true;
+        this.refreshShopItems();
+      }
+    }
+
+    async loadWebStore() {
+      if (this.webStoreLoadPromise) return this.webStoreLoadPromise;
+      this.webStoreLoadPromise = this._loadWebStore().finally(() => { this.webStoreLoadPromise = null; });
+      return this.webStoreLoadPromise;
+    }
+
+    async _loadWebStore() {
+      if (!this.isWebStore()) return;
+      try {
+        await this.ensureWebIdentity();
+        const result = await this.webRequest('/api/store/catalog');
+        this.webProducts = Object.fromEntries((result.products || []).map(product => [product.itemId, product]));
+        for (const item of ITEMS) {
+          const product = this.webProducts[item.id];
+          if (!product?.displayPrice) continue;
+          item.priceLabel = product.displayPrice;
+          item.cta = item.cta.replace(/^¥[\d,]+/, product.displayPrice);
+        }
+        await this.recoverWebPurchases();
+      } catch (error) {
+        this.toast('Stripe', error.message || '商品情報を取得できませんでした');
       } finally {
         this.storeReady = true;
         this.refreshShopItems();
@@ -430,6 +491,7 @@
     }
 
     async purchase(id) {
+      if (this.isWebStore()) return this.purchaseWeb(id);
       const item = ITEMS.find(entry => entry.id === id), storeInfo = STORE_PRODUCTS[id], store = this.storePlugin();
       if (!item || !storeInfo || !store) { this.toast('購入できません', 'iOSアプリのApp Storeから購入してください'); return; }
       if (this.purchaseBusy || this.isPermanentOwned(id)) return;
@@ -453,6 +515,25 @@
       }
     }
 
+    async purchaseWeb(id) {
+      const item = ITEMS.find(entry => entry.id === id);
+      if (!item || !this.webProducts[id] || this.purchaseBusy || this.isPermanentOwned(id)) return;
+      this.purchaseBusy = true; this.refreshShopItems();
+      try {
+        await this.ensureWebIdentity();
+        const checkout = await this.webRequest('/api/store/checkout', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ itemId: id, attemptId: crypto.randomUUID() })
+        });
+        if (!checkout.url || !checkout.url.startsWith('https://checkout.stripe.com/')) throw new Error('決済URLを確認できませんでした');
+        location.assign(checkout.url);
+      } catch (error) {
+        this.toast('決済を開始できません', error.message || '時間をおいて再度お試しください');
+        this.purchaseBusy = false; this.refreshShopItems();
+      }
+    }
+
     async recoverUnfinished() {
       const store = this.storePlugin(); if (!store) return;
       const response = await store.getUnfinished();
@@ -460,6 +541,7 @@
     }
 
     async restorePurchases() {
+      if (this.isWebStore()) return this.restoreWebPurchases();
       const store = this.storePlugin();
       if (!store || this.purchaseBusy) { this.toast('購入を復元', 'iOSアプリで利用できます'); return; }
       this.purchaseBusy = true; this.refreshShopItems();
@@ -477,6 +559,98 @@
       } finally {
         this.purchaseBusy = false; this.refreshShopItems();
       }
+    }
+
+    async recoverWebPurchases() {
+      if (this.webRecoveryPromise) return this.webRecoveryPromise;
+      this.webRecoveryPromise = this._recoverWebPurchases().finally(() => { this.webRecoveryPromise = null; });
+      return this.webRecoveryPromise;
+    }
+
+    async _recoverWebPurchases() {
+      if (!this.isWebStore() || !localStorage.getItem(WEB_RESTORE_KEY_STORAGE)) return;
+      const state = await this.webRequest('/api/store/claims');
+      for (const itemId of state.permanent || []) this.applyPurchase(itemId);
+      if ((state.permanent || []).length) window.arseneGame?.saveProfile?.();
+      if (!(state.pending || []).length) return;
+      let claimToken = localStorage.getItem(WEB_CLAIM_TOKEN_STORAGE);
+      if (!/^[a-f0-9]{64}$/.test(claimToken || '')) {
+        const bytes = new Uint8Array(32); crypto.getRandomValues(bytes);
+        claimToken = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+        localStorage.setItem(WEB_CLAIM_TOKEN_STORAGE, claimToken);
+      }
+      const prepared = await this.webRequest('/api/store/claims', {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ claimToken })
+      });
+      if (!(prepared.deliveries || []).length) return;
+      const p = this.premium();
+      p.webProcessedDeliveries ||= {};
+      const confirmed = [];
+      for (const delivery of prepared.deliveries) {
+        if (!p.webProcessedDeliveries[delivery.deliveryId]) {
+          const result = this.applyPurchase(delivery.itemId);
+          if (!result) throw new Error('購入内容を反映できませんでした');
+          p.webProcessedDeliveries[delivery.deliveryId] = { itemId: delivery.itemId, deliveredAt: Date.now() };
+        }
+        confirmed.push(delivery.deliveryId);
+      }
+      window.arseneGame?.saveProfile?.();
+      await this.webRequest('/api/store/claim-confirm', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ claimToken: prepared.claimToken, deliveryIds: confirmed })
+      });
+      localStorage.removeItem(WEB_CLAIM_TOKEN_STORAGE);
+      this.refreshShopItems();
+      this.toast('購入内容', `${confirmed.length}件を反映しました`);
+    }
+
+    async restoreWebPurchases() {
+      const current = localStorage.getItem(WEB_RESTORE_KEY_STORAGE) || '';
+      const entered = window.prompt('別の端末で発行した復元キーを入力してください。\n現在のキーを使う場合は、そのままOKを押してください。', current);
+      if (entered == null) return;
+      const restoreKey = entered.trim();
+      if (!/^arsr_[A-Za-z0-9_-]{43}$/.test(restoreKey)) { this.toast('購入を復元', '復元キーの形式が正しくありません'); return; }
+      const previous = current;
+      localStorage.setItem(WEB_RESTORE_KEY_STORAGE, restoreKey);
+      try {
+        await this.recoverWebPurchases();
+        this.toast('購入を復元', '復元キーの購入情報を確認しました');
+      } catch (error) {
+        if (previous) localStorage.setItem(WEB_RESTORE_KEY_STORAGE, previous); else localStorage.removeItem(WEB_RESTORE_KEY_STORAGE);
+        this.toast('購入を復元', error.message || '復元に失敗しました');
+      }
+    }
+
+    async showRestoreKey() {
+      if (!this.isWebStore()) return;
+      try {
+        const restoreKey = await this.ensureWebIdentity();
+        window.prompt('別PCで永久権利と未受領購入を復元するためのキーです。\n他人に見せず安全な場所へ保存してください。', restoreKey);
+      } catch (error) { this.toast('復元キー', error.message || '表示できませんでした'); }
+    }
+
+    async handleCheckoutReturn() {
+      if (!this.isWebStore()) return;
+      const params = new URLSearchParams(location.search);
+      const state = params.get('checkout');
+      if (!state) return;
+      if (state === 'cancelled') this.toast('決済を中止しました', '商品は購入されていません');
+      if (state === 'success') {
+        for (let attempt = 0; attempt < 6; attempt++) {
+          try {
+            await this.recoverWebPurchases();
+            break;
+          } catch {
+            if (attempt === 5) this.toast('決済確認中', '購入は次回起動時にも自動確認されます');
+            else await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          }
+        }
+      }
+      params.delete('checkout'); params.delete('return');
+      const query = params.toString();
+      history.replaceState({}, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
+      if (new URLSearchParams(location.search).get('return') === 'shop' || state) this.openShop();
     }
 
     // 開いている間はmax-heightを一切掛けない(CSS側で.open時にnone/overflow:visible)。
@@ -564,7 +738,16 @@
     }
   }
 
-  const init = () => { if (!window.phantomSecret) window.phantomSecret = new PhantomSecret(); };
+  const init = () => {
+    if (!window.phantomSecret) window.phantomSecret = new PhantomSecret();
+    const recover = async (attempt = 0) => {
+      const shop = window.phantomSecret;
+      if (!shop?.isWebStore?.()) return;
+      if (!window.arseneGame?.profile && attempt < 20) { setTimeout(() => recover(attempt + 1), 250); return; }
+      try { await shop.handleCheckoutReturn(); await shop.loadWebStore(); } catch {}
+    };
+    recover();
+  };
   if (document.readyState === 'loading') addEventListener('DOMContentLoaded', init);
   else init();
 })();

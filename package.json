@@ -8,6 +8,7 @@
     "cap:sync": "pnpm run build && cap sync ios && node scripts/verify-ios-bundle.mjs",
     "verify:ios-bundle": "node scripts/verify-ios-bundle.mjs",
     "verify:ios-release": "node scripts/verify-ios-release.mjs",
+    "test:web-store": "node tests/web_store_backend_regression.mjs && node tests/web_store_frontend_regression.js",
     "cap:open:ios": "cap open ios"
   },
   "dependencies": {
