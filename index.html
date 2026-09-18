@@ -13,19 +13,26 @@
     if (window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true) {
       document.documentElement.classList.add('standalone-app');
     }
+    if (!window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() !== 'ios') {
+      const ads = document.createElement('script');
+      ads.async = true;
+      ads.crossOrigin = 'anonymous';
+      ads.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2798969445522147';
+      document.head.appendChild(ads);
+    }
   </script>
   <meta name="theme-color" content="#040814">
   <title>或世盗 -ARSÈNE- RE:MIX | 怪盗RPG</title>
   <meta name="description" content="或世盗 -ARSÈNE- RE:MIX（アルセーヌ リミックス）。奪え、編み直せ、物語を。JOBを育て、武器学を磨き、盗んだ力で異世界へ潜るブラウザ怪盗RPG。インストール不要、スマートフォンでも遊べます。">
 
   <!-- 共有時の見え方。公開URLが変わったら、この canonical / og:url / og:image / twitter:image の4つを書き換えてください -->
-  <link rel="canonical" href="https://youtamago0527.github.io/arsene-rpg/">
+  <link rel="canonical" href="https://arsene-rpg.pages.dev/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="或世盗 -ARSÈNE- RE:MIX">
   <meta property="og:title" content="或世盗 -ARSÈNE- RE:MIX | 怪盗RPG">
   <meta property="og:description" content="奪え、編み直せ、物語を。JOBを育て、武器学を磨き、盗んだ力で異世界へ潜るブラウザ怪盗RPG。インストール不要、スマートフォンでも遊べます。">
-  <meta property="og:url" content="https://youtamago0527.github.io/arsene-rpg/">
-  <meta property="og:image" content="https://youtamago0527.github.io/arsene-rpg/assets/ui/brand/og-image.jpg">
+  <meta property="og:url" content="https://arsene-rpg.pages.dev/">
+  <meta property="og:image" content="https://arsene-rpg.pages.dev/assets/ui/brand/og-image.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="或世盗 -ARSÈNE- RE:MIX のタイトルロゴ">
@@ -33,7 +40,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="或世盗 -ARSÈNE- RE:MIX | 怪盗RPG">
   <meta name="twitter:description" content="奪え、編み直せ、物語を。盗んだ力で異世界へ潜るブラウザ怪盗RPG。">
-  <meta name="twitter:image" content="https://youtamago0527.github.io/arsene-rpg/assets/ui/brand/og-image.jpg">
+  <meta name="twitter:image" content="https://arsene-rpg.pages.dev/assets/ui/brand/og-image.jpg">
 
   <!-- タブのアイコンとホーム画面追加 -->
   <link rel="icon" href="assets/ui/brand/favicon-32.png" sizes="32x32" type="image/png">

@@ -1,13 +1,13 @@
 export const PRODUCTS = Object.freeze({
-  'time-complete-pass': { priceEnv: 'STRIPE_PRICE_TIME_COMPLETE_PASS', type: 'nonConsumable' },
-  'ad-skip-license': { priceEnv: 'STRIPE_PRICE_AD_SKIP_LICENSE', type: 'nonConsumable' },
-  'ad-skip-tickets': { priceEnv: 'STRIPE_PRICE_AD_SKIP_TICKETS_10', type: 'consumable' },
-  'auto3-license': { priceEnv: 'STRIPE_PRICE_AUTO3_LICENSE', type: 'nonConsumable' },
-  'sweep-license': { priceEnv: 'STRIPE_PRICE_SWEEP_LICENSE', type: 'nonConsumable' },
-  'otherworld-tickets': { priceEnv: 'STRIPE_PRICE_OTHERWORLD_TICKETS_5', type: 'consumable' },
-  'rebirth-arcana': { priceEnv: 'STRIPE_PRICE_REBIRTH_ARCANA_1', type: 'consumable' },
-  'protection-arcana': { priceEnv: 'STRIPE_PRICE_PROTECTION_ARCANA_1', type: 'consumable' },
-  'blessed-protection-arcana': { priceEnv: 'STRIPE_PRICE_BLESSED_PROTECTION_ARCANA_1', type: 'consumable' }
+  'time-complete-pass': { priceEnv: 'STRIPE_PRICE_TIME_COMPLETE_PASS', productId: 'prod_VH6nGMFUaxHvIJ', amount: 1500, type: 'nonConsumable' },
+  'ad-skip-license': { priceEnv: 'STRIPE_PRICE_AD_SKIP_LICENSE', productId: 'prod_VH6nfCIri3kpb9', amount: 900, type: 'nonConsumable' },
+  'ad-skip-tickets': { priceEnv: 'STRIPE_PRICE_AD_SKIP_TICKETS_10', productId: 'prod_VH71R5RoTzsTbU', amount: 160, type: 'consumable' },
+  'auto3-license': { priceEnv: 'STRIPE_PRICE_AUTO3_LICENSE', productId: 'prod_VH716cQdZkZblT', amount: 480, type: 'nonConsumable' },
+  'sweep-license': { priceEnv: 'STRIPE_PRICE_SWEEP_LICENSE', productId: 'prod_VH717WWwlug0FW', amount: 480, type: 'nonConsumable' },
+  'otherworld-tickets': { priceEnv: 'STRIPE_PRICE_OTHERWORLD_TICKETS_5', productId: 'prod_VH71C8l5amQwWl', amount: 200, type: 'consumable' },
+  'rebirth-arcana': { priceEnv: 'STRIPE_PRICE_REBIRTH_ARCANA_1', productId: 'prod_VH72mBEyQLD6b9', amount: 200, type: 'consumable' },
+  'protection-arcana': { priceEnv: 'STRIPE_PRICE_PROTECTION_ARCANA_1', productId: 'prod_VH72wUCzrkVdlI', amount: 200, type: 'consumable' },
+  'blessed-protection-arcana': { priceEnv: 'STRIPE_PRICE_BLESSED_PROTECTION_ARCANA_1', productId: 'prod_VH72x1uelHhtua', amount: 500, type: 'consumable' }
 });
 
 const encoder = new TextEncoder();
@@ -95,11 +95,26 @@ export async function stripeRequest(env, path, init = {}) {
 }
 
 export async function loadPrice(env, itemId) {
-  const priceId = priceIdFor(env, itemId);
-  if (!priceId) throw new Error('PRICE_NOT_CONFIGURED');
-  const price = await stripeRequest(env, `/prices/${encodeURIComponent(priceId)}?expand[]=product`);
+  const product = PRODUCTS[itemId];
+  if (!product) throw new Error('UNKNOWN_PRODUCT');
+  const configuredPriceId = priceIdFor(env, itemId);
+  let price;
+  if (configuredPriceId) {
+    price = await stripeRequest(env, `/prices/${encodeURIComponent(configuredPriceId)}?expand[]=product`);
+  } else {
+    const prices = await stripeRequest(env, `/prices?product=${encodeURIComponent(product.productId)}&active=true&type=one_time&limit=10`);
+    const matches = (prices.data || []).filter(candidate =>
+      candidate.active && candidate.type === 'one_time'
+      && candidate.currency === String(env.STRIPE_CURRENCY || 'jpy').toLowerCase()
+      && candidate.unit_amount === product.amount
+      && !!candidate.livemode === (String(env.STRIPE_LIVEMODE) === 'true'));
+    if (matches.length !== 1) throw new Error('EXPECTED_PRICE_NOT_UNIQUE');
+    price = matches[0];
+  }
   const currency = String(env.STRIPE_CURRENCY || 'jpy').toLowerCase();
-  if (!price.active || price.type !== 'one_time' || !Number.isInteger(price.unit_amount) || price.currency !== currency) throw new Error('INVALID_PRICE');
+  const actualProductId = typeof price.product === 'string' ? price.product : price.product?.id;
+  if (!price.active || price.type !== 'one_time' || actualProductId !== product.productId
+    || price.unit_amount !== product.amount || price.currency !== currency) throw new Error('INVALID_PRICE');
   if (!!price.livemode !== (String(env.STRIPE_LIVEMODE) === 'true')) throw new Error('PRICE_MODE_MISMATCH');
   return price;
 }
@@ -108,7 +123,8 @@ export async function loadAndValidateSession(env, sessionId) {
   const session = await stripeRequest(env, `/checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=line_items.data.price`);
   const itemId = session?.metadata?.item_id;
   const buyerHash = session?.metadata?.buyer_hash;
-  const expectedPriceId = priceIdFor(env, itemId);
+  const expectedPrice = await loadPrice(env, itemId);
+  const expectedPriceId = expectedPrice.id;
   const expectedCurrency = String(env.STRIPE_CURRENCY || 'jpy').toLowerCase();
   const lines = session?.line_items?.data || [];
   const line = lines[0];

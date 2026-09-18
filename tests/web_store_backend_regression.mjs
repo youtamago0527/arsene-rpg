@@ -15,6 +15,8 @@ const expected = [
 ];
 assert.deepEqual(Object.keys(lib.PRODUCTS), expected, 'all nine products must be server-authoritative');
 assert.equal(new Set(Object.values(lib.PRODUCTS).map(item => item.priceEnv)).size, 9);
+assert.equal(new Set(Object.values(lib.PRODUCTS).map(item => item.productId)).size, 9);
+assert.equal(lib.PRODUCTS['ad-skip-tickets'].amount, 160);
 
 const restoreKey = lib.issueRestoreKey();
 assert.equal(lib.validRestoreKey(restoreKey), true);
@@ -37,10 +39,11 @@ const paidSession = {
   payment_status: 'paid', livemode: false, currency: 'jpy', amount_total: 160,
   metadata: { item_id: 'ad-skip-tickets', buyer_hash: 'a'.repeat(64) },
   line_items: { data: [{ quantity: 1, currency: 'jpy', amount_total: 160,
-    price: { id: 'price_ticket10', active: true, type: 'one_time', currency: 'jpy', unit_amount: 160 } }] }
+    price: { id: 'price_ticket10', product: 'prod_VH71R5RoTzsTbU', active: true, type: 'one_time', currency: 'jpy', unit_amount: 160 } }] }
 };
 const originalFetch = globalThis.fetch;
-globalThis.fetch = async () => Response.json(paidSession);
+const configuredPrice = { id: 'price_ticket10', product: { id: 'prod_VH71R5RoTzsTbU' }, active: true, type: 'one_time', currency: 'jpy', unit_amount: 160, livemode: false };
+globalThis.fetch = async url => Response.json(String(url).includes('/prices/') ? configuredPrice : paidSession);
 assert.equal((await lib.loadAndValidateSession(env, 'cs_test_good')).itemId, 'ad-skip-tickets');
 for (const invalid of [
   { payment_status: 'unpaid' }, { status: 'open' }, { mode: 'subscription' },
@@ -48,7 +51,7 @@ for (const invalid of [
   { line_items: { data: [{ ...paidSession.line_items.data[0], quantity: 2 }] } },
   { line_items: { data: [{ ...paidSession.line_items.data[0], price: { id: 'price_attacker' } }] } }
 ]) {
-  globalThis.fetch = async () => Response.json({ ...paidSession, ...invalid });
+  globalThis.fetch = async url => Response.json(String(url).includes('/prices/') ? configuredPrice : { ...paidSession, ...invalid });
   await assert.rejects(() => lib.loadAndValidateSession(env, 'cs_test_bad'));
 }
 globalThis.fetch = originalFetch;

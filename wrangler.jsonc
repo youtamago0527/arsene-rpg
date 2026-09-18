@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "arsene-rpg",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-09-18",
+  "d1_databases": [
+    {
+      "binding": "STORE_DB",
+      "database_name": "arsene-web-store",
+      "database_id": "51f35e9c-df49-48df-8097-36b04f9ff3b0",
+      "migrations_dir": "./migrations"
+    }
+  ],
+  "vars": {
+    "STRIPE_CURRENCY": "jpy",
+    "STRIPE_LIVEMODE": "true",
+    "STORE_ALLOWED_ORIGINS": "https://arsene-rpg.pages.dev"
+  }
+}
