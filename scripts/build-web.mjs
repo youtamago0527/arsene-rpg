@@ -4,7 +4,7 @@ import { extname, join } from 'node:path';
 const root = process.cwd();
 const output = join(root, 'dist');
 const rootFiles = new Set(['index.html', 'manifest.webmanifest']);
-const runtimeDirectories = ['assets', 'css', 'data', 'js', '音楽系'];
+const runtimeDirectories = ['assets', 'css', 'data', 'js', 'legal', '音楽系'];
 const runtimeExtensions = new Set([
   '.css', '.gif', '.html', '.jpeg', '.jpg', '.js', '.json', '.m4a',
   '.mp3', '.ogg', '.png', '.svg', '.wav', '.webmanifest', '.webp'

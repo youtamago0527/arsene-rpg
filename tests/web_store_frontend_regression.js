@@ -13,4 +13,8 @@ assert.match(shop, /claim-confirm/);
 assert.match(shop, /handleCheckoutReturn\(\); await shop\.loadWebStore\(\)/, 'unclaimed purchases must recover on every startup');
 assert.match(shop, /this\.isWebStore\(\) \? '<button[^']+restore-key/,
   'the restore-key control must not render on native iOS');
+assert.match(shop, /href="\/legal\/"[^>]*>特定商取引法に基づく表記/,
+  'the browser shop must link directly to the commerce disclosure');
+assert.match(fs.readFileSync('scripts/build-web.mjs', 'utf8'), /'legal'/,
+  'the legal disclosure must ship in the browser build');
 console.log('Web store frontend/native separation regression checks passed.');

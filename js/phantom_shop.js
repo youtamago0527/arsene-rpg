@@ -197,7 +197,7 @@
           <p class="pm-shop-note">すべて時短専用。戦闘力・報酬量・利用上限は変化しません</p>
         </header>
         <div class="pm-shop-list">${ITEMS.map(item => this.itemHTML(item)).join('')}</div>
-        <footer class="pm-arcade-foot"><button type="button" class="pm-btn-quiet" data-pm="restore">購入を復元</button>${this.isWebStore() ? '<button type="button" class="pm-btn-quiet" data-pm="restore-key">復元キーを表示</button>' : ''}</footer>`;
+        <footer class="pm-arcade-foot"><button type="button" class="pm-btn-quiet" data-pm="restore">購入を復元</button>${this.isWebStore() ? '<button type="button" class="pm-btn-quiet" data-pm="restore-key">復元キーを表示</button><a class="pm-btn-quiet" href="/legal/" target="_blank" rel="noopener">特定商取引法に基づく表記</a>' : ''}</footer>`;
 
       // ── 選曲画面 ──
       const arcade = document.createElement('div');

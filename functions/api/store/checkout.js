@@ -17,8 +17,10 @@ export async function onRequestPost({ request, env }) {
     const price = await loadPrice(env, itemId);
     const form = new URLSearchParams({
       mode: 'payment',
+      locale: 'ja',
       success_url: `${origin}/?checkout=success&return=shop`,
       cancel_url: `${origin}/?checkout=cancelled&return=shop`,
+      'custom_text[submit][message]': 'デジタル商品のため、決済後のお客様都合による返品・交換・キャンセルは原則できません。販売条件は arsene-rpg.pages.dev/legal/ をご確認ください。',
       'line_items[0][price]': price.id,
       'line_items[0][quantity]': '1',
       'metadata[item_id]': itemId,

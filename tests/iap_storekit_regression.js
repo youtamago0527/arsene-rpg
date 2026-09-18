@@ -17,8 +17,11 @@ assert.match(shop, /await store\.purchase\(\{ productId: storeInfo\.productId \}
 assert.match(shop, /p\.processedTransactions\[txId\]/);
 assert.match(shop, /g\.saveProfile\?\.\(\);[\s\S]*await store\.finish\(\{ transactionId: txId \}\)/);
 assert.match(shop, /async restorePurchases\(\)/);
-assert.match(shop, /iOSアプリ限定/);
-assert.doesNotMatch(shop, /purchase\(id\) \{/, 'purchase must remain asynchronous and StoreKit-gated');
+assert.match(shop, /if \(this\.isWebStore\(\)\) return this\.purchaseWeb\(id\)/);
+assert.match(shop, /storePlugin\(\) \{ return this\.isNativeStore\(\)/,
+  'native purchase path must stay StoreKit-gated');
+assert.match(shop, /async purchase\(id\) \{[\s\S]*if \(this\.isWebStore\(\)\) return this\.purchaseWeb\(id\)/,
+  'purchase must remain asynchronous and route web/native explicitly');
 
 for (const method of ['getProducts', 'purchase', 'restore', 'getUnfinished', 'finish']) {
   assert(plugin.includes(`CAPPluginMethod(name: "${method}"`), `native method missing: ${method}`);
