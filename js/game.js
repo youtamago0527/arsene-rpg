@@ -2956,7 +2956,7 @@
         // 1Hitごとに「会心（必中）→通常命中」の順で独立判定する。
         const hitSkill = dancePowers ? { ...skill, power: dancePowers[hit] * (extremeDance && hit === hits - 1 ? 1.5 : 1) } : skill;
         const outcome = this.rollPlayerAttackOutcome(hitSkill, target);
-        if (!outcome.hit) { misses++; this.comboDanceMiss(); this.triggerEvade('player', target, hitSkill, { hitIndex: hit, source: 'playerAttack' }); this.floating(tEl, 'EVADE', 'miss'); this.audio.sfx('quick'); await this.battleSleep(hits > 1 ? 170 : 320); continue; }
+        if (!outcome.hit) { misses++; this.comboDanceMiss(); this.triggerEvade('player', target, hitSkill, { hitIndex: hit, source: 'playerAttack' }); this.floating(tEl, 'EVADE', 'miss'); await this.battleSleep(hits > 1 ? 170 : 320); continue; }
         this.comboDanceHit();
         tEl.classList.add('hit');
         const d = this.damageFor(hitSkill, target, outcome); total += d.value; if (d.critical) criticals++;
@@ -3040,7 +3040,6 @@
       const el = document.getElementById(enemy.uid); if (!el) return;
       const strike = { id: 'offHandStrike', kind: 'weapon', weaponType: lw.weaponType, damageType: lw.damageType || 'physical', power: rate, agiScale: 0 };
       this.flashTitle(this.usesBareFists() ? '左の拳' : '左手の追撃', lw.name);
-      this.audio.playWeaponAttack(lw.weaponType);
       const ren = $('#ren'); ren.classList.add('attacking');
       await this.battleSleep(200);
       strike.weaponOverrideId = this.profile.equipment.leftHand;
@@ -3053,7 +3052,7 @@
       enemy.hp = enemy.infiniteHp ? enemy.stats.maxHp : enemy.cannotDefeat ? Math.max(1, enemy.hp - d.value) : Math.max(0, enemy.hp - d.value);
       el.classList.add('hit');
       this.floating(el, d.value, d.critical ? 'critical' : 'damage');
-      this.audio.sfx(d.critical ? 'critical' : 'enemyHit');
+      this.audio.playWeaponAttack(lw.weaponType); if (d.critical) this.audio.sfx('criticalHit');
       this.setLog(`左手の${lw.name}で追撃！ ${enemy.name}${enemy.label}に${d.value}ダメージ！`);
       this.updateHUD();
       await this.battleSleep(240);
@@ -3104,7 +3103,6 @@
       const skill = { ...basic, power: (basic.power ?? 1) * (D.settings?.counterPowerRate ?? 0.7) * (1 + (setEffects.counterPowerPercent || 0) / 100) };
       const el = document.getElementById(enemy.uid); if (!el) return;
       this.flashTitle('COUNTER', '受けて返す'); this.setLog(`${this.playerName()}の反撃！`);
-      this.audio.sfx('slash');
       const ren = $('#ren'); ren.classList.add('attacking');
       await this.battleSleep(240);
       const outcome = this.rollPlayerAttackOutcome(skill, enemy);
@@ -3114,7 +3112,7 @@
       enemy.hp = enemy.infiniteHp ? enemy.stats.maxHp : enemy.cannotDefeat ? Math.max(1, enemy.hp - d.value) : Math.max(0, enemy.hp - d.value);
       el.classList.add('hit');
       this.floating(el, d.value, d.critical ? 'critical' : 'damage');
-      this.audio.sfx(d.critical ? 'critical' : 'enemyHit');
+      this.audio.playWeaponAttack(skill.weaponType || this.equippedWeaponType()); if (d.critical) this.audio.sfx('criticalHit');
       this.setLog(`${enemy.name}${enemy.label}に${d.value}ダメージ！`);
       this.updateHUD();
       await this.battleSleep(260);

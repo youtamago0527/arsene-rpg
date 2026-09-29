@@ -21,7 +21,13 @@ for (const legacy of ['会心の一撃1.mp3', '回避.mp3', '打撃6.mp3', 'crit
   if (fs.existsSync(path.join(root, '音楽系', '効果音', legacy))) throw new Error(`legacy SFX remains: ${legacy}`);
 }
 if (fs.existsSync(path.join(root, 'js', 'audio.js'))) throw new Error('legacy audio runtime remains');
-if (!index.includes('js/audio-runtime-20260904.js?v=1.0.7')) throw new Error('fresh audio runtime is not loaded');
+if (!index.includes('js/audio-runtime-20260904.js?v=1.0.8')) throw new Error('fresh audio runtime is not loaded');
+for (const name of ['slash', 'quick', 'enemyHit']) {
+  if (new RegExp(`case '${name}':`).test(audio)) throw new Error(`obsolete default combat SFX branch remains: ${name}`);
+}
+const gameAudio = fs.readFileSync(path.join(root, 'js', 'game.js'), 'utf8');
+if ([...gameAudio.matchAll(/this\.audio\.playWeaponAttack\(lw\.weaponType\)/g)].length !== 1) throw new Error('offhand attack must play its formal sample once, on impact');
+if (gameAudio.includes("this.audio.sfx('quick');")) throw new Error('obsolete quick synth still layers over evade');
 if (!/mealHeal:\s*\{ url: 'assets\/audio\/sfx\/heal-sample-20260904\.mp3', gain: \.24/.test(audio)) throw new Error('meal-only healing SFX must be quieter');
 if (!/heal:\s*\{ url: 'assets\/audio\/sfx\/heal-sample-20260904\.mp3', gain: \.50/.test(audio)) throw new Error('regular healing SFX volume changed');
 if (!fs.readFileSync(path.join(root, 'js', 'game.js'), 'utf8').includes("this.audio.sfx('mealHeal'); this.renderMenuSummary(); this.renderMenuPanel('food')")) throw new Error('meal consumption is not using its quiet SFX');
