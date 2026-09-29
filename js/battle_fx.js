@@ -54,7 +54,9 @@
     if (!ren) return;
     ren.classList.add(`fx-swing-${type}`);
     setTimeout(() => ren.classList.remove(`fx-swing-${type}`), 420);
-    this.audio?.sfx?.({ sword: 'swordSwing', martial: 'clawSwing', staff: 'fireCast', instrument: 'noteSwing', shield: 'shieldSwing' }[type] || 'swordSwing');
+    // 杖の通常攻撃は直後の弾の発射時に正式音源を鳴らす。二重再生を避ける。
+    const swingSfx = { sword: 'swordSwing', martial: 'clawSwing', staff: null, instrument: 'noteSwing', shield: 'shieldSwing' }[type] ?? 'swordSwing';
+    if (swingSfx) this.audio?.sfx?.(swingSfx);
     if (type === 'instrument') this.fxNoteBurst(ren);
   };
 

@@ -11,7 +11,7 @@ const plist = read('ios/App/App/Info.plist');
 const buildScript = read('scripts/build-web.mjs');
 const packageJson = JSON.parse(read('package.json'));
 const bundleVerifier = read('scripts/verify-ios-bundle.mjs');
-const audio = read('js/audio.js');
+const audio = read('js/audio-runtime-20260904.js');
 const capacitor = JSON.parse(read('capacitor.config.json'));
 
 assert.match(html, /width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover/);
@@ -47,13 +47,15 @@ assert(!buildScript.includes('readdir(root'), 'unreferenced root artwork must no
 assert.match(packageJson.scripts['cap:sync'], /verify-ios-bundle\.mjs/);
 assert.match(bundleVerifier, /stale iOS bundle/);
 assert.match(bundleVerifier, /css\/battle-ui-v2\.css/);
-assert.match(bundleVerifier, /js\/audio\.js/);
+assert.match(bundleVerifier, /js\/audio-runtime-20260904\.js/);
+assert.match(bundleVerifier, /forbiddenNativeAssets/);
 assert.match(audio, /AUDIO_ASSET_VERSION/);
 assert.match(audio, /searchParams\.set\('av'/);
 assert.match(audio, /visibilitychange/);
 assert.doesNotMatch(audio, /await this\.preloadSfxFiles\(\)/, 'user gesture must not wait for SFX downloads before resuming audio');
 assert.match(audio, /if \(!this\.ctx\) this\.unlock\(\)/, 'SFX calls must recover an uninitialized iOS AudioContext');
-assert.match(audio, /if \(!this\.playSfxFile\(name\)\) this\.sfx\(name, true\)/, 'sample decode failures must fall back to synthesized SFX');
+assert.match(audio, /未準備の初回だけは同名の合成音を即時再生/, 'sample decode delay must fall back to synthesized SFX immediately');
+assert.doesNotMatch(audio, /sfxReady\s*\?*\.then\(\(\)\s*=>\s*\{?\s*if\s*\(!this\.playSfxFile/, 'an old combat SFX must not replay after its animation');
 
 const localRefs = [...html.matchAll(/(?:src|href)="([^"?#]+)(?:\?[^"#]*)?"/g)]
   .map(match => match[1])
