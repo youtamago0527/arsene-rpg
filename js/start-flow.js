@@ -15,7 +15,7 @@
         ['02-deserted-station.png', '00:00–03:00 // THE LOST HOURS', '《零時侵蝕》――午前0時から3時までの謎の時間。'],
         ['03-city-erosion.png', 'THE CITY IS CHANGING', 'そして、零時を歩ける者も減っていった。'],
         ['04-four-left-behind.png', 'THE ONES LEFT BEHIND', '狼牙・蓮・翔・静真――四人も、その世界に取り残された。'],
-        ['05-luna-blue-moon.png', 'TWIN MOON', 'やがて彼らは、成人した双子の姉妹ルナとソラに出会う。'],
+        ['05-luna-blue-moon.png', 'TWIN MOON', 'やがて彼らは、双子の姉妹ルナとソラに出会う。'],
         ['06-boundary-rift.png', 'THE BOUNDARY BREAKS', '境界が裂け、夜は異世界へ繋がった。'],
         ['09-clock-0301.png', '03:01 // NEVER ENDED', 'その夜――零時侵蝕は、終わらなかった。'],
         ['10-worlds-merge.png', 'TWO WORLDS', '二つの世界が、混ざり始める。'],
