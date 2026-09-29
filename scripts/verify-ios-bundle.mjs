@@ -1,6 +1,6 @@
-import { access, readFile } from 'node:fs/promises';
+import { access, readFile, readdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 const root = process.cwd();
 const dist = join(root, 'dist');
@@ -39,6 +39,23 @@ for (const relative of audioPaths) {
   await access(join(root, relative));
   await access(join(dist, relative));
   await access(join(native, relative));
+}
+
+// 旧作業フォルダのファイルやCapacitorの残存コピーを見逃さない。
+const expectedSfxFiles = audioPaths.map(path => basename(path)).sort();
+for (const base of [root, dist, native]) {
+  const legacyDirectory = join(base, '音楽系', '効果音');
+  try {
+    await access(legacyDirectory);
+    throw new Error(`legacy SFX directory remains: ${legacyDirectory}`);
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+  const actualSfxFiles = (await readdir(join(base, 'assets', 'audio', 'sfx')))
+    .filter(file => /\.(?:mp3|wav|m4a|ogg)$/i.test(file)).sort();
+  if (JSON.stringify(actualSfxFiles) !== JSON.stringify(expectedSfxFiles)) {
+    throw new Error(`unexpected SFX files in ${base}: ${actualSfxFiles.join(', ')}`);
+  }
 }
 
 const forbiddenNativeAssets = [
