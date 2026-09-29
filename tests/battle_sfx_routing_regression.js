@@ -31,6 +31,18 @@ if (!audio.includes('cooldownMs: 420') || !audio.includes('maxNativeSfxPlayers =
 if (!audio.includes("playerHit:   { url: 'assets/audio/sfx/enemy-strike-sample-20260904.mp3'")) throw new Error('enemy attack must use the supplied 打撃6 sample');
 if ([...audio.matchAll(/url:\s*'([^']+)'/g)].some(match => /[^\x00-\x7F]/.test(match[1]))) throw new Error('sampled SFX paths must remain ASCII-only for WKWebView');
 if (!fx.includes("staff: null")) throw new Error('staff swing can double-play its projectile sound');
+if (!fx.includes("martial: null")) throw new Error('claw swing still layers an obsolete synthesized sound before the formal hit sample');
+const swingCalls = [];
+const swingRen = { classList: { add() {}, remove() {} } };
+const fxWindow = { BattleGame: class BattleGame {} };
+vm.runInNewContext(fx, { window: fxWindow, document: { querySelector: selector => selector === '#ren' ? swingRen : null }, setTimeout() {} });
+const swingGame = new fxWindow.BattleGame();
+swingGame.audio = { sfx: name => swingCalls.push(name) };
+swingGame.equippedWeaponType = () => 'martial';
+swingGame.attackSwingFx({ kind: 'weapon', weaponType: 'martial' });
+if (swingCalls.length) throw new Error(`claw swing unexpectedly played a synthesized SFX: ${swingCalls.join(', ')}`);
+swingGame.attackSwingFx({ kind: 'weapon', weaponType: 'staff' });
+if (swingCalls.length) throw new Error(`staff swing unexpectedly played a synthesized SFX: ${swingCalls.join(', ')}`);
 if (!fx.includes("this.audio?.sfx?.('fireFlight')")) throw new Error('staff projectile does not use the formal flight sound');
 if (!fx.includes("shield: 'playerHit'")) throw new Error('shield impact does not share the enemy impact sound');
 if (/sfxReady\s*\?*\.then\(\(\)\s*=>\s*\{?\s*if\s*\(!this\.playSfxFile/.test(audio)) throw new Error('stale delayed SFX replay remains');

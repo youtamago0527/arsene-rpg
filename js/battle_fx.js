@@ -54,8 +54,9 @@
     if (!ren) return;
     ren.classList.add(`fx-swing-${type}`);
     setTimeout(() => ren.classList.remove(`fx-swing-${type}`), 420);
-    // 杖の通常攻撃は直後の弾の発射時に正式音源を鳴らす。二重再生を避ける。
-    const swingSfx = { sword: 'swordSwing', martial: 'clawSwing', staff: null, instrument: 'noteSwing', shield: 'shieldSwing' }[type] ?? 'swordSwing';
+    // 爪は命中時の正式音源だけを鳴らす。旧合成の振り音を重ねない。
+    // 杖も直後の弾の発射時に正式音源を鳴らすため、振り音は不要。
+    const swingSfx = { sword: 'swordSwing', martial: null, staff: null, instrument: 'noteSwing', shield: 'shieldSwing' }[type];
     if (swingSfx) this.audio?.sfx?.(swingSfx);
     if (type === 'instrument') this.fxNoteBurst(ren);
   };
