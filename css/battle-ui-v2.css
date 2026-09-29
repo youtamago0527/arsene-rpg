@@ -1177,6 +1177,14 @@
   animation:battleBossGentleBob 3.2s ease-in-out infinite!important;
 }
 
+/* iOS WKWebView: 連戦中の常時合成レイヤーを減らす。攻撃・被弾演出は維持する。 */
+.capacitor-native #game .enemy:not(.enemy-attacking):not(.hit):not(.defeated) .enemy-visual,
+.capacitor-native #game .enemy.delay-1:not(.enemy-attacking):not(.hit):not(.defeated) .enemy-visual,
+.capacitor-native #game .enemy.delay-2:not(.enemy-attacking):not(.hit):not(.defeated) .enemy-visual,
+.capacitor-native #game .boss-enemy:not(.enemy-attacking):not(.hit):not(.defeated) .enemy-visual{
+  animation:none!important;
+}
+
 /* D2は現在すべて個別PNG。旧スプライトシート用の300〜400%切り抜きを解除する。 */
 #game .enemy-silentHarmonist .slime[style*="background-image"],
 #game .enemy-echoWraith .slime[style*="background-image"],
