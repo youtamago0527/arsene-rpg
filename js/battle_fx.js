@@ -48,16 +48,11 @@
   // ── 振り／詠唱のタイミング ────────────────────────────────
   P.attackSwingFx = function (skill) {
     if (!this.fxIsWeaponAction(skill)) { this.audio?.sfx?.('magic'); return; }
-    // 素早い斬撃は専用の連撃音を残す
-    if (skill?.id === 'quickSlash') { this.audio?.sfx?.('quick'); return; }
     const type = this.fxWeaponType(skill), ren = $('#ren');
     if (!ren) return;
     ren.classList.add(`fx-swing-${type}`);
     setTimeout(() => ren.classList.remove(`fx-swing-${type}`), 420);
-    // 爪は命中時の正式音源だけを鳴らす。旧合成の振り音を重ねない。
-    // 杖も直後の弾の発射時に正式音源を鳴らすため、振り音は不要。
-    const swingSfx = { sword: 'swordSwing', martial: null, staff: null, instrument: 'noteSwing', shield: 'shieldSwing' }[type];
-    if (swingSfx) this.audio?.sfx?.(swingSfx);
+    // 武器の音は命中・発射時の正式音源だけにする。旧合成の振り音は重ねない。
     if (type === 'instrument') this.fxNoteBurst(ren);
   };
 

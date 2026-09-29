@@ -2,7 +2,7 @@
   'use strict';
   // 同名音源を差し替えてもWKWebViewの古いレスポンスを掴まないよう、
   // BGM/SEの全ローカルURLへ同じリリース番号を付ける。
-  const AUDIO_ASSET_VERSION = '20260930.1';
+  const AUDIO_ASSET_VERSION = '20260930.2';
   const audioAssetUrl = path => {
     const url = new URL(path, document.baseURI);
     url.searchParams.set('av', AUDIO_ASSET_VERSION);
@@ -233,72 +233,31 @@
       if (!this.ctx) this.unlock();
       if (!this.ctx || this.muted) return;
       if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
-      // 実音源が読めればそれを鳴らす。WKWebViewでfetch/decodeに失敗した場合は
-      // 同名の合成音へ落とし、戦闘音や回復音が丸ごと消えないようにする。
-      if (this.playSfxFile(name)) return;
-      // デコード待ちのSEを数百ms後に鳴らすと、攻撃演出が終わった後から音だけが
-      // 再生される。未準備の初回だけは同名の合成音を即時再生し、次回以降は
-      // デコード済みの正式音源へ自然に切り替える。
+      // 正式音源が使えない場合は無音にする。旧合成音へのフォールバックは禁止。
+      if (Object.prototype.hasOwnProperty.call(SFX_FILES, name)) { this.playSfxFile(name); return; }
       const chord = (notes, gap=.08) => notes.forEach((n,i)=>this.tone(n,.2,'sine',.1,1,i*gap));
       switch (name) {
         case 'ui': this.tone(620,.055,'square',.045,1.28); break;
         case 'slash': this.noise(.18,.16,0,1500); this.tone(780,.15,'sawtooth',.09,.18); break;
         case 'magic': this.tone(330,.34,'sine',.12,2.4); this.tone(720,.28,'triangle',.1,1.5,.08); this.noise(.22,.08,.1,1000); break;
         case 'quick': this.noise(.13,.12,0,1800); this.tone(1100,.11,'sawtooth',.07,.25); this.noise(.15,.14,.12,1700); this.tone(930,.13,'sawtooth',.08,.22,.1); break;
-        case 'critical': this.tone(130,.28,'square',.22,.45); this.tone(1500,.22,'sine',.14,.6); this.noise(.25,.2,0,500); break;
         case 'enemyHit': this.tone(180,.18,'triangle',.15,.55); this.noise(.12,.09,0,350); break;
-        case 'playerHit': this.tone(105,.24,'sawtooth',.18,.6); this.noise(.16,.12,0,250); break;
-        case 'evade': this.noiseX({ duration: .16, volume: .16, type: 'highpass', freq: 1800, freqTo: 5200, shape: 'flat' }); break;
         case 'dark': this.tone(120,.42,'sine',.13,3.2); this.tone(62,.45,'sawtooth',.08,1.8); break;
-        case 'heal': chord([440,554,659,880]); break;
         // メニューの決定音。回復音（ヒール.mp3）をUI全般へ流用していたため、
         // 装備やJOB変更のたびに回復音が鳴っていた。短い上昇2音で置き換える。
         case 'confirm': this.tone(660,.07,'triangle',.075,1.1); this.tone(990,.09,'triangle',.06,1,.045); break;
         // 戦闘中の自己強化。回復ではないので回復音とは分ける。
         case 'buff': this.tone(392,.14,'triangle',.09,1.6); this.tone(587,.16,'sine',.07,1.3,.05); break;
-        case 'passiveProc': chord([523,784,1047],.06); this.tone(1568,.34,'sine',.06,1,.12); break;
         case 'defeat': this.tone(280,.6,'triangle',.16,.18); this.noise(.45,.1,.08,180); break;
         case 'victory': chord([523,659,784,1047],.12); break;
-        case 'escape': this.tone(760,.3,'sine',.12,2); break;
         case 'rareDrop': chord([659,880,1109,1319],.075); this.tone(1760,.5,'sine',.09,1,.3); break;
-        // ── 武器種ごとの通常攻撃 ──────────────────────────────
-        // 剣：風切り＋刃鳴り。抜けの良い高域を短く。
-        // 剣：ロマサガ系の「重い一撃」を狙って層を重ねる。
-        // 振り＝低い方へ落ちていく風切り。当たり＝立ち上がりの衝撃＋胴鳴り＋刃の残響。
-        case 'swordSwing': {
-          const r = .92 + Math.random() * .16;   // 毎回わずかに音程を散らして機械的に聞こえないようにする
-          this.noiseX({ duration: .17, volume: .34, type: 'bandpass', freq: 2600 * r, freqTo: 620, q: 1.1, shape: 'flat' });
-          this.tone(900 * r, .13, 'sawtooth', .09, .28);
-          break;
-        }
-        case 'swordHit': {
-          const r = .93 + Math.random() * .14;
-          this.noiseX({ duration: .045, volume: .38, type: 'highpass', freq: 260, attack: .0015 });                  // 衝撃の頭
-          this.noiseX({ duration: .20, volume: .60, type: 'lowpass', freq: 520, freqTo: 180, q: 1.4 });              // 胴鳴り
-          this.tone(96 * r, .24, 'square', .18, .40);                                                                // 芯の重み
-          this.tone(150 * r, .17, 'triangle', .11, .45, .004);
-          this.noiseX({ duration: .26, volume: .22, type: 'bandpass', freq: 3400, freqTo: 1500, q: 1.6, delay: .02 });// 金属の擦れ
-          this.tone(1980 * r, .30, 'triangle', .17, .84, .015);                                                     // 刃鳴り
-          this.tone(2960 * r, .38, 'sine', .10, .88, .03);
-          break;
-        }
-        // 爪：短い裂き音を3連。剣より高く、粒を細かく。
-        case 'clawSwing': [0,.05,.1].forEach(d => this.noise(.08,.12,d,3000)); break;
-        case 'clawHit': [0,.045,.09].forEach((d,i) => { this.noise(.07,.15,d,2600); this.tone(1500+i*260,.07,'sawtooth',.045,.4,d); }); break;
-        // 杖：火球。溜めの唸り→着弾の炸裂→燃え残りのパチパチ。
-        case 'fireFlight': this.noiseX({ duration: .38, volume: .17, type: 'bandpass', freq: 900, freqTo: 380, q: .9, shape: 'flat' }); this.tone(240, .34, 'sawtooth', .07, 1.6); break;
+        // ── 正式MP3のない演出音のみ合成する ─────────────────────
+        // 杖の炎の着弾音は発射SEとは別の演出音。
         case 'fireCast': this.tone(180,.22,'sawtooth',.05,3.2); this.noise(.20,.06,0,220); this.tone(520,.16,'triangle',.035,2.2,.05); break;
         case 'fireHit': this.tone(90,.32,'square',.20,.35); this.noise(.34,.17,0,300);
           [.06,.13,.19,.26,.33].forEach(d => this.noise(.07,.05,d,1600)); break;
-        // 楽器：弦を弾いて和音が広がる感じ。倍音を薄く重ねる。
-        case 'noteSwing': [784,988,1175].forEach((n,i) => { this.tone(n,.26,'triangle',.075,1,i*.055); this.tone(n*2,.18,'sine',.03,1,i*.055); }); break;
-        case 'noteHit': [1319,1568,1976,2637].forEach((n,i) => { this.tone(n,.34,'triangle',.07,1,i*.045); this.tone(n*1.5,.2,'sine',.025,1,i*.045); }); break;
-        // 盾：打撃の鈍い衝撃。
-        case 'shieldSwing': this.noise(.16,.14,0,500); this.tone(210,.16,'square',.10,.6); break;
+        // 盾の着弾音は通常の武器音と別演出で使う。
         case 'shieldHit': this.tone(120,.26,'square',.20,.4); this.noise(.20,.16,0,400); this.tone(680,.18,'triangle',.06,.5,.02); break;
-        // クリティカル：既存の衝撃に、抜けの良い鐘と余韻を重ねる。
-        case 'criticalHit': this.tone(130,.34,'square',.30,.45); this.noise(.30,.27,0,500);
-          this.tone(1760,.38,'sine',.18,.85,.02); this.tone(2637,.48,'sine',.10,.9,.05); break;
       }
     }
   }
