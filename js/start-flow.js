@@ -17,15 +17,13 @@
         ['04-four-left-behind.png', 'THE ONES LEFT BEHIND', '狼牙・蓮・翔・静真――四人も、その世界に取り残された。'],
         ['05-luna-blue-moon.png', 'TWIN MOON', 'やがて彼らは、成人した双子の姉妹ルナとソラに出会う。'],
         ['06-boundary-rift.png', 'THE BOUNDARY BREAKS', '境界が裂け、夜は異世界へ繋がった。'],
-        ['07-noel-takes-luna.png', 'NOEL // THE COLLECTOR', 'ノエル「ルナは、もらっていく。」'],
-        ['08-sora-luna-gate.png', 'THE STOLEN TWIN', 'ソラ「ルナ！」'],
         ['09-clock-0301.png', '03:01 // NEVER ENDED', 'その夜――零時侵蝕は、終わらなかった。'],
         ['10-worlds-merge.png', 'TWO WORLDS', '二つの世界が、混ざり始める。'],
         ['11-roga-sword-strike.png', 'CRIMSON BLADE', '世界を蝕む影を、狼牙が斬り裂く。'],
         ['12-q-calling-card.png', 'Q // CALLING CARD', 'Q「奪われたなら――奪い返せ。」'],
         ['13-six-phantoms.png', 'SIX COLORS // ONE HEIST', '六つの意志が、夜を盗り返す。'],
         ['14-hideout-ramen-v2.png', 'OKU NO HOSOMICHI', '六人は、ここを拠点とした。'],
-        ['15-final-dungeon-v2.png', 'PHANTOM THIEF', 'ルナを奪い返し、世界を取り戻すために。']
+        ['15-final-dungeon-v2.png', 'PHANTOM THIEF', '侵蝕された世界を取り戻すために。']
       ];
       this.prologue = [];
       this.characters = [];

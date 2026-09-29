@@ -12,7 +12,8 @@ const sentinels = [
   'js/audio.js',
   'js/admob.js',
   'js/data.js',
-  'js/game.js'
+  'js/game.js',
+  'js/start-flow.js'
 ];
 
 const hash = async path => createHash('sha256').update(await readFile(path)).digest('hex');
