@@ -1,5 +1,5 @@
 import { cp, mkdir, rm } from 'node:fs/promises';
-import { extname, join } from 'node:path';
+import { extname, join, relative, sep } from 'node:path';
 
 const root = process.cwd();
 const output = join(root, 'dist');
@@ -21,6 +21,8 @@ for (const directory of runtimeDirectories) {
   await cp(join(root, directory), join(output, directory), {
     recursive: true,
     filter: source => {
+      // 旧SEフォルダは作業端末に残っていても配布物へ一切コピーしない。
+      if (relative(root, source).split(sep).includes('効果音')) return false;
       const extension = extname(source).toLowerCase();
       return extension === '' || runtimeExtensions.has(extension);
     }

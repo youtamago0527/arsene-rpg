@@ -6,6 +6,8 @@ const root = path.resolve(__dirname, '..');
 const audio = fs.readFileSync(path.join(root, 'js', 'audio-runtime-20260904.js'), 'utf8');
 const fx = fs.readFileSync(path.join(root, 'js', 'battle_fx.js'), 'utf8');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const buildScript = fs.readFileSync(path.join(root, 'scripts', 'build-web.mjs'), 'utf8');
+if (!buildScript.includes("includes('効果音')")) throw new Error('web build can still copy legacy SFX');
 
 const formal = {
   swordHit: 'sword-hit-sample-20260904.mp3', clawHit: 'claw-hit-sample-20260904.mp3', fireFlight: 'staff-fire-sample-20260904.mp3',
