@@ -239,10 +239,7 @@
       const chord = (notes, gap=.08) => notes.forEach((n,i)=>this.tone(n,.2,'sine',.1,1,i*gap));
       switch (name) {
         case 'ui': this.tone(620,.055,'square',.045,1.28); break;
-        case 'slash': this.noise(.18,.16,0,1500); this.tone(780,.15,'sawtooth',.09,.18); break;
         case 'magic': this.tone(330,.34,'sine',.12,2.4); this.tone(720,.28,'triangle',.1,1.5,.08); this.noise(.22,.08,.1,1000); break;
-        case 'quick': this.noise(.13,.12,0,1800); this.tone(1100,.11,'sawtooth',.07,.25); this.noise(.15,.14,.12,1700); this.tone(930,.13,'sawtooth',.08,.22,.1); break;
-        case 'enemyHit': this.tone(180,.18,'triangle',.15,.55); this.noise(.12,.09,0,350); break;
         case 'dark': this.tone(120,.42,'sine',.13,3.2); this.tone(62,.45,'sawtooth',.08,1.8); break;
         // メニューの決定音。回復音（ヒール.mp3）をUI全般へ流用していたため、
         // 装備やJOB変更のたびに回復音が鳴っていた。短い上昇2音で置き換える。
