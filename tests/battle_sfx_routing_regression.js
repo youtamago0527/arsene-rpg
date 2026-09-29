@@ -21,7 +21,10 @@ for (const legacy of ['会心の一撃1.mp3', '回避.mp3', '打撃6.mp3', 'crit
   if (fs.existsSync(path.join(root, '音楽系', '効果音', legacy))) throw new Error(`legacy SFX remains: ${legacy}`);
 }
 if (fs.existsSync(path.join(root, 'js', 'audio.js'))) throw new Error('legacy audio runtime remains');
-if (!index.includes('js/audio-runtime-20260904.js?v=1.0.6')) throw new Error('fresh audio runtime is not loaded');
+if (!index.includes('js/audio-runtime-20260904.js?v=1.0.7')) throw new Error('fresh audio runtime is not loaded');
+if (!/mealHeal:\s*\{ url: 'assets\/audio\/sfx\/heal-sample-20260904\.mp3', gain: \.24/.test(audio)) throw new Error('meal-only healing SFX must be quieter');
+if (!/heal:\s*\{ url: 'assets\/audio\/sfx\/heal-sample-20260904\.mp3', gain: \.50/.test(audio)) throw new Error('regular healing SFX volume changed');
+if (!fs.readFileSync(path.join(root, 'js', 'game.js'), 'utf8').includes("this.audio.sfx('mealHeal'); this.renderMenuSummary(); this.renderMenuPanel('food')")) throw new Error('meal consumption is not using its quiet SFX');
 if (!audio.includes("getPlatform?.() === 'ios'")) throw new Error('native iOS SFX route is missing');
 if (!audio.includes('new Audio(audioAssetUrl(def.url))')) throw new Error('native iOS must play cache-busted formal SFX files directly');
 if (!audio.includes('createMediaElementSource(media)') || !audio.includes('gain.connect(this.master)')) throw new Error('native iOS sampled SFX must use Web Audio gain');
@@ -99,5 +102,7 @@ if (!player.playSfxFile('heal')) throw new Error('native formal SFX did not star
 if (createdAudio.at(-1).volume !== 1 || !nodes.some(([kind, node]) => kind === 'gain' && node === player.master)) {
   throw new Error('native sampled SFX bypasses the shared master gain');
 }
+if (!player.playSfxFile('mealHeal')) throw new Error('meal SFX did not start through Web Audio');
+if (nodes.filter(([kind]) => kind === 'source').at(-1)?.[1]?.gain?.value !== .24) throw new Error('native meal SFX gain is not reduced');
 
 console.log('battle sfx routing regression: ok');

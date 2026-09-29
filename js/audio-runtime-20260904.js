@@ -24,6 +24,7 @@
     fireFlight:  { url: 'assets/audio/sfx/staff-fire-sample-20260904.mp3', gain: .30, offset: .010, maxDur: .55, cooldownMs: 55, maxVoices: 2 },
     noteHit:     { url: 'assets/audio/sfx/instrument-hit-sample-20260904.mp3', gain: .58, offset: .002, maxDur: 1.05, cooldownMs: 65, maxVoices: 2 },
     heal:        { url: 'assets/audio/sfx/heal-sample-20260904.mp3', gain: .50, offset: .002, maxDur: 1.35, cooldownMs: 180, maxVoices: 1 },
+    mealHeal:    { url: 'assets/audio/sfx/heal-sample-20260904.mp3', gain: .24, offset: .002, maxDur: 1.35, cooldownMs: 180, maxVoices: 1 },
     escape:      { url: 'assets/audio/sfx/escape-sample-20260904.mp3', gain: .48, offset: .028, maxDur: 1.0, cooldownMs: 300, maxVoices: 1 },
     passiveProc: { url: 'assets/audio/sfx/passive-proc-sample-20260904.mp3', gain: .34, offset: .018, maxDur: 1.2, cooldownMs: 420, maxVoices: 1 }
   };
