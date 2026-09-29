@@ -4388,7 +4388,7 @@
         if (spark.secretMenu) this.profile.flags.foodSecretMenuUnlocked = true;
       }
       if (id === 'taiwanMazesoba') this.profile.flags.taiwanMazesobaNew = false;
-      this.saveProfile(); this.audio.sfx('heal'); this.renderMenuSummary(); this.renderMenuPanel('food');
+      this.saveProfile(); this.audio.sfx('mealHeal'); this.renderMenuSummary(); this.renderMenuPanel('food');
       const line = spark
         ? `……ん？ 札幌味噌の後味から、${spark.name}が閃いたわ！ そんなことあるかいな。裏メニュー、開けとくで！`
         : id === 'sapporoMiso'
