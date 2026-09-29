@@ -3064,7 +3064,7 @@
       const el = document.getElementById(enemy.uid); if (!el) return;
       const strike = { id: 'offHandStrike', kind: 'weapon', weaponType: lw.weaponType, damageType: lw.damageType || 'physical', power: rate, agiScale: 0 };
       this.flashTitle(this.usesBareFists() ? '左の拳' : '左手の追撃', lw.name);
-      if (!this.audio.playWeaponAttack(lw.weaponType)) this.audio.sfx('slash');
+      this.audio.playWeaponAttack(lw.weaponType);
       const ren = $('#ren'); ren.classList.add('attacking');
       await this.battleSleep(200);
       strike.weaponOverrideId = this.profile.equipment.leftHand;

@@ -48,16 +48,11 @@
   // ── 振り／詠唱のタイミング ────────────────────────────────
   P.attackSwingFx = function (skill) {
     if (!this.fxIsWeaponAction(skill)) { this.audio?.sfx?.('magic'); return; }
-    // 素早い斬撃は専用の連撃音を残す
-    if (skill?.id === 'quickSlash') { this.audio?.sfx?.('quick'); return; }
     const type = this.fxWeaponType(skill), ren = $('#ren');
     if (!ren) return;
     ren.classList.add(`fx-swing-${type}`);
     setTimeout(() => ren.classList.remove(`fx-swing-${type}`), 420);
-    // 杖の通常攻撃は直後の magicProjectile() が、火球の発射位置と同時に
-    // 正式音源 fireFlight を鳴らす。ここで重ねると二重再生になる。
-    const swingSfx = { sword: 'swordSwing', martial: 'clawSwing', staff: null, instrument: 'noteSwing', shield: 'shieldSwing' }[type] ?? 'swordSwing';
-    if (swingSfx) this.audio?.sfx?.(swingSfx);
+    // 武器の音は命中・発射時の正式音源だけにする。旧合成の振り音は重ねない。
     if (type === 'instrument') this.fxNoteBurst(ren);
   };
 
