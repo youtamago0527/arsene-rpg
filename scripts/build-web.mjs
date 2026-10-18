@@ -21,6 +21,8 @@ for (const directory of runtimeDirectories) {
   await cp(join(root, directory), join(output, directory), {
     recursive: true,
     filter: source => {
+      // Superseded D2 costume must not ship inside the reviewed application.
+      if (relative(root, source).split(sep).join('/') === 'assets/enemy-characters/myrthi/battle-idle-v1.jpg') return false;
       // 旧SEフォルダは作業端末に残っていても配布物へ一切コピーしない。
       if (relative(root, source).split(sep).includes('効果音')) return false;
       const extension = extname(source).toLowerCase();

@@ -6,6 +6,7 @@ const root = process.cwd();
 const dist = join(root, 'dist');
 const native = join(root, 'ios', 'App', 'App', 'public');
 const sentinels = [
+  'assets/enemy-characters/myrthi/battle-armored-v2.png',
   'index.html',
   'css/battle-ui-v2.css',
   'css/ios-safe-area.css',
@@ -59,6 +60,7 @@ for (const base of [root, dist, native]) {
 }
 
 const forbiddenNativeAssets = [
+  'assets/enemy-characters/myrthi/battle-idle-v1.jpg',
   'js/audio.js',
   'js/audio-runtime-20260903.js',
   '音楽系/効果音/critical-hit-v2.mp3',
