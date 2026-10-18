@@ -20,7 +20,7 @@ const sentinels = [
 const hash = async path => createHash('sha256').update(await readFile(path)).digest('hex');
 const verifyTriplet = async relative => {
   const paths = [join(root, relative), join(dist, relative), join(native, relative)];
-  await Promise.all(paths.map(access));
+  await Promise.all(paths.map(path => access(path)));
   const hashes = await Promise.all(paths.map(hash));
   if (new Set(hashes).size !== 1) throw new Error(`stale iOS bundle: ${relative}`);
 };
