@@ -34,6 +34,7 @@ assert.match(fixes, /@media\(max-width:360px\)/);
 assert.match(fixes, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
 
 const phoneOrientation = plist.match(/<key>UISupportedInterfaceOrientations<\/key>\s*<array>([\s\S]*?)<\/array>/)?.[1] || '';
+assert.match(plist, /<key>UIRequiresFullScreen<\/key>\s*<true\s*\/>/, 'portrait-only iPad builds must opt out of multitasking for App Store validation');
 const tabletOrientation = plist.match(/<key>UISupportedInterfaceOrientations~ipad<\/key>\s*<array>([\s\S]*?)<\/array>/)?.[1] || '';
 for (const section of [phoneOrientation, tabletOrientation]) {
   assert(section.includes('UIInterfaceOrientationPortrait'), 'portrait must be supported');
