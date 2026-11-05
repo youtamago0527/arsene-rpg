@@ -4,6 +4,9 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const script = fs.readFileSync(path.join(__dirname, '../js/phantom_shop.js'), 'utf8');
+const ticketProductId = 'com.arsene.remix.ad_skip_tickets_10';
+const otherworldProductId = 'com.arsene.remix.otherworld_tickets_5';
+const licenseProductId = 'com.arsene.remix.ad_skip_license';
 const element = () => ({ hidden: true, innerHTML: '', dataset: {}, append() {}, addEventListener() {}, querySelector() { return null; }, insertAdjacentHTML() {} });
 const profile = { premium: {}, inventory: {} };
 let saves = 0;
@@ -44,20 +47,20 @@ async function run() {
     async purchase() { return response; },
     async finish() { finishCount++; return { finished: true }; }
   };
-  shop.iosProducts = { 'ad-skip-tickets': { id: 'ad-skip-tickets', type: 'consumable' } };
+  shop.iosProducts = { [ticketProductId]: { id: ticketProductId, type: 'consumable' } };
 
   await shop.purchase('ad-skip-tickets');
   assert.equal(profile.premium.adSkipTickets || 0, 0, 'cancelled purchase must not grant');
   response = { status: 'pending' };
   await shop.purchase('ad-skip-tickets');
   assert.equal(profile.premium.adSkipTickets || 0, 0, 'pending purchase must not grant');
-  response = { productId: 'ad-skip-tickets', transactionId: '123', verified: false };
+  response = { productId: ticketProductId, transactionId: '123', verified: false };
   await shop.purchase('ad-skip-tickets');
   assert.equal(profile.premium.adSkipTickets || 0, 0, 'unverified purchase must not grant');
-  response = { productId: 'otherworld-tickets', transactionId: '123', verified: true };
+  response = { productId: otherworldProductId, transactionId: '123', verified: true };
   await shop.purchase('ad-skip-tickets');
   assert.equal(profile.premium.adSkipTickets || 0, 0, 'wrong product must not grant');
-  response = { productId: 'ad-skip-tickets', transactionId: '123', verified: true };
+  response = { productId: ticketProductId, transactionId: '123', verified: true };
   await shop.purchase('ad-skip-tickets');
   assert.equal(profile.premium.adSkipTickets, 10);
   assert.equal(profile.premiumTransactions['123'], 'ad-skip-tickets');
@@ -66,7 +69,7 @@ async function run() {
   assert.equal(finishCount, 2);
   assert.equal(saves, 1);
 
-  response = { productId: 'ad-skip-tickets', transactionId: '124', verified: true };
+  response = { productId: ticketProductId, transactionId: '124', verified: true };
   failSave = true;
   await shop.purchase('ad-skip-tickets');
   assert.equal(profile.premium.adSkipTickets, 10, 'failed save must roll back in-memory grant');
@@ -84,14 +87,14 @@ async function run() {
 
   window.Capacitor.Plugins.ArseneStoreKit.getProducts = async () => { throw new Error('offline'); };
   window.Capacitor.Plugins.ArseneStoreKit.pending = async () => ({
-    transactions: [{ productId: 'ad-skip-tickets', transactionId: '125', verified: true }]
+    transactions: [{ productId: ticketProductId, transactionId: '125', verified: true }]
   });
   await shop.loadIOSProducts();
   assert.equal(game.profile.premium.adSkipTickets, 30, 'pending purchase must recover even when product fetch fails');
   assert.equal(finishCount, 5);
 
   window.Capacitor.Plugins.ArseneStoreKit.restore = async () => ({
-    transactions: [{ productId: 'ad-skip-license', transactionId: '126', verified: true }]
+    transactions: [{ productId: licenseProductId, transactionId: '126', verified: true }]
   });
   await shop.restorePurchases();
   assert.equal(game.profile.premium.adSkipLicense, true, 'verified non-consumable must restore');
@@ -100,11 +103,11 @@ async function run() {
   assert.equal(saves, savesAfterRestore, 'repeated restore must not grant twice');
 
   window.Capacitor.Plugins.ArseneStoreKit.getProducts = async () => ({
-    products: [{ id: 'ad-skip-tickets', type: 'nonConsumable', displayPrice: '¥160' }]
+    products: [{ id: ticketProductId, type: 'nonConsumable', displayPrice: '¥160' }]
   });
   window.Capacitor.Plugins.ArseneStoreKit.pending = async () => ({ transactions: [] });
   await shop.loadIOSProducts();
-  assert.equal(shop.iosProducts['ad-skip-tickets'], undefined, 'wrong App Store product type must be disabled');
+  assert.equal(shop.iosProducts[ticketProductId], undefined, 'wrong App Store product type must be disabled');
   console.log('iOS StoreKit purchase regression: ok');
 }
 

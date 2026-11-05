@@ -20,22 +20,23 @@ persisted transaction ID is checked again after relaunch and never regranted.
 
 ## Mandatory App Store Connect check before Archive
 
-`iosProductId(id)` currently uses the shop item slug as the App Store product ID.
-Compare every ID below with the actual App Store Connect Product ID. If any ID
-differs, update `iosProductId` in `js/phantom_shop.js` with an explicit mapping,
-then rerun build/sync and tests. Missing products are deliberately disabled.
+The IDs below were recovered from an earlier iOS StoreKit implementation in
+commit `151cb92`. They are candidates, not confirmation of App Store Connect's
+current registered IDs. Compare each ID and type with the actual products. If
+anything differs, update the map in `js/phantom_shop.js` and rerun build/sync
+and tests. Missing products are deliberately disabled.
 
 | Shop item | Current requested Product ID | Expected type |
 | --- | --- | --- |
-| Complete pass | `time-complete-pass` | Non-consumable |
-| Ad skip licence | `ad-skip-license` | Non-consumable |
-| Ad skip tickets x10 | `ad-skip-tickets` | Consumable |
-| AUTO x3 licence | `auto3-license` | Non-consumable |
-| Sweep licence | `sweep-license` | Non-consumable |
-| Otherworld tickets x5 | `otherworld-tickets` | Consumable |
-| Rebirth arcana | `rebirth-arcana` | Consumable |
-| Protection arcana | `protection-arcana` | Consumable |
-| Blessed protection arcana | `blessed-protection-arcana` | Consumable |
+| Complete pass | `com.arsene.remix.time_complete_pass` | Non-consumable |
+| Ad skip licence | `com.arsene.remix.ad_skip_license` | Non-consumable |
+| Ad skip tickets x10 | `com.arsene.remix.ad_skip_tickets_10` | Consumable |
+| AUTO x3 licence | `com.arsene.remix.auto3_license` | Non-consumable |
+| Sweep licence | `com.arsene.remix.sweep_license` | Non-consumable |
+| Otherworld tickets x5 | `com.arsene.remix.otherworld_tickets_5` | Consumable |
+| Rebirth arcana | `com.arsene.remix.rebirth_arcana_1` | Consumable |
+| Protection arcana | `com.arsene.remix.protection_arcana_1` | Consumable |
+| Blessed protection arcana | `com.arsene.remix.blessed_protection_arcana_1` | Consumable |
 
 Check that every product is available for sale and attached to the iOS app,
 the Paid Apps Agreement and banking/tax requirements are active, and the products
@@ -75,8 +76,8 @@ files and ten audio assets), and iOS release-ad verification. Xcode compilation,
 Sandbox payment, App Store Connect agreement/product settings, upload and
 resubmission remain unverified.
 
-Important limitation: the product IDs in this branch are provisional slugs,
-not verified App Store Connect values. Do not submit a build with all products
+Important limitation: the product IDs in this branch are recovered historical
+values, not verified App Store Connect values. Do not submit a build with all products
 unavailable. A prior profile containing free grants cannot be distinguished
 from a legitimate transferred save by this client-only change; do not remove
 existing entitlements without a separate migration decision.

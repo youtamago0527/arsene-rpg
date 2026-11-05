@@ -126,8 +126,19 @@
   const tint = (hex, alpha) => `${hex}${alpha}`;
 
   const isNativeIOS = () => window.Capacitor?.getPlatform?.() === 'ios';
-  // App Store Connectの商品IDと一致しない場合は購入を無効にする。
-  const iosProductId = id => id;
+  // iOS版で使用していた商品ID。App Store Connectの登録値と再照合する。
+  const iosProductIds = {
+    'time-complete-pass': 'com.arsene.remix.time_complete_pass',
+    'ad-skip-license': 'com.arsene.remix.ad_skip_license',
+    'ad-skip-tickets': 'com.arsene.remix.ad_skip_tickets_10',
+    'auto3-license': 'com.arsene.remix.auto3_license',
+    'sweep-license': 'com.arsene.remix.sweep_license',
+    'otherworld-tickets': 'com.arsene.remix.otherworld_tickets_5',
+    'rebirth-arcana': 'com.arsene.remix.rebirth_arcana_1',
+    'protection-arcana': 'com.arsene.remix.protection_arcana_1',
+    'blessed-protection-arcana': 'com.arsene.remix.blessed_protection_arcana_1'
+  };
+  const iosProductId = id => iosProductIds[id];
   const permanentProductIds = new Set(['time-complete-pass', 'ad-skip-license', 'auto3-license', 'sweep-license']);
   const iosProductType = id => permanentProductIds.has(id) ? 'nonConsumable' : 'consumable';
 
