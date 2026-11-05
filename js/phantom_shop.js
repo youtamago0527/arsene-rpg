@@ -340,12 +340,17 @@
           if (item && product.type === iosProductType(item.id)) this.iosProducts[product.id] = product;
         }
         this.refreshShopItems();
-        const pending = await store.pending();
-        for (const transaction of pending?.transactions || []) await this.applyIOSTransaction(transaction);
       } catch (error) {
         this.iosProducts = {};
         this.refreshShopItems();
         this.toast('購入を準備できません', '通信とApp Storeの商品設定をご確認ください');
+      }
+      // 商品一覧の取得失敗時も、支払い済みの未完了取引は救済する。
+      try {
+        const pending = await store.pending();
+        for (const transaction of pending?.transactions || []) await this.applyIOSTransaction(transaction);
+      } catch (error) {
+        this.toast('購入の確認待ち', '未反映の購入は次回ショップを開いた際に再確認します');
       }
     }
 
@@ -355,16 +360,37 @@
       const txid = String(transaction?.transactionId || '');
       if (!store || !item || transaction?.verified !== true || !/^[1-9][0-9]*$/.test(txid)) return false;
       const g = window.arseneGame;
-      if (!g?.profile) return false;
+      if (!g?.profile || g.localScenario?.ephemeral) return false;
       const processed = g.profile.premiumTransactions ||= {};
       if (!processed[txid]) {
-        if (this.isPermanentOwned(item.id)) {
-          processed[txid] = item.id;
-          g.saveProfile?.();
-        } else if (!this.grantProduct(item.id, txid)) return false;
+        const before = {
+          premium: { ...g.profile.premium },
+          inventory: { ...g.profile.inventory },
+          transactions: { ...processed }
+        };
+        try {
+          if (this.isPermanentOwned(item.id)) {
+            processed[txid] = item.id;
+            g.saveProfile();
+          } else if (!this.grantProduct(item.id, txid)) return false;
+          if (!this.isIOSGrantPersisted(g, txid, item.id)) throw new Error('Purchase save was not persisted');
+        } catch (error) {
+          g.profile.premium = before.premium;
+          g.profile.inventory = before.inventory;
+          g.profile.premiumTransactions = before.transactions;
+          return false;
+        }
+      } else if (processed[txid] !== item.id || !this.isIOSGrantPersisted(g, txid, item.id)) {
+        return false;
       }
       await store.finish({ transactionId: txid });
       return true;
+    }
+
+    isIOSGrantPersisted(game, transactionId, itemId) {
+      if (typeof game.loadProfile !== 'function') return false;
+      try { return game.loadProfile()?.premiumTransactions?.[transactionId] === itemId; }
+      catch (error) { return false; }
     }
 
     async purchase(id) {
@@ -389,10 +415,10 @@
           return;
         }
         if (transaction?.productId !== productId || !await this.applyIOSTransaction(transaction)) {
-          this.toast('購入を反映できません', '取引を確認できませんでした。購入を復元してください');
+          this.toast('購入を反映できません', 'ショップを開き直して取引を再確認してください');
         }
       } catch (error) {
-        this.toast('購入できません', '決済は完了していません。後でお試しください');
+        this.toast('購入を確認できません', '支払い済みの可能性があります。ショップを開き直してください');
       } finally {
         this.purchaseBusy = false;
         this.refreshShopItems();
@@ -450,11 +476,14 @@
         result = '祝福された保護のアルカナ 所持' + g.profile.inventory.blessedProtectionArcana + '個';
       } else return;
       if (transactionId) (g.profile.premiumTransactions ||= {})[transactionId] = id;
-      g.saveProfile?.(); g.audio?.sfx?.('confirm');
-      g.renderBattleMenu?.(); g.showMainCommands?.(); g.renderMenuSummary?.();
-      if (document.querySelector('#menu-panel')?.dataset.panel === 'otherworld') g.renderOtherWorldPanel?.(document.querySelector('#menu-panel'));
-      this.refreshShopItems();
-      this.toast(item.name, result);
+      g.saveProfile();
+      try {
+        g.audio?.sfx?.('confirm');
+        g.renderBattleMenu?.(); g.showMainCommands?.(); g.renderMenuSummary?.();
+        if (document.querySelector('#menu-panel')?.dataset.panel === 'otherworld') g.renderOtherWorldPanel?.(document.querySelector('#menu-panel'));
+        this.refreshShopItems();
+        this.toast(item.name, result);
+      } catch (error) { /* UI errors must not invalidate an already persisted grant. */ }
       return true;
     }
 

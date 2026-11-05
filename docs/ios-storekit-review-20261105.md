@@ -12,7 +12,11 @@ transactions, and finishes a transaction only after the JS profile grant has
 been saved. JS records transaction IDs to avoid double-granting consumables.
 Cancelled, pending, unverified, mismatched, unavailable and failed purchases do
 not grant anything. Non-consumables have a restore button; unfinished purchases
-are rechecked when the shop opens.
+are rechecked when the shop opens, even if the product-list request fails.
+The grant and transaction ID must also be visible after reloading the saved
+profile before the native `finish` call. If saving fails, the in-memory grant is
+rolled back and the unfinished StoreKit transaction can be retried. A previously
+persisted transaction ID is checked again after relaunch and never regranted.
 
 ## Mandatory App Store Connect check before Archive
 
@@ -55,6 +59,12 @@ product is unavailable and its button is disabled.
    duplicate tap, app restart during purchase, restore and repeated restoration.
    Consumables must grant once per transaction ID; the three licences and pass
    must restore. The in-game GOLD and 奏貨 shops must still work normally.
+   For interrupted purchases, reopen Phantom Shop after relaunch to trigger the
+   `Transaction.unfinished` check. For Ask to Buy / pending approval, do not
+   grant before approval; reopen the shop after approval to confirm delivery.
+   Simulate save failure only in a test build and confirm that the transaction
+   stays unfinished until storage recovers. Confirm that a second tap while a
+   purchase sheet is open does not trigger another request.
 4. Archive with a new build number, upload to App Store Connect, associate that
    exact build and the required IAP products with the version, and reply to the
    reviewer with the tested purchase flow. Do not resubmit an older Archive.
@@ -64,3 +74,9 @@ regression, help regression, web build, iOS bundle verification (nine runtime
 files and ten audio assets), and iOS release-ad verification. Xcode compilation,
 Sandbox payment, App Store Connect agreement/product settings, upload and
 resubmission remain unverified.
+
+Important limitation: the product IDs in this branch are provisional slugs,
+not verified App Store Connect values. Do not submit a build with all products
+unavailable. A prior profile containing free grants cannot be distinguished
+from a legitimate transferred save by this client-only change; do not remove
+existing entitlements without a separate migration decision.

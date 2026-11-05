@@ -68,6 +68,8 @@ assert.match(premiumShop, /await store\.purchase\(\{ productId, expectedType: io
 assert.match(nativeStore, /case \.success\(\.verified\(let transaction\)\)/);
 assert.match(nativeStore, /case \.userCancelled/);
 assert.match(nativeStore, /case \.pending/);
+assert.match(nativeStore, /App Store product type mismatch/);
+assert.match(premiumShop, /isIOSGrantPersisted/);
 assert.match(bridgeController, /registerPluginInstance\(ArseneStoreKitPlugin\(\)\)/);
 assert.match(sceneDelegate, /ArseneBridgeViewController\(\)/);
 assert.match(xcodeProject, /ArseneStoreKitPlugin\.swift in Sources/);
