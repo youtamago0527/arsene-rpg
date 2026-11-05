@@ -10,8 +10,7 @@
 (() => {
   'use strict';
 
-  // 裏ショップの品揃え。決済SDK接続前は、購入ボタンで効果だけを即時付与して
-  // セーブへ保存する（戦闘力や報酬量を直接増やす商品は置かない）。
+  // iOSではStoreKitの検証済み取引がなければ効果を付与しない。
   const ITEMS = [
     {
       id: 'time-complete-pass', no: '01', kicker: 'TOP RECOMMEND', name: '怪盗の時短パス COMPLETE',
@@ -126,12 +125,20 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const tint = (hex, alpha) => `${hex}${alpha}`;
 
+  const isNativeIOS = () => window.Capacitor?.getPlatform?.() === 'ios';
+  // App Store Connectの商品IDと一致しない場合は購入を無効にする。
+  const iosProductId = id => id;
+  const permanentProductIds = new Set(['time-complete-pass', 'ad-skip-license', 'auto3-license', 'sweep-license']);
+  const iosProductType = id => permanentProductIds.has(id) ? 'nonConsumable' : 'consumable';
+
   class PhantomSecret {
     constructor() {
       this.popup = null;
       this.shop = null;
       this.arcade = null;
       this.toasts = null;
+      this.purchaseBusy = false;
+      this.iosProducts = null;
       this.build();
     }
 
@@ -176,6 +183,7 @@
           <p class="pm-shop-note">すべて時短専用。戦闘力・報酬量・利用上限は変化しません</p>
         </header>
         <div class="pm-shop-list">${ITEMS.map(item => this.itemHTML(item)).join('')}</div>`;
+      if (isNativeIOS()) shop.insertAdjacentHTML('beforeend', '<button type="button" class="pm-shop-restore" data-pm="restore">購入を復元</button>');
 
       // ── 選曲画面 ──
       const arcade = document.createElement('div');
@@ -211,6 +219,7 @@
         else if (action === 'play') this.play();
         else if (action === 'toggle') this.toggleItem(button.closest('.pm-item'));
         else if (action === 'buy') this.purchase(button.dataset.id);
+        else if (action === 'restore') this.restorePurchases();
         else if (action === 'track') this.playTrack(button.dataset.track);
       };
       popup.addEventListener('click', onClick);
@@ -229,6 +238,7 @@
 
     itemHTML(item) {
       const owned = this.isPermanentOwned(item.id), amount = this.consumableAmount(item.id);
+      const iosUnavailable = isNativeIOS() && !this.iosProducts?.[iosProductId(item.id)];
       const status = owned ? '購入済み' : amount != null ? `所持 ${amount}` : '';
       const head = `
         <button type="button" class="pm-item-head" data-pm="toggle">
@@ -240,7 +250,7 @@
             </span>
           </span>
           <span class="pm-item-right">
-            <span class="pm-item-price pm-cut-sm" style="color:${item.featured ? '#020617' : item.accent};background:${item.featured ? '#fff' : tint(item.accent, '26')};border-color:${tint(item.accent, '4d')}">${esc(item.priceLabel)}</span>
+            <span class="pm-item-price pm-cut-sm" style="color:${item.featured ? '#020617' : item.accent};background:${item.featured ? '#fff' : tint(item.accent, '26')};border-color:${tint(item.accent, '4d')}">${esc(this.iosProducts?.[iosProductId(item.id)]?.displayPrice || item.priceLabel)}</span>
             <span class="pm-item-arrow">▼</span>
           </span>
         </button>`;
@@ -249,7 +259,7 @@
           ${item.description ? `<p>${esc(item.description)}</p>` : ''}
           ${item.stats ? `<div class="pm-item-stats">${item.stats.map(([k, v]) => `<span>${esc(k)}<b>${esc(v)}</b></span>`).join('')}</div>` : ''}
           ${status ? `<small class="pm-item-owned">${esc(status)}</small>` : ''}
-          <button type="button" class="pm-item-cta pm-cut-sm" style="${item.ctaStyle}" data-pm="buy" data-id="${esc(item.id)}" ${owned ? 'disabled' : ''}>${owned ? '✓ 購入済み' : esc(item.cta)}</button>
+          <button type="button" class="pm-item-cta pm-cut-sm" style="${item.ctaStyle}" data-pm="buy" data-id="${esc(item.id)}" ${owned || iosUnavailable || this.purchaseBusy ? 'disabled' : ''}>${owned ? '✓ 購入済み' : iosUnavailable ? this.iosProducts === null ? '購入を準備中' : '現在購入できません' : esc(this.iosProducts?.[iosProductId(item.id)]?.displayPrice ? item.cta.replace(item.priceLabel, this.iosProducts[iosProductId(item.id)].displayPrice) : item.cta)}</button>
         </div></div>`;
       return item.featured
         ? `<article class="pm-item pm-item-featured pm-cut" data-id="${item.id}"><div class="pm-item-inner pm-cut">${head}${body}</div></article>`
@@ -315,7 +325,100 @@
       if (list) list.innerHTML = ITEMS.map(item => this.itemHTML(item)).join('');
     }
 
-    purchase(id) {
+    nativeStore() {
+      return isNativeIOS() ? window.Capacitor?.Plugins?.ArseneStoreKit : null;
+    }
+
+    async loadIOSProducts() {
+      const store = this.nativeStore();
+      this.iosProducts = {};
+      if (!store) { this.refreshShopItems(); return; }
+      try {
+        const result = await store.getProducts({ productIds: ITEMS.map(item => iosProductId(item.id)) });
+        for (const product of result?.products || []) {
+          const item = ITEMS.find(entry => iosProductId(entry.id) === product.id);
+          if (item && product.type === iosProductType(item.id)) this.iosProducts[product.id] = product;
+        }
+        this.refreshShopItems();
+        const pending = await store.pending();
+        for (const transaction of pending?.transactions || []) await this.applyIOSTransaction(transaction);
+      } catch (error) {
+        this.iosProducts = {};
+        this.refreshShopItems();
+        this.toast('購入を準備できません', '通信とApp Storeの商品設定をご確認ください');
+      }
+    }
+
+    async applyIOSTransaction(transaction) {
+      const store = this.nativeStore();
+      const item = ITEMS.find(entry => iosProductId(entry.id) === transaction?.productId);
+      const txid = String(transaction?.transactionId || '');
+      if (!store || !item || transaction?.verified !== true || !/^[1-9][0-9]*$/.test(txid)) return false;
+      const g = window.arseneGame;
+      if (!g?.profile) return false;
+      const processed = g.profile.premiumTransactions ||= {};
+      if (!processed[txid]) {
+        if (this.isPermanentOwned(item.id)) {
+          processed[txid] = item.id;
+          g.saveProfile?.();
+        } else if (!this.grantProduct(item.id, txid)) return false;
+      }
+      await store.finish({ transactionId: txid });
+      return true;
+    }
+
+    async purchase(id) {
+      if (!isNativeIOS()) {
+        this.toast('購入できません', 'このショップのWeb決済は準備中です');
+        return;
+      }
+      const item = ITEMS.find(entry => entry.id === id);
+      const productId = iosProductId(id);
+      const store = this.nativeStore();
+      if (!item || !store || !this.iosProducts?.[productId] || this.purchaseBusy) {
+        this.toast('購入できません', 'App Storeとの接続を確認してください');
+        return;
+      }
+      this.purchaseBusy = true;
+      this.refreshShopItems();
+      try {
+        const transaction = await store.purchase({ productId, expectedType: iosProductType(id) });
+        if (transaction?.status === 'cancelled') return;
+        if (transaction?.status === 'pending') {
+          this.toast(item.name, '承認待ちです。決済完了後に反映されます');
+          return;
+        }
+        if (transaction?.productId !== productId || !await this.applyIOSTransaction(transaction)) {
+          this.toast('購入を反映できません', '取引を確認できませんでした。購入を復元してください');
+        }
+      } catch (error) {
+        this.toast('購入できません', '決済は完了していません。後でお試しください');
+      } finally {
+        this.purchaseBusy = false;
+        this.refreshShopItems();
+      }
+    }
+
+    async restorePurchases() {
+      const store = this.nativeStore();
+      if (!store || this.purchaseBusy) return;
+      this.purchaseBusy = true;
+      try {
+        const result = await store.restore();
+        let restored = 0;
+        for (const transaction of result?.transactions || []) {
+          if (await this.applyIOSTransaction(transaction)) restored++;
+        }
+        this.toast('購入を復元', restored ? '購入内容を確認しました' : '復元できる購入はありません');
+      } catch (error) {
+        this.toast('復元できません', 'App Storeとの接続を確認してください');
+      } finally {
+        this.purchaseBusy = false;
+        this.refreshShopItems();
+      }
+    }
+
+    grantProduct(id, transactionId = null) {
       const g = window.arseneGame, p = this.premium(), item = ITEMS.find(entry => entry.id === id);
       if (!g?.profile || !p || !item) { this.toast('購入できません', 'ゲームデータを読み込んでからお試しください'); return; }
       if (this.isPermanentOwned(id)) { this.toast(item.name, '購入済みです'); return; }
@@ -346,11 +449,13 @@
         g.profile.inventory.blessedProtectionArcana = Math.max(0, Number(g.profile.inventory.blessedProtectionArcana) || 0) + 1;
         result = '祝福された保護のアルカナ 所持' + g.profile.inventory.blessedProtectionArcana + '個';
       } else return;
+      if (transactionId) (g.profile.premiumTransactions ||= {})[transactionId] = id;
       g.saveProfile?.(); g.audio?.sfx?.('confirm');
       g.renderBattleMenu?.(); g.showMainCommands?.(); g.renderMenuSummary?.();
       if (document.querySelector('#menu-panel')?.dataset.panel === 'otherworld') g.renderOtherWorldPanel?.(document.querySelector('#menu-panel'));
       this.refreshShopItems();
       this.toast(item.name, result);
+      return true;
     }
 
     // 開いている間はmax-heightを一切掛けない(CSS側で.open時にnone/overflow:visible)。
@@ -386,6 +491,7 @@
       this.popup.hidden = true;
       this.shop.hidden = false;
       this.refreshShopItems();
+      if (isNativeIOS()) void this.loadIOSProducts();
       this.shop.querySelector('.pm-shop-list').scrollTop = 0;
       window.arseneGame?.audio?.sfx?.('ui');
     }

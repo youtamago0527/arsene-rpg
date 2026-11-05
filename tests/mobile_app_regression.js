@@ -12,6 +12,11 @@ const buildScript = read('scripts/build-web.mjs');
 const packageJson = JSON.parse(read('package.json'));
 const bundleVerifier = read('scripts/verify-ios-bundle.mjs');
 const audio = read('js/audio-runtime-20260904.js');
+const premiumShop = read('js/phantom_shop.js');
+const nativeStore = read('ios/App/App/ArseneStoreKitPlugin.swift');
+const bridgeController = read('ios/App/App/ArseneBridgeViewController.swift');
+const sceneDelegate = read('ios/App/App/SceneDelegate.swift');
+const xcodeProject = read('ios/App/App.xcodeproj/project.pbxproj');
 const capacitor = JSON.parse(read('capacitor.config.json'));
 
 assert.match(html, /width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover/);
@@ -56,6 +61,16 @@ assert.match(audio, /visibilitychange/);
 assert.doesNotMatch(audio, /await this\.preloadSfxFiles\(\)/, 'user gesture must not wait for SFX downloads before resuming audio');
 assert.match(audio, /if \(!this\.ctx\) this\.unlock\(\)/, 'SFX calls must recover an uninitialized iOS AudioContext');
 assert.match(audio, /正式音源が使えない場合は無音にする/, 'missing sample must never fall back to an obsolete synthesized SFX');
+assert.doesNotMatch(premiumShop, /if \(!isNativeIOS\(\)\) \{ this\.grantProduct\(id\)/, 'web fallback must not grant paid items');
+assert.match(premiumShop, /transaction\?\.verified !== true/);
+assert.match(premiumShop, /premiumTransactions/);
+assert.match(premiumShop, /await store\.purchase\(\{ productId, expectedType: iosProductType\(id\) \}\)/);
+assert.match(nativeStore, /case \.success\(\.verified\(let transaction\)\)/);
+assert.match(nativeStore, /case \.userCancelled/);
+assert.match(nativeStore, /case \.pending/);
+assert.match(bridgeController, /registerPluginInstance\(ArseneStoreKitPlugin\(\)\)/);
+assert.match(sceneDelegate, /ArseneBridgeViewController\(\)/);
+assert.match(xcodeProject, /ArseneStoreKitPlugin\.swift in Sources/);
 assert.doesNotMatch(audio, /sfxReady\s*\?*\.then\(\(\)\s*=>\s*\{?\s*if\s*\(!this\.playSfxFile/, 'an old combat SFX must not replay after its animation');
 
 const localRefs = [...html.matchAll(/(?:src|href)="([^"?#]+)(?:\?[^"#]*)?"/g)]
