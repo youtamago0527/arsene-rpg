@@ -81,3 +81,46 @@ values, not verified App Store Connect values. Do not submit a build with all pr
 unavailable. A prior profile containing free grants cannot be distinguished
 from a legitimate transferred save by this client-only change; do not remove
 existing entitlements without a separate migration decision.
+
+
+## Mac local verification — 2026-11-05
+
+App Store Connect was inspected on the Mac: all nine registered product IDs
+and consumable/non-consumable types match the table above. Their displayed
+status was Ready to Submit (審査準備完了). This confirms the ID/type mapping,
+not approval, sale availability, or completion of agreements/banking/tax.
+The historical-ID warning above is superseded for ID/type matching only.
+
+`pnpm run cap:sync`, the unsigned generic iOS Xcode build, the purchase/mobile/
+help JS regressions and `scripts/verify-ios-release.mjs` passed on this Mac.
+
+A shared `StoreKitVerification` XCTest scheme invokes the actual Capacitor
+native plugin with a local nine-product StoreKit configuration. iPhone 17 Pro
+simulator / iOS 26.5 / Xcode 26.6 results:
+
+| Configuration | Passed cases | Failures |
+| --- | --- | --- |
+| Automatic (`_disableDialogs=true`, `_askToBuyEnabled=false`) | Nine product lookups and verified purchases/finish; unavailable ID and wrong type rejection; unfinished replay through a new plugin instance; stable repeated restoration | 0 (4 passed, 2 mode-specific skips) |
+| Manual (`_disableDialogs=false`, `_askToBuyEnabled=false`) | Visible Xcode purchase sheet cancelled; result cancelled with no verified flag or transaction ID | 0 (1 passed, 5 mode-specific skips) |
+| Pending (`_disableDialogs=true`, `_askToBuyEnabled=true`) | Ask to Buy returns pending with no verified flag or transaction ID | 0 (1 passed, 5 mode-specific skips) |
+
+The automatic finish test allows up to four seconds for StoreKit's unfinished
+sequence to reflect completion. It asserts that every finished transaction ID
+has disappeared rather than assuming immediate consistency.
+
+Run this scheme from the Xcode IDE. First Run App, then Stop and Test (Cmd-U).
+To exercise another mode, edit the settings in
+`ios/App/StoreKitVerification/Products.storekit`, Run/Stop again, then Test.
+The committed configuration defaults to automatic mode. On this runtime,
+SKTestSession mutations fail with SKInternalErrorDomain code 3 and CLI test
+runs do not reliably synchronize the local configuration; IDE Run/Stop was
+required. See Apple's forum report: https://developer.apple.com/forums/thread/826971
+
+These are local test transactions with no charge. The manual sheet explicitly
+identified Xcode local testing. They do not replace physical iPhone/iPad
+Sandbox tests, gameplay shop UI end-to-end validation, offline/save-failure/
+duplicate-tap checks, or approval of a pending transaction followed by delivery.
+The native replay test recreates the bridge plugin; it does not kill/relaunch
+the app process. JS persistence/dedup behavior is covered separately by the JS
+regression suite. No new Archive, upload, or App Review resubmission has been
+performed as part of this verification.
