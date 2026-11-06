@@ -101,7 +101,13 @@ final class StoreKitVerification: XCTestCase {
     }
     func testRestoreStableNonConsumableEntitlements() async throws {
         try requireAutomatic()
-        _ = try await invoke("purchase", ["productId": ids[0], "expectedType": "nonConsumable"])
+        let purchase = try await invoke("purchase", ["productId": ids[0], "expectedType": "nonConsumable"])
+        print("STOREKIT NONCONSUMABLE PURCHASE: status=\(purchase["status"] ?? "none"), verified=\(purchase["verified"] ?? false)")
+        guard purchase["verified"] as? Bool == true else {
+            XCTFail("Non-consumable purchase was not verified; restore success cannot be assessed.")
+            return
+        }
+        XCTAssertEqual(purchase["productId"] as? String, ids[0])
         let restored = try await invoke("restore")
         let entries = restored["transactions"] as? [[String: Any]] ?? []
         XCTAssertTrue(entries.contains { $0["productId"] as? String == ids[0] && $0["verified"] as? Bool == true })

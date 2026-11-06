@@ -161,3 +161,20 @@ Apple displays a new Paid Applications Schedule that must be accepted before
 updating apps. Acceptance has been requested from the user and is pending.
 The updated App Review note describes the StoreKit fix and only proven test
 results; all nine IAPs remain attached to the existing submission.
+
+
+### Follow-up — 2026-11-06 19:10 JST
+
+The user accepted the updated Paid Applications Schedule in Chrome; the
+Business page now shows Paid Apps Agreement active for Nov 6, 2026–Aug 31,
+2027. Build 27 completed Apple processing. Export-compliance answers were
+saved and it is Ready to Submit. Version 1.0's selected build was changed
+from 26 to 27 and saved. The review submission has not been resubmitted.
+
+The physical native non-consumable attempt returned cancelled (not verified);
+the restore-positive assertion therefore failed. This is not proof of a
+successful purchase or restoration. The test now checks purchase verification
+before asserting restoration, so cancellation cannot be mistaken for a
+restore defect. A retry requires completing the actual Apple Sandbox sheet
+on the device. Local native non-consumable/restore tests remain passing as
+previously recorded. No production runtime code changed in this follow-up.
