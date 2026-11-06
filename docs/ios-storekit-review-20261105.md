@@ -178,3 +178,22 @@ before asserting restoration, so cancellation cannot be mistaken for a
 restore defect. A retry requires completing the actual Apple Sandbox sheet
 on the device. Local native non-consumable/restore tests remain passing as
 previously recorded. No production runtime code changed in this follow-up.
+
+
+### Completed Sandbox non-consumable test and resubmission — 19:17 JST
+
+The final physical-device run completed successfully after the user confirmed
+the Sandbox password. COMPLETE pass returned verified=true with matching
+product ID. The native restore test passed: two AppStore.sync/currentEntitlements
+restorations returned the same verified entitlement transaction IDs.
+Result: /tmp/arsene-physical-sandbox-final-20261106.xcresult, 1 passed, 0 failed.
+The previous cancelled attempts are superseded only for this positive test;
+physical purchase coverage is still one consumable plus one non-consumable,
+not all nine products or iPad. All-nine coverage is local StoreKit coverage.
+
+The App Review note was updated with these precise results. At 19:17 JST the
+1.0 (27) app plus all nine IAP products were resubmitted. App Store Connect
+visibly shows Waiting for Review (審査待ち) for all ten submitted items.
+Submission ID: faf70820-9031-442d-a1e7-487c8b1309a0. This is submission
+acceptance, not App Review approval. No additional production runtime change
+was needed after the build-27 Archive/upload.
