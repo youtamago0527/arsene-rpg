@@ -124,3 +124,40 @@ The native replay test recreates the bridge plugin; it does not kill/relaunch
 the app process. JS persistence/dedup behavior is covered separately by the JS
 regression suite. No new Archive, upload, or App Review resubmission has been
 performed as part of this verification.
+
+
+## Physical iPhone and upload — 2026-11-06
+
+Device: iPhone 16 / iOS 26.6.2. Existing Library was backed up before
+installing the development build; the gameplay save was preserved.
+No Xcode StoreKit configuration was injected for the gameplay test.
+
+- All nine products loaded from Apple; the storefront switched to JPY after
+  signing in with the Japan Sandbox tester.
+- Ad-skip tickets x10: Apple's sheet explicitly stated test-only/no charge.
+  Purchase completed and gameplay balance changed from 0 to 10.
+- Terminated and relaunched the app via devicectl, continued the existing save,
+  reopened the shop, and confirmed the balance remained exactly 10.
+- The persisted profile contains one new premiumTransactions entry for this
+  ticket purchase. Cancellation before the successful purchase had left 0.
+- Restore Purchases authenticated with Apple and reported no restorable
+  purchases, as expected before any non-consumable Sandbox purchase.
+- Existing saved non-consumable licence flags predate this test and are not
+  evidence of verified Sandbox non-consumable purchases. A positive native
+  non-consumable purchase/restore test remains in progress, pending device
+  password confirmation. Do not count old saved flags as test success.
+
+Release tree matches integrated origin/feature/ios-capacitor c935b0740e026f769c484ca9918347ab2030e45a
+except Capacitor's regenerated minimum-platform declaration (iOS 15 to 16).
+macOS cap:sync completed, purchase/mobile/help regressions and iOS release ads
+verification passed. Archive 1.0 (27) built successfully, verified bundle ID
+com.arsene.remix, UIRequiresFullScreen=true, no bundled XCTest plugins.
+App Store Connect previously showed maximum build 26 for version 1.0.
+Build 27 upload succeeded at 18:44 JST; processing/build selection and
+resubmission are not yet complete. Third-party GoogleMobileAds and
+UserMessagingPlatform dSYM upload warnings were nonfatal.
+
+Apple displays a new Paid Applications Schedule that must be accepted before
+updating apps. Acceptance has been requested from the user and is pending.
+The updated App Review note describes the StoreKit fix and only proven test
+results; all nine IAPs remain attached to the existing submission.
