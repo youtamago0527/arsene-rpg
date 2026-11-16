@@ -1,0 +1,29 @@
+ARSÈNE REMIX 1.0.1 (30) — 2026-11-17
+Source branch: staging/ios-battle-performance-20261116
+Runtime commit: f3dddc3
+
+Includes previous build 29 repeated-battle audio/resource and save-transfer fixes.
+Additional changes:
+- Restore martial arts to bare-fist requirements, including Burst Fist.
+- Initial equipment is determined by starting JOB; no extra default staff is granted.
+- Queued equipment drop banners include sweep and rare armor.
+- Encyclopedia defeat records are separate from encounter tracking. Legacy ordinary entries are preserved; legacy boss entries require confirmed defeat flags.
+- Remove debug editor script, settings tab, credentials and debug unlock dependency. Build filters and native verification reject reintroduction.
+- Normal boss rematch victory results expose one material reroll offer per victory; initial victories excluded. No gear, EXP or GOLD rerolled.
+- OVERDRIVE entry requires earned rewarded-ad callback (or existing ad-skip entitlement); normal rematches remain ad-free.
+
+Validation:
+- All 44 regression scripts passed in the final complete run.
+- JS syntax checks, web build, Capacitor sync, iOS release ad configuration checks passed.
+- Release archive succeeded. Bundle identifier com.arsene.remix, version 1.0.1, build 30.
+- Archived index/game/data/title_system/q_offer/help_data hashes match checked source.
+- No debug_room.js, perf-probe.js or burst-probe.js in archive public assets.
+- New advertising flows verified with callback/duplicate/stale-response regressions; no new physical-device production ad viewing claimed.
+
+App Store status: WAITING FOR REVIEW. Build 30 selected and submitted successfully on 2026-11-17 at approximately 02:22 JST. UI confirmed "1項目が提出されました" and "1.0.1 審査待ち". Automatic release after approval remains selected.
+Existing 1.0.1 (29) submission: 161cd0a2-330b-42d6-990b-590a9eb6e29e (cancelled and replaced).
+Archive: /Users/yuki/Documents/Codex/2026-10-18/arsene-release-101/Arsene-1.0.1-30.xcarchive
+No protected release branch was modified. Integration owner must promote this staging branch before the next source release.
+
+Proof: /Users/yuki/Documents/Codex/2026-10-18/arsene-release-101/submitted-1.0.1-build30.png
+Non-blocking upload warnings: GoogleMobileAds and UserMessagingPlatform framework dSYM files unavailable; app archive/upload succeeded.
