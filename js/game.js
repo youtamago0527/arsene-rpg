@@ -253,7 +253,7 @@
     }
 
     freshProfile() {
-      const p = D.player; return { version: 19, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), shopPurchases: {}, premium: { adSkipLicense: false, adSkipTickets: 0, auto3License: false, sweepLicense: false, otherworldTickets: 0 }, musicScores: {}, bossDefeated: { zenacad: false, myrthi: false, versicrell: false, seripes: false }, currentJob: 'mage', lastNormalJob: 'mage', otherWorldReturnJob: null, jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, guardian: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, unlockedJobs: ['mage'], initialJob: 'mage', jobGrowthGained: {}, phantomGrowthRecords: {}, jobRebirths: {}, jobMastered: [], growthFraction: {}, learnedPassives: [], passiveEnhancements: {}, passiveEnhancedAtRebirth: {}, equippedPassives: [null], ptActionSlots: [null, null], ptPassiveSlots: [null, null], weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 }, shield: { level: 1, exp: 0 } }, learnedWeaponSkills: [], seenEnemies: [], equipmentArchive: [], lockedEquipment: [], collectionRewards: {}, playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0, instrument: 0, shield: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0 }, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, taiwanMazesobaUnlocked: false, taiwanMazesobaNew: false, foodSecretMenuUnlocked: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, floorWins: {}, dungeon3BattleWins: 0, dungeon3NewSeen: false, guardianUnlocked: false, shieldUnlocked: false, lastBattleResult: null, consecutiveDefeats: 0, owRestoreJobPending: false }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
+      const p = D.player; return { version: 19, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), shopPurchases: {}, premium: { adSkipLicense: false, adSkipTickets: 0, auto3License: false, sweepLicense: false, otherworldTickets: 0 }, musicScores: {}, bossDefeated: { zenacad: false, myrthi: false, versicrell: false, seripes: false }, currentJob: 'mage', lastNormalJob: 'mage', otherWorldReturnJob: null, jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, guardian: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, unlockedJobs: ['mage'], initialJob: 'mage', jobGrowthGained: {}, phantomGrowthRecords: {}, jobRebirths: {}, jobMastered: [], growthFraction: {}, learnedPassives: [], passiveEnhancements: {}, passiveEnhancedAtRebirth: {}, equippedPassives: [null], ptActionSlots: [null, null], ptPassiveSlots: [null, null], weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 }, shield: { level: 1, exp: 0 } }, learnedWeaponSkills: [], seenEnemies: [], defeatedEnemies: [], equipmentArchive: [], lockedEquipment: [], collectionRewards: {}, playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0, instrument: 0, shield: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0 }, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, taiwanMazesobaUnlocked: false, taiwanMazesobaNew: false, foodSecretMenuUnlocked: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, floorWins: {}, dungeon3BattleWins: 0, dungeon3NewSeen: false, guardianUnlocked: false, shieldUnlocked: false, lastBattleResult: null, consecutiveDefeats: 0, owRestoreJobPending: false }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
     }
     loadProfile() {
       try {
@@ -420,6 +420,12 @@
         if (!Array.isArray(profile.seenEnemies)) profile.seenEnemies = [];
         // D3希少怪異の正式命名に伴う図鑑ID移行。旧セーブの遭遇記録を失わない。
         if (profile.seenEnemies.includes('astralMercuryCore')) profile.seenEnemies = [...new Set(profile.seenEnemies.map(id => id === 'astralMercuryCore' ? 'merox' : id))];
+        // 既存の通常敵図鑑は保持し、ボスは撃破フラグがあるものだけ移行する。
+        if (!Array.isArray(saved.defeatedEnemies)) profile.defeatedEnemies = profile.seenEnemies.filter(id => {
+          const enemy = D.enemies[id];
+          return enemy && (enemy.kind !== 'boss' || !!profile.bossDefeated?.[id === 'zenakado' ? 'zenacad' : id]);
+        });
+        else profile.defeatedEnemies = [...new Set(saved.defeatedEnemies.filter(id => typeof id === 'string').map(id => id === 'astralMercuryCore' ? 'merox' : id))];
         if (!Array.isArray(profile.equipmentArchive)) profile.equipmentArchive = [];
         // 分解から守る装備のID。旧セーブには無いので必ず補完する。
         if (!Array.isArray(profile.lockedEquipment)) profile.lockedEquipment = [];
@@ -2043,7 +2049,6 @@
       let added = false;
       for (const e of this.enemies || []) if (e.id && !seen.includes(e.id)) { seen.push(e.id); added = true; }
       if (added) this.saveProfile();
-      this.checkCollectionTitleUnlocks?.(this.currentDungeonId);
     }
     /* Remote pre-redesign battle renderer (superseded by the live mobile HUD below).
     renderEnemies() {
@@ -3596,6 +3601,10 @@
       (enemy.rolledDrops || []).forEach(([id, n]) => { drops[id] = (drops[id] || 0) + n; });
       Object.entries(enemy.stolenItems || {}).forEach(([id, n]) => { drops[id] = (drops[id] || 0) + n; });
       if (recoveredGold || Object.keys(enemy.stolenItems || {}).length) this.setLog(`${enemy.name}を撃破！ 盗まれた戦利品を取り返した。`);
+      if (enemy.id && !enemy.escaped && !enemy.cannotDefeat) {
+        const defeated = this.profile.defeatedEnemies ||= [];
+        if (!defeated.includes(enemy.id)) defeated.push(enemy.id);
+      }
       const levels = this.applyRewards({ exp, gold, drops });
       // 実際に獲得した後に通知する。一掃・通常攻撃・即死・反撃を共通化。
       Object.entries(drops).forEach(([id, quantity]) => {
@@ -3608,6 +3617,7 @@
       Object.entries(drops).forEach(([id, n]) => { rewards.drops[id] = (rewards.drops[id] || 0) + n; });
       rewards.levels.push(...levels); if (job) rewards.jobResults.push(job);
       if (job?.to > job?.from && !this.quickResolving) this.queueGrowthBubble('JOB Lv.UP!', `${job.jobName} Lv.${job.from} → ${job.to}`);
+      this.checkCollectionTitleUnlocks?.(this.currentDungeonId);
       this.updateHUD();
       return { exp, gold };
     }
@@ -4752,7 +4762,7 @@
     //   ・ノエルのように正体が明かされていない相手は、遭遇しても伏せたまま
     //   ・まだ一度も戦闘で出会っていない敵も伏せる
     hasMetEnemy(id) { return (this.profile.seenEnemies || []).includes(id); }
-    isArchiveHidden(e) { return e.id === 'noelFirstEncounter' || e.hideInArchive || !this.hasMetEnemy(e.id); }
+    isArchiveHidden(e) { return e.id === 'noelFirstEncounter' || e.hideInArchive || !(this.profile.defeatedEnemies || []).includes(e.id); }
     // ダンジョンの怪異図鑑対象一覧。renderArchivePanel()の判定と、
     // 図鑑称号の完成チェック（checkCollectionTitleUnlocks）の両方から参照する。
     archiveEnemyList(dungeonId) {

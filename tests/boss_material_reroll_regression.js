@@ -9,6 +9,7 @@ const D = context.window.ARSENE_DATA, actor = Object.create(context.window.Battl
 D.items.testBossMat = { name: 'ボス素材', category: 'material' };
 D.items.testBossGear = { name: 'ボス装備', category: 'equipment' };
 context.window.arseneQOffer = { canUse: () => true, show: (type, extra) => { assert.strictEqual(type, 'bossDrop'); offer = extra; return true; } };
+actor.profile = { defeatedEnemies: [] };
 actor.applyRewards = reward => { grants++; assert.strictEqual(reward.exp, 0); assert.strictEqual(reward.gold, 0); assert.strictEqual(reward.drops.testBossMat, 2); assert.strictEqual(reward.drops.testBossGear, undefined); };
 const enemy = { kind: 'boss', alive: false, name: 'ボス', dropTable: [{ itemId: 'testBossMat', chance: 1, count: 2 }, { itemId: 'testBossGear', chance: 1 }] };
 for (const firstClear of [false]) {

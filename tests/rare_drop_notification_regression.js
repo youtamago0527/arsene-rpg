@@ -22,6 +22,7 @@ timers.shift()(); timers.shift()();
 assert.strictEqual(actor.rareDropShowing, false);
 assert.strictEqual(sounds.length, 2);
 // The same reward method is used by sweep, normal attacks, counters and instant death.
+actor.profile = { defeatedEnemies: [] };
 actor.rewardExpMultiplier = actor.rewardGoldMultiplier = () => 1;
 actor.passiveEffectRate = actor.mealGoldBonusRate = () => 0;
 actor.applyRewards = () => []; actor.grantJobExp = () => null; actor.updateHUD = () => {};
