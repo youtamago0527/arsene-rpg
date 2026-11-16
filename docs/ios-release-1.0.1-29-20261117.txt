@@ -1,0 +1,55 @@
+ARSÈNE REMIX 1.0.1 (29) — SUBMITTED / WAITING FOR REVIEW
+Confirmed on App Store Connect 2026-11-17 JST.
+App ID 6806899939 / com.arsene.remix
+Build ID 7f00c242-e49c-4f78-9afb-b3a38d883bdb
+Submission ID 161cd0a2-330b-42d6-990b-590a9eb6e29e
+Review URL https://appstoreconnect.apple.com/apps/6806899939/distribution/reviewsubmissions/details/161cd0a2-330b-42d6-990b-590a9eb6e29e
+Automatic release after approval; existing ratings retained.
+
+The user explicitly requested release/upload/review after performance work, then
+requested claw support for 集気法 and 震撃. Build 28 was uploaded but superseded
+before submission. Only build 29 is attached to this submitted version.
+Production source: staging/ios-battle-performance-20261116, runtime commit 1f91db5.
+Protected release branches were not changed. Integration owner should promote
+this staging history before starting a subsequent iOS update.
+
+Included changes
+- Bounded native audio resources and successful decode of all ten local MP3s.
+- Save-transfer validation from simulator audit b85437c.
+- 集気法/震撃 now permit martial/claw equipment, retaining learning/MP/effects;
+  skill descriptions and cache tokens updated. Other bare-only arts unchanged.
+
+Verification
+40 regression scripts, including help/skill equipment gating/save transfer/StoreKit/
+AdMob/audio tests, passed. Web/cap sync and iOS bundle/release verifiers passed.
+Release archive and App Store upload succeeded. App ID/version/build, production
+ad IDs and shipped runtime hashes verified. No diagnostic probes, test ads,
+local StoreKit configuration or QA documentation shipped.
+
+Additional burstFist investigation
+Data name: ばくれつけん, martialArtist signature, four hits.
+Physical iPhone diagnostic fixture uses persistent enemies/high defensive stats;
+not normal progression or a production save. Real executeRound path used.
+Plain: four impacts, p50/p95/max frame 17/20/49 ms; elapsed 4420 ms including
+normal waits/enemy turns; updateHUD 9 calls / total 9 ms / max 2 ms.
+With 連舞: four impacts, chain rose 0->4, frame 17/20/48 ms; elapsed 4414 ms;
+updateHUD 13 calls / total 18 ms / max 3 ms. No new media sources beyond BGM;
+active audio/FX returned to zero. Duplicate HUD calls are measurable but did not
+produce the reported severe stall on the corrected audio route. No speculative
+HUD/FX gameplay change added.
+
+Build29 diagnostic: 鉄の爪 equipped (bare=false), both readiness gates true;
+both skills displayed with revised descriptions in weapon-arts UI. Phone use
+interrupted the subsequent UI activation check; do not label it completed.
+Node regression covers bare/claw allowed, sword/staff/instrument/shield rejected,
+and preservation of other bare-only restrictions. Changes do not alter skill effects.
+
+Known limits
+The simulator audit has unverified all-feature/long-session coverage and an
+unfixed iPad equipment comparison-chip clipping issue. These are not claimed
+fixed by this focused update. Audible quality/all iOS devices not exhaustively checked.
+Google SDK dSYM warnings were non-blocking; retain archives for crash analysis.
+
+Evidence: /Users/yuki/Documents/Codex/2026-10-18/arsene-release-101
+Contains build29 xcarchive, logs, runtime hashes and submitted screenshot.
+Earlier build28 record is historical and superseded by this record.
