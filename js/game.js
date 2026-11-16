@@ -1578,10 +1578,19 @@
       // 未設定のキャラは共通初期値のまま。既存セーブには影響しない。
       const charBase = (this.characterList || []).find(c => c.id === profile.selectedCharacter)?.baseStats;
       if (charBase) { Object.assign(profile.baseStats, charBase); profile.currentVitals = { hp: profile.baseStats.maxHp, mp: profile.baseStats.maxMp }; }
-      if (type) {
-        profile.preferredWeaponType = type.id;
-        const wid = type.starterWeaponId;
-        if (wid && D.items[wid]) { profile.inventory[wid] = Math.max(1, profile.inventory[wid] || 0); profile.equipment.rightHand = wid; }
+      if (type) profile.preferredWeaponType = type.id;
+      // 初期装備はキャラクターや専攻ではなくJOBを優先する。
+      // 共通プロフィールの杖を除き、選択したJOBの装備だけを支給する。
+      for (const id of Object.keys(D.player.inventory || {})) {
+        if (D.items[id]?.category === 'equipment') delete profile.inventory[id];
+      }
+      profile.equipment.rightHand = null;
+      profile.equipment.leftHand = null;
+      const startingType = { warrior: 'sword', martialArtist: 'martial', mage: 'staff', priest: 'staff' }[jobId] || type?.id;
+      const wid = jobId === 'martialArtist' ? null : this.weaponTypeDef(startingType)?.starterWeaponId;
+      if (wid && D.items[wid]) {
+        profile.inventory[wid] = Math.max(1, profile.inventory[wid] || 0);
+        profile.equipment.rightHand = wid;
       }
       if (job) { profile.currentJob = job.id; profile.initialJob = job.id; profile.jobs ||= {}; profile.jobs[job.id] ||= { level: 1, exp: 0 }; profile.unlockedJobs = [job.id]; }
       return profile;

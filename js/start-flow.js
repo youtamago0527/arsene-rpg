@@ -339,7 +339,7 @@
         const w = window.ARSENE_DATA.weapons[type.starterWeaponId];
         const bonus = Object.entries(w?.bonuses || {}).map(([k, v]) => `${this.statLabel(k)} ${v >= 0 ? '+' : ''}${v}`).join(' / ') || '補正なし';
         const selected = this.chosenWeaponType === type.id;
-        return `<button type="button" class="weapon-card ${selected ? 'selected' : ''}" data-select-weapon="${type.id}" aria-pressed="${selected}"><span class="wc-icon" data-weapon-icon="${type.id}" aria-hidden="true"></span><strong>${type.name}</strong><small>${type.nameEn}</small><p>${type.description}</p><div class="wc-starter"><b>初期装備</b><span>${w?.name || '—'}</span><em>${bonus}</em></div></button>`;
+        return `<button type="button" class="weapon-card ${selected ? 'selected' : ''}" data-select-weapon="${type.id}" aria-pressed="${selected}"><span class="wc-icon" data-weapon-icon="${type.id}" aria-hidden="true"></span><strong>${type.name}</strong><small>${type.nameEn}</small><p>${type.description}</p><div class="wc-starter"><b>初期装備はJOB優先</b><span>${this.chosenJob === 'martialArtist' ? '素手' : this.chosenJob === 'warrior' ? '剣' : '杖'}</span><em>専攻と初期装備は別に設定されます</em></div></button>`;
       }).join('');
       $('[data-weapon-next]', this.root).disabled = !this.chosenWeaponType;
     }
