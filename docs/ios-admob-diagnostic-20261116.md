@@ -20,6 +20,11 @@ and message on screen; collect the same details from Xcode console. Next,
 collapse the panel and use a normal in-game ad button to confirm that the
 gameplay reward is delivered once only after a test ad reward callback.
 
+This branch patches the AdMob plugin to expose the underlying UMP error code
+and message. If UMP returns code 4 (no configured consent form), the error is
+shown and the diagnostic branch alone continues to the official test ad.
+Production keeps its consent gate and cannot use this bypass.
+
 If the official test unit fails to load or show, investigate native SDK,
 consent, device/network and plugin integration first. If the test unit works
 but the production unit does not, inspect the AdMob app/ad unit status, policy

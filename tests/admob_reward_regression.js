@@ -49,6 +49,29 @@ const rewardedId = rewardedMatch[1];
   assert.equal(await deniedWindow.arseneAdMob.showRewarded(), false, '広告リクエスト不可なら表示しない');
   assert.equal(deniedPrepareCalls, 0, '同意ゲート前に広告をロードしない');
 
+  const diagnosticStages = [];
+  let diagnosticPrepareCalls = 0;
+  const diagnosticListeners = new Map();
+  const missingFormPlugin = {
+    async initialize() {},
+    async requestConsentInfo() { throw Object.assign(new Error('No consent form configured'), { code: '4' }); },
+    async addListener(name, callback) { diagnosticListeners.set(name, callback); return { remove: async () => diagnosticListeners.delete(name) }; },
+    async prepareRewardVideoAd(options) { assert.equal(options.isTesting, true); diagnosticPrepareCalls++; },
+    async showRewardVideoAd() {}
+  };
+  const diagnosticWindow = {
+    addEventListener() {},
+    arseneAdMobDiagnostic: { record: stage => diagnosticStages.push(stage) },
+    Capacitor: { isNativePlatform: () => true, getPlatform: () => 'ios', isPluginAvailable: () => true, Plugins: { AdMob: missingFormPlugin } }
+  };
+  vm.runInNewContext(bridge, { window: diagnosticWindow, console, setTimeout, clearTimeout });
+  const missingFormAd = diagnosticWindow.arseneAdMob.showRewarded();
+  await new Promise(resolve => setImmediate(resolve));
+  diagnosticListeners.get('onRewardedVideoAdReward')?.({ amount: 1, type: 'reward' });
+  assert.equal(await missingFormAd, true, '診断ビルドではcode 4を表示した上で公式テスト広告を確認できる');
+  assert.equal(diagnosticPrepareCalls, 1);
+  assert(diagnosticStages.includes('consent-bypass'));
+
   const listeners = new Map();
   let initializeCalls = 0;
   const plugin = {

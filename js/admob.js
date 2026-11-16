@@ -39,9 +39,11 @@
       return false;
     }
     if (!initialization) initialization = (async () => {
+      let sdkReady = false;
       try {
         report('initializing');
         await admob.initialize();
+        sdkReady = true;
         report('initialized');
         let consent = await admob.requestConsentInfo();
         report('consent', { status: consent?.status, canRequestAds: consent?.canRequestAds });
@@ -59,6 +61,10 @@
         initialization = null;
         canRequestAds = false;
         logFailure('initialization or consent failed', error);
+        if (DIAGNOSTIC_TEST_ADS && sdkReady && String(error?.code) === '4') {
+          report('consent-bypass', { reason: 'UMP form missing', testAdOnly: true });
+          return true;
+        }
         return false;
       }
     })();

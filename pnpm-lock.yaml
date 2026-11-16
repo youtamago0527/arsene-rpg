@@ -4,13 +4,16 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@capacitor-community/admob@8.1.0': bfd5c5349e91ea0488abe193ed1d9f35391bff3e900ccc368b2b38b70f99e1fe
+
 importers:
 
   .:
     dependencies:
       '@capacitor-community/admob':
         specifier: 8.1.0
-        version: 8.1.0
+        version: 8.1.0(patch_hash=bfd5c5349e91ea0488abe193ed1d9f35391bff3e900ccc368b2b38b70f99e1fe)
       '@capacitor/core':
         specifier: 8.5.0
         version: 8.5.0
@@ -430,7 +433,7 @@ packages:
 
 snapshots:
 
-  '@capacitor-community/admob@8.1.0':
+  '@capacitor-community/admob@8.1.0(patch_hash=bfd5c5349e91ea0488abe193ed1d9f35391bff3e900ccc368b2b38b70f99e1fe)':
     dependencies:
       '@capacitor/core': 8.5.0
       '@rdlabo/capacitor-docgen': 0.4.1

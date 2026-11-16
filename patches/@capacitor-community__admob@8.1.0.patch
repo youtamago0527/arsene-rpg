@@ -1,0 +1,37 @@
+diff --git a/ios/Sources/AdMobPlugin/Consent/ConsentExecutor.swift b/ios/Sources/AdMobPlugin/Consent/ConsentExecutor.swift
+index 0de7fbb1dc0a41374259ef6bd1bc28bb939a1593..501d01d389bc95961bc4c7d65f92d0e7ee86975d 100644
+--- a/ios/Sources/AdMobPlugin/Consent/ConsentExecutor.swift
++++ b/ios/Sources/AdMobPlugin/Consent/ConsentExecutor.swift
+@@ -20,8 +20,10 @@ class ConsentExecutor: NSObject {
+         ConsentInformation.shared.requestConsentInfoUpdate(
+             with: parameters,
+             completionHandler: { error in
+-                if error != nil {
+-                    call.reject("Request consent info failed")
++                if let error = error {
++                    let nsError = error as NSError
++                    NSLog("AdMob diagnostic UMP request failed: domain=\(nsError.domain) code=\(nsError.code) message=\(nsError.localizedDescription)")
++                    call.reject("UMP consent info failed (\(nsError.domain)): \(nsError.localizedDescription)", String(nsError.code), error)
+                 } else {
+                     call.resolve([
+                         "status": self.getConsentStatusString(ConsentInformation.shared.consentStatus),
+@@ -44,7 +46,8 @@ class ConsentExecutor: NSObject {
+                 try await ConsentForm.presentPrivacyOptionsForm(from: rootViewController)
+                 call.resolve()
+             } catch {
+-                call.reject("Failed to show privacy options form: \(error.localizedDescription)")
++                let nsError = error as NSError
++                call.reject("Failed to show privacy options form: \(nsError.localizedDescription)", String(nsError.code), error)
+             }
+         }
+     }
+@@ -64,7 +67,8 @@ class ConsentExecutor: NSObject {
+                             "privacyOptionsRequirementStatus": self.getPrivacyOptionsRequirementStatus(ConsentInformation.shared.privacyOptionsRequirementStatus)
+                         ])
+                     } catch {
+-                        call.reject("Request consent info failed")
++                        let nsError = error as NSError
++                        call.reject("UMP consent form failed: \(nsError.localizedDescription)", String(nsError.code), error)
+                     }
+                 }
+             } else {
