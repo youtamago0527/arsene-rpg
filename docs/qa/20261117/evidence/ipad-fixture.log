@@ -1,0 +1,70 @@
+2026-11-17 00:18:11.123 App[63175:16140441] DiskCookieStorage changing policy from 2 to 0, cookie file: file:///Users/yuki/Library/Developer/CoreSimulator/Devices/6B8890EC-A005-4AEA-8CB0-81CFD72F78A4/data/Containers/Data/Application/1F5F7167-4247-4E7D-9FBA-55F536CB8516/Library/Cookies/com.arsene.remix.binarycookies
+⚡️  Loading app at capacitor://localhost...
+2026-11-17 00:18:12.041 App[63175:16140441] void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+⚡️  JS Eval error A JavaScript exception occurred
+objc[63175]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x163c98310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x13fd3c398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+⚡️  [warn] - [JOB AUDIT] 未完成または要確認のJOBがあります。
+⚡️  To Native ->  AdMob initialize 13874943
+⚡️  WebView loaded
+⚡️  TO JS {}
+⚡️  To Native ->  AdMob requestConsentInfo 13874944
+⚡️  TO JS {"canRequestAds":true,"isConsentFormAvailable":false,"privacyOptionsRequirementStatus":"NOT_REQUIRED","status":"NOT_REQUIRED"}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842303241,"turn":1,"finished":false,"dom":789,"timeouts":0,"intervals":0,"audioCreated":1,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842313241,"turn":1,"finished":false,"dom":789,"timeouts":0,"intervals":0,"audioCreated":1,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842323241,"turn":1,"finished":false,"dom":789,"timeouts":0,"intervals":0,"audioCreated":1,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842333241,"turn":1,"finished":false,"dom":789,"timeouts":0,"intervals":0,"audioCreated":1,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842343241,"turn":1,"finished":false,"dom":789,"timeouts":0,"intervals":0,"audioCreated":1,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842353244,"turn":1,"finished":false,"dom":790,"timeouts":1,"intervals":0,"audioCreated":1,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842363249,"turn":1,"finished":false,"dom":789,"timeouts":0,"intervals":0,"audioCreated":1,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842373253,"turn":1,"finished":false,"dom":837,"timeouts":0,"intervals":0,"audioCreated":1,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842383255,"turn":1,"finished":false,"dom":926,"timeouts":0,"intervals":0,"audioCreated":1,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842393259,"turn":1,"finished":false,"dom":926,"timeouts":0,"intervals":0,"audioCreated":1,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842403263,"turn":1,"finished":false,"dom":926,"timeouts":0,"intervals":0,"audioCreated":1,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842413267,"turn":1,"finished":false,"dom":926,"timeouts":0,"intervals":0,"audioCreated":1,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842423270,"turn":3,"finished":true,"dom":896,"timeouts":0,"intervals":0,"audioCreated":7,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842433274,"turn":3,"finished":true,"dom":896,"timeouts":0,"intervals":0,"audioCreated":7,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842443278,"turn":3,"finished":true,"dom":896,"timeouts":0,"intervals":0,"audioCreated":7,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842453281,"turn":3,"finished":true,"dom":896,"timeouts":0,"intervals":0,"audioCreated":14,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842463285,"turn":3,"finished":true,"dom":896,"timeouts":0,"intervals":0,"audioCreated":14,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842473289,"turn":1,"finished":false,"dom":932,"timeouts":5,"intervals":0,"audioCreated":16,"nativePlayers":1,"nativePlayerNames":1,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842483293,"turn":1,"finished":false,"dom":933,"timeouts":8,"intervals":0,"audioCreated":29,"nativePlayers":2,"nativePlayerNames":2,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842493311,"turn":1,"finished":false,"dom":935,"timeouts":10,"intervals":0,"audioCreated":42,"nativePlayers":2,"nativePlayerNames":2,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842503339,"turn":1,"finished":false,"dom":933,"timeouts":6,"intervals":0,"audioCreated":53,"nativePlayers":1,"nativePlayerNames":1,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842513340,"turn":1,"finished":false,"dom":926,"timeouts":1,"intervals":0,"audioCreated":64,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842523408,"turn":3,"finished":false,"dom":936,"timeouts":7,"intervals":0,"audioCreated":76,"nativePlayers":1,"nativePlayerNames":1,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842533412,"turn":1,"finished":false,"dom":930,"timeouts":1,"intervals":0,"audioCreated":84,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842543786,"turn":1,"finished":false,"dom":931,"timeouts":4,"intervals":0,"audioCreated":92,"nativePlayers":1,"nativePlayerNames":1,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842554163,"turn":1,"finished":false,"dom":932,"timeouts":5,"intervals":0,"audioCreated":100,"nativePlayers":1,"nativePlayerNames":1,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842564562,"turn":1,"finished":false,"dom":932,"timeouts":3,"intervals":0,"audioCreated":105,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842574560,"turn":2,"finished":false,"dom":932,"timeouts":5,"intervals":0,"audioCreated":112,"nativePlayers":1,"nativePlayerNames":1,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842585051,"turn":1,"finished":false,"dom":931,"timeouts":4,"intervals":0,"audioCreated":116,"nativePlayers":1,"nativePlayerNames":1,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842595161,"turn":3,"finished":false,"dom":930,"timeouts":1,"intervals":0,"audioCreated":120,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842606220,"turn":2,"finished":false,"dom":931,"timeouts":2,"intervals":0,"audioCreated":125,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842616567,"turn":1,"finished":false,"dom":930,"timeouts":1,"intervals":0,"audioCreated":129,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842626560,"turn":3,"finished":true,"dom":896,"timeouts":1,"intervals":0,"audioCreated":133,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842636569,"turn":2,"finished":false,"dom":930,"timeouts":1,"intervals":0,"audioCreated":137,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842647721,"turn":1,"finished":false,"dom":930,"timeouts":1,"intervals":0,"audioCreated":141,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842658950,"turn":3,"finished":false,"dom":930,"timeouts":1,"intervals":0,"audioCreated":145,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842669408,"turn":2,"finished":false,"dom":932,"timeouts":4,"intervals":0,"audioCreated":150,"nativePlayers":1,"nativePlayerNames":1,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842680107,"turn":1,"finished":false,"dom":932,"timeouts":6,"intervals":0,"audioCreated":154,"nativePlayers":1,"nativePlayerNames":1,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842691917,"turn":2,"finished":false,"dom":934,"timeouts":6,"intervals":0,"audioCreated":157,"nativePlayers":1,"nativePlayerNames":1,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842701912,"turn":3,"finished":true,"dom":886,"timeouts":1,"intervals":0,"audioCreated":159,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842712138,"turn":2,"finished":false,"dom":930,"timeouts":1,"intervals":0,"audioCreated":162,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842723456,"turn":3,"finished":false,"dom":931,"timeouts":2,"intervals":0,"audioCreated":165,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842736564,"turn":1,"finished":false,"dom":931,"timeouts":2,"intervals":0,"audioCreated":167,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842749591,"turn":2,"finished":false,"dom":931,"timeouts":2,"intervals":0,"audioCreated":170,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842761027,"turn":3,"finished":false,"dom":933,"timeouts":2,"intervals":0,"audioCreated":172,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842771312,"turn":1,"finished":false,"dom":930,"timeouts":1,"intervals":0,"audioCreated":174,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842784271,"turn":2,"finished":false,"dom":931,"timeouts":2,"intervals":0,"audioCreated":177,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842795934,"turn":1,"finished":false,"dom":929,"timeouts":1,"intervals":0,"audioCreated":179,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842807647,"turn":2,"finished":false,"dom":930,"timeouts":1,"intervals":0,"audioCreated":181,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842819058,"turn":3,"finished":false,"dom":930,"timeouts":1,"intervals":0,"audioCreated":183,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842842123,"turn":1,"finished":false,"dom":930,"timeouts":2,"intervals":0,"audioCreated":186,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842855473,"turn":1,"finished":false,"dom":930,"timeouts":1,"intervals":0,"audioCreated":188,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842865850,"turn":2,"finished":false,"dom":930,"timeouts":1,"intervals":0,"audioCreated":190,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842876073,"turn":2,"finished":false,"dom":930,"timeouts":1,"intervals":0,"audioCreated":191,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842892116,"turn":1,"finished":false,"dom":931,"timeouts":2,"intervals":0,"audioCreated":193,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842905993,"turn":1,"finished":false,"dom":931,"timeouts":2,"intervals":0,"audioCreated":195,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842921783,"turn":1,"finished":false,"dom":930,"timeouts":2,"intervals":0,"audioCreated":197,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+⚡️  [log] - ARSENE_AUDIT {"t":1794842935483,"turn":1,"finished":false,"dom":930,"timeouts":1,"intervals":0,"audioCreated":199,"nativePlayers":0,"nativePlayerNames":0,"bodyWidth":744,"viewport":744}
+com.arsene.remix: 63175

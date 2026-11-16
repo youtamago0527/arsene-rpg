@@ -1,0 +1,151 @@
+diff --git a/docs/ios-admob-release-checklist.md b/docs/ios-admob-release-checklist.md
+index 2a965bf..614cea4 100644
+--- a/docs/ios-admob-release-checklist.md
++++ b/docs/ios-admob-release-checklist.md
+@@ -2,10 +2,10 @@
+ 
+ ## 現在の状態
+ 
+-この準備ブランチではGoogle公式デモIDを維持しています。実機テストは安全にできますが、このまま本番審査へ提出しません。
++現在のiOSコードには本番IDが設定されています。AdMob管理画面での広告ユニット状態や配信可否は、コードだけでは判断できません。
+ 
+-- App ID: `ca-app-pub-3940256099942544~1458002511`
+-- Rewarded ad unit: `ca-app-pub-3940256099942544/1712485313`
++- App ID: `ca-app-pub-2798969445522147~9914094555`
++- Rewarded ad unit: `ca-app-pub-2798969445522147/5643677056`
+ - 広告形式: リワードのみ
+ - ランキング機能: 今回のリリースには含めない
+ 
+@@ -18,11 +18,15 @@
+ 5. 初回の同意画面を確認し、同意できない場合は広告を要求しないことを確認する。
+ 6. タイトルと拠点の「設定 → データ」から広告プライバシー設定を開けることを確認する。
+ 
+-## 本番ID差し替え
++## 本番ID確認
+ 
+-AdMob管理画面からiOS App IDとRewarded Ad Unit IDを取得する。差し替え先は `ios/App/App/Info.plist` の `GADApplicationIdentifier` と `js/admob.js` の `IOS_REWARDED_AD_ID`。
++AdMob管理画面のiOS App IDとRewarded Ad Unit IDを照合する。コード上の設定先は `ios/App/App/Info.plist` の `GADApplicationIdentifier` と `js/admob.js` の `IOS_REWARDED_AD_ID`。
+ 
+-差し替え後に `pnpm verify:ios-release` を実行し、デモIDが1つも残っていないことを確認する。本番広告の実機確認はAdMobへテスト端末登録した端末だけで行い、端末IDをソースへ保存しない。
++`pnpm verify:ios-release` でデモIDが1つも残っていないことを確認する。本番広告の実機確認はAdMobへテスト端末登録した端末だけで行い、端末IDをソースへ保存しない。
++
++## 表示失敗の調査
++
++実機のWeb Inspector / Xcodeコンソールで `AdMob rewarded` とネイティブSDKの `Rewarded ad failed to load` / `failed to present` を確認する。JSは初期化・同意・ロード・表示・タイムアウトの失敗段階と、プラグインから届いた `code` / `message` を記録する。広告が出なかった事実だけでは、コード不具合、同意未完了、広告在庫不足、AdMob側の配信制限を区別できない。エラーコードと発生時刻を記録してから切り分ける。
+ 
+ ## AdMob / App Store Connect
+ 
+diff --git a/index.html b/index.html
+index f71b5c0..38e2549 100644
+--- a/index.html
++++ b/index.html
+@@ -185,7 +185,7 @@
+   <script src="js/start-flow.js?v=0.4.35"></script>
+   <script src="js/kazu_minigame.js?v=0.5.2"></script>
+   <script src="js/q_dialogue.js?v=0.1.0"></script>
+-  <script src="js/admob.js?v=0.2.0"></script>
++  <script src="js/admob.js?v=0.2.1"></script>
+   <script src="js/q_offer.js?v=0.2.7"></script>
+   <script src="js/infinite_support.js?v=0.1.0"></script>
+   <script src="js/title_system.js?v=0.1.3"></script>
+diff --git a/js/admob.js b/js/admob.js
+index a8abfa2..49f8da1 100644
+--- a/js/admob.js
++++ b/js/admob.js
+@@ -10,6 +10,13 @@
+   let initialization = null;
+   let requestInFlight = false;
+   let canRequestAds = false;
++  const logFailure = (stage, detail) => {
++    const message = typeof detail === 'string' ? detail : detail?.message || detail?.localizedDescription || 'unknown';
++    console.warn(`AdMob rewarded ${stage}: ${message}`, {
++      code: detail?.code ?? null,
++      adUnitId: IOS_REWARDED_AD_ID
++    });
++  };
+ 
+   function capacitor() { return window.Capacitor; }
+   function isNativeIOS() {
+@@ -23,7 +30,10 @@
+   }
+   async function initialize() {
+     const admob = plugin();
+-    if (!admob) return false;
++    if (!admob) {
++      if (isNativeIOS()) logFailure('unavailable', 'native AdMob plugin is not registered');
++      return false;
++    }
+     if (!initialization) initialization = (async () => {
+       try {
+         await admob.initialize();
+@@ -32,11 +42,15 @@
+           consent = await admob.showConsentForm();
+         }
+         canRequestAds = consent?.canRequestAds === true;
++        if (!canRequestAds) {
++          logFailure('consent', `ads cannot be requested (status: ${consent?.status || 'unknown'})`);
++          initialization = null;
++        }
+         return canRequestAds;
+       } catch (error) {
+         initialization = null;
+         canRequestAds = false;
+-        console.warn('AdMob initialization or consent failed.', error);
++        logFailure('initialization or consent failed', error);
+         return false;
+       }
+     })();
+@@ -78,16 +92,16 @@
+         await cleanup();
+         resolve(rewarded);
+       };
+-      timeout = setTimeout(() => finish(false), 120000);
++      timeout = setTimeout(() => { logFailure('timeout', 'no reward or dismissal callback within 120 seconds'); finish(false); }, 120000);
+       try {
+         handles.push(await admob.addListener(events.rewarded, () => finish(true)));
+         handles.push(await admob.addListener(events.dismissed, () => finish(false)));
+-        handles.push(await admob.addListener(events.failedToLoad, () => finish(false)));
+-        handles.push(await admob.addListener(events.failedToShow, () => finish(false)));
++        handles.push(await admob.addListener(events.failedToLoad, error => { logFailure('load failed', error); finish(false); }));
++        handles.push(await admob.addListener(events.failedToShow, error => { logFailure('show failed', error); finish(false); }));
+         await admob.prepareRewardVideoAd({ adId: IOS_REWARDED_AD_ID });
+-        if (!settled) admob.showRewardVideoAd().catch(() => finish(false));
++        if (!settled) admob.showRewardVideoAd().catch(error => { logFailure('show rejected', error); finish(false); });
+       } catch (error) {
+-        console.warn('Rewarded ad failed.', error);
++        logFailure('load or listener registration failed', error);
+         await finish(false);
+       }
+     });
+diff --git a/tests/admob_reward_regression.js b/tests/admob_reward_regression.js
+index 5653361..b4ca416 100644
+--- a/tests/admob_reward_regression.js
++++ b/tests/admob_reward_regression.js
+@@ -71,7 +71,8 @@ const rewardedId = rewardedMatch[1];
+       Plugins: { AdMob: plugin }
+     }
+   };
+-  vm.runInNewContext(bridge, { window: nativeWindow, console, setTimeout, clearTimeout });
++  const warnings = [];
++  vm.runInNewContext(bridge, { window: nativeWindow, console: { ...console, warn: (...args) => warnings.push(args) }, setTimeout, clearTimeout });
+   const first = nativeWindow.arseneAdMob.showRewarded();
+   assert.equal(await nativeWindow.arseneAdMob.showRewarded(), false, '広告表示中の二重要求を拒否する');
+   await new Promise(resolve => setImmediate(resolve));
+@@ -88,13 +89,15 @@ const rewardedId = rewardedMatch[1];
+ 
+   const failedLoad = nativeWindow.arseneAdMob.showRewarded();
+   await new Promise(resolve => setImmediate(resolve));
+-  listeners.get('onRewardedVideoAdFailedToLoad')?.();
++  listeners.get('onRewardedVideoAdFailedToLoad')?.({ code: 3, message: 'No fill' });
+   assert.equal(await failedLoad, false, 'ロード失敗では成功しない');
++  assert(warnings.some(([message, detail]) => message.includes('load failed: No fill') && detail?.code === 3), 'ロード失敗のコードとメッセージを記録する');
+ 
+   const failedShow = nativeWindow.arseneAdMob.showRewarded();
+   await new Promise(resolve => setImmediate(resolve));
+-  listeners.get('onRewardedVideoAdFailedToShow')?.();
++  listeners.get('onRewardedVideoAdFailedToShow')?.({ code: 0, message: 'Presentation failed' });
+   assert.equal(await failedShow, false, '表示失敗では成功しない');
++  assert(warnings.some(([message, detail]) => message.includes('show failed: Presentation failed') && detail?.code === 0), '表示失敗のコードとメッセージを記録する');
+ 
+   let timeoutCallback = null;
+   const timeoutListeners = new Map();

@@ -1,0 +1,14 @@
+$ pnpm run build && cap sync ios && node scripts/verify-ios-bundle.mjs
+$ node scripts/build-web.mjs
+Web assets built into dist/.
+✔ Copying web assets from dist to ios/App/App/public in 774.70ms
+✔ Creating capacitor.config.json in ios/App/App in 2.10ms
+✔ copy ios in 808.12ms
+✔ Updating iOS plugins in 2.44ms
+[info] All Capacitor plugins have a Package.swift file and will be included in Package.swift
+[info] Writing Package.swift
+[info] Found 1 Capacitor plugin for ios:
+       @capacitor-community/admob@8.1.0
+✔ update ios in 54.84ms
+[info] Sync finished in 0.883s
+iOS bundle verified: 9 runtime files and 10 audio assets match.

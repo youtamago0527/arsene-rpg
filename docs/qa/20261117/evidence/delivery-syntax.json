@@ -1,0 +1,142 @@
+[
+  {
+    "file": "js/admob.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/audio-runtime-20260904.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/battle_fx.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/boss_dialogues.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/d4_extra_enemies.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/data.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/debug_room.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/equipment_progression.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/future_data.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/game.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/help_data.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/infinite_score.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/infinite_score_data.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/infinite_support.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/job_audit.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/job_balance_tool.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/job_maestro.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/kazu_dialogues.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/kazu_minigame.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/otherworld.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/otherworld_data.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/otherworld_gear.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/phantom_shop.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/q_dialogue.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/q_offer.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/release_content.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/start-flow.js",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "file": "js/title_system.js",
+    "exit": 0,
+    "stderr": ""
+  }
+]
