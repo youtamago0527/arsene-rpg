@@ -1617,7 +1617,7 @@
     jobLearnedActiveSkills(jobId) { const job = D.jobs[jobId]; if (!this.isPlayerContentVisible(job)) return []; const list = Object.entries(job.skillUnlocks || {}).filter(([lv, id]) => this.jobAbilityLearned(jobId, id, lv)).map(([, id]) => D.skills[id]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE'); const sig = D.skills[job.signatureSkillId]; if (this.isPlayerContentVisible(sig) && sig.type !== 'PASSIVE' && this.jobAbilityLearned(jobId, sig.id, sig.unlockJobLevel || 1) && !list.some(s => s.id === sig.id)) list.unshift(sig); return list; }
     masteredActions() { return (this.profile.jobMastered || []).map(id => D.skills[D.jobs[id]?.signatureSkillId]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE'); }
     setPhantomAction(idx, skillId) { const max = this.actionSlotCount(); this.profile.ptActionSlots ||= new Array(max).fill(null); while (this.profile.ptActionSlots.length < max) this.profile.ptActionSlots.push(null); if (skillId) this.profile.ptActionSlots = this.profile.ptActionSlots.map(v => v === skillId ? null : v); this.profile.ptActionSlots[idx] = skillId || null; this.saveProfile(); this.audio.sfx('confirm'); if (this.jobUI) this.jobUI.modal = null; this.renderMenuPanel('job'); }
-    skillEquipmentReady(skill) { if (skill?.weaponIndependent) return true; if (skill?.requiresBareFists && !this.usesBareFists()) return false; const required = skill?.requiresWeaponSubtype; return !required || this.equippedWeapon()?.weaponSubtype === required; }
+    skillEquipmentReady(skill) { if (skill?.weaponIndependent) return true; if (skill?.requiresMartialWeapon && this.equippedWeaponType() !== 'martial') return false; if (skill?.requiresBareFists && !this.usesBareFists()) return false; const required = skill?.requiresWeaponSubtype; return !required || this.equippedWeapon()?.weaponSubtype === required; }
     allLearnedPassives() { const ids = [...(this.profile.learnedJobSkills || []), ...(this.profile.learnedCharacterSkills || [])]; return [...new Set(ids)].map(id => D.skills[id]).filter(s => this.isPlayerContentVisible(s) && s.type === 'PASSIVE'); }
     setPassiveSlot(idx, skillId) { this.setEquippedPassive(idx, skillId); }
     syncSkillUnlocks() { const learnedCharacter = new Set(this.profile.learnedCharacterSkills || []), learnedJob = new Set(this.profile.learnedJobSkills || []); (D.characterSkillProgression || []).forEach(entry => { if (this.profile.level >= entry.level) learnedCharacter.add(entry.skillId); }); Object.entries(this.profile.jobs || {}).forEach(([jobId, progress]) => { const job = D.jobs[jobId]; Object.entries(job?.skillUnlocks || {}).forEach(([level, skillId]) => { if (progress.level >= Number(level)) learnedJob.add(skillId); }); }); // 廃止・武器学へ移動した技は旧セーブのJOB技一覧からも取り除く
@@ -2738,7 +2738,7 @@
         const cd = this.cooldownRemaining(s), equipmentReady = this.skillEquipmentReady(s), buffReady = this.skillBuffReady(s);
         const resonanceReady = s.id !== 'resonanceBreak' || (this.resonanceEnabled() && (this.player?.resonance || 0) > 0);
         let sub = this.skillCostLabel(s);
-        if (!equipmentReady) sub = '対応武器が必要';
+        if (!equipmentReady) sub = s.requiresMartialWeapon ? '素手・爪装備が必要' : '対応武器が必要';
         else if (!buffReady) { const src = this.buffSourceName(this.profile.currentJob, s.requiresBuff); sub = src ? `要《${src}》発動` : '発動条件未達'; }
         else if (cd) sub = `CT ${cd}`;
         else if (s.id === 'resonanceBreak') sub = `${(this.player?.resonance || 0).toFixed(1)}% // NEUTRAL`;

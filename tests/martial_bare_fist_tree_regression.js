@@ -16,7 +16,7 @@ assert.strictEqual(D.skills.burstFist.requiresBareFists, undefined, 'ばくれ�
 for (const id of ['stunningPalm', 'shortPower', 'tigerBreakFist']) {
   assert.strictEqual(D.skills[id].source, 'weapon', `${id}は体術武器学技`);
   assert.strictEqual(D.skills[id].weaponType, 'martial', `${id}は体術へ所属`);
-  assert.strictEqual(D.skills[id].requiresBareFists, true, `${id}は素手専用`);
+  if (id !== 'stunningPalm') assert.strictEqual(D.skills[id].requiresBareFists, true, `${id}は素手専用`);
 }
 assert.strictEqual(D.skills.stunningPalm.power, 1.1, '震撃は1.1倍');
 assert.strictEqual(D.skills.shortPower.ignoreDef, .50, '短勁は防御50%貫通');
@@ -24,7 +24,7 @@ assert.strictEqual(D.skills.tigerBreakFist.effect.maxStacks, 5, '猛虎破砕拳
 assert.strictEqual(D.skills.gatheringQi.effect.spiritScaling, 1.8, '集気法は精神依存回復');
 assert.strictEqual(D.skills.gatheringQi.source, 'weapon', '集気法はMASTER報酬ではなく武器学技');
 assert.strictEqual(D.skills.gatheringQi.weaponType, 'martial', '集気法は体術武器学へ所属する');
-assert.strictEqual(D.skills.gatheringQi.requiresBareFists, true, '集気法は素手で使用する');
+assert.strictEqual(D.skills.gatheringQi.requiresMartialWeapon, true, '集気法は素手・爪で使用する');
 assert.strictEqual(D.skills.thousandHandKannon.devOnly, true, '千手観音は非公開予約');
 assert.strictEqual(D.skills.dragonGodBlazingFist.devOnly, true, '龍神烈火拳は非公開予約');
 
@@ -36,3 +36,27 @@ assert(/jobId === 'phantomThief'/.test(game), 'PHANTOM THIEFも体術選択時�
 assert(/martialStrStacks/.test(game), '戦闘中STR蓄積を戦闘能力へ反映する');
 
 console.log('martial bare-fist tree regression: ok');
+
+context.addEventListener = () => {}; context.document = {};
+vm.runInNewContext(fs.readFileSync(`${root}/js/game.js`, 'utf8'), context);
+const actor = Object.create(context.window.BattleGame.prototype);
+let type = 'martial', bare = false;
+actor.equippedWeaponType = () => type;
+actor.equippedWeapon = () => ({ weaponType: type });
+actor.usesBareFists = () => bare;
+for (const id of ['stunningPalm', 'gatheringQi']) {
+  assert.strictEqual(D.skills[id].requiresBareFists, undefined);
+  assert.strictEqual(D.skills[id].requiresMartialWeapon, true);
+  type = 'martial'; bare = false;
+  assert(actor.skillEquipmentReady(D.skills[id]), `${id}: claws allowed`);
+  bare = true;
+  assert(actor.skillEquipmentReady(D.skills[id]), `${id}: bare fists allowed`);
+  for (const other of ['sword', 'staff', 'instrument', 'shield']) {
+    type = other; bare = false;
+    assert.strictEqual(actor.skillEquipmentReady(D.skills[id]), false, `${id}: ${other} not allowed`);
+  }
+}
+type = 'martial'; bare = false;
+assert.strictEqual(actor.skillEquipmentReady(D.skills.shortPower), false, 'other bare-only arts stay restricted');
+assert(actor.skillEquipmentReady(D.skills.burstFist), 'burst remains equipment independent');
+console.log('martial claw skill availability: ok');
