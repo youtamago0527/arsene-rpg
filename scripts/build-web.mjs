@@ -21,6 +21,8 @@ for (const directory of runtimeDirectories) {
   await cp(join(root, directory), join(output, directory), {
     recursive: true,
     filter: source => {
+      // Never ship the data editor, even if an old working copy restores it.
+      if (relative(root, source).split(sep).join('/') === 'js/debug_room.js') return false;
       // Superseded D2 costume must not ship inside the reviewed application.
       if (relative(root, source).split(sep).join('/') === 'assets/enemy-characters/myrthi/battle-idle-v1.jpg') return false;
       // 旧SEフォルダは作業端末に残っていても配布物へ一切コピーしない。

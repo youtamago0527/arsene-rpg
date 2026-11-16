@@ -27,6 +27,14 @@ const verifyTriplet = async relative => {
 
 await Promise.all(sentinels.map(verifyTriplet));
 
+for (const base of [dist, native]) {
+  for (const file of ['index.html', 'js/game.js', 'js/data.js']) {
+    if (/arseneDebugRoom|debugPassword|data-debug-(?:enter|open|pw)|debug_room\.js/.test(await readFile(join(base, file), 'utf8'))) {
+      throw new Error(`debug room entry remains in release: ${base}/${file}`);
+    }
+  }
+}
+
 const plist = await readFile(join(root, 'ios', 'App', 'App', 'Info.plist'), 'utf8');
 if (!/<key>GADApplicationIdentifier<\/key>\s*<string>ca-app-pub-\d+~\d+<\/string>/.test(plist)) throw new Error('iOS Info.plist is missing a valid AdMob app ID.');
 const swiftPackage = await readFile(join(root, 'ios', 'App', 'CapApp-SPM', 'Package.swift'), 'utf8');
@@ -60,6 +68,7 @@ for (const base of [root, dist, native]) {
 }
 
 const forbiddenNativeAssets = [
+  'js/debug_room.js',
   'assets/enemy-characters/myrthi/battle-idle-v1.jpg',
   'js/audio.js',
   'js/audio-runtime-20260903.js',

@@ -31,7 +31,7 @@
 
   P.isCfg = function () { return D().infiniteScore || {}; };
   P.isInfiniteScoreUnlocked = function () { return !!(this.profile?.flags?.infiniteScoreUnlocked && this.isJobUnlocked?.('phantomThief')); };
-  P.isDebugAllowed = function () { return this.isInfiniteScoreUnlocked() || !!window.arseneDebugRoom?.isUnlocked?.() || this.localScenario?.id === 'infinite-score-ready'; };
+  P.isDebugAllowed = function () { return this.isInfiniteScoreUnlocked() || this.localScenario?.id === 'infinite-score-ready'; };
   P.isRun = function () { return this.profile?.infiniteScore?.active ? this.profile.infiniteScore : null; };
   P.isEnsureRunShape = function (run = this.isRun()) {
     if (!run) return null;
