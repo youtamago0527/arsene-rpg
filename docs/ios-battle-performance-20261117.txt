@@ -1,7 +1,7 @@
 ARSÈNE REMIX / iPhone repeated-battle performance investigation
 Baseline: origin/feature/ios-capacitor 7f075e6
 Branch: staging/ios-battle-performance-20261116
-Status: candidate implementation + regression checks; FINAL REAL-DEVICE CHECK PENDING.
+Status: reproduced SE-related slowdown fixed in focused real-device checks; staging only.
 
 Device / isolation
 - iPhone 16, iOS 27.2, Xcode 26.6.
@@ -51,15 +51,37 @@ Validation completed
 - pnpm run cap:sync + verify-ios-bundle; web build; git diff --check
 - Diagnostic development build/install on physical device.
 
-Outstanding / do not label release-verified
-- Last status-0 candidate installed, but user used iPhone and mirroring disconnected.
-  Need locked iPhone to launch/activate, confirm 10 decoded assets, run audio-only
-  and combined fixtures, measure CPU/memory/rAF/thermal, and genuine next-battle cycles.
-- If bytes remain empty/undecodable, investigate a reliable native local-file loading
-  route. Do not assume successful decode or claim the stutter resolved yet.
-- Long sessions, D2-D5/infinite, listening quality, and all-device coverage remain separate checks.
-- Temperature reached fair after prolonged diagnostics; compare final measurements
-  after cooling, and do not treat current samples as equal-temperature benchmarks.
+Final physical-device verification / 2026-11-17 00:53-00:58 JST
+- Reconnected locked iPhone; final status-0 candidate decoded all 10 MP3 assets.
+  The failure was the pre-decode response.ok gate, not unsupported MP3 decoding.
+- Runtime in the installed app matches the committed candidate exactly after
+  stripping two diagnostic log statements. Original production app/save retained.
+- Audio-only fixture: 100 iterations at requested 100 ms spacing; steady rAF
+  p50/p95 17/17 ms. No additional Audio/MediaElementSource objects beyond BGM.
+- Combined fixture: 100 iterations repeated three times (300 effect iterations,
+  NOT 300 battles). p50 17 ms; steady p95 mostly 17-21 ms, some 24-31 ms samples.
+  After every run active voices=0, FX nodes=0, settled rAF p50/p95=17/17 ms.
+- Genuine D1 AUTO: 3 battle starts, 10 executed rounds, two wins and a later
+  defeat from low starting HP. Next-battle transitions and GAME OVER return to
+  hideout worked. No revival advertisement was watched or requested by this task.
+- Instruments decoded-final (audio + navigation): WebContent PID 11110 CPU
+  mean/max 12.70/24.33%; footprint 138.28 -> 362.10 MiB, max 398.77 MiB.
+- Instruments decoded-repeat (combined fixture + idle): same WebContent CPU
+  mean/max 18.05/25.77%; footprint 351.58 -> 462.42 MiB, max 502.28 MiB.
+  GPU CPU mean/max 31.37/46.92%, footprint 88.27 -> 89.85 MiB, max 208.50 MiB.
+- Thermal stayed fair (1) throughout final measurements, versus nominal (0)
+  in earlier baseline. Workload windows/navigation differ: these are diagnostic
+  observations, not a controlled memory/temperature or exact CPU-speedup claim.
+- High-frequency audio stutter and unbounded media allocation are addressed in
+  the reproduced fixture. Texture/cache memory still fluctuates substantially;
+  no claim of eliminating every long-session memory issue.
+
+Remaining release checks
+- Long sessions, D2-D5/infinite, audible quality/listening, and other iOS devices
+  remain separate checks; this is focused performance verification only.
+- Integration owner must review and integrate this staging branch, rebuild the
+  production app with no diagnostic buttons/probe/thermal timer, and run release
+  regressions before any Store upload/submission. No such action performed here.
 
 Evidence location on Mac
 /Users/yuki/Documents/Codex/2026-10-18/battle-perf-evidence
