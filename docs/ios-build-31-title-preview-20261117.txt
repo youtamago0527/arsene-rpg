@@ -1,0 +1,20 @@
+ARSÈNE REMIX 1.0.1 build 31 title preview — 2026-11-17
+
+Combined staging: staging/ios-battle-performance-20261116, e11d62a.
+New title design cherry-picked from release commit 94985d1 to 4ebd2dd.
+Only index.html start-flow cache token required conflict resolution; retained all build 30 runtime fixes and b2975e2 Phantom Thief guidance.
+Protected branches untouched.
+
+Validation:
+- All 45 regression scripts, web build, Capacitor sync, iOS release verification passed.
+- Simulator xcodebuild succeeded for iPhone 17 / iOS 26.5.
+- Preview bundle identifier com.arsene.remix.titlepreview, separate from real app/save.
+- Build 31 runtime and both new title image hashes match checked source.
+- Debug room not included.
+
+Artifact:
+/Users/yuki/Documents/Codex/2026-10-18/arsene-title-preview-31/DerivedData/Build/Products/Debug-iphonesimulator/App.app
+Simulator device: 9639AE5F-600D-432F-A6AF-B983868CB61D
+
+UI status: App installed and launched in Simulator. OP screen observed. CUA coordinate input returned noWindowsAvailable, so user asked to press OP SKIP. Title-screen visual/interaction QA pending user handoff.
+No Store upload/submission performed for build 31. Submitted build 30 unchanged.
