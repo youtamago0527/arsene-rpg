@@ -2949,7 +2949,7 @@
       if (result.immune) { this.floating(el, 'IMMUNE', 'miss'); this.setLog(`${target.name}${target.label}には即死が効かない！`); ren.classList.remove('casting'); return { anyHit: false, instantDeath: false, chance: 0 }; }
       if (Math.random() >= result.chance) { this.floating(el, 'RESIST', 'miss'); this.setLog(`${target.name}${target.label}は魂送の祈りに抗った！（成功率 ${Math.round(result.chance * 100)}%）`); ren.classList.remove('casting'); return { anyHit: false, instantDeath: false, chance: result.chance }; }
       const defeatedHp = target.hp; target.hp = 0; target.alive = false; target.rolledDrops = this.rollDrops(target); el?.classList.add('hit', 'defeated'); this.audio.sfx('critical'); this.floating(el, 'SOUL LOST', 'critical'); this.updateHUD(); await this.battleSleep(520); el?.classList.remove('hit'); ren.classList.remove('casting');
-      target.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); if (this.shouldAnnounceDrop(item)) this.announceRareDrop(item); } });
+      target.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); } });
       const earned = this.grantEnemyReward(target); this.setLog(`${target.name}${target.label}を葬送した！ EXP+${earned.exp} GOLD+${earned.gold}`); await this.battleSleep(380);
       return { anyHit: true, instantDeath: true, total: defeatedHp, chance: result.chance };
     }
@@ -3001,7 +3001,7 @@
         this.audio.sfx('defeat'); tEl.classList.add('defeated');
         if (this.isPendingBossTransform(t)) { t.rolledDrops = []; this.setLog('BATTLE COMPLETE...'); continue; }
         t.rolledDrops = this.rollDrops(t);
-        t.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(tEl, item.name, 'heal'); if (this.shouldAnnounceDrop(item)) this.announceRareDrop(item); } });
+        t.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(tEl, item.name, 'heal'); } });
         const earned = this.grantEnemyReward(t);
         this.setLog(`${t.name}${t.label}を撃破！ EXP+${earned.exp} GOLD+${earned.gold}`);
       }
@@ -3072,7 +3072,7 @@
         enemy.alive = false; this.audio.sfx('defeat'); el.classList.add('defeated');
         if (this.isPendingBossTransform(enemy)) { enemy.rolledDrops = []; this.setLog('BATTLE COMPLETE...'); await this.battleSleep(300); return; }
         enemy.rolledDrops = this.rollDrops(enemy);
-        enemy.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); if (this.shouldAnnounceDrop(item)) this.announceRareDrop(item); } });
+        enemy.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); } });
         this.grantEnemyReward(enemy);
         this.setLog(`${enemy.name}${enemy.label}を左手の追撃で撃破！`);
         await this.battleSleep(300);
@@ -3132,7 +3132,7 @@
         enemy.alive = false; this.audio.sfx('defeat'); el.classList.add('defeated');
         if (this.isPendingBossTransform(enemy)) { enemy.rolledDrops = []; this.setLog('BATTLE COMPLETE...'); await this.battleSleep(300); return; }
         enemy.rolledDrops = this.rollDrops(enemy);
-        enemy.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); if (this.shouldAnnounceDrop(item)) this.announceRareDrop(item); } });
+        enemy.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); } });
         this.grantEnemyReward(enemy);
         this.setLog(`${enemy.name}${enemy.label}を反撃で撃破！`);
         await this.battleSleep(300);
@@ -3274,7 +3274,7 @@
         await this.battleSleep(220); el.classList.remove('hit');
         // 全体攻撃でも状態異常・弱体は個別に判定する（単体攻撃と同じ規則）
         if (target.hp > 0) this.applySkillDebuff(skill, target);
-        if (target.hp <= 0) { target.alive = false; this.audio.sfx('defeat'); el.classList.add('defeated'); if (this.isPendingBossTransform(target)) target.rolledDrops = []; else { target.rolledDrops = this.rollDrops(target); target.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); if (this.shouldAnnounceDrop(item)) this.announceRareDrop(item); } }); this.grantEnemyReward(target); } }
+        if (target.hp <= 0) { target.alive = false; this.audio.sfx('defeat'); el.classList.add('defeated'); if (this.isPendingBossTransform(target)) target.rolledDrops = []; else { target.rolledDrops = this.rollDrops(target); target.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(el, item.name, 'heal'); } }); this.grantEnemyReward(target); } }
       }
       if (this.player.buffs?.atkCharge && skill.kind === 'physical') delete this.player.buffs.atkCharge;
       if (this.player.buffs?.magFocus && (skill.kind === 'magical' || skill.damageType === 'magical')) delete this.player.buffs.magFocus;
@@ -3514,9 +3514,36 @@
     // つかなくなっていた。素材の入手は floating のログ表示だけで足りる。
     shouldAnnounceDrop(item) {
       if (item?.category !== 'equipment') return false;
-      return !!D.weapons?.[item.id] || item.rarity === 'epic' || item.rarity === 'legendary';
+      return !!D.weapons?.[item.id] || ['rare', 'epic', 'legendary'].includes(item.rarity);
     }
-    announceRareDrop(item) { const layer = $('#rare-drop-layer'); if (!layer) return; this.audio.sfx('rareDrop'); const b = document.createElement('div'), weapon = !!D.weapons?.[item.id]; b.className = `rare-drop-banner rarity-${item.rarity}`; b.innerHTML = `<small>${weapon ? 'WEAPON PICKED UP' : item.rarity === 'legendary' ? 'LEGENDARY DROP' : 'EPIC DROP'}</small><b>${item.name}${weapon ? 'を拾いました' : ''}</b>`; layer.appendChild(b); requestAnimationFrame(() => b.classList.add('show')); setTimeout(() => { b.classList.remove('show'); setTimeout(() => b.remove(), 420); }, 2400); }
+    announceRareDrop(item, quantity = 1) {
+      if (!item) return;
+      (this.rareDropQueue ||= []).push({ item, quantity });
+      this.showNextRareDrop();
+    }
+    showNextRareDrop() {
+      if (this.rareDropShowing || !this.rareDropQueue?.length) return;
+      const layer = $('#rare-drop-layer');
+      if (!layer) { this.rareDropQueue.length = 0; return; }
+      // 戦闘画面のクリップ・リザルト遷移に隠されない独立レイヤー。
+      if (layer.parentNode !== document.body) document.body.appendChild(layer);
+      this.rareDropShowing = true;
+      const { item, quantity } = this.rareDropQueue.shift();
+      const banner = document.createElement('div');
+      banner.className = `rare-drop-banner rarity-${item.rarity || 'rare'}`;
+      const label = document.createElement('small'), name = document.createElement('b'), detail = document.createElement('span');
+      label.textContent = D.weapons?.[item.id] ? 'WEAPON PICKED UP' : item.rarity === 'legendary' ? 'LEGENDARY DROP' : item.rarity === 'epic' ? 'EPIC DROP' : 'EQUIPMENT DROP';
+      name.textContent = item.name;
+      detail.textContent = `装備を獲得！${quantity > 1 ? ` ×${quantity}` : ''}`;
+      banner.append(label, name, detail); layer.appendChild(banner);
+      this.audio.sfx('rareDrop');
+      requestAnimationFrame(() => banner.classList.add('show'));
+      setTimeout(() => {
+        banner.classList.remove('show');
+        setTimeout(() => { banner.remove(); this.rareDropShowing = false; this.showNextRareDrop(); }, 420);
+      }, 4200);
+    }
+
     async useConsumable(id) { const item = D.items[id], recovery = this.recoveryItemInfo(item, this.player?.stats), key = recovery?.key, maxKey = recovery?.maxKey; if (!item || !recovery || !(this.profile.inventory[id] > 0)) { this.setLog(`${item?.name || 'アイテム'}を持っていない。`); return; } if (this.player[key] >= this.player.stats[maxKey]) { this.setLog(`${key.toUpperCase()}は満タンだ。`); return; } this.lastBattleAction = { type: 'item', itemId: id }; this.locked = true; this.keepAutoControlVisible(); await this.beginPlayerTurn(); const heal = Math.min(recovery.amount, this.player.stats[maxKey] - this.player[key]); this.profile.inventory[id]--; this.player[key] += heal; this.persistVitals(); this.audio.sfx('heal'); this.setLog(`${item.name}を使った。${key.toUpperCase()}が${heal}回復！`); this.floating($('#ren'), `+${heal}`, 'heal'); this.updateHUD(); await this.battleSleep(650); await this.enemyOnlyTurn(); }
     async guardAction() {
       if (this.locked || this.finished) return;
@@ -3588,6 +3615,11 @@
       Object.entries(enemy.stolenItems || {}).forEach(([id, n]) => { drops[id] = (drops[id] || 0) + n; });
       if (recoveredGold || Object.keys(enemy.stolenItems || {}).length) this.setLog(`${enemy.name}を撃破！ 盗まれた戦利品を取り返した。`);
       const levels = this.applyRewards({ exp, gold, drops });
+      // 実際に獲得した後に通知する。一掃・通常攻撃・即死・反撃を共通化。
+      Object.entries(drops).forEach(([id, quantity]) => {
+        const item = D.items[id];
+        if (quantity > 0 && this.shouldAnnounceDrop(item)) this.announceRareDrop(item, quantity);
+      });
       // 武器学EXPは撃破EXP比例ではなく、武器ACTIONの実行時に付与済み。
       const job = this.grantJobExp(exp);
       rewards.exp += exp; rewards.gold += gold;

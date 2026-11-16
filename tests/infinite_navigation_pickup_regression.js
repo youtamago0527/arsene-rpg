@@ -21,7 +21,7 @@ assert.match(infinite, /if\(remap\)g\.isRemapCurrentFloor\('宝箱部屋踏破'\
 assert.match(infinite, /if\(node\.type==='treasure'\)return node\.id\.length%2\?'assets\/bg\/infinite-score\/treasure-corridor\.png':'assets\/bg\/infinite-score\/treasure-room\.png'/, '宝箱部屋の専用背景が失われている');
 assert.match(game, /!!D\.weapons\?\.\[item\.id\]/, '通常戦でも全武器DROPを取得通知の対象にする');
 assert.match(game, /WEAPON PICKED UP/, '武器取得通知を明示する');
-assert.match(game, /\$\{item\.name\}\$\{weapon \? 'を拾いました'/, '武器取得通知に実名を表示する');
+assert.match(game, /name\.textContent = item\.name/, '武器取得通知に実名を安全に表示する');
 assert.match(infinite, /class="is-sell-equipped">装備中/, '異世界の売却一覧で装備中を明示する');
 assert.match(infinite, /isConfirm\('装備中のアイテムです',[\s\S]*外して売る/, '装備中の品をゲーム内モーダルで確認してから売る');
 

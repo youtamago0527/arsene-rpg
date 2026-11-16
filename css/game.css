@@ -326,3 +326,11 @@
   .enemies[data-count="3"] .enemy:not(.boss-enemy){width:76px}
   .enemies[data-count="3"] .enemy-hud{width:76px}
 }
+
+/* Equipment drops stay visible over the result screen without blocking controls. */
+body > .rare-drop-layer{position:fixed;z-index:1100;top:max(100px,calc(env(safe-area-inset-top) + 76px));bottom:auto;left:50%;width:min(440px,calc(100vw - 28px));pointer-events:none}
+body > .rare-drop-layer .rare-drop-banner{box-sizing:border-box;width:100%;max-width:100%;padding:22px 20px;border:2px solid #ffcb66;background:linear-gradient(120deg,#16101afa,#211a0afa);box-shadow:0 8px 32px #000c,0 0 24px #ffb42d66;clip-path:none;border-radius:12px}
+body > .rare-drop-layer .rare-drop-banner b{font-size:clamp(20px,5vw,28px);line-height:1.4;white-space:normal;overflow-wrap:anywhere}
+body > .rare-drop-layer .rare-drop-banner small{font-size:10px;letter-spacing:.18em}
+body > .rare-drop-layer .rare-drop-banner span{display:block;margin-top:8px;color:#ffe1a1;font-size:14px;font-weight:700}
+@media(prefers-reduced-motion:reduce){body > .rare-drop-layer .rare-drop-banner{animation:none;transition:opacity .15s;transform:none}}
