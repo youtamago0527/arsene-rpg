@@ -61,6 +61,7 @@ class BattleGame {
   rollDrops() { return [['normal-drop', 1]]; }
   saveProfile() {}
   renderMenuPanel() {}
+  startBossByKey(key) { this.startedBosses = (this.startedBosses || 0) + 1; this.startedBossKey = key; }
   rematchProgress() { return { ready: true }; }
   isBossDefeated() { return true; }
   noteBossRematchSnapshot() {}
@@ -171,3 +172,20 @@ assert.deepEqual(unlockGame.profile.titleSystem.acquiredCollection.sort(), ['d1_
 assert.equal(helpPopups, 1, '2個目以降の称号では初回HELPを繰り返さない');
 
 console.log('title_system_regression: PASS');
+
+// OD entry is gated at the shared start method, not just the modal button.
+const challenger = new BattleGame(); let challengeOffer;
+window.arseneQOffer = { show(type, extra) { assert.equal(type, 'bossOverdrive'); challengeOffer = extra; return true; } };
+assert.equal(challenger.startBossByKey('zenakado', 1), true);
+assert.equal(challenger.startedBosses, undefined, 'no battle before ad reward');
+challengeOffer.onGrant(); challengeOffer.onGrant();
+assert.equal(challenger.startedBosses, 1, 'one earned reward starts only one battle');
+assert.equal(challenger.pendingBossOverdrive.level, 1);
+challenger.startBossByKey('zenakado', 0);
+assert.equal(challenger.startedBosses, 2, 'normal rematch needs no ad');
+const cancelled = new BattleGame();
+cancelled.startBossByKey('zenakado', 1);
+assert.equal(cancelled.startedBosses, undefined, 'cancelled or failed ad grants no entry');
+window.arseneQOffer = undefined;
+assert.equal(cancelled.startBossByKey('zenakado', 1), false, 'missing ad provider cannot bypass gate');
+console.log('OVERDRIVE ad entry regression: ok');

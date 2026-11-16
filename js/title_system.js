@@ -270,7 +270,7 @@
     document.querySelector('.boss-overdrive-modal')?.remove();
     const modal = document.createElement('div');
     modal.className = 'q-offer-modal q-offer-defeat boss-overdrive-modal';
-    modal.innerHTML = `<div class="q-offer-card q-revive-card boss-overdrive-copy" role="dialog" aria-label="ボス超越戦"><button class="q-offer-close" data-od-close>✕ CLOSE</button><small class="q-revive-tag"><i></i>Q'S CHALLENGE</small><h2>BOSS OVERDRIVE</h2><span class="od-boss">${def.bossName}</span><p>Q「勝ったくらいで、終わったと思った？」</p><div class="boss-overdrive-actions"><button data-od-level="0">通常再戦<span>NORMAL REMATCH</span></button><button class="danger" data-od-level="1">OVERDRIVE I　×2<span>DROP RATE ×4 / OD II UNLOCK</span></button><button class="od2" data-od-level="2" ${progress.od2Unlocked ? '' : 'disabled'}>OVERDRIVE II　×4<span>${progress.od2Unlocked ? `FIRST CLEAR TITLE // ${def.name}` : 'LOCKED // CLEAR OVERDRIVE I'}</span></button><button class="close" data-od-close>戻る<span>CANCEL</span></button></div></div>`;
+    modal.innerHTML = `<div class="q-offer-card q-revive-card boss-overdrive-copy" role="dialog" aria-label="ボス超越戦"><button class="q-offer-close" data-od-close>✕ CLOSE</button><small class="q-revive-tag"><i></i>Q'S CHALLENGE</small><h2>BOSS OVERDRIVE</h2><span class="od-boss">${def.bossName}</span><p>Q「勝ったくらいで、終わったと思った？」</p><div class="boss-overdrive-actions"><button data-od-level="0">通常再戦<span>NORMAL REMATCH</span></button><button class="danger" data-od-level="1">OVERDRIVE I　×2（広告）<span>DROP RATE ×4 / OD II UNLOCK</span></button><button class="od2" data-od-level="2" ${progress.od2Unlocked ? '' : 'disabled'}>OVERDRIVE II　×4（広告）<span>${progress.od2Unlocked ? `FIRST CLEAR TITLE // ${def.name}` : 'LOCKED // CLEAR OVERDRIVE I'}</span></button><button class="close" data-od-close>戻る<span>CANCEL</span></button></div></div>`;
     document.body.appendChild(modal);
     modal.addEventListener('click', event => {
       if (event.target.closest('[data-od-close]')) { modal.remove(); return; }
@@ -284,11 +284,24 @@
   proto.startBossByKey = function (key, overdriveLevel = null) {
     const def = this.bossTitleDefinition(key);
     if (def && overdriveLevel == null && this.isBossDefeated(def.defeatedId) && this.rematchProgress(key).ready) return this.showOverdriveModal(key);
-    if (def && Number(overdriveLevel) > 0) this.pendingBossOverdrive = { key: def.bossId, level: Math.min(2, Number(overdriveLevel)) };
-    else this.pendingBossOverdrive = null;
-    const result = originalStartBossByKey.call(this, key);
-    if (this.activeBossOverdrive?.level) setTimeout(() => this.flashTitle(`OVERDRIVE ${this.activeBossOverdrive.level === 2 ? 'II' : 'I'}`, `BOSS POWER ×${this.activeBossOverdrive.multiplier}`), 50);
-    return result;
+    const level = Math.min(2, Math.max(0, Number(overdriveLevel) || 0));
+    const start = () => {
+      this.pendingBossOverdrive = def && level ? { key: def.bossId, level } : null;
+      const result = originalStartBossByKey.call(this, key);
+      if (this.activeBossOverdrive?.level) setTimeout(() => this.flashTitle(`OVERDRIVE ${level === 2 ? 'II' : 'I'}`, `BOSS POWER ×${this.activeBossOverdrive.multiplier}`), 50);
+      return result;
+    };
+    if (!level) return start();
+    if (!def || !this.isBossDefeated(def.defeatedId) || !this.rematchProgress(key).ready || (level === 2 && !this.bossOverdriveProgress(key).od2Unlocked)) return false;
+    let consumed = false;
+    return window.arseneQOffer?.show?.('bossOverdrive', {
+      title: `OVERDRIVE ${level === 2 ? 'II' : 'I'}`,
+      copy: '広告の視聴完了で、このボスのOVERDRIVE戦に1回挑戦できます。',
+      onGrant: () => {
+        if (consumed || !this.isBossDefeated(def.defeatedId) || !this.rematchProgress(key).ready) return;
+        consumed = true; start();
+      }
+    }) || false;
   };
 
   proto.applyBossOverdriveStats = function (bossId, baseStats) {

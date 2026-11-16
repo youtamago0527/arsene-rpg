@@ -37,7 +37,7 @@ assert.match(game, /delete this\.profile\.armorEnchants\[itemId\]/, '防具復�
 assert.match(offer, /delete s\.enhancementProtection[\s\S]*delete s\.bossDropBonus/, '旧セーブの常設保護・ボス表示データも除去する');
 
 assert.match(game, /offerRepeatBossMaterialDrop\(enemy, firstClear\)/, 'ボス素材オファーは再戦判定を受け取る');
-assert.match(game, /if \(firstClear \|\| !enemy/, '初回撃破ではボス素材オファーを出さない');
+assert.match(game, /if \(firstClear \|\| !enemy/, '初回撃破では素材追加抽選を出さない');
 assert.match(game, /category === 'material'/, '追加抽選対象をボス素材だけに限定する');
 assert(!/rows\.push\(`BOSS/.test(offer), 'ボス追加抽選をライブ表示しない');
 

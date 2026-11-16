@@ -1,0 +1,32 @@
+const fs = require('fs'), vm = require('vm'), assert = require('assert');
+const read = file => fs.readFileSync(`${__dirname}/../${file}`, 'utf8');
+let button, offer, grants = 0;
+const container = { querySelector: () => button || null, appendChild(node) { button = node; } };
+const context = { window: {}, addEventListener() {}, document: { querySelector: () => container, createElement: () => ({ setAttribute() {}, addEventListener(type, callback) { this.click = callback; } }) } };
+vm.runInNewContext(read('js/data.js'), context);
+vm.runInNewContext(read('js/game.js'), context);
+const D = context.window.ARSENE_DATA, actor = Object.create(context.window.BattleGame.prototype);
+D.items.testBossMat = { name: 'ボス素材', category: 'material' };
+D.items.testBossGear = { name: 'ボス装備', category: 'equipment' };
+context.window.arseneQOffer = { canUse: () => true, show: (type, extra) => { assert.strictEqual(type, 'bossDrop'); offer = extra; return true; } };
+actor.applyRewards = reward => { grants++; assert.strictEqual(reward.exp, 0); assert.strictEqual(reward.gold, 0); assert.strictEqual(reward.drops.testBossMat, 2); assert.strictEqual(reward.drops.testBossGear, undefined); };
+const enemy = { kind: 'boss', alive: false, name: 'ボス', dropTable: [{ itemId: 'testBossMat', chance: 1, count: 2 }, { itemId: 'testBossGear', chance: 1 }] };
+for (const firstClear of [false]) {
+  button = null; actor.finished = true; actor.battleRewards = { drops: { original: 1 } };
+  assert(actor.offerRepeatBossMaterialDrop(enemy, firstClear), 'rematch gets the button');
+  assert(!actor.offerRepeatBossMaterialDrop(enemy, firstClear), 'no duplicate button');
+  button.click(); assert.strictEqual(actor.battleRewards.drops.testBossMat, undefined, 'no reward before earned callback');
+  const before = grants; offer.onGrant(); offer.onGrant();
+  assert.strictEqual(grants, before + 1, 'reward callback is idempotent');
+  assert.strictEqual(actor.battleRewards.drops.original, 1, 'original loot retained');
+  assert.strictEqual(actor.battleRewards.drops.testBossMat, 2);
+  assert(button.disabled);
+}
+button = null; actor.battleRewards = { drops: {} };
+assert(!actor.offerRepeatBossMaterialDrop(enemy, true), 'initial victory excluded');
+assert(actor.offerRepeatBossMaterialDrop(enemy, false)); button.click();
+actor.battleRewards = { drops: {} }; const before = grants; offer.onGrant();
+assert.strictEqual(grants, before, 'stale callback cannot grant into another battle');
+button = null;
+assert(!actor.offerRepeatBossMaterialDrop({ ...enemy, alive: true }, false), 'living boss excluded');
+console.log('boss material reroll regression: ok');
