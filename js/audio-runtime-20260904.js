@@ -36,6 +36,7 @@
       this.ctx = null; this.master = null; this.musicSource = null; this.musicGain = null; this.muted = false; this.started = false; this.settingsKey = 'arsene-rpg-audio-v1'; this.levels = this.loadLevels(); this.musicMaxVolume = matchMedia('(max-width:760px)').matches ? .18 : .22; this.musicVolume = this.musicMaxVolume * this.levels.bgm; this.fadeToken = 0; this.userActivated = false;
       this.nativeIos = !!(window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === 'ios');
       this.nativeSfxPlayers = new Set();
+      this.nativeSfxPool = [];
       this.nativeSfxByName = new Map(); this.lastSfxAt = new Map(); this.maxNativeSfxPlayers = 10;
       this.music = new Audio(audioAssetUrl(bgmPath)); this.music.loop = true; this.music.preload = 'auto'; this.music.volume = this.musicVolume;
       this.audioId = `${Date.now()}-${Math.random()}`; this.audioFocus = typeof BroadcastChannel === 'function' ? new BroadcastChannel('arsene-rpg-audio-focus') : null;
@@ -119,7 +120,7 @@
       const s = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter(), g = this.ctx.createGain(), t = this.ctx.currentTime + delay; s.buffer = b; f.type = 'highpass'; f.frequency.value = highpass; g.gain.setValueAtTime(volume, t); g.gain.exponentialRampToValueAtTime(.0001, t + duration); s.connect(f); f.connect(g); g.connect(this.master); s.start(t);
     }
     // 効果音ファイルを読み込んでデコードしておく。
-    // 失敗しても握りつぶす。鳴らす側は合成音へフォールバックする。
+    // 失敗したiOS音源だけメディアプールで再生する。旧合成音は使わない。
     preloadSfxFiles() {
       if (!this.ctx) return Promise.resolve();
       if (this.sfxReady) return this.sfxReady;
@@ -127,7 +128,7 @@
       const urls = [...new Set(Object.values(SFX_FILES).map(f => f.url))];
       this.sfxReady = Promise.all(urls.map(url =>
         fetch(audioAssetUrl(url), { cache: 'no-store' })
-          .then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status))))
+          .then(r => (r.ok || (this.nativeIos && r.status === 0)) ? r.arrayBuffer() : Promise.reject(new Error(String(r.status))))
           .then(buf => new Promise((res, rej) => {
             // Safari 系は Promise を返さない実装があるのでコールバック版で受ける
             const ret = this.ctx.decodeAudioData(buf, res, rej);
@@ -141,50 +142,67 @@
     // ファイルの効果音を鳴らす。まだ読み込めていなければ false を返す。
     playSfxFile(name) {
       const def = SFX_FILES[name]; if (!def || this.muted || this.levels.sfx <= 0) return false;
-      // WKWebViewではfetchしたMP3のdecodeAudioDataが端末依存で失敗し、
-      // 旧合成音へ落ちることがある。iOSネイティブ版は、BGMと同じく
-      // HTMLMediaElementへローカルMP3を直接渡して確実に正式SEを鳴らす。
+      const voices = this.nativeIos ? (this.nativeSfxByName.get(name) || new Set()) : null;
       if (this.nativeIos) {
         if (!this.ctx || !this.master) return false;
         const now = performance.now();
         if (now - (this.lastSfxAt.get(name) ?? -Infinity) < (def.cooldownMs || 0)) return true;
         this.lastSfxAt.set(name, now);
-        const voices = this.nativeSfxByName.get(name) || new Set();
         if (voices.size >= (def.maxVoices || 2)) voices.values().next().value?.cleanup();
         if (this.nativeSfxPlayers.size >= this.maxNativeSfxPlayers) this.nativeSfxPlayers.values().next().value?.cleanup();
-        const media = new Audio(audioAssetUrl(def.url));
-        media.preload = 'auto';
-        media.playbackRate = def.rate || 1;
-        // WKWebView ignores HTMLMediaElement.volume. Keep the element at unity and
-        // route it through Web Audio; the shared master gain then applies the SE
-        // slider to sampled and synthesized sounds identically, including true 0%.
-        let source, gain;
-        try {
-          source = this.ctx.createMediaElementSource(media); gain = this.ctx.createGain();
-          gain.gain.value = def.gain ?? 1; source.connect(gain); gain.connect(this.master);
-          media.volume = 1;
-        } catch { return false; }
-        const player = { media, source, gain, cleanup: null };
+      }
+      // Prefer the once-decoded formal sample. Some WKWebView versions cannot
+      // decode an MP3; only those files fall back to the bounded media pool.
+      if (this.nativeIos && !this.sfxBuffers?.[def.url]) {
+        // Retain at most ten media/source pairs. Repeatedly constructing iOS
+        // media players on every hit stalls WKWebView even after disconnect().
+        const url = audioAssetUrl(def.url);
+        let player = this.nativeSfxPool.find(p => !this.nativeSfxPlayers.has(p) && p.url === url)
+          || this.nativeSfxPool.find(p => !this.nativeSfxPlayers.has(p));
+        if (!player) {
+          const media = new Audio(audioAssetUrl(def.url));
+          media.preload = 'auto'; media.volume = 1;
+          let source, gain;
+          try {
+            source = this.ctx.createMediaElementSource(media); gain = this.ctx.createGain();
+            source.connect(gain); gain.connect(this.master);
+          } catch {
+            media.pause(); media.removeAttribute('src'); source?.disconnect(); gain?.disconnect();
+            return false;
+          }
+          player = { media, source, gain, url, generation: 0, timers: [], cleanup: null };
+          this.nativeSfxPool.push(player);
+        }
+        const { media, gain } = player;
+        const generation = ++player.generation;
         const cleanup = () => {
-          if (!this.nativeSfxPlayers.has(player)) return;
-          media.pause(); media.removeAttribute('src'); source.disconnect(); gain.disconnect();
+          if (player.generation !== generation || !this.nativeSfxPlayers.has(player)) return;
+          for (const timer of player.timers) clearTimeout(timer);
+          player.timers = []; media.onended = null; media.onerror = null;
+          media.pause();
+          gain.gain.cancelScheduledValues(this.ctx.currentTime);
+          gain.gain.setValueAtTime(0, this.ctx.currentTime);
           this.nativeSfxPlayers.delete(player); voices.delete(player);
           if (!voices.size) this.nativeSfxByName.delete(name);
         };
         player.cleanup = cleanup; this.nativeSfxPlayers.add(player); voices.add(player); this.nativeSfxByName.set(name, voices);
-        media.addEventListener('ended', cleanup, { once: true });
-        media.addEventListener('error', cleanup, { once: true });
+        // Keep the sampled SE on the shared master: iOS ignores media.volume.
+        gain.gain.cancelScheduledValues(this.ctx.currentTime);
+        gain.gain.setValueAtTime(def.gain ?? 1, this.ctx.currentTime);
+        if (player.url !== url) { media.src = url; player.url = url; }
+        media.playbackRate = def.rate || 1;
+        media.onended = cleanup; media.onerror = cleanup;
         try { media.currentTime = def.offset || 0; } catch {}
         media.play().catch(cleanup);
         if (Number.isFinite(def.maxDur)) {
           const fadeAt = Math.max(0, def.maxDur - .08);
-          setTimeout(() => {
-            if (!this.nativeSfxPlayers.has(player)) return;
+          player.timers.push(setTimeout(() => {
+            if (player.generation !== generation || !this.nativeSfxPlayers.has(player)) return;
             const t = this.ctx.currentTime;
             gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(Math.max(.0001, gain.gain.value), t);
             gain.gain.exponentialRampToValueAtTime(.0001, t + .08);
-          }, Math.ceil(fadeAt * 1000));
-          setTimeout(cleanup, Math.ceil(def.maxDur * 1000));
+          }, Math.ceil(fadeAt * 1000)));
+          player.timers.push(setTimeout(cleanup, Math.ceil(def.maxDur * 1000)));
         }
         return true;
       }
@@ -202,6 +220,17 @@
         g.gain.exponentialRampToValueAtTime(.0001, t + dur);
       }
       src.connect(g); g.connect(this.master);
+      if (this.nativeIos) {
+        const player = { source: src, gain: g, cleanup: null };
+        player.cleanup = () => {
+          if (!this.nativeSfxPlayers.delete(player)) return;
+          src.onended = null; try { src.stop(); } catch {}
+          src.disconnect(); g.disconnect(); voices.delete(player);
+          if (!voices.size) this.nativeSfxByName.delete(name);
+        };
+        src.onended = player.cleanup;
+        this.nativeSfxPlayers.add(player); voices.add(player); this.nativeSfxByName.set(name, voices);
+      } else src.onended = () => { src.disconnect(); g.disconnect(); };
       src.start(t, offset, dur);
       src.stop(t + dur + .02);
       return true;

@@ -1,0 +1,73 @@
+ARSÈNE REMIX / iPhone repeated-battle performance investigation
+Baseline: origin/feature/ios-capacitor 7f075e6
+Branch: staging/ios-battle-performance-20261116
+Status: candidate implementation + regression checks; FINAL REAL-DEVICE CHECK PENDING.
+
+Device / isolation
+- iPhone 16, iOS 27.2, Xcode 26.6.
+- Development bundle com.arsene.remix.performance. Original app/save not overwritten.
+- No Archive, App Store upload/submission, advertising configuration changes, or live payments.
+- Test buttons/probe and native thermal timer are diagnostic-only, excluded from this commit.
+
+Observed evidence
+- Initial idle rAF interval p50/p95 approximately 17/17 ms; thermal nominal.
+- Baseline combined SE/FX stress requests 300 iterations, 100 ms spacing.
+  This is NOT 300 battles. The first genuine battle and its AUTO rounds also ran.
+  Audio/MediaElementSource allocations reached 185 with only 3-6 active voices.
+  Frame p50 rose to 1467 ms and p95 1882 ms; baseline stress was terminated early.
+- Instruments Activity Monitor: measured WebContent PID 10964 during the 60 s
+  baseline stress window: CPU mean 80.59%, max 100.46%; physical footprint
+  301.13 -> 485.97 MiB, max 514.22 MiB. Thermal remained nominal in that window.
+- Bounded-media-only intermediate candidate completed the 300-iteration fixture
+  and then advanced to the next genuine battle. Allocations stayed at 8 including
+  BGM; FX elements returned to 0. WebContent PID 10994 CPU mean 9.17%, max 22.28%
+  in its 60 s stress recording. Nevertheless frequent media playback still caused
+  visible frame stalls (p95 commonly 300-470 ms). Pooling alone is insufficient.
+- Ablation with 100 iterations: FX-only p50/p95 17/18 ms in steady samples;
+  audio-only still produced p95 about 269-307 ms. FX DOM returned to zero.
+  No battle_fx.js / CSS change justified by this evidence.
+- Diagnostic fetch logs: all ten local MP3 responses had status 0 and no content
+  type. Existing r.ok check rejected these before arrayBuffer/decodeAudioData.
+  Final candidate accepts status 0 only on native iOS, then requires actual decode
+  success; browsers continue to reject non-ok responses. Whether this particular
+  status-0 response yields usable bytes MUST still be verified on the device.
+
+Candidate changes
+- Prefer once-decoded original samples on iOS when available.
+- Retain bounded media/source fallback for individual decode failures (max 10).
+- Preserve shared master gain, formal audio assets, gains/offsets/fades/cooldowns,
+  per-name/global voice limits, and hard 0% SFX.
+- Cancel old timers; generation guard protects reused voices from stale callbacks.
+- Disconnect decoded nodes when ended/stolen; no synthesized legacy fallback.
+
+Validation completed
+- node --check js/audio-runtime-20260904.js
+- node tests/ios_sfx_pool_regression.js (1000 media replays, bounded resources,
+  stale rejection/events, error cleanup, 0% mute, status-0 native/browser behavior,
+  1000 decoded replays, offsets and retired-node cleanup)
+- node tests/battle_sfx_routing_regression.js
+- node tests/help_regression.js
+- node tests/infinite_auto_battle_regression.js
+- pnpm run cap:sync + verify-ios-bundle; web build; git diff --check
+- Diagnostic development build/install on physical device.
+
+Outstanding / do not label release-verified
+- Last status-0 candidate installed, but user used iPhone and mirroring disconnected.
+  Need locked iPhone to launch/activate, confirm 10 decoded assets, run audio-only
+  and combined fixtures, measure CPU/memory/rAF/thermal, and genuine next-battle cycles.
+- If bytes remain empty/undecodable, investigate a reliable native local-file loading
+  route. Do not assume successful decode or claim the stutter resolved yet.
+- Long sessions, D2-D5/infinite, listening quality, and all-device coverage remain separate checks.
+- Temperature reached fair after prolonged diagnostics; compare final measurements
+  after cooling, and do not treat current samples as equal-temperature benchmarks.
+
+Evidence location on Mac
+/Users/yuki/Documents/Codex/2026-10-18/battle-perf-evidence
+Activity Monitor traces, exported process XML, diagnostic JS, logs, build artifacts.
+Time Profiler export failed with Document Missing Template Error; not used as evidence.
+
+Repository recovery
+Original worktree shares Git objects in iCloud. Git reported a truncated pack and
+could not read fec95acae17e22de69075aa1be2f76c3d5030e5a. No repair/deletion was attempted.
+Candidate copied to a fresh clone outside that shared Git directory, at the same
+7f075e6 baseline: /Users/yuki/Documents/Codex/2026-10-18/arsene-ios-battle-performance-clean.
