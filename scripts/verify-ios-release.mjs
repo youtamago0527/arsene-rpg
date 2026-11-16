@@ -9,6 +9,7 @@ const demoPublisher = '3940256099942544';
 const appId = plist.match(/<key>GADApplicationIdentifier<\/key>\s*<string>(ca-app-pub-\d+~\d+)<\/string>/)?.[1];
 const rewardId = bridge.match(/const IOS_REWARDED_AD_ID = '(ca-app-pub-\d+\/\d+)'/)?.[1];
 
+if (/const DIAGNOSTIC_TEST_ADS = true;/.test(bridge)) throw new Error('診断ビルドです。本番版として配布しないでください。');
 if (!appId) throw new Error('有効なAdMob iOS App IDがInfo.plistにありません。');
 if (!rewardId) throw new Error('有効なAdMobリワード広告ユニットIDがjs/admob.jsにありません。');
 if (combined.includes(`ca-app-pub-${demoPublisher}`)) throw new Error('Googleデモ広告IDが残っています。本番IDへ差し替えてください。');

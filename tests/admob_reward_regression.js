@@ -59,11 +59,13 @@ const rewardedId = rewardedMatch[1];
       listeners.set(name, callback);
       return { remove: async () => { if (listeners.get(name) === callback) listeners.delete(name); } };
     },
-    async prepareRewardVideoAd(options) { assert.equal(options.adId, rewardedId); },
+    async prepareRewardVideoAd(options) { assert.equal(options.adId, rewardedId); assert.equal(options.isTesting, true, '診断ビルドのみGoogle公式テスト広告を要求する'); },
     async showRewardVideoAd() {}
   };
+  const stages = [];
   const nativeWindow = {
     addEventListener() {},
+    arseneAdMobDiagnostic: { record: (stage, detail) => stages.push({ stage, detail }) },
     Capacitor: {
       isNativePlatform: () => true,
       getPlatform: () => 'ios',
@@ -77,10 +79,14 @@ const rewardedId = rewardedMatch[1];
   assert.equal(await nativeWindow.arseneAdMob.showRewarded(), false, '広告表示中の二重要求を拒否する');
   await new Promise(resolve => setImmediate(resolve));
   const rewardCallback = listeners.get('onRewardedVideoAdReward');
+  listeners.get('onRewardedVideoAdShowed')?.();
   rewardCallback?.({ amount: 1, type: 'reward' });
   rewardCallback?.({ amount: 1, type: 'reward' });
   assert.equal(await first, true, 'Rewardedイベントで一度だけ成功する');
   assert.equal(initializeCalls, 1, 'SDK初期化を再利用する');
+  for (const stage of ['initializing', 'initialized', 'consent', 'loading', 'loaded', 'showing', 'shown', 'reward', 'result']) {
+    assert(stages.some(entry => entry.stage === stage), `${stage}を画面診断へ通知する`);
+  }
 
   const dismissed = nativeWindow.arseneAdMob.showRewarded();
   await new Promise(resolve => setImmediate(resolve));
