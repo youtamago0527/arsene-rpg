@@ -12,7 +12,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.0"),
-        .package(name: "CapacitorCommunityAdmob", path: "../../../../arsene-ios-battle-performance/node_modules/.pnpm/@capacitor-community+admob@8.1.0/node_modules/@capacitor-community/admob")
+        .package(name: "CapacitorCommunityAdmob", path: "../../../node_modules/.pnpm/@capacitor-community+admob@8.1.0/node_modules/@capacitor-community/admob")
     ],
     targets: [
         .target(
