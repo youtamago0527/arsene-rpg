@@ -1,0 +1,236 @@
+[
+  {
+    "test": "tests/admob_reward_regression.js",
+    "exitCode": 0,
+    "stdout": "AdMob reward regression checks passed.\n",
+    "stderr": "AdMob rewarded consent: ads cannot be requested (status: OBTAINED) { code: null, adUnitId: 'ca-app-pub-2798969445522147/5643677056' }\nAdMob rewarded timeout: no reward or dismissal callback within 120 seconds { code: null, adUnitId: 'ca-app-pub-2798969445522147/5643677056' }\n"
+  },
+  {
+    "test": "tests/appstore_age_content_regression.js",
+    "exitCode": 0,
+    "stdout": "App Store age/content regression checks passed.\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/battle_sfx_routing_regression.js",
+    "exitCode": 0,
+    "stdout": "battle sfx routing regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/d4_midboss_music_regression.js",
+    "exitCode": 0,
+    "stdout": "d4 midboss music regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/d5_midboss_forms_regression.js",
+    "exitCode": 0,
+    "stdout": "d5 midboss forms regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/equipment_balance_regression.js",
+    "exitCode": 0,
+    "stdout": "equipment_balance_regression: PASS\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/equipment_best_sort_regression.js",
+    "exitCode": 0,
+    "stdout": "equipment best/sort regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/equipment_mobile_layout_regression.js",
+    "exitCode": 0,
+    "stdout": "equipment_mobile_layout_regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/fegoria_boss_regression.js",
+    "exitCode": 0,
+    "stdout": "Fegoria boss regression passed.\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/guitar_series_regression.js",
+    "exitCode": 0,
+    "stdout": "Guitar series regression passed.\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/help_regression.js",
+    "exitCode": 0,
+    "stdout": "help regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/infinite_arcana_drop_regression.js",
+    "exitCode": 0,
+    "stdout": "infinite arcana drop regression: OK\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/infinite_auto_battle_regression.js",
+    "exitCode": 0,
+    "stdout": "infinite auto battle regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/infinite_bag_sort_regression.js",
+    "exitCode": 0,
+    "stdout": "infinite bag sort regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/infinite_card_source_regression.js",
+    "exitCode": 0,
+    "stdout": "infinite card source regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/infinite_character_scale_regression.js",
+    "exitCode": 0,
+    "stdout": "infinite character scale regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/infinite_floor20_balance_regression.js",
+    "exitCode": 0,
+    "stdout": "infinite floor 20 balance regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/infinite_forge_ui_regression.js",
+    "exitCode": 0,
+    "stdout": "infinite forge UI regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/infinite_navigation_pickup_regression.js",
+    "exitCode": 0,
+    "stdout": "infinite navigation and weapon pickup regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/infinite_recovery_items_regression.js",
+    "exitCode": 0,
+    "stdout": "infinite recovery items regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/infinite_safe_layout_regression.js",
+    "exitCode": 0,
+    "stdout": "infinite safe layout regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/infinite_support_behavior_regression.js",
+    "exitCode": 0,
+    "stdout": "infinite support behavior regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/infinite_support_regression.js",
+    "exitCode": 0,
+    "stdout": "infinite support regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/infinite_ui_regression.js",
+    "exitCode": 0,
+    "stdout": "infinite UI regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/ios_storekit_purchase_regression.js",
+    "exitCode": 0,
+    "stdout": "iOS StoreKit purchase regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/job_equipment_agi_penalty_regression.js",
+    "exitCode": 0,
+    "stdout": "job equipment AGI penalty regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/kazu_takeout_restock_regression.js",
+    "exitCode": 0,
+    "stdout": "kazu takeout restock regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/martial_bare_fist_tree_regression.js",
+    "exitCode": 0,
+    "stdout": "martial bare-fist tree regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/midboss_rematch_regression.js",
+    "exitCode": 0,
+    "stdout": "midboss rematch regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/mobile_app_regression.js",
+    "exitCode": 0,
+    "stdout": "mobile app regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/nestua_story_regression.js",
+    "exitCode": 0,
+    "stdout": "nestua story regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/otherworld_drop_isolation_regression.js",
+    "exitCode": 0,
+    "stdout": "otherworld drop isolation regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/otherworld_enhancement_state_regression.js",
+    "exitCode": 0,
+    "stdout": "otherworld enhancement/state regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/otherworld_resonance_ui_regression.js",
+    "exitCode": 0,
+    "stdout": "otherworld resonance UI regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/q_offer_context_regression.js",
+    "exitCode": 0,
+    "stdout": "Q offer context regression: OK\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/release_state_regression.js",
+    "exitCode": 0,
+    "stdout": "release state regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/save_transfer_validation_regression.js",
+    "exitCode": 0,
+    "stdout": "save transfer validation regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/secret_music_score_regression.js",
+    "exitCode": 0,
+    "stdout": "secret music score regression: ok\n",
+    "stderr": ""
+  },
+  {
+    "test": "tests/title_system_regression.js",
+    "exitCode": 0,
+    "stdout": "title_system_regression: PASS\n",
+    "stderr": ""
+  }
+]

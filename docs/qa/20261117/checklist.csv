@@ -1,0 +1,28 @@
+feature,status,evidence_or_limit
+初回起動・新規開始,PASS_UI,"iPhone: OP/prologue skip, Ren/Mage/staff/name/start; title Continue disabled before save"
+別キャラ・全初期JOB・全武器,UNTESTED,選択肢は確認したが組合せごとの新規開始は未実施
+ホーム・各ステータスタブ,PASS_UI,装備/能力/JOB/武器学/技/スコア/図鑑を表示。未解放表示を目視
+ヘルプ,PARTIAL,基本accordionを操作。全unlock表示はhelp_regressionで確認、全項目のnative目視は未実施
+設定・音量,PARTIAL,BGM42→15%変更表示。変更後の再起動保持は未確認。VOICE Coming Soon
+D1戦闘・成長,PASS_UI,通常攻撃/精神集中/target/AUTO1.5/5連勝/HPMP持越し/MageLv2/帰還
+食事・購入・所持品,PASS_UI,31G食事回復+HPbuff、70G味噌購入、GOLD不足disabled、戦闘専用使用disabled
+セーブ復元,PASS_UI,terminate/relaunch後5戦・gold5・MageLv2保持。iPad31戦の保持も確認
+戦闘中強制終了・破損保存・容量不足,UNTESTED,native E2E未実施
+セーブexport/import,BUG_FIXED_LOGIC,export欄描画まで確認。不正save=true等を拒否する修正と回帰試験。native import操作完了は未確認
+D2-D5通常進行・全ボス・転生,UNTESTED,fixtureでtab/入口表示。実進行/全形態/転生は未操作
+工房作成,PASS_FIXTURE,鉄剣40→41、gold-180、素材1043→1035
+工房強化,PARTIAL_FIXTURE,黒鉄剣+0→+3、copies20→17。破壊/保護/不足分岐未実施
+工房分解,PASS_FIXTURE,lock ON防止、OFF+確認modalでboss guitar20→19、gold+100
+装備最強・候補,BUG_VISUAL,最強装備適用。iPad候補行の比較差分チップが下端で欠ける。未修正
+JOB変更・ability編集,PARTIAL,表示/枠は確認。全JOB組合せ・実スキル入替は未実施
+敗北・復活・状態異常・MP不足,UNTESTED,実機相当native操作は未実施、関連回帰のみ
+異世界メニュー,PASS_FIXTURE,火曜表示・曜日/Infinite入口・倉庫/abilityリンク表示
+曜日異世界戦闘・報酬,UNTESTED,実戦未実施
+無限奏廊,UNTESTED_UI,入口が下方でCUA scroll操作が到達せず。製品スクロール不具合とは断定しない。自動回帰のみ
+StoreKit通常,PASS_NATIVE_TEST,4pass/2 mode skip/0fail。9商品・finish・不正ID/type・replay・restore。ゲーム内shop E2Eとは別
+StoreKit保留,PASS_NATIVE_TEST,1pass/5 mode skip/0fail。verified grantを返さない
+StoreKitキャンセル,PASS_NATIVE_TEST,Xcode testing only sheetを目視でclose。1pass/5 mode skip/0fail
+広告報酬,PASS_NATIVE_UI,公式iOS rewarded test ID。earned→close→Q会話→2/2から3/3、追加済1/残1
+広告中断・offline・同意拒否,AUTOMATED_ONLY,admob回帰。実native通信失敗/中断UIは未実施
+連続戦闘性能,BUG_REPRODUCED,iPad D1 AUTO3 native MP3、31戦でWebContent約95%継続。WebKit media session stack採取
+iPhone/iPad縦レイアウト,PARTIAL,通常画面/戦闘/工房を目視。比較候補clipあり。横向き・全modal未検証

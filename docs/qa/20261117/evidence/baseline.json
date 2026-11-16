@@ -1,0 +1,9 @@
+{
+  "tested_commit": "7f075e61777a2cc6f51938d62c7109dce8262262",
+  "build27_commit": "c935b0740e026f769c484ca9918347ab2030e45a",
+  "iphone": "35144D8A-9353-4A62-954B-E2D039B52112",
+  "ipad": "6B8890EC-A005-4AEA-8CB0-81CFD72F78A4",
+  "advertising": "bundled public/js/admob.js official Google test rewarded ID 1712485313; source unchanged",
+  "instrumentation": "audit/telemetry.js passive; bundled index.html only",
+  "diff": " docs/ios-admob-release-checklist.md | 16 ++++++++++------\n index.html                          |  2 +-\n js/admob.js                         | 28 +++++++++++++++++++++-------\n tests/admob_reward_regression.js    |  9 ++++++---\n 4 files changed, 38 insertions(+), 17 deletions(-)\n"
+}

@@ -1,0 +1,177 @@
+[
+  {
+    "path": "RESULT.txt",
+    "bytes": 5523,
+    "sha256": "4e36969f102aa5ef1bec933c70d0f1e4acc24d0c936568129e1a83e7c68073d2"
+  },
+  {
+    "path": "checklist.csv",
+    "bytes": 3102,
+    "sha256": "1fd9da0c2cfd9b1f789b4d5dfb0aa72275afed1dc28415cf242de1033c7fdf5d"
+  },
+  {
+    "path": "evidence/baseline.json",
+    "bytes": 714,
+    "sha256": "ac4be4f445f77907c7f29052f4068410113f74c2da161d66ba72ec777e8fe72b"
+  },
+  {
+    "path": "evidence/build-after.log",
+    "bytes": 29,
+    "sha256": "32c922c753f74f8e1ad48153d0d8c7ac9a98ca95b4478c8f8b5d422ca761d952"
+  },
+  {
+    "path": "evidence/build27-diff.patch",
+    "bytes": 8197,
+    "sha256": "6202b2b1d712009db1bd75362574756a2e601bfea237332dc42529edef5e753e"
+  },
+  {
+    "path": "evidence/cap-sync.log",
+    "bytes": 640,
+    "sha256": "f36e8edaec8557e78f9d95398a146b54c5af8bdceb01df738d0d2cb4bf662215"
+  },
+  {
+    "path": "evidence/delivery-build.log",
+    "bytes": 29,
+    "sha256": "32c922c753f74f8e1ad48153d0d8c7ac9a98ca95b4478c8f8b5d422ca761d952"
+  },
+  {
+    "path": "evidence/delivery-regressions.json",
+    "bytes": 6283,
+    "sha256": "ba4c4e10848ddb1c4c1c75b8a91f9396c46ecfcc36b0a16edaf4282d93776889"
+  },
+  {
+    "path": "evidence/delivery-syntax.json",
+    "bytes": 2109,
+    "sha256": "3ece8e4c75cad1cfc128547a4665867be4f9a6d72344b6d39ad92e956862062b"
+  },
+  {
+    "path": "evidence/ipad-31battles.png",
+    "bytes": 2814338,
+    "sha256": "9d4e2d6c73c3d55c445743dd1a19ddfc1bbcb12001412b93abf262cfdf9a8c6d"
+  },
+  {
+    "path": "evidence/ipad-ad-reward-single-grant.png",
+    "bytes": 2962588,
+    "sha256": "58698440c36a6761410b1d2ff26e0482dd4f6ba4c16b8a4cf1615b7c702a5d18"
+  },
+  {
+    "path": "evidence/ipad-after-stress-relaunch.log",
+    "bytes": 24917,
+    "sha256": "acd4b68c94a324837bd165fb02de91ccc5def1f949f009488c09776ed23c40ba"
+  },
+  {
+    "path": "evidence/ipad-battle-layout.png",
+    "bytes": 2350098,
+    "sha256": "b50c0242235603c2aa2499518e7ed4de7855666c1d38700b035d4ef36ad424a1"
+  },
+  {
+    "path": "evidence/ipad-enhance-plus3.png",
+    "bytes": 1226706,
+    "sha256": "fa2437f079d7b0ddfa8a3951038e0fb7667011faa2bd1a873300f2932c299a79"
+  },
+  {
+    "path": "evidence/ipad-equipment-candidate-clipping.png",
+    "bytes": 3485882,
+    "sha256": "6737956e301ac9b2cb31bb085ec351085da1c7e890c6d4c1f72dd4d40dfe7687"
+  },
+  {
+    "path": "evidence/ipad-fixture.log",
+    "bytes": 13338,
+    "sha256": "9c092015875f21c235438ec58fb0eeb4ffcc441fc7b87628ac222c516e03215e"
+  },
+  {
+    "path": "evidence/ipad-infinite-entry-below-fold.png",
+    "bytes": 2966224,
+    "sha256": "64bf77cea55ffc9ea743a0453313f81723c19efbfd8de44a92417a71296fffd1"
+  },
+  {
+    "path": "evidence/ipad-official-test-ad-earned.png",
+    "bytes": 126872,
+    "sha256": "4ac693623628ed72c97165a2e779c4555a81e6e518bf028d9ef3385a29696498"
+  },
+  {
+    "path": "evidence/ipad-performance.jsonl",
+    "bytes": 102688,
+    "sha256": "0d6933d34f7d61a488009155710395476bce1a265603e36e696af8c9d4cc6de3"
+  },
+  {
+    "path": "evidence/ipad-webcontent-28battles.sample.txt",
+    "bytes": 515158,
+    "sha256": "829193b3add839abee281e0e551a67b4bffadc70360913bbaed2009a60fbc703"
+  },
+  {
+    "path": "evidence/iphone-battle-skill.png",
+    "bytes": 4244016,
+    "sha256": "fe6c6b3a54e416285a41c89641be3e198ed604b391f4ba2466af40b5fc6c11ab"
+  },
+  {
+    "path": "evidence/iphone-export-unreachable.png",
+    "bytes": 1435907,
+    "sha256": "c5a6ffbcd6956c8768cf61bf801ad097633073d9438b4576ed104578a6afd1e4"
+  },
+  {
+    "path": "evidence/iphone-storekit-local-cancel.png",
+    "bytes": 2137594,
+    "sha256": "3aba06c9a10817dade748b90c05256f593c31b632968de203bf6844ebbbbb650"
+  },
+  {
+    "path": "evidence/performance-hot-stack.txt",
+    "bytes": 5147,
+    "sha256": "59446a3827155976aa901cd10093195754f3c2350e70f7f867c3851c68d4cbf9"
+  },
+  {
+    "path": "evidence/regressions-after.json",
+    "bytes": 6042,
+    "sha256": "97e65da4a087fcbfd4ab552d54f778faa54ed35bf24cbca6a71298b342fb9590"
+  },
+  {
+    "path": "evidence/regressions.json",
+    "bytes": 5889,
+    "sha256": "46e6af147c63f4d67dda130f343ed284d41e6905671ba7b00f52d3480609e2f6"
+  },
+  {
+    "path": "evidence/release-verifier.log",
+    "bytes": 106,
+    "sha256": "5678e86e9d3757c8c910d9299ef9c0aa45a80a85ad8f77da0b3b2c55e069247a"
+  },
+  {
+    "path": "evidence/save-transfer-after.log",
+    "bytes": 40,
+    "sha256": "93a85e8c640f036318b009a3f53095c753e4195cc5ea1e4e7be495d885daa5b2"
+  },
+  {
+    "path": "evidence/save-transfer-before.log",
+    "bytes": 941,
+    "sha256": "ed0e8d69c18948d0d686430f5f1071f75ae13341c955fb15e50314e374e8ee6d"
+  },
+  {
+    "path": "evidence/storekit-automatic-summary.json",
+    "bytes": 994,
+    "sha256": "12eecca5733e8a56efe366cfc61ea53a8f4c3b6431d780cdb16cbeda4622f133"
+  },
+  {
+    "path": "evidence/storekit-cancel-summary.json",
+    "bytes": 993,
+    "sha256": "f46e564838cd706d7f40f0f09abbea7e69e3e6cdb9cf82147c14ca65095d6633"
+  },
+  {
+    "path": "evidence/storekit-pending-summary.json",
+    "bytes": 993,
+    "sha256": "bb6f37b3608a4697f50e49bab0d38b171e3432e8a2f0a88d68c0ac220558f1e1"
+  },
+  {
+    "path": "evidence/syntax.json",
+    "bytes": 2109,
+    "sha256": "95c7876697242eabd681de74321b87b4ccc7b30fbfa116f4ce7e1d9d687ad1fa"
+  },
+  {
+    "path": "evidence/xcode-build.log",
+    "bytes": 479243,
+    "sha256": "1d37e79d6bbf65fdcc7df424f13023043bd807c54bfff6a740daea8b717d7e75"
+  },
+  {
+    "path": "feature-inventory.json",
+    "bytes": 10883,
+    "sha256": "ea8ae2de5e8bae466a61021f94088351677e1ef0fee659f50131bf89d968f6e2"
+  }
+]

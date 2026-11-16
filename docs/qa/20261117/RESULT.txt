@@ -1,0 +1,46 @@
+ARSÈNE REMIX iOS Simulator監査 — 2026-11-17
+
+結論: リリース可/全機能問題なしという判定は出せない。連続戦闘の重さを再現し、不正セーブ取込による保存上書きを修正した。未操作の機能はchecklist.csvに明示した。
+
+対象
+baseline feature/ios-capacitor: 7f075e61777a2cc6f51938d62c7109dce8262262
+build27 baseline: c935b0740e026f769c484ca9918347ab2030e45a。差分4ファイルはevidence/build27-diff.patch。
+iOS26.5 Simulator: 専用iPhone17(35144D8A-9353-4A62-954B-E2D039B52112)、専用iPad mini A17Pro(6B8890EC-A005-4AEA-8CB0-81CFD72F78A4)。実端末、製品セーブ、製品広告、リリース操作なし。
+iPhoneはfresh saveから5勝。iPadは専用テスト保存に全JOB/解放flag/高stats/所持品を設定したfixture。通常解放の証明ではない。premium flagもfixtureであり購入の証明ではない。
+観測用telemetryはtimer/live native player/DOM累計を採取するだけでゲーム操作なし。広告IDはテストbundle内だけ公式testIDに差替。sourceの製品IDは変更していない。
+
+不具合1 P1: 不正な引継ぎpayloadが現在セーブを置換（修正済み）
+再現: 旧decodeSaveTransferCodeへbase64(JSON {save:true})等を渡す。truthy saveのみで通過しapplySaveTransferが保存を書換えてreloadする。
+期待: wrong app/unsupported envelope/壊れたprofileは書込み前に拒否。実際: 任意truthy saveを受理。
+修正: app/v/record構造、profileの主要recordと正のversion/maxHpを共通validatorで検証。decodeとapply両方で拒否。ゲームcache token更新。
+回帰: malformed/array/wrong app/version/meta、保存無変更・reloadなし、正常profileのapply成功。version1の現在構造fixtureも許可。すべての歴史的save形式を実保存で検証したわけではない。
+証拠: save-transfer-before/after.log、新規tests/save_transfer_validation_regression.js。native import UI完了は未検証。
+
+不具合2 P1: 連続戦闘でWebContent高負荷（未修正・親の音声/FX担当へ引継ぎ）
+再現: iPad fixture→D1→剣物理戦闘→AUTO x3→勝利ごとNEXT、約9分31戦。
+1戦後のidle snapshot WebContent14.9%、11戦91.2%、17戦98.2%、26〜31戦83〜99%で約95%継続、進行が遅くなる。
+DOM926〜936、active intervals0、timeouts1〜7、live nativePlayers0〜1、names0〜1。累計Audio作成は約197。累計はlive leak数ではない。
+sample: 712/827 stacksがMediaSessionManagerCocoa scheduleSessionStatusUpdate/updateNowPlayingInfo→sessionsMatching→HTMLMediaElement isNowPlayingEligible→Page bestMediaElementForRemoteControls付近。688recursive。WebKit内部メディアセッション増大を疑う証拠だがroot cause確定ではない。
+physical footprint410.5M。RSS減少もhost memory pressure/compressionの影響があり、リーク否定には使えない。
+再起動後31戦保存を保持、idle CPU0.4〜0.9%。active戦闘の同条件比較ではない。
+証拠: ipad-performance.jsonl、ipad-webcontent-28battles.sample.txt、performance-hot-stack.txt、ipad-fixture.log。audio-runtime-20260904.js/battle_fx.js変更なし。
+
+不具合3 P2: iPad装備候補の比較差分チップが行下端で欠ける（未修正）
+再現: fixture→装備→最強→右手候補。証拠ipad-equipment-candidate-clipping.png。原因CSS/画面サイズ条件を確定していない。
+操作制限: export textarea/Infinite入口など下方へCUA経由scrollが届かなかった。製品スクロール不良とは断定しない。
+
+検証
+baseline既存回帰38/38、変更後39/39（独立cloneでも39/39）。help含む。JS syntax28ファイルpass。web build pass。cap sync/bundle verifier pass。StoreKitVerification native Simulator build pass。source iOS release verifier pass。
+StoreKit Xcodeローカル: 通常4pass2skip、pending1pass5skip、cancel1pass5skip、全モード0fail。skipは別モード用test。通常は9product/finish/invalid ID/type/replay/restore。ゲーム内課金画面からの全商品E2Eではない。
+初回CLI StoreKitはローカル設定未反映でaccount sheetになり中止した。IDE Run後のテスト結果を採用。credentials入力/実購入なし。
+公式test rewarded ad表示→earned→close→Q会話完了→異界干渉力2/2→3/3、本日+1/残1を目視。二重native callbackログに対して付与は1回。
+実行項目と未検証の詳細はchecklist.csv。全ボス/全JOB/転生/Infinite実戦/敗北復活/保存障害/全レイアウト等を網羅済みとはしない。
+
+引継ぎ
+branch staging/ios-simulator-audit-20261117。protected branchへのmerge/pushなし。
+変更: js/game.js、index.html、tests/save_transfer_validation_regression.js、docs/qa/20261117/*。
+共有元git pack破損のため独立cloneへ意図したhunkのみ移植。既存file丸ごと上書きなし。
+既存helpの「不正な引継ぎcode」エラー経路を維持し、help回帰pass。ゲーム仕様の文言変更は不要と判断。
+音声/FX修正後は同じfixtureで31戦以上のactive CPU/ターン所要時間を再測定し、実端末でも確認が必要。
+生ログ/ビルド全体: /Users/yuki/Documents/Codex/2026-10-18/arsene-simulator-audit-20261116/audit
+XCTest xcresult原本: /Users/yuki/Library/Developer/Xcode/DerivedData/App-fzzryprhoywxcndkaxifvhhcgfpi/Logs/Test（00-30-00、00-36-56、00-44-31）。summaryはこの報告に同梱。

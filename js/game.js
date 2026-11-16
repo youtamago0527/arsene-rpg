@@ -595,8 +595,19 @@
     }
     saveTransferMetaKey() { return window.arseneStartFlow?.metaKey || 'arsene-rpg-start-flow-v01'; }
     encodeSaveTransferCode() { const save = localStorage.getItem(D.settings.saveKey), meta = localStorage.getItem(this.saveTransferMetaKey()), payload = { app: 'arsene-rpg', v: 1, exportedAt: new Date().toISOString(), save: save ? JSON.parse(save) : this.profile, meta: meta ? JSON.parse(meta) : null }; return btoa(unescape(encodeURIComponent(JSON.stringify(payload)))); }
-    decodeSaveTransferCode(code) { try { const payload = JSON.parse(decodeURIComponent(escape(atob(String(code || '').trim())))); if (!payload || typeof payload !== 'object' || !payload.save) return null; return payload; } catch { return null; } }
-    applySaveTransfer(payload) { localStorage.setItem(D.settings.saveKey, JSON.stringify(payload.save)); if (payload.meta) localStorage.setItem(this.saveTransferMetaKey(), JSON.stringify(payload.meta)); location.reload(); }
+    isSaveTransferPayload(payload) {
+      const record = value => !!value && typeof value === 'object' && !Array.isArray(value);
+      if (!record(payload) || payload.app !== 'arsene-rpg' || payload.v !== 1 || !record(payload.save)) return false;
+      const save = payload.save;
+      // Validate the common profile structure before replacing the current save.
+      // Older profile versions still go through loadProfile's existing migrations.
+      return Number.isInteger(save.version) && save.version > 0
+        && ['baseStats', 'equipment', 'inventory', 'jobs', 'flags'].every(key => record(save[key]))
+        && Number.isFinite(save.baseStats.maxHp) && save.baseStats.maxHp > 0
+        && (payload.meta == null || record(payload.meta));
+    }
+    decodeSaveTransferCode(code) { try { const payload = JSON.parse(decodeURIComponent(escape(atob(String(code || '').trim())))); return this.isSaveTransferPayload(payload) ? payload : null; } catch { return null; } }
+    applySaveTransfer(payload) { if (!this.isSaveTransferPayload(payload)) return false; localStorage.setItem(D.settings.saveKey, JSON.stringify(payload.save)); if (payload.meta) localStorage.setItem(this.saveTransferMetaKey(), JSON.stringify(payload.meta)); location.reload(); return true; }
     jobCommand(jobId) { const map = D.jobCommandAbilities || {}; const j = D.jobs[jobId]; return map[jobId] || { cmd: j?.name || jobId, cmdEn: j?.nameEn || jobId }; }
     // ── キャラクターテーマ ────────────────────────────────────
     // characters.json の theme をCSSカスタムプロパティへ流し込む。

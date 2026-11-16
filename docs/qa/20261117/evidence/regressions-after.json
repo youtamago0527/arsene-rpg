@@ -1,0 +1,236 @@
+[
+  {
+    "test": "admob_reward_regression.js",
+    "exit": 0,
+    "seconds": 0.297,
+    "output": "AdMob reward regression checks passed.\nAdMob rewarded consent: ads cannot be requested (status: OBTAINED) { code: null, adUnitId: 'ca-app-pub-2798969445522147/5643677056' }\nAdMob rewarded timeout: no reward or dismissal callback within 120 seconds { code: null, adUnitId: 'ca-app-pub-2798969445522147/5643677056' }\n"
+  },
+  {
+    "test": "appstore_age_content_regression.js",
+    "exit": 0,
+    "seconds": 0.102,
+    "output": "App Store age/content regression checks passed.\n"
+  },
+  {
+    "test": "battle_sfx_routing_regression.js",
+    "exit": 0,
+    "seconds": 0.116,
+    "output": "battle sfx routing regression: ok\n"
+  },
+  {
+    "test": "d4_midboss_music_regression.js",
+    "exit": 0,
+    "seconds": 0.092,
+    "output": "d4 midboss music regression: ok\n"
+  },
+  {
+    "test": "d5_midboss_forms_regression.js",
+    "exit": 0,
+    "seconds": 0.093,
+    "output": "d5 midboss forms regression: ok\n"
+  },
+  {
+    "test": "equipment_balance_regression.js",
+    "exit": 0,
+    "seconds": 0.138,
+    "output": "equipment_balance_regression: PASS\n"
+  },
+  {
+    "test": "equipment_best_sort_regression.js",
+    "exit": 0,
+    "seconds": 0.131,
+    "output": "equipment best/sort regression: ok\n"
+  },
+  {
+    "test": "equipment_mobile_layout_regression.js",
+    "exit": 0,
+    "seconds": 0.107,
+    "output": "equipment_mobile_layout_regression: ok\n"
+  },
+  {
+    "test": "fegoria_boss_regression.js",
+    "exit": 0,
+    "seconds": 0.197,
+    "output": "Fegoria boss regression passed.\n"
+  },
+  {
+    "test": "guitar_series_regression.js",
+    "exit": 0,
+    "seconds": 0.168,
+    "output": "Guitar series regression passed.\n"
+  },
+  {
+    "test": "help_regression.js",
+    "exit": 0,
+    "seconds": 0.1,
+    "output": "help regression: ok\n"
+  },
+  {
+    "test": "infinite_arcana_drop_regression.js",
+    "exit": 0,
+    "seconds": 0.103,
+    "output": "infinite arcana drop regression: OK\n"
+  },
+  {
+    "test": "infinite_auto_battle_regression.js",
+    "exit": 0,
+    "seconds": 0.116,
+    "output": "infinite auto battle regression: ok\n"
+  },
+  {
+    "test": "infinite_bag_sort_regression.js",
+    "exit": 0,
+    "seconds": 0.107,
+    "output": "infinite bag sort regression: ok\n"
+  },
+  {
+    "test": "infinite_card_source_regression.js",
+    "exit": 0,
+    "seconds": 0.1,
+    "output": "infinite card source regression: ok\n"
+  },
+  {
+    "test": "infinite_character_scale_regression.js",
+    "exit": 0,
+    "seconds": 0.09,
+    "output": "infinite character scale regression: ok\n"
+  },
+  {
+    "test": "infinite_floor20_balance_regression.js",
+    "exit": 0,
+    "seconds": 0.105,
+    "output": "infinite floor 20 balance regression: ok\n"
+  },
+  {
+    "test": "infinite_forge_ui_regression.js",
+    "exit": 0,
+    "seconds": 0.11,
+    "output": "infinite forge UI regression: ok\n"
+  },
+  {
+    "test": "infinite_navigation_pickup_regression.js",
+    "exit": 0,
+    "seconds": 0.099,
+    "output": "infinite navigation and weapon pickup regression: ok\n"
+  },
+  {
+    "test": "infinite_recovery_items_regression.js",
+    "exit": 0,
+    "seconds": 0.104,
+    "output": "infinite recovery items regression: ok\n"
+  },
+  {
+    "test": "infinite_safe_layout_regression.js",
+    "exit": 0,
+    "seconds": 0.109,
+    "output": "infinite safe layout regression: ok\n"
+  },
+  {
+    "test": "infinite_support_behavior_regression.js",
+    "exit": 0,
+    "seconds": 0.103,
+    "output": "infinite support behavior regression: ok\n"
+  },
+  {
+    "test": "infinite_support_regression.js",
+    "exit": 0,
+    "seconds": 0.086,
+    "output": "infinite support regression: ok\n"
+  },
+  {
+    "test": "infinite_ui_regression.js",
+    "exit": 0,
+    "seconds": 0.089,
+    "output": "infinite UI regression: ok\n"
+  },
+  {
+    "test": "ios_storekit_purchase_regression.js",
+    "exit": 0,
+    "seconds": 0.148,
+    "output": "iOS StoreKit purchase regression: ok\n"
+  },
+  {
+    "test": "job_equipment_agi_penalty_regression.js",
+    "exit": 0,
+    "seconds": 0.115,
+    "output": "job equipment AGI penalty regression: ok\n"
+  },
+  {
+    "test": "kazu_takeout_restock_regression.js",
+    "exit": 0,
+    "seconds": 0.108,
+    "output": "kazu takeout restock regression: ok\n"
+  },
+  {
+    "test": "martial_bare_fist_tree_regression.js",
+    "exit": 0,
+    "seconds": 0.187,
+    "output": "martial bare-fist tree regression: ok\n"
+  },
+  {
+    "test": "midboss_rematch_regression.js",
+    "exit": 0,
+    "seconds": 0.115,
+    "output": "midboss rematch regression: ok\n"
+  },
+  {
+    "test": "mobile_app_regression.js",
+    "exit": 0,
+    "seconds": 0.135,
+    "output": "mobile app regression: ok\n"
+  },
+  {
+    "test": "nestua_story_regression.js",
+    "exit": 0,
+    "seconds": 0.11,
+    "output": "nestua story regression: ok\n"
+  },
+  {
+    "test": "otherworld_drop_isolation_regression.js",
+    "exit": 0,
+    "seconds": 0.112,
+    "output": "otherworld drop isolation regression: ok\n"
+  },
+  {
+    "test": "otherworld_enhancement_state_regression.js",
+    "exit": 0,
+    "seconds": 0.117,
+    "output": "otherworld enhancement/state regression: ok\n"
+  },
+  {
+    "test": "otherworld_resonance_ui_regression.js",
+    "exit": 0,
+    "seconds": 0.108,
+    "output": "otherworld resonance UI regression: ok\n"
+  },
+  {
+    "test": "q_offer_context_regression.js",
+    "exit": 0,
+    "seconds": 0.134,
+    "output": "Q offer context regression: OK\n"
+  },
+  {
+    "test": "release_state_regression.js",
+    "exit": 0,
+    "seconds": 0.126,
+    "output": "release state regression: ok\n"
+  },
+  {
+    "test": "save_transfer_validation_regression.js",
+    "exit": 0,
+    "seconds": 0.143,
+    "output": "save transfer validation regression: ok\n"
+  },
+  {
+    "test": "secret_music_score_regression.js",
+    "exit": 0,
+    "seconds": 0.151,
+    "output": "secret music score regression: ok\n"
+  },
+  {
+    "test": "title_system_regression.js",
+    "exit": 0,
+    "seconds": 0.126,
+    "output": "title_system_regression: PASS\n"
+  }
+]
