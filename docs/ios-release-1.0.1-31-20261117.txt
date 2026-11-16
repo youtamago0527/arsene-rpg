@@ -1,0 +1,26 @@
+ARSÈNE REMIX 1.0.1 (31) — 2026-11-17
+Staging: staging/ios-battle-performance-20261116
+Runtime baseline: e11d62a (plus documentation commits through d348b77).
+
+Includes all build 30 fixes. Adds:
+- New generated title background and transparent wordmark, real NEW GAME/CONTINUE/SETTINGS buttons with matching icon boxes.
+- Phantom Thief otherworld-only restriction described in JOB details, on JOB change and before normal dungeon entry. Actual restored JOB name shown on normal-dungeon entry.
+- Title release commit 94985d1 applied selectively to existing staging, preserving prior audio/runtime, bare-fist, encyclopedia, debug-removal and advertising fixes. index cache conflict resolved with start-flow 0.4.37.
+
+Validation:
+- All 45 regressions, web build, Capacitor sync and iOS release config checks passed.
+- Simulator build 31 uses separate com.arsene.remix.titlepreview; real app and saves untouched.
+- New title screen directly observed on iPhone 17 / iOS 26.5. All three buttons, logo and footer visible. Fresh-save CONTINUE disabled. Native live status bar is not baked into generated artwork.
+- NEW GAME character selection observed after user interaction. SETTINGS/CONTINUE activation not claimed; automation coordinate input unavailable.
+- Store Release archive succeeded, production bundle ID com.arsene.remix / 1.0.1 (31).
+- Archived runtime, CSS, both new title-image hashes match source; no debug room or diagnostic probes.
+- Upload succeeded (EXPORT SUCCEEDED). Apple processing completed; build 31 selected and submitted. Status WAITING FOR REVIEW confirmed on 2026-11-17 at approximately 02:56 JST. Vendor SDK dSYM upload warnings are non-blocking; app upload succeeded.
+
+Previous build 30 submission: ba5a6f5e-4af9-4fd4-a0c6-84fbc3e64dca.
+Automatic release after review approval confirmed; keep existing ratings and IAP configuration.
+Protected release branches untouched; staging must be promoted by integration owner before the next source release.
+
+Submission ID: 4d04f4d7-f47f-4aac-a176-4c314c00829d
+Review URL: https://appstoreconnect.apple.com/apps/6806899939/distribution/reviewsubmissions/details/4d04f4d7-f47f-4aac-a176-4c314c00829d
+Proof: /Users/yuki/Documents/Codex/2026-10-18/arsene-release-101/submitted-1.0.1-build31.png
+Build 30 submission cancelled and replaced.
