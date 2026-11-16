@@ -2,10 +2,10 @@
 
 ## 現在の状態
 
-この準備ブランチではGoogle公式デモIDを維持しています。実機テストは安全にできますが、このまま本番審査へ提出しません。
+現在のiOSコードには本番IDが設定されています。AdMob管理画面での広告ユニット状態や配信可否は、コードだけでは判断できません。
 
-- App ID: `ca-app-pub-3940256099942544~1458002511`
-- Rewarded ad unit: `ca-app-pub-3940256099942544/1712485313`
+- App ID: `ca-app-pub-2798969445522147~9914094555`
+- Rewarded ad unit: `ca-app-pub-2798969445522147/5643677056`
 - 広告形式: リワードのみ
 - ランキング機能: 今回のリリースには含めない
 
@@ -18,11 +18,15 @@
 5. 初回の同意画面を確認し、同意できない場合は広告を要求しないことを確認する。
 6. タイトルと拠点の「設定 → データ」から広告プライバシー設定を開けることを確認する。
 
-## 本番ID差し替え
+## 本番ID確認
 
-AdMob管理画面からiOS App IDとRewarded Ad Unit IDを取得する。差し替え先は `ios/App/App/Info.plist` の `GADApplicationIdentifier` と `js/admob.js` の `IOS_REWARDED_AD_ID`。
+AdMob管理画面のiOS App IDとRewarded Ad Unit IDを照合する。コード上の設定先は `ios/App/App/Info.plist` の `GADApplicationIdentifier` と `js/admob.js` の `IOS_REWARDED_AD_ID`。
 
-差し替え後に `pnpm verify:ios-release` を実行し、デモIDが1つも残っていないことを確認する。本番広告の実機確認はAdMobへテスト端末登録した端末だけで行い、端末IDをソースへ保存しない。
+`pnpm verify:ios-release` でデモIDが1つも残っていないことを確認する。本番広告の実機確認はAdMobへテスト端末登録した端末だけで行い、端末IDをソースへ保存しない。
+
+## 表示失敗の調査
+
+実機のWeb Inspector / Xcodeコンソールで `AdMob rewarded` とネイティブSDKの `Rewarded ad failed to load` / `failed to present` を確認する。JSは初期化・同意・ロード・表示・タイムアウトの失敗段階と、プラグインから届いた `code` / `message` を記録する。広告が出なかった事実だけでは、コード不具合、同意未完了、広告在庫不足、AdMob側の配信制限を区別できない。エラーコードと発生時刻を記録してから切り分ける。
 
 ## AdMob / App Store Connect
 

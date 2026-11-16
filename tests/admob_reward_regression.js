@@ -71,7 +71,8 @@ const rewardedId = rewardedMatch[1];
       Plugins: { AdMob: plugin }
     }
   };
-  vm.runInNewContext(bridge, { window: nativeWindow, console, setTimeout, clearTimeout });
+  const warnings = [];
+  vm.runInNewContext(bridge, { window: nativeWindow, console: { ...console, warn: (...args) => warnings.push(args) }, setTimeout, clearTimeout });
   const first = nativeWindow.arseneAdMob.showRewarded();
   assert.equal(await nativeWindow.arseneAdMob.showRewarded(), false, '広告表示中の二重要求を拒否する');
   await new Promise(resolve => setImmediate(resolve));
@@ -88,13 +89,15 @@ const rewardedId = rewardedMatch[1];
 
   const failedLoad = nativeWindow.arseneAdMob.showRewarded();
   await new Promise(resolve => setImmediate(resolve));
-  listeners.get('onRewardedVideoAdFailedToLoad')?.();
+  listeners.get('onRewardedVideoAdFailedToLoad')?.({ code: 3, message: 'No fill' });
   assert.equal(await failedLoad, false, 'ロード失敗では成功しない');
+  assert(warnings.some(([message, detail]) => message.includes('load failed: No fill') && detail?.code === 3), 'ロード失敗のコードとメッセージを記録する');
 
   const failedShow = nativeWindow.arseneAdMob.showRewarded();
   await new Promise(resolve => setImmediate(resolve));
-  listeners.get('onRewardedVideoAdFailedToShow')?.();
+  listeners.get('onRewardedVideoAdFailedToShow')?.({ code: 0, message: 'Presentation failed' });
   assert.equal(await failedShow, false, '表示失敗では成功しない');
+  assert(warnings.some(([message, detail]) => message.includes('show failed: Presentation failed') && detail?.code === 0), '表示失敗のコードとメッセージを記録する');
 
   let timeoutCallback = null;
   const timeoutListeners = new Map();

@@ -10,6 +10,13 @@
   let initialization = null;
   let requestInFlight = false;
   let canRequestAds = false;
+  const logFailure = (stage, detail) => {
+    const message = typeof detail === 'string' ? detail : detail?.message || detail?.localizedDescription || 'unknown';
+    console.warn(`AdMob rewarded ${stage}: ${message}`, {
+      code: detail?.code ?? null,
+      adUnitId: IOS_REWARDED_AD_ID
+    });
+  };
 
   function capacitor() { return window.Capacitor; }
   function isNativeIOS() {
@@ -23,7 +30,10 @@
   }
   async function initialize() {
     const admob = plugin();
-    if (!admob) return false;
+    if (!admob) {
+      if (isNativeIOS()) logFailure('unavailable', 'native AdMob plugin is not registered');
+      return false;
+    }
     if (!initialization) initialization = (async () => {
       try {
         await admob.initialize();
@@ -32,11 +42,15 @@
           consent = await admob.showConsentForm();
         }
         canRequestAds = consent?.canRequestAds === true;
+        if (!canRequestAds) {
+          logFailure('consent', `ads cannot be requested (status: ${consent?.status || 'unknown'})`);
+          initialization = null;
+        }
         return canRequestAds;
       } catch (error) {
         initialization = null;
         canRequestAds = false;
-        console.warn('AdMob initialization or consent failed.', error);
+        logFailure('initialization or consent failed', error);
         return false;
       }
     })();
@@ -78,16 +92,16 @@
         await cleanup();
         resolve(rewarded);
       };
-      timeout = setTimeout(() => finish(false), 120000);
+      timeout = setTimeout(() => { logFailure('timeout', 'no reward or dismissal callback within 120 seconds'); finish(false); }, 120000);
       try {
         handles.push(await admob.addListener(events.rewarded, () => finish(true)));
         handles.push(await admob.addListener(events.dismissed, () => finish(false)));
-        handles.push(await admob.addListener(events.failedToLoad, () => finish(false)));
-        handles.push(await admob.addListener(events.failedToShow, () => finish(false)));
+        handles.push(await admob.addListener(events.failedToLoad, error => { logFailure('load failed', error); finish(false); }));
+        handles.push(await admob.addListener(events.failedToShow, error => { logFailure('show failed', error); finish(false); }));
         await admob.prepareRewardVideoAd({ adId: IOS_REWARDED_AD_ID });
-        if (!settled) admob.showRewardVideoAd().catch(() => finish(false));
+        if (!settled) admob.showRewardVideoAd().catch(error => { logFailure('show rejected', error); finish(false); });
       } catch (error) {
-        console.warn('Rewarded ad failed.', error);
+        logFailure('load or listener registration failed', error);
         await finish(false);
       }
     });
