@@ -71,3 +71,15 @@ Original worktree shares Git objects in iCloud. Git reported a truncated pack an
 could not read fec95acae17e22de69075aa1be2f76c3d5030e5a. No repair/deletion was attempted.
 Candidate copied to a fresh clone outside that shared Git directory, at the same
 7f075e6 baseline: /Users/yuki/Documents/Codex/2026-10-18/arsene-ios-battle-performance-clean.
+
+Production rewarded-ad user report / 2026-11-17 JST
+- Integration thread relayed the user's observation: in the publicly distributed
+  iOS app, the in-game ad button displayed an approximately one-minute production
+  advertisement; after watching to completion, the reward was granted.
+- Record as USER-REPORTED confirmation of the production rewarded-ad path,
+  not a direct observation by this performance task. Exact build/ad unit/device
+  and duplicate-reward/cancel/offline cases were not supplied or reverified here.
+- This does not verify the battle-performance candidate, remove Google review
+  limitations, or authorize merging/releasing/uploading an App Store build.
+- Final performance verification remains in the separate diagnostic app when
+  the iPhone reconnects; no production merge or App Store submission performed.
