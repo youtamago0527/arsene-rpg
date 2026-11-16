@@ -30,3 +30,24 @@ consent, device/network and plugin integration first. If the test unit works
 but the production unit does not, inspect the AdMob app/ad unit status, policy
 center, payment/identity state and traffic restrictions in the AdMob console.
 The diagnostic build itself cannot establish those account states.
+
+## iPhone 16 result — 2026-11-16
+
+Mac Xcode development build installed under a separate diagnostic bundle ID,
+leaving the existing game app and save untouched. On-device UMP consent update
+failed before ad loading with `com.google.user_messaging_platform` code `4`:
+"Failed to read publisher's account configuration; no form(s) configured for
+the input app ID." The error named the production App ID
+`ca-app-pub-2798969445522147~9914094555`. The production bridge stops before
+`prepareRewardVideoAd` when this happens.
+
+The diagnostic-only code-4 bypass then loaded Google's official iOS rewarded
+test unit, displayed a full-screen Test mode video, and received its reward
+event. A normal in-game ad button also granted the EXP/JOB EXP x2 effect for
+one hour exactly once; remaining daily uses changed from two to one. This
+establishes that SDK initialization, test ad load/show, native reward callback
+and the game reward route work on this iPhone. It does not prove that the
+production unit can serve an ad. The next account-side step is to configure
+and publish a relevant privacy message for this AdMob app in Privacy &
+messaging, then repeat the test without the diagnostic bypass. No App Store
+Archive, upload or resubmission was performed.
