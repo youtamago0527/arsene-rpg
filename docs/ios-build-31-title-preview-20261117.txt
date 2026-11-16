@@ -16,5 +16,5 @@ Artifact:
 /Users/yuki/Documents/Codex/2026-10-18/arsene-title-preview-31/DerivedData/Build/Products/Debug-iphonesimulator/App.app
 Simulator device: 9639AE5F-600D-432F-A6AF-B983868CB61D
 
-UI status: App installed and launched in Simulator. OP screen observed. CUA coordinate input returned noWindowsAvailable, so user asked to press OP SKIP. Title-screen visual/interaction QA pending user handoff.
+UI status: User completed OP SKIP handoff; new title screen directly observed on iPhone 17 / iOS 26.5. Background and wordmark render, all three buttons and footer fit without clipping; icon boxes share 32px sizing. No phone-status artwork is baked into the generated image (live simulator status bar remains). Character-selection screen was also observed after user interaction. CONTINUE correctly disabled on fresh preview save. SETTINGS/CONTINUE activation not tested; CUA coordinate input unavailable. Title screen left visible for user.
 No Store upload/submission performed for build 31. Submitted build 30 unchanged.
