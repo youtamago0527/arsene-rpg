@@ -119,6 +119,7 @@ window.ARSENE_HELP = [
   {
     id: 'phantomThief', title: 'PHANTOM THIEF', titleEn: 'PHANTOM THIEF', lockedBy: 'phantomThief',
     body: [
+      'ファントムシーフで戦えるのは異世界のみです。通常ダンジョン・通常ボス戦では、直前の通常JOBへ自動で戻ります。',
       'PHANTOM THIEFはJOB成長、通常のHP・MP成長、武器学成長が発生しない特殊JOBです。',
       '解放済みの通常JOBで育てた基礎能力を合算し、50％を反映します。京介のみ60％です。',
       '通常JOBをLv20まで育てると固有ACTIONを盗みます。戦闘へ持ち込めるのはACTION 2個、PASSIVE 2個です。',

@@ -4108,7 +4108,7 @@
       // JOB特性：そのJOBに就いている間だけの効果（他JOBへ持ち出せない）
       const traits = this.jobTraitEntries(jobId);
       const traitHtml = traits.length ? `<div class="jbonus jtraits"><h4>JOB特性</h4><div class="jtrait-list">${traits.map(t => `<button type="button" class="jtrait-row" data-job-trait-detail="${jobId}:${t.key}"><b>${t.name}</b><span>${t.label}${t.gain > 0 ? `（転生 +${t.gain}%）` : ''}</span><em>▶</em></button>`).join('')}</div><p class="jbn-note">このJOBに就いている間だけ有効。他JOBへは持ち出せません。</p></div>` : '';
-      return `<div class="jdetail"><button class="jback-btn" data-job-back>← JOB一覧</button><div class="jdetail-hdr"><div><b>${j.name}</b></div><em class="jdetail-badge">${isCur ? '現在' : !avail ? 'LOCKED' : noGrow ? 'SPECIAL' : `Lv.${p.level}`}</em></div>${avail ? `<div class="jexp-wrap"><div class="jlv-row"><b>JOB Lv.${p.level}</b><span>JEXP ${need ? `${p.exp} / ${need}` : 'MASTER'}</span></div><div class="jexp-bar"><i style="width:${bar}%"></i></div></div>${noGrow ? `<p class="jfeature">${j.featureText || j.description || ''}</p>${stealHtml}` : `<div class="jbonus"><h4>このJOBで育てた能力</h4><div class="jbn-grid">${bonusGrid}</div><p class="jbn-note">この成長は、このJOBに就いている間だけ乗ります。</p></div>`}${traitHtml}${isCur ? '<div class="jcur-badge">現在のJOB</div>' : `<button class="jchange-btn" data-job-change="${jobId}">このJOBに変更</button>`}${this.rebirthSectionHTML(jobId)}${skillRows ? `<div class="jskills"><h4>アビリティ</h4><div class="jar-list">${skillRows}</div></div>` : ''}` : `<p class="jlocked-note">${j.description}</p>${condHtml}`}</div>`;
+      return `<div class="jdetail"><button class="jback-btn" data-job-back>← JOB一覧</button><div class="jdetail-hdr"><div><b>${j.name}</b></div><em class="jdetail-badge">${isCur ? '現在' : !avail ? 'LOCKED' : noGrow ? 'SPECIAL' : `Lv.${p.level}`}</em></div>${avail ? `<div class="jexp-wrap"><div class="jlv-row"><b>JOB Lv.${p.level}</b><span>JEXP ${need ? `${p.exp} / ${need}` : 'MASTER'}</span></div><div class="jexp-bar"><i style="width:${bar}%"></i></div></div>${noGrow ? `<p class="jfeature">${j.featureText || j.description || ''}</p>${stealHtml}` : `<div class="jbonus"><h4>このJOBで育てた能力</h4><div class="jbn-grid">${bonusGrid}</div><p class="jbn-note">この成長は、このJOBに就いている間だけ乗ります。</p></div>`}${jobId === 'phantomThief' ? `<p class="job-lock-notice" role="note">${this.phantomThiefRestrictionText()}</p>` : ''}${traitHtml}${isCur ? '<div class="jcur-badge">現在のJOB</div>' : `<button class="jchange-btn" data-job-change="${jobId}">このJOBに変更</button>`}${this.rebirthSectionHTML(jobId)}${skillRows ? `<div class="jskills"><h4>アビリティ</h4><div class="jar-list">${skillRows}</div></div>` : ''}` : `<p class="jlocked-note">${j.description}</p>${condHtml}`}</div>`;
     }
     abilitySetHtml(currentId) {
       const ps = this.profile.passiveSlots || [null, null], p0 = ps[0] ? D.skills[ps[0]] : null, p1 = ps[1] ? D.skills[ps[1]] : null;
@@ -4192,7 +4192,7 @@
       }
       const midAt = Math.max(0, Math.min(floorNodes.length, d.midBossAfterFloor || floorNodes.length));
       const routeNodes = floors.length ? `${floorNodes.slice(0, midAt).join('')}${midBossNode}${floorNodes.slice(midAt).join('')}${bossNode}` : `${floorTree}${midBossNode}${bossNode}`;
-      panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>DUNGEON SELECT</small><h2>潜入先を選択</h2><nav class="dungeon-tabs">${tabs}</nav><section class="dungeon-route"><header style="background-image:url('${d.thumbnail}')"><div><small>${d.nameEn || d.enName || d.name}</small><h3>${d.name}</h3><span>推奨 Lv.${d.recommendedLevel}+　//　${progress}</span>${isNew ? '<mark>NEW AREA</mark>' : ''}</div></header><div class="dungeon-tree">${routeNodes}</div></section>`;
+      panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>DUNGEON SELECT</small><h2>潜入先を選択</h2>${this.profile.currentJob === 'phantomThief' ? `<p class="job-lock-notice" role="note">${this.phantomThiefRestrictionText()}</p>` : ''}<nav class="dungeon-tabs">${tabs}</nav><section class="dungeon-route"><header style="background-image:url('${d.thumbnail}')"><div><small>${d.nameEn || d.enName || d.name}</small><h3>${d.name}</h3><span>推奨 Lv.${d.recommendedLevel}+　//　${progress}</span>${isNew ? '<mark>NEW AREA</mark>' : ''}</div></header><div class="dungeon-tree">${routeNodes}</div></section>`;
     }
     // ══ 階層選択ページ ══
     // 「1枚を下へ長くスクロール」ではなく、ダンジョン選択とは別ページとして開く。
@@ -4353,16 +4353,30 @@
       if (render) { this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('job'); }
       return true;
     }
-    changeJob(id) { return this.switchJobState(id, true); }
+    phantomThiefRestrictionText() {
+      const target = this.normalDungeonReturnJob();
+      const name = D.jobs[target]?.name || '通常JOB';
+      return `ファントムシーフで戦えるのは異世界のみです。通常ダンジョン・ボス戦へ入ると《${name}》へ自動で戻ります。`;
+    }
+    normalDungeonReturnJob() {
+      return [this.profile.otherWorldReturnJob, this.profile.lastNormalJob, this.profile.initialJob, 'mage']
+        .find(id => id && id !== 'phantomThief' && D.jobs[id] && this.isJobUnlocked(id));
+    }
+    changeJob(id) {
+      const changed = this.switchJobState(id, true);
+      if (changed && id === 'phantomThief') window.arseneStartFlow?.toast?.(this.phantomThiefRestrictionText());
+      return changed;
+    }
     restoreNormalDungeonJob(force = false) {
       if (this.profile.currentJob !== 'phantomThief' && !force) return false;
-      const target = [this.profile.otherWorldReturnJob, this.profile.lastNormalJob, this.profile.initialJob, 'mage']
-        .find(id => id && id !== 'phantomThief' && D.jobs[id] && this.isJobUnlocked(id));
+      const target = this.normalDungeonReturnJob();
       if (!target) return false;
+      const wasPhantomThief = this.profile.currentJob === 'phantomThief';
       const changed = this.switchJobState(target, false);
       this.profile.otherWorldReturnJob = null;
       this.profile.flags ||= {}; this.profile.flags.owRestoreJobPending = false;
       this.saveProfile();
+      if (changed && wasPhantomThief && !force) window.arseneStartFlow?.toast?.(`通常ダンジョンは《${D.jobs[target].name}》で戦います。ファントムシーフは異世界専用です。`);
       return changed;
     }
     toggleActiveSkill(id) {
