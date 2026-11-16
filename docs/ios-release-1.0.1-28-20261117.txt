@@ -1,0 +1,44 @@
+ARSÈNE REMIX iOS update 1.0.1 (28) / 2026-11-17 JST
+
+Authorization
+After focused performance verification, user explicitly requested updating the
+app and submitting it for review. Earlier diagnostic-only/no-upload scope is
+superseded by that direct user request for this release operation.
+
+Changes
+- Battle audio local-response handling, decoded-sample playback and bounded fallback.
+- Save-transfer payload validation from staging/ios-simulator-audit-20261117 b85437c.
+- Existing StoreKit 2, armored Myrthi, production AdMob/UMP behavior retained.
+
+Source
+Staging branch: staging/ios-battle-performance-20261116
+Runtime integration merge: 10fb544
+Archive source/config tree: c47f7d4
+Portable package-path follow-up: 5263a26 (dependency bytes unchanged).
+Protected main and feature/ios-capacitor have NOT been pushed or merged by this task.
+Integration owner should promote this staging history before another iOS update.
+
+Checks
+- 40 Node regression scripts pass, including help, native purchase behavior,
+  rewarded-ad and audio routing/pooling, release-state and save-transfer validation.
+- Web build, cap sync, iOS bundle verifier and production ad-ID verifier pass.
+- Focused iPhone audio performance tests: all 10 samples decoded; audio x100,
+  combined sound/effect 3 x100; no growing media-source count; next-battle and
+  defeat/return transitions. This is NOT full long-session/all-feature coverage.
+- Previous simulator audit retains untested features and an unfixed iPad equipment
+  comparison-chip clipping issue; no claim that every feature/layout is verified.
+- Production archive: com.arsene.remix, 1.0.1 build 28, production AdMob IDs,
+  runtime hashes match, no diagnostic buttons/probes, no official test ads,
+  no StoreKit local-test configuration, no docs/QA fixtures in shipped assets.
+
+Upload
+Archive and App Store export/upload succeeded. Apple reports build 28 processing.
+GoogleMobileAds and UserMessagingPlatform dSYM upload warnings were non-blocking;
+retain archive; framework-specific crash symbolication may be limited.
+App Store version 1.0.1 created; Japanese release notes and English review notes saved.
+Release option preserved: automatic after approval; existing ratings retained.
+Review submission status: not yet submitted (waiting for Apple build processing).
+
+Evidence and archive (Mac)
+/Users/yuki/Documents/Codex/2026-10-18/arsene-release-101
+Contains xcarchive, runtime hash manifest, tests/build/upload logs and screenshots.
