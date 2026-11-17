@@ -1,0 +1,24 @@
+{
+  "size": [
+    1242,
+    2688
+  ],
+  "device": "iPhone with Face ID (large display), scaled automatically for other sizes",
+  "order": [
+    "01-seripes-1242x2688.jpg",
+    "02-title-1242x2688.jpg",
+    "03-myrthi-1242x2688.jpg",
+    "04-hideout-1242x2688.jpg"
+  ],
+  "sha256": {
+    "01-seripes-1242x2688.jpg": "2d74f19754b612b22fd01a53ced2f2961837ad6a18bce1a9e54a64b349639c1f",
+    "02-title-1242x2688.jpg": "982a95aff5554113330560bfd4cb70afab9081f18fbc8c12bd0a1137f905062f",
+    "03-myrthi-1242x2688.jpg": "ad1ab0a96c9fc3f626b6c7795a25cb838be01c182ec66caf37db61d81d2a0cae",
+    "04-hideout-1242x2688.jpg": "a11133ce7ab132ad62170d74ba9121af4723ce90c554d15a62c6111c11b98017"
+  },
+  "source": "Actual build-31 web game renderer, staging fixture with predefined existing content; build 32 runtime is byte-identical. No invented gameplay or composited UI.",
+  "submissionStatus": "submitted",
+  "version": "1.0.2",
+  "build": 32,
+  "reviewSubmissionId": "2c549211-184a-487f-b811-dcf49c861b54"
+}

@@ -1,0 +1,27 @@
+ARSÈNE REMIX 1.0.2 (32) — Store screenshot refresh
+
+User requested more attractive actual-game App Store screenshots.
+Published 1.0.1 cannot have its screenshot metadata directly replaced, so 1.0.2 is prepared for review.
+Gameplay/runtime unchanged from approved 1.0.1 (31). Only Xcode marketing version and build number changed.
+Release archive succeeded and upload succeeded. Native ID com.arsene.remix, version 1.0.2, build 32.
+Archived index/game/data/start-flow/CSS hashes compared byte-identical to build 31. No capture fixtures or debug room shipped.
+Existing help regression and iOS bundle/release configuration checks passed. Previous 45 gameplay regressions cover unchanged runtime.
+Non-blocking GoogleMobileAds/UserMessagingPlatform dSYM upload warnings remain; app upload succeeded.
+
+New iPhone screenshot set, 1242x2688 JPEG:
+1. Seripes boss battle with live combat UI
+2. Current title screen
+3. Fully armored Myrthi battle with live combat UI
+4. Hideout
+Rendered directly from existing game UI at phone layout size; no replacement/mock gameplay interface.
+Existing iPad images retained. Old iPhone files remain recoverable in App Store asset library and published 1.0.1.
+Assets and hashes: docs/store-assets/20261117/manifest.json
+
+Status: four screenshots uploaded to draft 1.0.2. Build processing/review submission pending.
+App Analytics first-download metric checked; current displayed total is '-' / insufficient data, not a verified zero.
+Protected release branches untouched. Promote staging through integration owner for future source releases.
+
+Submitted successfully to App Review on 2026-11-17 JST.
+Submission: 2c549211-184a-487f-b811-dcf49c861b54
+Build ID: 5564b216-48ef-46e8-85cb-e845f25bfe63
+Automatic release after approval. Four iPhone screenshots replaced; existing iPad assets retained.
