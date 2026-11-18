@@ -17,6 +17,7 @@
     revive: { title: '怪盗の再起', copy: '戦闘不能から復活し、HP50%で現在の戦闘を続行する。', key: 'reviveUses', label: '戦闘復活' },
     protect: { title: '保護のアルカナ', copy: '破壊された装備を、強化値+0で復元する。', key: 'restoreUses', label: '破壊装備の復元' },
     bossDrop: { title: 'ボス素材の追跡', copy: '撃破したボス素材の追加抽選を行う。', key: 'bossDrop', label: 'ボス素材追加抽選' },
+    bossOverdrive: { title: 'BOSS OVERDRIVE', copy: '広告を見て強化ボスに挑む。', key: 'bossOverdrive', label: '超越ボス挑戦' },
     infiniteReroll: { title: '異世界ショップ再抽選', copy: '現在の装備候補を通常テーブルでもう一度だけ抽選する。', label: 'ショップ再抽選' },
     infiniteInsurance: { title: '怪盗の保険', copy: '全滅で失われる装備から、選んだ1個だけを奪還する。', label: '装備1個奪還' },
     infiniteBag: { title: 'バッグ緊急拡張', copy: 'このRUNに限り、バッグ上限を最大33枠へ拡張する。', label: 'バッグ最大33枠' }
@@ -140,13 +141,13 @@
           const showAd = nativeAd ? window.arseneAdMob.showRewarded() : Promise.resolve(true);
           showAd.then(rewarded => {
             if (generation !== offerGeneration) return;
-            if (!rewarded) { offerInFlight = false; return; }
+            if (!rewarded) { offerInFlight = false; window.arseneStartFlow?.toast?.('広告を完了できませんでした。再度お試しください'); return; }
             playIntervention(g, d.forceDialogueCategory, () => {
               if (generation !== offerGeneration) return;
               try { const granted = api.grant(type); if (granted) { if (skip) consumeAdSkip(g); d.onGrant?.(); } }
               finally { if (generation === offerGeneration) offerInFlight = false; }
             });
-          }).catch(() => { if (generation === offerGeneration) offerInFlight = false; });
+          }).catch(() => { if (generation === offerGeneration) { offerInFlight = false; window.arseneStartFlow?.toast?.('広告を読み込めませんでした。再度お試しください'); } });
         }
       });
       return true;
