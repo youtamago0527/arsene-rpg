@@ -277,13 +277,15 @@
       if (event.target.closest('[data-od-close]')) { modal.remove(); return; }
       const button = event.target.closest('[data-od-level]'); if (!button || button.disabled) return;
       const level = Number(button.dataset.odLevel) || 0;
-      modal.remove();
-      if (!level) { this.startBossByKey(bossId, 0); return; }
-      window.arseneQOffer?.show('bossOverdrive', {
-        title: `OVERDRIVE ${level === 2 ? 'II' : 'I'}`,
-        copy: '広告を見た後、強化されたボスとの戦闘が始まる。',
+      if (!level) { modal.remove(); this.startBossByKey(bossId, 0); return; }
+      const offer = window.arseneQOffer;
+      if (!offer?.canUse?.('overdrive')) { window.arseneStartFlow?.toast?.('広告を準備できませんでした'); return; }
+      const opened = offer.show('overdrive', {
+        title: `OVERDRIVE ${level === 2 ? 'II' : 'I'} // ${def.bossName}`,
+        copy: `広告を見て、戦闘力×${level === 2 ? 4 : 2}の${def.bossName}へ挑戦する。`,
         onGrant: () => this.startBossByKey(bossId, level)
       });
+      if (opened) modal.remove();
     });
     return true;
   };
