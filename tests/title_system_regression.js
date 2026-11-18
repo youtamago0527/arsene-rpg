@@ -57,7 +57,7 @@ class BattleGame {
   }
   jobResultHTML() { return '<div>result</div>'; }
   jobDetailHtml() { return '<div>job</div>'; }
-  startBossByKey() { return true; }
+  startBossByKey(key, bypassRematch) { this.startedBoss = { key, bypassRematch }; return true; }
   rollDrops() { return [['normal-drop', 1]]; }
   saveProfile() {}
   renderMenuPanel() {}
@@ -77,6 +77,18 @@ vm.runInThisContext(source, { filename: 'title_system.js' });
 const game = new BattleGame();
 game.profile.titleSystem = { unlocked: true, collectionSlotUnlocked: true, bossSlotUnlocked: true, acquired: ['boss_cadenza'], equipped: { collection: null, boss: 'boss_cadenza' }, bossProgress: {} };
 game.profile.titleGrowthGained = {};
+
+let overdriveClick;
+let rewardedOffer;
+const overdriveModal = { innerHTML: '', addEventListener(_event, callback) { overdriveClick = callback; }, remove() {} };
+document.createElement = () => overdriveModal;
+window.arseneQOffer = { canUse() { return true; }, show(type, options) { rewardedOffer = { type, options }; return true; } };
+game.showOverdriveModal('zenakado');
+overdriveClick({ target: { closest(selector) { return selector === '[data-od-level]' ? { dataset: { odLevel: '1' }, disabled: false } : null; } } });
+assert.equal(rewardedOffer.type, 'overdrive', '超越戦は広告オファーを開く');
+assert.equal(game.startedBoss, undefined, '広告の報酬確定前にボス戦を始めない');
+rewardedOffer.options.onGrant();
+assert.deepEqual(game.startedBoss, { key: 'zenakado', bypassRematch: true }, '報酬確定後だけ超越戦を開始する');
 
 const levelResult = game.grantJobExp(10);
 assert.equal(levelResult.titleGain.amount, 10, '10回の実LvUPで称号成長も10回発動する');

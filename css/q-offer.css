@@ -1,4 +1,4 @@
-.q-offer-modal{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;background:#02030acc;padding:20px;font-family:var(--fft-font,'Cinzel',serif)}
+.q-offer-modal{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;background:#02030acc;padding:20px;font-family:var(--fft-font,'Cinzel',serif)}
 .q-offer-modal.q-offer-defeat{place-items:center;padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));background:#02040a99;color:#10151c;backdrop-filter:blur(4px)}
 .q-offer-modal.q-offer-defeat .q-offer-card{margin:0;border:0;box-shadow:0 0 0 1px #fff,0 0 32px #8fd4ff;background:transparent;color:#10151c;isolation:isolate}
 .q-offer-modal.q-offer-defeat .q-offer-card:before{inset:-55%;border:0;opacity:1;background:conic-gradient(from 0deg,transparent 0 39%,#fff 44%,#62cfff 48%,#fff 52%,transparent 58% 100%);animation:qoffer-spin 2.2s linear infinite;z-index:-2}

@@ -141,13 +141,13 @@
           const showAd = nativeAd ? window.arseneAdMob.showRewarded() : Promise.resolve(true);
           showAd.then(rewarded => {
             if (generation !== offerGeneration) return;
-            if (!rewarded) { offerInFlight = false; return; }
+            if (!rewarded) { offerInFlight = false; window.arseneStartFlow?.toast?.('広告を完了できませんでした。再度お試しください'); return; }
             playIntervention(g, d.forceDialogueCategory, () => {
               if (generation !== offerGeneration) return;
               try { const granted = api.grant(type); if (granted) { if (skip) consumeAdSkip(g); d.onGrant?.(); } }
               finally { if (generation === offerGeneration) offerInFlight = false; }
             });
-          }).catch(() => { if (generation === offerGeneration) offerInFlight = false; });
+          }).catch(() => { if (generation === offerGeneration) { offerInFlight = false; window.arseneStartFlow?.toast?.('広告を読み込めませんでした。再度お試しください'); } });
         }
       });
       return true;

@@ -96,6 +96,13 @@ window.ARSENE_HELP = [
     ]
   },
   {
+    id: 'bossRewards', title: 'ボス再戦と超越戦', titleEn: 'BOSS REWARDS', lockedBy: 'magicKnight',
+    body: [
+      'ボス撃破後の結果画面からOVERDRIVEを選べます。強化ボスとの戦闘は、任意広告の視聴が完了してから始まります。',
+      '通常再戦は通常戦5勝後に解放されます。再戦で勝つと、広告でボス素材を1回だけ追加抽選できます。'
+    ]
+  },
+  {
     id: 'workshop', title: '工房', titleEn: 'WORKSHOP', lockedBy: 'workshop',
     body: [
       '怪異から入手した素材とGOLDを使って装備を製作できます。',
