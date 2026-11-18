@@ -3745,7 +3745,7 @@
     offerRepeatBossMaterialDrop(enemy, firstClear) {
       if (firstClear || !enemy || !window.arseneQOffer?.canUse?.('bossDrop')) return false;
       const rows = this.bossMaterialDropRows(enemy); if (!rows.length) return false;
-      this.bossMaterialOffer = { enemy, rows, claimed: false };
+      this.bossMaterialOffer = { enemy, rows, claimed: false, prompted: false };
       this.renderBossResultActions();
       return true;
     }
@@ -3764,6 +3764,13 @@
       const material = victorious ? this.bossMaterialOffer : null;
       actions.innerHTML = this.resultContinue ? '' : `${material && !material.claimed ? '<button data-result-action="boss-material-ad">広告でボス素材を再抽選<small>REWARDED AD</small></button>' : ''}${overdrive && this.isBossDefeated(overdrive.defeatedId) ? '<button data-result-action="boss-overdrive">OVERDRIVEに挑む<small>広告視聴後に開始</small></button>' : ''}`;
       actions.hidden = !actions.innerHTML;
+      if (material && !material.claimed && !material.prompted && !this.resultContinue) {
+        material.prompted = true;
+        setTimeout(() => {
+          if (this.bossMaterialOffer !== material || result.hidden || this.resultContinue || window.arseneQOffer?.isOpen?.()) return;
+          this.showBossMaterialOffer();
+        }, 300);
+      }
     }
     showBossMaterialOffer() {
       const context = this.bossMaterialOffer;
