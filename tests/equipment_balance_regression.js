@@ -14,6 +14,14 @@ for (const file of [
 
 const D = context.window.ARSENE_DATA;
 const gear = id => D.weapons[id] || D.armors[id] || D.accessories[id];
+for (const [stage, expected] of Object.entries({
+  d1: { strPercent: .04 }, d2: { magPercent: .05 }, d2e: { strPercent: .06 },
+  d3: { magPercent: .07 }, d3e: { strPercent: .05, magPercent: .05 },
+  d4: { strPercent: .08, magPercent: .08 }
+})) {
+  const effects = D.accessories[`forge_${stage}_accessory`]?.effects || {};
+  for (const [key, value] of Object.entries(expected)) assert.strictEqual(effects[key], value, `${stage}アクセの${key}が効かない`);
+}
 const workshop3 = Object.values(D.items).filter(item => item.source === 'workshop' && Number(item.stars) === 3);
 assert(workshop3.length > 0, '★3工房装備が見つからない');
 assert.deepStrictEqual(
@@ -46,6 +54,7 @@ for (const enemy of Object.values(D.enemies)) {
 }
 
 const gameSource = fs.readFileSync('js/game.js', 'utf8');
+assert(gameSource.includes('this.applyEquipmentStatRates(total, equipment)'), 'アクセの割合補正が能力値へ反映されない');
 assert(gameSource.includes("if (recipe.dungeonId && !this.isDungeonUnlocked(recipe.dungeonId)) return false;"), '工房のDungeon解放ゲートがない');
 assert(gameSource.includes('if (equipmentHits.length) drops.push('), '装備DROPの1個上限がない');
 
