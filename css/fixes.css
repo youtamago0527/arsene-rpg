@@ -238,5 +238,6 @@
 .st-section h3{font-size:16px}
 .st-section .st-jb-row span,.st-section .st-jb-note,.st-section .st-jb-head em,.st-section .st-meter>span{font-size:12px}
 .st-section .st-meter output{font-size:11px}
+.st-rebirth-summary{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 12px}.st-rebirth-summary span{flex:1 1 125px;padding:8px 10px;border:1px solid #6b3fd4;background:#140b26;color:#d9c8f4;font-size:12px}.st-rebirth-summary b{color:#fff;font-size:15px}
 @media(max-width:480px){.st-head2 .st-id2 strong{font-size:16px}.st-head2 .st-vit span{font-size:11px}.st-section .stat-grid b{font-size:18px}.st-section .cbt3-cell small{font-size:9px}}
 @media(max-width:760px){.turn-info{position:relative;padding-bottom:14px}.turn-info #checkpoint-label{position:absolute;right:0;bottom:0;margin:0;white-space:nowrap}}

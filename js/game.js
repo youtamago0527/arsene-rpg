@@ -231,7 +231,7 @@
           return;
         }
         const jobRebirth = e.target.closest('[data-job-rebirth]');
-        if (jobRebirth) { if (!jobRebirth.disabled) { const r = this.doRebirth(jobRebirth.dataset.jobRebirth); if (!r.ok) window.arseneStartFlow?.toast(r.reason); } return; }
+        if (jobRebirth) { if (!jobRebirth.disabled) { const r = this.doRebirth(jobRebirth.dataset.jobRebirth); window.arseneStartFlow?.toast(r.ok ? `${D.jobs[jobRebirth.dataset.jobRebirth]?.name || 'JOB'} 転生 +1（${r.count}回目）` : r.reason); } return; }
         const setPassive = e.target.closest('[data-set-passive]');
         if (setPassive) { const parts = setPassive.dataset.setPassive.split(':'); this.setPassiveSlot(Number(parts[0]), parts[1] || null); return; }
         const setAction = e.target.closest('[data-set-action]');
@@ -1360,7 +1360,7 @@
       const n = this.rebirthCount(jobId), check = this.canRebirth(jobId);
       const stars = n > 0 ? `<em class="rb-stars">${'★'.repeat(Math.min(n, 10))}${n > 10 ? ` ×${n}` : ''}</em>` : '';
       const mult = Math.round(this.rebirthGrowthMultiplier(jobId) * 100);
-      return `<div class="rebirth-box"><div class="rb-head"><small>REBIRTH</small><b>転生</b>${stars}</div><div class="rb-info"><span>転生回数</span><b>${n}</b><span>次回成長</span><b>${mult}%</b><span>所持アルカナ</span><b>${this.arcanaCount()}</b></div><p class="rb-note">Lvアップで得た能力の20%を残してLv.1から再育成。習得済みPASSIVEは残り、再び習得Lvへ到達すると効果が少し強化されます。</p><button class="rb-btn" data-job-rebirth="${jobId}" ${check.ok ? '' : 'disabled'}>${check.ok ? '転生する' : check.reason}<span>${check.ok ? 'REBIRTH' : 'LOCKED'}</span></button></div>`;
+      return `<div class="rebirth-box"><div class="rb-head"><small>REBIRTH</small><b>転生</b>${stars}</div><div class="rb-info"><span>このJOBの転生</span><b>${n}回</b><span>次の転生</span><b>${n} → ${n + 1}回（+1）</b><span>次回成長</span><b>${mult}%</b><span>所持アルカナ</span><b>${this.arcanaCount()}</b></div><p class="rb-note">Lvアップで得た能力の20%を残してLv.1から再育成。習得済みPASSIVEは残り、再び習得Lvへ到達すると効果が少し強化されます。</p><button class="rb-btn" data-job-rebirth="${jobId}" ${check.ok ? '' : 'disabled'}>${check.ok ? '転生する' : check.reason}<span>${check.ok ? 'REBIRTH' : 'LOCKED'}</span></button></div>`;
     }
     specialItemHTML(reward) {
       if (!reward) return '';
@@ -4974,9 +4974,13 @@
         jobNote = `<p class="st-jb-note">JOBで育てた成長は、そのJOBに就いている間だけ乗ります。ファントムシーフは全JOB分を合算して ${inheritRate}% 引き継ぎます。</p>`;
       }
       const jobHtml = `<div class="st-section"><h3>ジョブ補正</h3><div class="st-jb-head"><b>${D.jobs[jid]?.name || ''}</b><em>Lv.${jlv}</em></div>${jobBonusRows ? `<div class="st-jb">${jobBonusRows}</div>` : '<p class="item-empty">まだ補正はありません。</p>'}${jobNote}</div>`;
+      const jobRebirths = this.rebirthCount(jid);
+      const totalRebirths = Object.values(this.profile.jobRebirths || {}).reduce((sum, count) => sum + Math.max(0, Number(count) || 0), 0);
+      const rebirthSummary = this.rebirthUnlocked() ? `<div class="st-rebirth-summary"><span>現在のJOBの転生 <b>${jobRebirths}回</b></span><span>全JOB合計 <b>${totalRebirths}回</b></span></div>` : '';
       // 主役は戦闘能力。基礎能力・ジョブ補正はその下に置く。
       panel.innerHTML = `<small>CHARACTER DATA</small><h2>${withTabs ? '装備・ステータス' : 'ステータス'}</h2>${withTabs ? this.equipTabsHtml() : ''}
         <div class="st-head2"><button type="button" class="st-portrait st-portrait-pick" data-battle-avatar-open title="戦闘キャラクター画像を変更"><span class="st-portrait-hint">戦闘画像</span></button><div class="st-id2"><strong>${this.escapeMarkup(this.playerName())}</strong><em>${D.jobs[jid]?.name || ''} Lv.${jlv}</em><span class="st-avatar-caption">タップで戦闘画像を変更</span></div><div class="st-vit"><span class="hp">HP ${vitals.hp} / ${total.maxHp}</span><span class="mp">MP ${vitals.mp} / ${total.maxMp}</span></div></div>
+        ${rebirthSummary}
         ${this.combatStatsSectionHTML(total)}
         ${this.bossSetBonusSectionHTML()}
         <div class="st-section"><h3>基礎能力</h3><div class="stat-grid">${statRows}</div></div>
