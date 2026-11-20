@@ -4571,6 +4571,7 @@
       this.profile.inventory[recipe.resultItemId] = (this.profile.inventory[recipe.resultItemId] || 0) + (recipe.resultCount || 1);
       this.recordEquipmentDiscovery([recipe.resultItemId]);
       this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderWorkshopKeepingAnchor('data-craft', recipe.id, anchorTop);
+      if (D.items[recipe.resultItemId]?.slot === 'accessory') window.arseneStartFlow?.toast('アクセサリーは製作後、装備画面で装着すると効果が発動します');
     }
     // ══ 装備の分解 ══════════════════════════════════════════
     // 旧仕様：ボス装備の予備だけをシリーズ素材へ変換していた。
