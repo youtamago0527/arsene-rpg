@@ -3733,9 +3733,8 @@
         document.querySelector('#rewards')?.insertAdjacentElement('afterend', actions);
       }
       const victorious = this.finished && this.profile.flags.lastBattleResult === 'victory';
-      const overdrive = victorious ? this.bossTitleDefinition?.(this.battleMode) : null;
       const material = victorious ? this.bossMaterialOffer : null;
-      actions.innerHTML = this.resultContinue ? '' : `${material && !material.claimed ? '<button data-result-action="boss-material-ad">広告でボス素材を再抽選<small>REWARDED AD</small></button>' : ''}${overdrive && this.isBossDefeated(overdrive.defeatedId) ? '<button data-result-action="boss-overdrive">OVERDRIVEに挑む<small>広告視聴後に開始</small></button>' : ''}`;
+      actions.innerHTML = this.resultContinue ? '' : `${material && !material.claimed ? '<button data-result-action="boss-material-ad">広告でボス素材を再抽選<small>REWARDED AD</small></button>' : ''}`;
       actions.hidden = !actions.innerHTML;
       if (material && !material.claimed && !material.prompted && !this.resultContinue) {
         material.prompted = true;

@@ -13,4 +13,9 @@ assert.match(game, /dungeon\.midBossId === this\.battleMode[\s\S]*?offerRepeatBo
 assert.match(game, /\['astact', 'ostina'\]\.includes\(this\.battleMode\)[\s\S]*?offerRepeatBossMaterialDrop\(e, firstClear\); return;/, 'D4・D5ボスの再戦勝利でも提案する');
 assert.match(game, /offerRepeatBossMaterialDrop\(enemy, firstClear\)[\s\S]*?if \(firstClear \|\| !enemy/, '初回撃破は素材再抽選の対象外');
 assert.match(game, /setTimeout\(\(\) => \{[\s\S]*?this\.showBossMaterialOffer\(\)/, '再戦リザルトが表示された後に確認POPを開く');
+assert.doesNotMatch(
+  game.match(/renderBossResultActions\(\) \{[\s\S]*?showBossMaterialOffer\(\) \{/)[0],
+  /data-result-action="boss-overdrive"/,
+  'OVERDRIVEは戦闘前の選択だけにする'
+);
 console.log('boss material popup regression: OK');
