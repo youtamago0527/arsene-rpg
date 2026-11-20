@@ -3998,7 +3998,11 @@
       if (!this.jobUI) this.jobUI = { tab: 'job', detailId: null, modal: null, passiveSlotIdx: null, passiveFilter: 'all' };
       const ui = this.jobUI, unlocked = this.jobSystemUnlocked(), currentId = this.profile.currentJob, curJob = D.jobs[currentId];
       const titleTab = this.profile.titleSystem?.unlocked ? `<button class="job-tab${ui.tab === 'title' ? ' active' : ''}" data-job-tab="title">TITLE</button>` : '';
-      const tabBar = `<div class="job-tabs"><button class="job-tab${ui.tab === 'job' ? ' active' : ''}" data-job-tab="job">JOB</button><button class="job-tab${ui.tab === 'abilitySet' ? ' active' : ''}" data-job-tab="abilitySet">ABILITY SET</button>${titleTab}</div>`;
+      const otherWorldAbilities = this.owAbilityReturn === true;
+      if (otherWorldAbilities) { ui.tab = 'abilitySet'; ui.detailId = null; }
+      const tabBar = otherWorldAbilities
+        ? '<div class="job-tabs"><span class="job-tab active">PHANTOM THIEF / ABILITY SET</span></div>'
+        : `<div class="job-tabs"><button class="job-tab${ui.tab === 'job' ? ' active' : ''}" data-job-tab="job">JOB</button><button class="job-tab${ui.tab === 'abilitySet' ? ' active' : ''}" data-job-tab="abilitySet">ABILITY SET</button>${titleTab}</div>`;
       // キャラクターLvは廃止済み。現在のJOBとそのLvを出す。
       const hdr = `<div class="job-hdr"><div class="job-hdr-l"><small>JOB & ABILITY</small><b>${this.playerName()}</b><span>武器学 ${this.weaponTypeName(this.equippedWeaponType())} Lv.${this.masteryOf(this.equippedWeaponType()).level}</span></div><div class="job-hdr-r"><small>現在のJOB</small><strong>${curJob.name} Lv.${this.profile.jobs?.[currentId]?.level || 1}</strong></div></div>`;
       let body;
@@ -4022,7 +4026,9 @@
       };
       if (ui.tab === 'job') { body = ui.detailId ? safeBody(() => this.jobDetailHtml(ui.detailId, unlocked, currentId), `JOB詳細（${D.jobs[ui.detailId]?.name || ui.detailId}）`) : safeBody(() => this.jobListHtml(unlocked, currentId), 'JOB一覧'); }
       else if (ui.tab === 'title' && this.titlePanelHtml) { this.titlePanelSource = 'job'; body = this.titlePanelHtml(); }
-      else { body = this.abilitySetHtml(currentId); }
+      else if (otherWorldAbilities && currentId !== 'phantomThief') {
+        body = '<div class="abset"><p class="jbn-note">異世界のアビリティはファントムシーフで設定できます。</p><button class="jchange-btn" data-lenny="ability-switch-job">ファントムシーフに変更して設定</button></div>';
+      } else { body = this.abilitySetHtml(currentId); }
       let modal = '';
       if (ui.modal === 'skillDetail') modal = this.skillModalHtml(ui.skillDetailId);
       if (ui.modal === 'traitDetail') modal = this.traitModalHtml(ui.traitDetailJob, ui.traitDetailKey);

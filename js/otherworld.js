@@ -987,6 +987,13 @@
       else if (a === 'select') g.renderMenuPanel('otherworld-select');
       else if (a === 'tutorial') { g.ptTutorialPage = 0; g.renderMenuPanel('phantom-tutorial'); }
       else if (a === 'abilities') g.openOwAbilitySettings();
+      else if (a === 'ability-switch-job') {
+        if (!g.isJobUnlocked('phantomThief')) return;
+        g.profile.otherWorldReturnJob ||= g.profile.currentJob;
+        g.profile.lastNormalJob = g.profile.currentJob;
+        g.switchJobState('phantomThief', false);
+        g.renderMenuPanel('job');
+      }
       else if (a === 'ability-back') { g.owAbilityReturn = false; g.renderMenuPanel(g.owAbilityFrom || 'otherworld'); }
       else if (a === 'ability-dive') {
         g.owAbilityReturn = false;
