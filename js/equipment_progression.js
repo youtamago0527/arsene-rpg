@@ -337,8 +337,8 @@
   };
   D.equipmentCollections = {};
   for (const [dungeonId, [id, name, nameEn, bonuses]] of Object.entries(collectionRewards)) {
-    addArmor(id, { name, nameEn, dungeonId, catalogDungeon: dungeonId, slot: 'accessory', stars: 4, rarity: 'epic', source: 'collection', bonuses, magicDefensePower: 12 + dungeonRank[dungeonId] * 4, description: `${dungeonId.toUpperCase().replace('UNGEON', 'UNGEON ')}の怪異遺装をすべて盗み取った証。` });
-    D.equipmentCollections[dungeonId] = { id: `${dungeonId}_monster_equipment`, name: `${dungeonId.toUpperCase().replace('DUNGEON', 'D')} 怪異装備蒐集`, itemIds: [...new Set(monsterGearByDungeon[dungeonId])], rewardItemId: id };
+    addArmor(id, { name, nameEn, dungeonId, catalogDungeon: dungeonId, slot: 'accessory', stars: 4, rarity: 'epic', source: 'collection', bonuses, magicDefensePower: 12 + dungeonRank[dungeonId] * 4, description: `${dungeonId.toUpperCase().replace('UNGEON', 'UNGEON ')}の装備をすべて集めた証。` });
+    D.equipmentCollections[dungeonId] = { id: `${dungeonId}_monster_equipment`, name: `${dungeonId.toUpperCase().replace('DUNGEON', 'D')} 装備蒐集`, itemIds: [...new Set(monsterGearByDungeon[dungeonId])], rewardItemId: id };
   }
 
   // D1ボス：器用さ主軸＋魔力。魔奏士が最大活用し、魔導士にも有効。
