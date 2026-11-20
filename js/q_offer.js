@@ -115,7 +115,12 @@
     hasAdSkip() { return hasAdSkip(game()); },
     adSkipTickets() { return Math.max(0, Number(premium(game())?.adSkipTickets) || 0); },
     isOpen() { return !!activeModal || offerInFlight; },
-    closeActive(options = {}) { offerGeneration++; offerInFlight = false; return closeActiveModal(options); },
+    closeActive(options = {}) {
+      // 戦闘終了などの画面掃除が、視聴済み広告の報酬待ちを取り消さないようにする。
+      if (!activeModal) return false;
+      offerGeneration++;
+      return closeActiveModal(options);
+    },
     bonus(type) { const g = game(); return g ? Number(state(g)[`${type}Bonus`] || 0) : 0; },
     show(type = 'auto2', extra = {}) {
       const g = game(); if (!canUse(g, type)) return false;
@@ -165,6 +170,7 @@
       if (type === 'otherworld') s.otherworldBonus = Number(s.otherworldBonus || 0) + 1;
       // 保護とボス素材は発生した瞬間に効果を適用する。後で消費するトークンは保持しない。
       save(g); api.indicator();
+      if (type === 'auto2' && g.autoBattle) g.autoBattleSpeedIndex = g.autoBattleSpeedSteps().length - 1;
       if (type === 'auto2' || type === 'sweep') { g.renderBattleMenu?.(); g.showMainCommands?.(); }
       if (type === 'exp2' || type === 'gold2') {
         g.renderMenuSummary?.();
