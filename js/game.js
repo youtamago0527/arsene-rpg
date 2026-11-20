@@ -4770,8 +4770,12 @@
     }
     collectionState(dungeonId) {
       const def = D.equipmentCollections?.[dungeonId], found = new Set(this.profile.equipmentArchive || []);
-      const collected = (def?.itemIds || []).filter(id => found.has(id));
-      return { def, collected, complete: !!def && collected.length === def.itemIds.length, claimed: !!this.profile.collectionRewards?.[dungeonId] };
+      const itemIds = this.equipmentArchiveItems(dungeonId).map(item => item.id);
+      const collected = itemIds.filter(id => found.has(id));
+      return { def, itemIds, collected, complete: !!def && itemIds.length > 0 && collected.length === itemIds.length, claimed: !!this.profile.collectionRewards?.[dungeonId] };
+    }
+    equipmentArchiveItems(dungeonId) {
+      return Object.values(D.items || {}).filter(item => this.isPlayerContentVisible(item) && item.category === 'equipment' && item.catalogDungeon === dungeonId && !item.legacy && item.source !== 'collection');
     }
     claimEquipmentCollection(dungeonId) {
       const state = this.collectionState(dungeonId); if (!state.complete || state.claimed) return;
@@ -4781,7 +4785,7 @@
     }
     renderEquipmentArchive(panel, dungeons, dunId, tabs) {
       const found = new Set(this.profile.equipmentArchive || []), collection = this.collectionState(dunId), reward = D.items[collection.def?.rewardItemId];
-      const all = Object.values(D.items || {}).filter(item => this.isPlayerContentVisible(item) && item.category === 'equipment' && item.catalogDungeon === dunId && !item.legacy && item.source !== 'collection');
+      const all = this.equipmentArchiveItems(dunId);
       const order = { workshop: 1, dropOnly: 2, boss: 3 };
       all.sort((a, b) => (a.stars || 0) - (b.stars || 0) || (order[a.source] || 9) - (order[b.source] || 9) || a.name.localeCompare(b.name, 'ja'));
       const sourceLabel = item => item.source === 'boss' ? 'BOSS' : item.source === 'dropOnly' ? 'DROP ONLY' : item.source === 'secretGuitar' ? 'SECRET GUITAR' : 'WORKSHOP';
@@ -4790,8 +4794,8 @@
         const unknownHint = item.source === 'secretGuitar' ? (item.archiveHint || '入手経路不明。') : '未収集の装備です。怪異討伐または工房製作で記録されます。';
         return `<article class="equipment-archive-card rarity-${item.rarity} ${known ? 'collected' : 'unknown'}"><header><small>${known ? sourceLabel(item) : (item.source === 'secretGuitar' ? 'UNKNOWN SIGNAL' : 'UNKNOWN')}</small><b>${known ? item.name : '？？？？？？'}</b><em>${known ? stars : '？'}</em></header>${known ? `<strong>${this.bonusText(item.id)}</strong><p>${item.description}</p><span>${def?.weaponType ? this.weaponTypeName(def.weaponType) : (D.equipmentSlots || []).find(s => s.id === item.slot)?.name || '装備'}</span>` : `<p>${unknownHint}</p>`}</article>`;
       }).join('');
-      const current = collection.collected.length, total = collection.def?.itemIds?.length || 0, pct = total ? Math.round(current / total * 100) : 0;
-      const collectionHtml = collection.def ? `<section class="equipment-collection ${collection.complete ? 'complete' : ''}"><header><div><small>MONSTER EQUIPMENT COLLECTION</small><b>${collection.def.name}</b></div><strong>${pct}%</strong></header><p>このダンジョンの★4怪異装備をすべて入手すると報酬を獲得できます。</p><div><span>COMPLETE REWARD</span><b>${reward?.name || '？？？'}　★★★★</b><button data-claim-equipment-collection="${dunId}" ${collection.complete && !collection.claimed ? '' : 'disabled'}>${collection.claimed ? '受取済み' : collection.complete ? '報酬を受け取る' : '未達成'}</button></div></section>` : '';
+      const current = collection.collected.length, total = collection.itemIds.length, pct = total ? Math.round(current / total * 100) : 0;
+      const collectionHtml = collection.def ? `<section class="equipment-collection ${collection.complete ? 'complete' : ''}"><header><div><small>MONSTER EQUIPMENT COLLECTION</small><b>${collection.def.name}</b></div><strong>${pct}%</strong></header><p>このダンジョンの図鑑に載る全装備を、レア度に関係なく入手すると報酬を獲得できます。（${current} / ${total}）</p><div><span>COMPLETE REWARD</span><b>${reward?.name || '？？？'}　★★★★</b><button data-claim-equipment-collection="${dunId}" ${collection.complete && !collection.claimed ? '' : 'disabled'}>${collection.claimed ? '受取済み' : collection.complete ? '報酬を受け取る' : '未達成'}</button></div></section>` : '';
       panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>PHANTOM ARCHIVE</small><h2>図鑑</h2>${this.archiveModeTabsHTML()}<div class="item-tabs ar-tabs">${tabs}</div>${collectionHtml}<p class="ar-hint">装備記録 ${all.filter(item => found.has(item.id)).length} / ${all.length}　—　未収集装備は「？」で表示されます。</p><div class="equipment-archive-list">${cards || '<p class="item-empty">このダンジョンの装備記録はありません。</p>'}</div>`;
     }
     renderArchivePanel(panel) {
