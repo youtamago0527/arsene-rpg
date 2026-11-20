@@ -959,7 +959,17 @@
     // 表示用：効果テキストの数値を、転生で伸びた現在値に差し替える。
     // 「力 +5%」→ 転生2回なら「力 +9%（転生+4%）」のように出す。
     passiveCurrentText(passive) {
-      const e = passive?.passiveEffect; if (!e) return passive?.effectText || ''; if (!e.rate) { const rank = this.passiveEnhancementRank(passive.id); return rank ? ((passive?.effectText || '') + '（転生強化 段階' + rank + '）') : (passive?.effectText || ''); }
+      const e = passive?.passiveEffect; if (!e) return passive?.effectText || '';
+      const rank = this.passiveEnhancementRank(passive.id);
+      if (!e.rate) {
+        if (!rank) return passive?.effectText || '';
+        const labels = { damagePerStack: '連舞1段階の与ダメ', maxCriticalBonus: 'MAX時の会心', comboBonusOnCritical: '左手会心時の連舞追加', agiRate: 'MAX時の素早さ', offHandRate: 'MAX時の左手追撃', chance: '発動率', healRate: '再生量' };
+        const values = Object.keys(e.rebirthSteps || e.rebirthStatSteps || {}).map(key => {
+          const value = this.passiveValue(passive, key);
+          return `${labels[key] || key} ${key === 'comboBonusOnCritical' ? `+${value}` : `+${Number((value * 100).toFixed(1))}%`}`;
+        });
+        return `${passive?.effectText || ''}（転生強化 Lv.${rank}${values.length ? `：${values.join('／')}` : ''}）`;
+      }
       const base = e.rate, cur = this.passiveRate(passive), text = passive.effectText || '';
       const basePct = Math.round(base * 100), curPct = Math.round(cur * 100);
       // 「HP50%以下で〜 +10%」のように%が複数ある文があるので、
@@ -969,7 +979,11 @@
       if (signed.test(text)) label = text.replace(signed, (_, s) => `${s}${curPct}%`);
       else label = text.replace(new RegExp(`${basePct}%(?![\\s\\S]*\\d%)`), `${curPct}%`);
       const gain = curPct - basePct;
-      return gain > 0 ? `${label}（転生 +${gain}%）` : label;
+      const extra = rank ? Object.keys(e.rebirthSteps || {}).filter(key => key !== 'rate').map(key => {
+        const value = this.passiveValue(passive, key);
+        return `${key === 'comboBonusOnCritical' ? '左手会心時の連舞追加' : key} ${key === 'comboBonusOnCritical' ? `+${value}` : `+${Number((value * 100).toFixed(1))}%`}`;
+      }) : [];
+      return rank ? `${label}（転生強化 Lv.${rank}${gain > 0 ? `、+${gain}%` : '、効果上限'}${extra.length ? `／${extra.join('／')}` : ''}）` : label;
     }
     applyPassiveStats(total) {
       for (const p of this.activePassives()) {
@@ -4062,7 +4076,7 @@
       // パッシブ発動中だけ開く専用技（魔奏士のスフォルツァンド等）。
       // 技自体はどのテーブルにも載っていないので、バフ元パッシブの習得Lvに紐づけて並べる。
       this.conditionalSkillsForJob(jobId).forEach(({ skill, level }) => abilityEntries.push([level, skill.id]));
-      const skillRows = abilityEntries.sort((a, b) => a[0] - b[0]).map(([lv, id]) => { const s = D.skills[id], learned = this.jobAbilityLearned(jobId, id, lv), cond = s?.requiresBuff ? this.buffSourceName(jobId, s.requiresBuff) : ''; return `<button class="jar${learned ? ' learned' : ' locked'}${cond ? ' jar-cond' : ''}"${learned ? ` data-job-skill-detail="${id}"` : ''}><span class="jar-lv">Lv.${lv}</span><span class="jar-nm">${s?.name || id}</span><em class="jar-type">${s?.type === 'PASSIVE' ? 'P' : 'A'}</em><small class="jar-st">${learned ? (cond ? `《${cond}》中` : '習得済') : 'LOCK'}</small></button>`; }).join('');
+      const skillRows = abilityEntries.sort((a, b) => a[0] - b[0]).map(([lv, id]) => { const s = D.skills[id], learned = this.jobAbilityLearned(jobId, id, lv), cond = s?.requiresBuff ? this.buffSourceName(jobId, s.requiresBuff) : '', rank = s?.type === 'PASSIVE' ? this.passiveEnhancementRank(id) : 0; return `<button class="jar${learned ? ' learned' : ' locked'}${cond ? ' jar-cond' : ''}"${learned ? ` data-job-skill-detail="${id}"` : ''}><span class="jar-lv">Lv.${lv}</span><span class="jar-nm">${s?.name || id}</span><em class="jar-type">${s?.type === 'PASSIVE' ? 'P' : 'A'}</em><small class="jar-st">${learned ? (rank ? `強化 Lv.${rank}` : cond ? `《${cond}》中` : '習得済') : 'LOCK'}</small></button>`; }).join('');
       let condHtml = '';
       if (!avail && j.unlockCondition) { const c = j.unlockCondition, bOk = c.bossDefeated ? this.isBossDefeated(c.bossDefeated) : true, bName = c.bossDefeated ? (D.enemies[c.bossDefeated]?.name || c.bossDefeated) : ''; const jcs = Object.entries(c.jobLevels || {}).map(([rid, rlv]) => { const cur = this.profile.jobs[rid]?.level || 0, ok = cur >= rlv; return `<div class="cond-row${ok ? ' ok' : ' ng'}"><b>${ok ? '✓' : '✕'} ${D.jobs[rid]?.name || rid} Lv${rlv}</b><small>現在 Lv.${cur}</small></div>`; }).join(''); condHtml = `<div class="jconds"><h4>解放条件</h4>${bName ? `<div class="cond-row${bOk ? ' ok' : ' ng'}"><b>${bOk ? '✓' : '✕'} ${bName}を撃破</b></div>` : ''}${jcs}</div>`; }
       // ファントムシーフは自分では育たないので、代わりに「他JOBから盗んだ能力」を出す。
@@ -4109,11 +4123,11 @@
       const sigHtml = sig ? `<div class="abset-block"><h4 class="abset-h">JOB SKILL <span>SIGNATURE</span></h4><div class="ab-row ab-static" data-job-skill-detail="${sig.id}"><div class="ab-val filled"><div><b>${sig.name}</b><small>${sig.effectText || sig.description || ''}</small></div></div></div></div>` : '';
       // JOB PASSIVE：現在ジョブでLv5/10/15到達により習得済みのもの
       const levels = this.gb().jobPassiveLevels || [5, 10, 15];
-      const jobPassiveRows = Object.entries(job?.passiveUnlocks || {}).map(([lv, id]) => { const s = D.skills[id], ok = this.jobAbilityLearned(currentId, id, lv); return `<div class="per-row${ok ? ' learned' : ' locked'}"${ok ? ` data-job-skill-detail="${id}"` : ''}><span>Lv.${lv}</span><b>${s?.name || id}</b><em>PASSIVE</em><small>${ok ? '習得済' : `Lv.${lv}で習得`}</small></div>`; }).join('') || '<p class="modal-empty">このJOBにパッシブはありません</p>';
+      const jobPassiveRows = Object.entries(job?.passiveUnlocks || {}).map(([lv, id]) => { const s = D.skills[id], ok = this.jobAbilityLearned(currentId, id, lv), rank = this.passiveEnhancementRank(id); return `<div class="per-row${ok ? ' learned' : ' locked'}"${ok ? ` data-job-skill-detail="${id}"` : ''}><span>Lv.${lv}</span><b>${s?.name || id}</b><em>PASSIVE</em><small>${ok ? (rank ? `強化 Lv.${rank}` : '習得済') : `Lv.${lv}で習得`}</small></div>`; }).join('') || '<p class="modal-empty">このJOBにパッシブはありません</p>';
       // EQUIP PASSIVE：他ジョブで習得したパッシブを装備する枠（通常1／PT2）
       const slotCount = this.passiveSlotCount();
       const slots = isPT ? (this.profile.ptPassiveSlots || []) : (this.profile.equippedPassives || []);
-      const equipRows = Array.from({ length: slotCount }, (_, i) => { const s = slots[i] ? D.skills[slots[i]] : null; return `<button class="ab-row ab-btn" data-open-modal="passive${i}"><div class="ab-lbl"><small>EQUIP PASSIVE ${slotCount > 1 ? i + 1 : ''}</small><span>他JOBで習得したパッシブ</span></div><div class="ab-val${s ? ' filled' : ''}"><div>${s ? `<b>${s.name}</b><small>${s.effectText || ''}</small>` : '<b>────</b><small>未設定</small>'}</div><em>▶</em></div></button>`; }).join('');
+      const equipRows = Array.from({ length: slotCount }, (_, i) => { const s = slots[i] ? D.skills[slots[i]] : null; return `<button class="ab-row ab-btn" data-open-modal="passive${i}"><div class="ab-lbl"><small>EQUIP PASSIVE ${slotCount > 1 ? i + 1 : ''}</small><span>他JOBで習得したパッシブ</span></div><div class="ab-val${s ? ' filled' : ''}"><div>${s ? `<b>${s.name}</b><small>${this.passiveCurrentText(s)}</small>` : '<b>────</b><small>未設定</small>'}</div><em>▶</em></div></button>`; }).join('');
       // ACTION ABILITY：PHANTOM THIEF専用。通常ジョブでは非表示だがロジックは保持。
       const actionCount = this.actionSlotCount();
       const actionHtml = actionCount ? `<div class="abset-block"><h4 class="abset-h">ACTION ABILITY <span>PHANTOM THIEF</span></h4>${Array.from({ length: actionCount }, (_, i) => { const id = (this.profile.ptActionSlots || [])[i], s = id ? D.skills[id] : null; return `<button class="ab-row ab-btn" data-open-modal="ptAction${i}"><div class="ab-lbl"><small>ACTION ${i + 1}</small><span>MASTERしたJOBの固有スキル</span></div><div class="ab-val${s ? ' filled' : ''}"><div>${s ? `<b>${s.name}</b><small>${s.effectText || ''}</small>` : '<b>────</b><small>未設定</small>'}</div><em>▶</em></div></button>`; }).join('')}</div>` : '';
@@ -4124,7 +4138,7 @@
       const srcs = ['all', ...new Set(passives.map(p => p.source === 'character' ? 'character' : p.jobId).filter(Boolean))];
       const filterHtml = srcs.map(f => { const lbl = f === 'all' ? 'ALL' : f === 'character' ? '蓮' : D.jobs[f]?.name || f; return `<button class="pf-btn${filter === f ? ' active' : ''}" data-passive-filter="${f}">${lbl}</button>`; }).join('');
       const filtered = passives.filter(p => filter === 'all' || (filter === 'character' && p.source === 'character') || p.jobId === filter);
-      const rows = filtered.length ? filtered.map(p => { const sel = cur === p.id, othSel = slots[other] === p.id; return `<button class="modal-row${sel ? ' sel' : ''}${othSel ? ' dis' : ''}" data-set-passive="${slotIdx}:${p.id}" ${othSel ? 'disabled' : ''}><div><b>${p.name}</b><small>${p.effectText || ''}</small></div><em>${sel ? '✓' : ''}</em></button>`; }).join('') : '<p class="modal-empty">習得済みPASSIVEがありません</p>';
+      const rows = filtered.length ? filtered.map(p => { const sel = cur === p.id, othSel = slots[other] === p.id; return `<button class="modal-row${sel ? ' sel' : ''}${othSel ? ' dis' : ''}" data-set-passive="${slotIdx}:${p.id}" ${othSel ? 'disabled' : ''}><div><b>${p.name}</b><small>${this.passiveCurrentText(p)}</small></div><em>${sel ? '✓' : ''}</em></button>`; }).join('') : '<p class="modal-empty">習得済みPASSIVEがありません</p>';
       const clear = cur ? `<button class="modal-row modal-clear" data-set-passive="${slotIdx}:">PASSIVE ${slotIdx + 1}を外す</button>` : '';
       return `<div class="jmodal-bg" data-close-modal><div class="jmodal"><div class="jmodal-hdr"><b>PASSIVE ${slotIdx + 1}</b><button data-close-modal class="jmodal-close">✕</button></div><div class="pf-tabs">${filterHtml}</div><div class="jmodal-body">${rows}${clear}</div></div></div>`;
     }
@@ -4147,7 +4161,7 @@
       const s = D.skills[skillId]; if (!s) return '';
       const src = s.source === 'character' ? '蓮の固有技' : (D.jobs[s.jobId]?.name || '');
       const lv = s.unlockLevel ? `Character Lv.${s.unlockLevel}習得` : s.unlockJobLevel ? `JOB Lv.${s.unlockJobLevel}習得` : '';
-      return `<div class="jmodal-bg" data-close-modal><div class="jmodal skill-modal"><div class="jmodal-hdr"><b>${s.name}</b><button data-close-modal class="jmodal-close">✕</button></div><div class="jmodal-body"><div class="sk-meta"><em class="sk-type">${s.type || 'ACTIVE'}</em>${src ? `<span>${src}</span>` : ''}${lv ? `<span>${lv}</span>` : ''}</div><dl class="sk-stats"><div><dt>消費MP</dt><dd>${s.mp || 0}</dd></div><div><dt>威力</dt><dd>${s.powerText || '－'}</dd></div><div><dt>対象</dt><dd>${({ single: '敵単体', all: '敵全体', self: '自分' })[s.target] || s.target || '－'}</dd></div>${s.hits > 1 ? `<div><dt>HIT</dt><dd>${s.hits}回</dd></div>` : ''}${s.cooldown ? `<div><dt>CT</dt><dd>${s.cooldown}T</dd></div>` : ''}</dl><p class="sk-effect">${s.effectText || ''}</p><p class="sk-desc">${s.description || ''}</p></div></div></div>`;
+      return `<div class="jmodal-bg" data-close-modal><div class="jmodal skill-modal"><div class="jmodal-hdr"><b>${s.name}</b><button data-close-modal class="jmodal-close">✕</button></div><div class="jmodal-body"><div class="sk-meta"><em class="sk-type">${s.type || 'ACTIVE'}</em>${src ? `<span>${src}</span>` : ''}${lv ? `<span>${lv}</span>` : ''}${s.type === 'PASSIVE' ? `<span>転生強化 Lv.${this.passiveEnhancementRank(s.id)}</span>` : ''}</div><dl class="sk-stats"><div><dt>消費MP</dt><dd>${s.mp || 0}</dd></div><div><dt>威力</dt><dd>${s.powerText || '－'}</dd></div><div><dt>対象</dt><dd>${({ single: '敵単体', all: '敵全体', self: '自分' })[s.target] || s.target || '－'}</dd></div>${s.hits > 1 ? `<div><dt>HIT</dt><dd>${s.hits}回</dd></div>` : ''}${s.cooldown ? `<div><dt>CT</dt><dd>${s.cooldown}T</dd></div>` : ''}</dl><p class="sk-effect">${s.type === 'PASSIVE' ? this.passiveCurrentText(s) : (s.effectText || '')}</p><p class="sk-desc">${s.description || ''}</p></div></div></div>`;
     }
     renderDungeonSelect(panel) {
       panel.hidden = false;
