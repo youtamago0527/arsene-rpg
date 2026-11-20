@@ -162,6 +162,15 @@
     d3e: { stars: 3, def: 24, mdef: 22 },
     d4:  { stars: 3, def: 72, mdef: 66 }
   };
+  // ★3アクセは防御値を持たない代わりに、職に応じた能力割合を伸ばす。
+  const accessoryEffects = {
+    d1: { strPercent: .04 },
+    d2: { magPercent: .05 },
+    d2e: { strPercent: .06 },
+    d3: { magPercent: .07 },
+    d3e: { strPercent: .05, magPercent: .05 },
+    d4: { strPercent: .08, magPercent: .08 }
+  };
   for (const [stage, names] of Object.entries(armorNames)) {
     names.forEach((name, index) => {
       const slot = armorSlots[index], id = `forge_${stage}_${slot}`, p = armorPower[stage], dungeonId = dungeonForStage(stage);
@@ -193,7 +202,7 @@
       addArmor(id, {
         name, nameEn: `${stage.toUpperCase()} ${slot.toUpperCase()}`, dungeonId, catalogDungeon: dungeonId,
         slot, stars: p.stars, rarity: rarityFor(p.stars), source: 'workshop',
-        bonuses: profile.bonuses, defensePower: profile.defensePower, magicDefensePower: profile.magicDefensePower,
+        bonuses: profile.bonuses, effects: isAccessory ? accessoryEffects[stage] : {}, defensePower: profile.defensePower, magicDefensePower: profile.magicDefensePower,
         ...(profile.attackPower ? { attackPower: profile.attackPower } : {}),
         description: `${dungeonId.toUpperCase().replace('UNGEON', '')}工房規格。${profile.role}に寄せた装備。`
       });

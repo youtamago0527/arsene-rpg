@@ -41,6 +41,8 @@
 /* レシピカード：説明文を折りたたみ、1枚の高さを詰めて枚数を稼ぐ */
 .recipe-card { gap: 6px !important; padding: 10px !important }
 .recipe-card.can-craft { border-color: #3fd08a !important; box-shadow: 0 0 0 1px #3fd08a33 }
+.recipe-card .recipe-bonus{display:block;padding:8px 10px;border:1px solid #3574a1;background:#071b33;color:#c9efff;font-size:12px;line-height:1.55;font-weight:700}
+.recipe-card .recipe-bonus b{display:block;margin-bottom:2px;color:#67d8ff;font-size:10px;letter-spacing:.08em}
 .recipe-title em { color: #9fe4ff !important }
 .recipe-detail { border-top: 1px solid #123b63; padding-top: 6px }
 .recipe-detail > summary { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 9px; color: #8daac5; cursor: pointer; list-style: none }
