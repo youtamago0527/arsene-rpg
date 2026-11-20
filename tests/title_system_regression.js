@@ -70,6 +70,7 @@ global.BattleGame = BattleGame;
 global.window = { BattleGame };
 global.document = { addEventListener() {}, querySelector() { return null; }, createElement() { return {}; }, body: { appendChild() {} } };
 global.D = { jobs: { warrior: { name: '戦士' }, phantomThief: { name: 'ファントムシーフ' } } };
+window.ARSENE_DATA = D;
 
 const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'title_system.js'), 'utf8');
 vm.runInThisContext(source, { filename: 'title_system.js' });
@@ -182,4 +183,30 @@ unlockGame.checkCollectionTitleUnlocks('dungeon2');
 assert.deepEqual(unlockGame.profile.titleSystem.acquiredCollection.sort(), ['d1_collection_gold', 'd2_collection_exp'].sort(), '別ダンジョンの図鑑称号は対応するダンジョンIDでのみ付与される');
 assert.equal(helpPopups, 1, '2個目以降の称号では初回HELPを繰り返さない');
 
-console.log('title_system_regression: PASS');
+// The title preview appears once after OD I; the acquired title appears once after OD II.
+const popupGame = new BattleGame();
+D.enemies = { zenakado: { id: 'zenakado' } };
+const popups = [], results = [];
+popupGame.showBossTitlePopup = options => { popups.push(options); options.onClose?.(); };
+popupGame.showResult = (...args) => results.push(args);
+popupGame.offerRepeatBossMaterialDrop = () => {};
+async function checkOverdrivePopups() {
+  popupGame.activeBossOverdrive = { bossId: 'zenakado', level: 1 };
+  await popupGame.finishBossOverdriveVictory('reward');
+  assert.equal(popups.length, 1, 'OD I初回で次の称号報酬を案内する');
+  assert.match(popups[0].copy, /OVERDRIVE IIを初めて撃破すると/, '称号の入手条件を明示する');
+  assert.equal(popups[0].preview, true, '未獲得の称号を獲得済みとして表示しない');
+  popupGame.activeBossOverdrive = { bossId: 'zenakado', level: 1 };
+  await popupGame.finishBossOverdriveVictory('reward');
+  assert.equal(popups.length, 1, 'OD I再撃破では解放案内を繰り返さない');
+  popupGame.activeBossOverdrive = { bossId: 'zenakado', level: 2 };
+  await popupGame.finishBossOverdriveVictory('reward');
+  const firstTitlePopupCount = popups.length;
+  assert.ok(firstTitlePopupCount > 1, 'OD II初回で称号取得を案内する');
+  popupGame.activeBossOverdrive = { bossId: 'zenakado', level: 2 };
+  await popupGame.finishBossOverdriveVictory('reward');
+  assert.equal(popups.length, firstTitlePopupCount, 'OD II再撃破では称号POPを繰り返さない');
+  assert.equal(results.at(-1)[2], 'OVERDRIVE II COMPLETE', 'OD II再撃破の結果画面を称号獲得と表示しない');
+  console.log('title_system_regression: PASS');
+}
+checkOverdrivePopups().catch(error => { console.error(error); process.exitCode = 1; });

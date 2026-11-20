@@ -327,11 +327,11 @@
     return drops;
   };
 
-  proto.showBossTitlePopup = function ({ title, kicker, copy, detail, onClose }) {
+  proto.showBossTitlePopup = function ({ title, kicker, copy, detail, preview = false, onClose }) {
     document.querySelector('.boss-title-popup')?.remove();
     const modal = document.createElement('div');
     modal.className = 'q-offer-modal q-offer-defeat boss-title-popup';
-    modal.innerHTML = `<div class="q-offer-card q-revive-card boss-overdrive-copy" role="dialog" aria-label="称号獲得"><small class="q-revive-tag"><i></i>${kicker}</small><h2>${title}</h2><p>${copy}</p><div class="q-revive-details"><div><span><i></i>JOB Lv.UP BONUS</span><b>${detail}</b></div><div><span><i></i>成長の所属</span><b>現在のJOB</b></div></div><button class="q-offer-watch" data-title-close><span>確認する</span></button></div>`;
+    modal.innerHTML = `<div class="q-offer-card q-revive-card boss-overdrive-copy" role="dialog" aria-label="${preview ? '次の称号報酬' : '称号獲得'}"><small class="q-revive-tag"><i></i>${kicker}</small><h2>${title}</h2><p>${copy}</p><div class="q-revive-details"><div><span><i></i>${preview ? 'NEXT CLEAR REWARD' : 'JOB Lv.UP BONUS'}</span><b>${detail}</b></div><div><span><i></i>${preview ? '入手条件' : '成長の所属'}</span><b>${preview ? 'OVERDRIVE II 初回撃破' : '現在のJOB'}</b></div></div><button class="q-offer-watch" data-title-close><span>確認する</span></button></div>`;
     document.body.appendChild(modal);
     modal.addEventListener('click', event => { if (!event.target.closest('[data-title-close]')) return; modal.remove(); onClose?.(); });
   };
@@ -339,6 +339,7 @@
   proto.finishBossOverdriveVictory = async function (rewardBlock) {
     const active = this.activeBossOverdrive, def = this.bossTitleDefinition(active?.bossId); if (!active || !def) return;
     const level = active.level, progress = this.bossOverdriveProgress(def.bossId);
+    const firstOd1 = level === 1 && !progress.od1Cleared;
     let acquired = null;
     if (level === 1) { progress.od1Cleared = true; progress.od2Unlocked = true; }
     if (level === 2) { progress.od2Cleared = true; acquired = this.acquireBossTitle(def.bossId); }
@@ -346,11 +347,12 @@
     this.saveProfile();
     this.activeBossOverdrive = null;
     const finish = () => {
-      this.showResult(`OVERDRIVE ${level === 2 ? 'II' : 'I'} CLEARED`, `${def.bossName}の超越戦を制した。`, level === 2 ? 'TITLE ACQUIRED' : 'OVERDRIVE II UNLOCKED', rewardBlock);
+      this.showResult(`OVERDRIVE ${level === 2 ? 'II' : 'I'} CLEARED`, `${def.bossName}の超越戦を制した。`, level === 2 ? (acquired?.first ? 'TITLE ACQUIRED' : 'OVERDRIVE II COMPLETE') : (firstOd1 ? 'OVERDRIVE II UNLOCKED' : 'OVERDRIVE I COMPLETE'), rewardBlock);
       this.offerRepeatBossMaterialDrop?.(D.enemies[def.bossId], false);
     };
     if (level === 1) {
-      this.showBossTitlePopup({ title: 'OVERDRIVE II UNLOCKED', kicker: "Q'S CHALLENGE", copy: 'Q「……まだ先があるよ。」', detail: `${def.name} // ${def.statLabel}+1`, onClose: finish });
+      if (!firstOd1) { finish(); return; }
+      this.showBossTitlePopup({ title: '次の挑戦で称号を獲得', kicker: 'OVERDRIVE II UNLOCKED', copy: `OVERDRIVE IIを初めて撃破すると、称号「${def.name}」を獲得できます。`, detail: `${def.name} // JOB Lv.UP時 ${def.statLabel}+1`, preview: true, onClose: finish });
       return;
     }
     const showUnlock = () => {
@@ -363,7 +365,8 @@
         onClose: finish
       });
     };
-    const show = () => this.showBossTitlePopup({ title: acquired?.first ? `TITLE ACQUIRED　${def.name}` : `TITLE CLEARED　${def.name}`, kicker: 'OVERDRIVE II COMPLETE', copy: `Q「その力、肩書きだけで終わらせないでよ。」`, detail: `${def.statLabel} +1`, onClose: showUnlock });
+    if (!acquired?.first) { finish(); return; }
+    const show = () => this.showBossTitlePopup({ title: `TITLE ACQUIRED　${def.name}`, kicker: 'OVERDRIVE II COMPLETE', copy: `Q「その力、肩書きだけで終わらせないでよ。」`, detail: `${def.statLabel} +1`, onClose: showUnlock });
     if (typeof this.playNoiseSequence === 'function') this.playNoiseSequence([{ sys: 'NOISE...' }, { who: 'Q', text: 'その力、肩書きだけで終わらせないでよ。' }], { onClose: show });
     else show();
   };
