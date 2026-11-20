@@ -111,6 +111,11 @@ assert.equal(game.profile.titleGrowthGained.warrior.mag, phantomBefore, 'PHANTOM
 
 game.pendingBossOverdrive = { key: 'zenakado', level: 1 };
 assert.deepEqual(game.applyBossOverdriveStats('zenakado', { maxHp: 100, atk: 20, kind: 'boss' }), { maxHp: 200, atk: 40, kind: 'boss' });
+game.battleMode = 'zenakado';
+D.items = { bossMaterial: { category: 'material' }, bossEquipment: { category: 'equipment' } };
+game.traitDropRateBonus = () => 0;
+const bossDrops = { dropTable: [{ itemId: 'bossMaterial', chance: 1 }, { itemId: 'bossEquipment', chance: 1 }] };
+assert.deepEqual(game.rollDrops(bossDrops), [['bossMaterial', 2], ['bossEquipment', 1]], 'OD Iは素材数だけ2倍、装備は1個');
 game.battleMode = 'slime';
 assert.deepEqual(game.rollDrops({ dropTable: [{ itemId: 'overdrive-drop', chance: 1 }] }), [['normal-drop', 1]], '敗北後もOVERDRIVE倍率を別の通常戦へ持ち越さない');
 assert.equal(game.handleBossOverdriveVictory('<div>normal reward</div>'), false, '敗北後の雑魚勝利をOVERDRIVE撃破として扱わない');
@@ -118,6 +123,8 @@ assert.equal(game.activeBossOverdrive, null, '別戦闘へ残ったOVERDRIVE挑�
 game.bossOverdriveProgress('zenakado').od2Unlocked = true;
 game.pendingBossOverdrive = { key: 'zenakado', level: 2 };
 assert.deepEqual(game.applyBossOverdriveStats('zenakado', { maxHp: 100, atk: 20 }), { maxHp: 400, atk: 80 });
+game.battleMode = 'zenakado';
+assert.deepEqual(game.rollDrops(bossDrops), [['bossMaterial', 4], ['bossEquipment', 1]], 'OD IIは素材数だけ4倍、装備は1個');
 
 assert.deepEqual(
   Object.fromEntries(Object.entries(window.ArseneTitleSystem.bossTitles).map(([boss, title]) => [boss, title.stat])),

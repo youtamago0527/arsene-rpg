@@ -271,7 +271,7 @@
     const modal = document.createElement('div');
     modal.className = 'q-offer-modal q-offer-defeat boss-overdrive-modal';
     const rematchReady = this.rematchProgress(bossId).ready;
-    modal.innerHTML = `<div class="q-offer-card q-revive-card boss-overdrive-copy" role="dialog" aria-label="ボス超越戦"><button class="q-offer-close" data-od-close>✕ CLOSE</button><small class="q-revive-tag"><i></i>Q'S CHALLENGE</small><h2>BOSS OVERDRIVE</h2><span class="od-boss">${def.bossName}</span><p>Q「勝ったくらいで、終わったと思った？」</p><div class="boss-overdrive-actions"><button data-od-level="0" ${rematchReady ? '' : 'disabled'}>通常再戦<span>${rematchReady ? 'NORMAL REMATCH' : '通常再戦は5戦後に解放'}</span></button><button class="danger" data-od-level="1">OVERDRIVE I　×2<span>広告を見て挑戦 / OD II UNLOCK</span></button><button class="od2" data-od-level="2" ${progress.od2Unlocked ? '' : 'disabled'}>OVERDRIVE II　×4<span>${progress.od2Unlocked ? `広告を見て挑戦 / ${def.name}` : 'LOCKED // CLEAR OVERDRIVE I'}</span></button><button class="close" data-od-close>戻る<span>CANCEL</span></button></div></div>`;
+    modal.innerHTML = `<div class="q-offer-card q-revive-card boss-overdrive-copy" role="dialog" aria-label="ボス超越戦"><button class="q-offer-close" data-od-close>✕ CLOSE</button><small class="q-revive-tag"><i></i>Q'S CHALLENGE</small><h2>BOSS OVERDRIVE</h2><span class="od-boss">${def.bossName}</span><p>Q「勝ったくらいで、終わったと思った？」</p><div class="boss-overdrive-actions"><button data-od-level="0" ${rematchReady ? '' : 'disabled'}>通常再戦<span>${rematchReady ? 'NORMAL REMATCH' : '通常再戦は5戦後に解放'}</span></button><button class="danger" data-od-level="1">OVERDRIVE I　×2<span>広告を見て挑戦 / DROP率×4・素材数×2</span></button><button class="od2" data-od-level="2" ${progress.od2Unlocked ? '' : 'disabled'}>OVERDRIVE II　×4<span>${progress.od2Unlocked ? `広告を見て挑戦 / DROP率×4・素材数×4 / ${def.name}` : 'LOCKED // CLEAR OVERDRIVE I'}</span></button><button class="close" data-od-close>戻る<span>CANCEL</span></button></div></div>`;
     document.body.appendChild(modal);
     modal.addEventListener('click', event => {
       if (event.target.closest('[data-od-close]')) { modal.remove(); return; }
@@ -322,7 +322,7 @@
     const bonus = this.traitDropRateBonus(), drops = [];
     (enemy.dropTable || []).forEach(drop => {
       const chance = Math.min(1, ((Number(drop.chance) || 0) + bonus) * 4);
-      if (Math.random() < chance) drops.push([drop.itemId, 1]);
+      if (Math.random() < chance) drops.push([drop.itemId, D.items?.[drop.itemId]?.category === 'material' ? (active.level === 2 ? 4 : 2) : 1]);
     });
     return drops;
   };
