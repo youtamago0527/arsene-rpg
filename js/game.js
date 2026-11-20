@@ -2828,6 +2828,7 @@
       let skill = D.skills[skillId]; const aoe = skill?.target === 'all' || skill?.randomTarget, self = skill?.target === 'self';
       if (skillId === 'resonanceBreak' && (!this.resonanceEnabled() || !(this.player?.resonance > 0))) return;
       if (this.locked || !skill || this.cooldownRemaining(skill) > 0 || !this.canPaySkillCosts(skill) || !this.skillEquipmentReady(skill) || (!self && (aoe ? !this.enemies.some(e => e.alive) : !this.enemies[targetIndex]?.alive))) return;
+      if (!this.skillBuffReady(skill)) { this.setLog(`${skill.name}は必要なバフが発動していないため使えない。`); this.clearTargets(); this.showMainCommands(); return; }
       this.lastBattleAction = { type: 'skill', skillId, targetIndex };
       if (skillId === 'resonanceBreak') { const stored = this.player.resonance; skill = { ...skill, resonanceStored: stored, power: this.resonanceMultiplier(stored) }; this.player.resonance = 0; this.flashTitle('RESONANCE BREAK', `${stored.toFixed(1)}% // ×${skill.power}`); }
       this.locked = true; this.clearTargets(); this.keepAutoControlVisible(); $('#phase-label').textContent = 'ACTION'; await this.beginPlayerTurn(); const setEffects = this.activeSetEffects(), freeMp = skill.kind === 'magical' && skill.mp > 0 && Math.random() < (setEffects.freeMagicMpChance || 0); if (this.skillMpCost(skill) > 0) this.usedMpThisBattle = true; if (!freeMp) this.player.mp -= this.skillMpCost(skill); else this.flashTitle('MAESTRO', 'MP COST 0'); if (skill.cooldown) this.player.cooldowns[skill.id] = this.turn + skill.cooldown; this.persistVitals(); this.updateHUD();
@@ -3525,7 +3526,7 @@
       if (last.type === 'guard') { this.guardAction(); return; }
       if (last.type === 'item') { this.useConsumable(last.itemId); return; }
       const skill = D.skills[last.skillId];
-      if (!skill || this.cooldownRemaining(skill) > 0 || !this.canPaySkillCosts(skill) || !this.skillEquipmentReady(skill)) { this.setLog('直前の行動は現在の状態では再実行できない。'); return; }
+      if (!skill || this.cooldownRemaining(skill) > 0 || !this.canPaySkillCosts(skill) || !this.skillEquipmentReady(skill) || !this.skillBuffReady(skill)) { this.setLog('直前の行動は現在の状態では再実行できない。'); return; }
       const noTarget = skill.target === 'all' || skill.target === 'self' || skill.randomTarget;
       const targetIndex = noTarget ? -1 : (this.enemies[last.targetIndex]?.alive ? last.targetIndex : this.enemies.findIndex(enemy => enemy.alive));
       if (!noTarget && targetIndex < 0) { this.setLog('再行動の対象がいない。'); return; }
