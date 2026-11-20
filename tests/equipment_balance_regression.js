@@ -15,9 +15,9 @@ for (const file of [
 const D = context.window.ARSENE_DATA;
 const gear = id => D.weapons[id] || D.armors[id] || D.accessories[id];
 for (const [stage, expected] of Object.entries({
-  d1: { strPercent: .04 }, d2: { magPercent: .05 }, d2e: { strPercent: .06 },
-  d3: { magPercent: .07 }, d3e: { strPercent: .05, magPercent: .05 },
-  d4: { strPercent: .08, magPercent: .08 }
+  d1: { physicalDamageReductionPercent: .03 }, d2: { magicDamageReductionPercent: .04 },
+  d2e: { mpCostReductionFlat: 1 }, d3: { receivedHealingPercent: .06 },
+  d3e: { victoryMpRestorePercent: .03 }, d4: { receivedCriticalDamageReductionPercent: .12 }
 })) {
   const effects = D.accessories[`forge_${stage}_accessory`]?.effects || {};
   for (const [key, value] of Object.entries(expected)) assert.strictEqual(effects[key], value, `${stage}アクセの${key}が効かない`);
@@ -54,7 +54,22 @@ for (const enemy of Object.values(D.enemies)) {
 }
 
 const gameSource = fs.readFileSync('js/game.js', 'utf8');
-assert(gameSource.includes('this.applyEquipmentStatRates(total, equipment)'), 'アクセの割合補正が能力値へ反映されない');
+context.document = {};
+context.addEventListener = () => {};
+vm.runInContext(gameSource, context, { filename: 'js/game.js' });
+const game = Object.create(context.window.BattleGame.prototype);
+game.profile = { equipment: { accessory: 'forge_d2e_accessory' } };
+game.enchantLevel = () => 0;
+game.passiveEffectRate = () => 0;
+assert.strictEqual(game.skillMpCost({ mp: 6, source: 'job' }), 5, 'JOB魔法のMPが1減らない');
+assert.strictEqual(game.skillMpCost({ mp: 1, source: 'weapon' }), 1, 'MP消費が0になってしまう');
+game.profile.equipment.accessory = 'forge_d3_accessory';
+assert.strictEqual(game.receivedHealAmount(100), 106, '被回復量+6%が反映されない');
+game.profile.equipment.accessory = 'forge_d1_accessory';
+assert.strictEqual(game.equipmentEffectRate('physicalDamageReductionPercent'), .03, '物理軽減が装備から取得できない');
+assert(gameSource.includes("this.equipmentEffectRate('mpCostReductionFlat')"), 'アクセのMP軽減が技コストへ反映されない');
+assert(gameSource.includes("this.equipmentEffectRate('victoryMpRestorePercent')"), 'アクセの勝利時MP回復が発動しない');
+assert(gameSource.includes("this.equipmentEffectRate('receivedCriticalDamageReductionPercent')"), 'アクセの会心対策が発動しない');
 assert(gameSource.includes("if (recipe.dungeonId && !this.isDungeonUnlocked(recipe.dungeonId)) return false;"), '工房のDungeon解放ゲートがない');
 assert(gameSource.includes('if (equipmentHits.length) drops.push('), '装備DROPの1個上限がない');
 

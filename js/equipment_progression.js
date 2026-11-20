@@ -162,14 +162,14 @@
     d3e: { stars: 3, def: 24, mdef: 22 },
     d4:  { stars: 3, def: 72, mdef: 66 }
   };
-  // ★3アクセは防御値を持たない代わりに、職に応じた能力割合を伸ばす。
+  // ★3アクセは基礎能力を持たず、状況に応じて付け替える補助効果を持つ。
   const accessoryEffects = {
-    d1: { strPercent: .04 },
-    d2: { magPercent: .05 },
-    d2e: { strPercent: .06 },
-    d3: { magPercent: .07 },
-    d3e: { strPercent: .05, magPercent: .05 },
-    d4: { strPercent: .08, magPercent: .08 }
+    d1: { physicalDamageReductionPercent: .03 },
+    d2: { magicDamageReductionPercent: .04 },
+    d2e: { mpCostReductionFlat: 1 },
+    d3: { receivedHealingPercent: .06 },
+    d3e: { victoryMpRestorePercent: .03 },
+    d4: { receivedCriticalDamageReductionPercent: .12 }
   };
   for (const [stage, names] of Object.entries(armorNames)) {
     names.forEach((name, index) => {
