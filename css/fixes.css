@@ -226,4 +226,17 @@
 .floor-safe{display:block!important;margin-top:5px;font-size:8px!important;font-weight:900!important;line-height:1.3;color:#64e9ae!important}
 .milestone-popup{flex:1 0 100%;display:grid;gap:7px;padding:16px;text-align:center;background:linear-gradient(135deg,#071c23,#092d24);border:1px solid #4de3a3;box-shadow:0 0 22px #23d99622}.milestone-popup small{font:900 8px Cinzel;letter-spacing:.22em;color:#72e7b4}.milestone-popup strong{font-size:22px;color:#fff}.milestone-popup span{font-size:10px;color:#a8d8c5}.boss-arrival-popup{padding:22px 16px;background:radial-gradient(circle at 50% 110%,#5b0d24,#180711 72%);border-color:#ff3f64;box-shadow:0 0 30px #ff234c55}.boss-arrival-popup small{color:#ff8299}.boss-arrival-popup strong{font-size:27px;text-shadow:0 0 15px #ff345f}.boss-arrival-popup span{color:#f3a9b6}.result-actions{flex:1 0 100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.result-actions button{display:grid;gap:3px;min-height:52px;padding:8px;border:1px solid #36799a;background:#081a2a;color:#fff;font-weight:900;cursor:pointer}.result-actions button small{font:700 6px Cinzel;letter-spacing:.12em;color:#6abadd}.result-actions button.danger{border-color:#ff496a;background:linear-gradient(100deg,#3c0918,#82142c)}.checkpoint-loss{flex:1 0 100%;display:grid;gap:5px;padding:11px;background:#291018;border:1px solid #e95069}.checkpoint-loss small{font:900 7px Cinzel;letter-spacing:.16em;color:#ff8296}.checkpoint-loss b{font-size:13px;color:#fff}.checkpoint-loss span{font-size:9px;color:#eeb5bf}
 @media(max-width:480px){.result-actions{grid-template-columns:1fr}.result-actions button{min-height:44px}.milestone-popup strong{font-size:19px}.boss-arrival-popup strong{font-size:24px}}
+/* Keep optional boss rewards reachable without scrolling the result card. */
+.result-card #boss-result-ad-actions:not([hidden]){position:sticky;bottom:54px;z-index:9;margin:8px 0;background:#030b1b;padding:5px;box-shadow:0 -8px 18px #020713}
+.result-card #boss-result-ad-actions button{touch-action:manipulation;pointer-events:auto}
+/* Status text must remain legible at the iPhone layout size. */
+.st-head2 .st-id2 em,.st-head2 .st-avatar-caption{font-size:12px}
+.st-head2 .st-vit span{font-size:12px}
+.st-section .stat-grid span,.st-section .st-jb,.st-section .st-jb-note,.st-section .st-pt p,.st-section .st-pt-row{font-size:12px}
+.st-section .stat-grid em,.st-section .cbt3-cell small{font-size:10px}
+.st-section .cbt3-cell span{font-size:12px}
+.st-section h3{font-size:16px}
+.st-section .st-jb-row span,.st-section .st-jb-note,.st-section .st-jb-head em,.st-section .st-meter>span{font-size:12px}
+.st-section .st-meter output{font-size:11px}
+@media(max-width:480px){.st-head2 .st-id2 strong{font-size:16px}.st-head2 .st-vit span{font-size:11px}.st-section .stat-grid b{font-size:18px}.st-section .cbt3-cell small{font-size:9px}}
 @media(max-width:760px){.turn-info{position:relative;padding-bottom:14px}.turn-info #checkpoint-label{position:absolute;right:0;bottom:0;margin:0;white-space:nowrap}}
