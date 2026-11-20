@@ -1701,14 +1701,8 @@
     unlockedBossSeries() { return Object.values(D.bossEquipmentSeries || {}).filter(series => this.isBossSeriesUnlocked(series)); }
     equippedSeriesCount(seriesId, equipment = this.profile.equipment) { return Object.values(equipment).filter(id => id && (D.items[id]?.seriesId === seriesId || this.equipmentDefinition(id)?.seriesId === seriesId)).length; }
     activeSetEffects(equipment = this.profile.equipment) { const effects = {}; this.unlockedBossSeries().forEach(series => { const count = this.equippedSeriesCount(series.id, equipment); Object.entries(series.setBonuses || {}).forEach(([needed, bonus]) => { if (count < Number(needed)) return; Object.assign(effects, bonus.effect || {}); /* 本家JOBだけの追加恩恵（§38/§41） */ Object.assign(effects, bonus.jobEffects?.[this.profile.currentJob] || {}); }); }); return effects; }
-    applyEquipmentStatRates(total, equipment) {
-      for (const [key, effect] of [['str', 'strPercent'], ['mag', 'magPercent']]) {
-        const rate = this.equipmentEffectRate(effect, equipment);
-        if (rate > 0 && total[key] > 0) total[key] += Math.max(1, Math.round(total[key] * rate));
-      }
-    }
     totalStats(equipment = this.profile.equipment) {
-      const total = clone(this.profile.baseStats), bonuses = this.equipmentBonuses(equipment), jobBonuses = this.activeJobBonuses(), jobGrowth = this.jobStatBonuses(); Object.entries(bonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobBonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobGrowth).forEach(([k, v]) => total[k] = (total[k] || 0) + v); const setEffects = this.activeSetEffects(equipment); for (const key of ['str', 'vit', 'mag', 'mnd', 'agi', 'dex', 'luk']) { const pct = setEffects[`${key}Percent`] || 0; if (pct) total[key] = Math.max(total[key] + 1, Math.floor(total[key] * (1 + pct / 100))); } const agiPenalty = Math.min(.80, this.shieldAgiPenaltyRate(equipment) + this.jobEquipmentAgiPenaltyRate(equipment)); if (agiPenalty) total.agi = Math.max(1, Math.floor(total.agi * (1 - agiPenalty))); if (setEffects.critBonusFlat) total.critBonus = (total.critBonus || 0) + setEffects.critBonusFlat; if (this.activeMealBuffType() === 'makanai') total.maxHp = Math.ceil(total.maxHp * (1 + (D.foodMenu?.buffs?.makanai?.maxHpRate || .03))); total.critBonus ||= 0; this.applyEquipmentStatRates(total, equipment); this.applyPassiveStats(total); total.def = total.vit; /* 旧互換：def は体力と同義。装備防御力は defensePowerFor() 側で加算する */ /* 強化済みの能力補正は equipmentBonuses()、戦闘値は equipmentCombatStats() で加算する */ return total;
+      const total = clone(this.profile.baseStats), bonuses = this.equipmentBonuses(equipment), jobBonuses = this.activeJobBonuses(), jobGrowth = this.jobStatBonuses(); Object.entries(bonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobBonuses).forEach(([k, v]) => total[k] = (total[k] || 0) + v); Object.entries(jobGrowth).forEach(([k, v]) => total[k] = (total[k] || 0) + v); const setEffects = this.activeSetEffects(equipment); for (const key of ['str', 'vit', 'mag', 'mnd', 'agi', 'dex', 'luk']) { const pct = setEffects[`${key}Percent`] || 0; if (pct) total[key] = Math.max(total[key] + 1, Math.floor(total[key] * (1 + pct / 100))); } const agiPenalty = Math.min(.80, this.shieldAgiPenaltyRate(equipment) + this.jobEquipmentAgiPenaltyRate(equipment)); if (agiPenalty) total.agi = Math.max(1, Math.floor(total.agi * (1 - agiPenalty))); if (setEffects.critBonusFlat) total.critBonus = (total.critBonus || 0) + setEffects.critBonusFlat; if (this.activeMealBuffType() === 'makanai') total.maxHp = Math.ceil(total.maxHp * (1 + (D.foodMenu?.buffs?.makanai?.maxHpRate || .03))); total.critBonus ||= 0; this.applyPassiveStats(total); total.def = total.vit; /* 旧互換：def は体力と同義。装備防御力は defensePowerFor() 側で加算する */ /* 強化済みの能力補正は equipmentBonuses()、戦闘値は equipmentCombatStats() で加算する */ return total;
     }
     getDungeon(id = this.currentDungeonId) { return (D.dungeons || []).find(d => d.id === id) || (D.dungeons || [])[0]; }
     isDungeonUnlocked(id) { const d = this.getDungeon(id); if (!d) return false; if (!d.unlockCondition) return true; const previousBoss = { dungeon1Clear: 'zenacad', dungeon2Clear: 'myrthi', dungeon3Clear: 'seripes', dungeon4Clear: 'astact', dungeon5Clear: 'ostina' }[d.unlockCondition]; return previousBoss ? this.isBossDefeated(previousBoss) : false; }
@@ -2050,7 +2044,7 @@
       enemy.beat++;
       if (!outcome.hit) { this.triggerEvade(enemy, 'player', chosen, { source: 'myrthiAttack' }); this.floating(ren, 'EVADE', 'miss'); this.setLog(`ミルティの${chosen.name}！ ${this.playerName()}は攻撃をかわした！ 【BEAT ${enemy.beat}/4】`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); return; }
       ren.classList.add('hit');
-      this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, 'physical'); this.floating(ren, actual, 'enemy-damage');
+      this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, 'physical', { critical: outcome.critical }); this.floating(ren, actual, 'enemy-damage');
       this.setLog(`ミルティの${chosen.name}！ ${this.playerName()}は${actual}ダメージを受けた！ 【BEAT ${enemy.beat}/4】`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
       await this.tryCounter(enemy);
     }
@@ -2881,7 +2875,7 @@
       if (this.player.hp <= 0) { await this.defeat(); return; } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands();
     }
     effectivePlayerStat(key) { const base = this.player.stats[key] || 0; return key === 'mag' && (this.player.buffs?.blueEcho || 0) > 0 ? base * 1.10 : base; }
-    async beginPlayerTurn() { if (this.characterHasSkill('blueEcho') && Math.random() < .20) { this.player.buffs.blueEcho = 2; this.audio.sfx('passiveProc'); this.flashTitle('BLUE ECHO', 'MAG +10% // 2 TURNS'); this.setLog('蒼の残響が魔力を高める！'); await this.battleSleep(260); } if ((this.player.buffs.regenerate || 0) > 0) { const chance = this.player.buffs.regenerateChance ?? 1; if (Math.random() < chance) { const rate = this.player.buffs.regenerateRate || .08, boost = 1 + this.passiveEffectRate('healUp') + this.equipmentEffectRate('healingPowerPercent'), heal = Math.max(1, Math.ceil(this.player.stats.maxHp * rate * boost * this.traitHealMult())), gained = Math.min(heal, this.player.stats.maxHp - this.player.hp); this.player.hp += gained; if (gained) { this.floating($('#ren'), `+${gained}`, 'heal'); this.setLog(`リジェネレートでHPが${gained}回復！`); this.updateHUD(); await this.battleSleep(220); } } else { this.floating($('#ren'), 'REGEN MISS', 'miss'); this.setLog('リジェネレートの祈りは、このターン実を結ばなかった。'); await this.battleSleep(140); } } }
+    async beginPlayerTurn() { if (this.characterHasSkill('blueEcho') && Math.random() < .20) { this.player.buffs.blueEcho = 2; this.audio.sfx('passiveProc'); this.flashTitle('BLUE ECHO', 'MAG +10% // 2 TURNS'); this.setLog('蒼の残響が魔力を高める！'); await this.battleSleep(260); } if ((this.player.buffs.regenerate || 0) > 0) { const chance = this.player.buffs.regenerateChance ?? 1; if (Math.random() < chance) { const rate = this.player.buffs.regenerateRate || .08, boost = 1 + this.passiveEffectRate('healUp') + this.equipmentEffectRate('healingPowerPercent'), heal = Math.max(1, Math.ceil(this.player.stats.maxHp * rate * boost * this.traitHealMult())), gained = Math.min(this.receivedHealAmount(heal), this.player.stats.maxHp - this.player.hp); this.player.hp += gained; if (gained) { this.floating($('#ren'), `+${gained}`, 'heal'); this.setLog(`リジェネレートでHPが${gained}回復！`); this.updateHUD(); await this.battleSleep(220); } } else { this.floating($('#ren'), 'REGEN MISS', 'miss'); this.setLog('リジェネレートの祈りは、このターン実を結ばなかった。'); await this.battleSleep(140); } } }
     endPlayerTurn() { if ((this.player.buffs.blueEcho || 0) > 0) this.player.buffs.blueEcho--; if ((this.player.buffs.regenerate || 0) > 0) { this.player.buffs.regenerate--; if (this.player.buffs.regenerate <= 0) { delete this.player.buffs.regenerate; delete this.player.buffs.regenerateRate; delete this.player.buffs.regenerateChance; } } if (this.player.buffs.defUp && this.turn > this.player.buffs.defUp.until) delete this.player.buffs.defUp; if (this.player.buffs.guardUntil === this.turn) { delete this.player.buffs.guardUntil; delete this.player.buffs.guardReduction; } }
     damageFor(skill, enemy, outcome = null) {
       const s = this.playerCombatStats(), w = skill.weaponOverrideId ? D.weapons[skill.weaponOverrideId] : this.equippedWeapon(), balance = D.combatBalance;
@@ -3052,7 +3046,7 @@
       }
       if (effect.type === 'hpRecover') {
         const baseHeal = effect.baseHeal ?? effect.base ?? 0, spiritScaling = effect.spiritScaling ?? effect.mndScale ?? 0;
-        const amount = Math.max(1, Math.round((baseHeal + this.player.stats.mnd * spiritScaling + this.player.stats.maxHp * (effect.maxHpRate || 0)) * (1 + this.passiveEffectRate('healUp') + this.equipmentEffectRate('healingPowerPercent')) * this.traitHealMult())), gained = Math.min(amount, this.player.stats.maxHp - this.player.hp);
+        const amount = Math.max(1, Math.round((baseHeal + this.player.stats.mnd * spiritScaling + this.player.stats.maxHp * (effect.maxHpRate || 0)) * (1 + this.passiveEffectRate('healUp') + this.equipmentEffectRate('healingPowerPercent')) * this.traitHealMult())), gained = Math.min(this.receivedHealAmount(amount), this.player.stats.maxHp - this.player.hp);
         this.player.hp += gained; this.audio.sfx('heal'); this.floating(ren, `+${gained}`, 'heal'); this.setLog(`ヒールでHPが${gained}回復！`);
       }
       if (effect.type === 'regenerate') {
@@ -3242,9 +3236,13 @@
     // 割引が乗るのは武器学で覚えた武器技だけ（JOB固有技や魔法には効かない）。
     skillMpCost(skill) {
       const base = skill?.mp || 0;
-      if (!base || skill.source !== 'weapon') return base;
-      const cut = this.passiveEffectRate('skillMpDiscount');
-      return cut ? Math.max(1, Math.round(base * (1 - cut))) : base;
+      if (!base) return 0;
+      const cut = skill.source === 'weapon' ? this.passiveEffectRate('skillMpDiscount') : 0;
+      const discounted = cut ? Math.max(1, Math.round(base * (1 - cut))) : base;
+      return Math.max(1, discounted - Math.min(1, Math.floor(this.equipmentEffectRate('mpCostReductionFlat'))));
+    }
+    receivedHealAmount(amount) {
+      return Math.max(1, Math.round(amount * (1 + this.equipmentEffectRate('receivedHealingPercent'))));
     }
     skillHpCost(skill) { return skill?.effect?.type === 'hpToMp' ? Math.max(1, Math.ceil(this.player.stats.maxHp * (skill.effect.hpCostRate || 0))) : 0; }
     skillUseCount(skill) { return this.player?.skillUses?.[skill?.id] || 0; }
@@ -3314,15 +3312,16 @@
       if (this.player.buffs?.magFocus && (skill.kind === 'magical' || skill.damageType === 'magical')) delete this.player.buffs.magFocus;
       if (skill.selfHealRate) {
         const amount = Math.max(1, Math.round(this.player.stats.maxHp * skill.selfHealRate));
-        const gained = Math.min(amount, this.player.stats.maxHp - this.player.hp);
+        const gained = Math.min(this.receivedHealAmount(amount), this.player.stats.maxHp - this.player.hp);
         if (gained > 0) { this.player.hp += gained; this.persistVitals(); this.audio.sfx('heal'); this.floating(ren, `+${gained}`, 'heal'); }
       }
       ren.classList.remove('casting'); const defeatedNames = targets.filter(t => !t.alive).map(t => `${t.name}${t.label}`);
       this.setLog(defeatedNames.length ? `${defeatedNames.join('、')}を撃破！` : `${skill.name}が敵全体を襲う！`); await this.battleSleep(400);
     }
     async magicProjectile(targetEl) { const field = $('#battlefield').getBoundingClientRect(), weapon = $('#weapon-layer'), sprite = $('#ren .ren-sprite'), weaponRect = weapon?.getBoundingClientRect(), from = weaponRect && weaponRect.width > 0 && weaponRect.height > 0 ? weaponRect : sprite.getBoundingClientRect(), to = targetEl.getBoundingClientRect(), orb = document.createElement('i'), sx = from.right - field.left, sy = from.top - field.top + from.height * .22, ex = to.left - field.left + to.width * .48, ey = to.top - field.top + to.height * .58; orb.className = 'magic-projectile'; orb.style.left = `${sx}px`; orb.style.top = `${sy}px`; orb.style.setProperty('--shot-x', `${ex - sx}px`); orb.style.setProperty('--shot-y', `${ey - sy}px`); $('#battlefield').appendChild(orb); await this.battleSleep(460); orb.remove(); }
-    receivePlayerDamage(amount, type = 'physical') {
+    receivePlayerDamage(amount, type = 'physical', options = {}) {
       let damage = Math.max(0, Math.round(amount));
+      if (options.critical) damage = Math.max(0, Math.round(damage * (1 - Math.min(.8, this.equipmentEffectRate('receivedCriticalDamageReductionPercent')))));
       if (this.player.buffs?.fortressUntil === this.turn) damage = Math.max(0, Math.round(damage * (1 - (this.player.buffs.fortressReduction ?? .30))));
       const setEffects = this.activeSetEffects(), setReduction = clamp((setEffects.damageReductionPercent || 0) / 100, 0, .8);
       if (setReduction) damage = Math.max(0, Math.round(damage * (1 - setReduction)));
@@ -3551,7 +3550,7 @@
       return !!D.weapons?.[item.id] || item.rarity === 'epic' || item.rarity === 'legendary';
     }
     announceRareDrop(item) { const layer = $('#rare-drop-layer'); if (!layer) return; this.audio.sfx('rareDrop'); const b = document.createElement('div'), weapon = !!D.weapons?.[item.id]; b.className = `rare-drop-banner rarity-${item.rarity}`; b.innerHTML = `<small>${weapon ? 'WEAPON PICKED UP' : item.rarity === 'legendary' ? 'LEGENDARY DROP' : 'EPIC DROP'}</small><b>${item.name}${weapon ? 'を拾いました' : ''}</b>`; layer.appendChild(b); requestAnimationFrame(() => b.classList.add('show')); setTimeout(() => { b.classList.remove('show'); setTimeout(() => b.remove(), 420); }, 2400); }
-    async useConsumable(id) { const item = D.items[id], recovery = this.recoveryItemInfo(item, this.player?.stats), key = recovery?.key, maxKey = recovery?.maxKey; if (!item || !recovery || !(this.profile.inventory[id] > 0)) { this.setLog(`${item?.name || 'アイテム'}を持っていない。`); return; } if (this.player[key] >= this.player.stats[maxKey]) { this.setLog(`${key.toUpperCase()}は満タンだ。`); return; } this.lastBattleAction = { type: 'item', itemId: id }; this.locked = true; this.keepAutoControlVisible(); await this.beginPlayerTurn(); const heal = Math.min(recovery.amount, this.player.stats[maxKey] - this.player[key]); this.profile.inventory[id]--; this.player[key] += heal; this.persistVitals(); this.audio.sfx('heal'); this.setLog(`${item.name}を使った。${key.toUpperCase()}が${heal}回復！`); this.floating($('#ren'), `+${heal}`, 'heal'); this.updateHUD(); await this.battleSleep(650); await this.enemyOnlyTurn(); }
+    async useConsumable(id) { const item = D.items[id], recovery = this.recoveryItemInfo(item, this.player?.stats), key = recovery?.key, maxKey = recovery?.maxKey; if (!item || !recovery || !(this.profile.inventory[id] > 0)) { this.setLog(`${item?.name || 'アイテム'}を持っていない。`); return; } if (this.player[key] >= this.player.stats[maxKey]) { this.setLog(`${key.toUpperCase()}は満タンだ。`); return; } this.lastBattleAction = { type: 'item', itemId: id }; this.locked = true; this.keepAutoControlVisible(); await this.beginPlayerTurn(); const heal = Math.min(key === 'hp' ? this.receivedHealAmount(recovery.amount) : recovery.amount, this.player.stats[maxKey] - this.player[key]); this.profile.inventory[id]--; this.player[key] += heal; this.persistVitals(); this.audio.sfx('heal'); this.setLog(`${item.name}を使った。${key.toUpperCase()}が${heal}回復！`); this.floating($('#ren'), `+${heal}`, 'heal'); this.updateHUD(); await this.battleSleep(650); await this.enemyOnlyTurn(); }
     async guardAction() {
       if (this.locked || this.finished) return;
       this.lastBattleAction = { type: 'guard' };
@@ -3822,6 +3821,11 @@
       const quick = !!this.quickResolving;
       this.profile.flags.consecutiveDefeats = 0; this.profile.flags.lastBattleResult = 'victory';
       this.finished = true; this.cleanupBattleTransientUI(); this.pauseAutoBattle(); this.audio.sfx('victory'); this.flashTitle('VICTORY', 'ALL SHADOWS ELIMINATED'); $('#ren').classList.add('victory'); await this.battleSleep(quick ? 120 : 1100);
+      const restoreRate = this.equipmentEffectRate('victoryMpRestorePercent');
+      if (restoreRate > 0) {
+        const restored = Math.min(5, Math.max(1, Math.round(this.player.stats.maxMp * restoreRate)), this.player.stats.maxMp - this.player.mp);
+        if (restored > 0) { this.player.mp += restored; this.floating($('#ren'), `MP +${restored}`, 'heal'); this.setLog(`装備効果で勝利時MPが${restored}回復！`); }
+      }
       this.bossMaterialOffer = null;
       const reward = { exp: this.battleRewards.exp, gold: this.battleRewards.gold, drops: this.battleRewards.drops }, levels = this.battleRewards.levels;
       const masteryParts = this.battleRewards.masteryResults || [], jobParts = this.battleRewards.jobResults || [];
@@ -4695,10 +4699,13 @@
       };
       const format = value => { const rounded = Math.round(value * 10) / 10; return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1); };
       const statNames = { maxHp: 'HP', maxMp: 'MP', str: '力', vit: '体力', mag: '魔力', mnd: '精神', agi: '素早さ', dex: '器用さ', luk: '運', critBonus: '会心率' };
-      const effectNames = { strPercent: '力', magPercent: '魔力', physicalDamagePercent: '物理与ダメ', magicDamagePercent: '魔法与ダメ', criticalRateBonus: '会心率', fireDamagePercent: '炎与ダメ', healingPowerPercent: '回復量', magicDamageReductionPercent: '魔法軽減', physicalDamageReductionPercent: '物理軽減', resonanceGainPercent: '共鳴量' };
-      const entries = [...Object.entries(values).filter(([, base]) => base !== 0).map(([label, base]) => [label, base, false]), ...Object.entries(item?.bonuses || {}).filter(([key, base]) => key !== 'def' && Number(base)).map(([key, base]) => [statNames[key] || key.toUpperCase(), Number(base), key === 'critBonus']), ...Object.entries(item?.effects || {}).filter(([, base]) => Number(base)).map(([key, base]) => [effectNames[key] || key, Number(base), true])];
+      const effectNames = { mpCostReductionFlat: '消費MP軽減', receivedHealingPercent: '被回復量', victoryMpRestorePercent: '勝利時MP回復', receivedCriticalDamageReductionPercent: '被会心ダメージ軽減', physicalDamagePercent: '物理与ダメ', magicDamagePercent: '魔法与ダメ', criticalRateBonus: '会心率', fireDamagePercent: '炎与ダメ', healingPowerPercent: '回復量', magicDamageReductionPercent: '魔法軽減', physicalDamageReductionPercent: '物理軽減', resonanceGainPercent: '共鳴量' };
+      const entries = [...Object.entries(values).filter(([, base]) => base !== 0).map(([label, base]) => [label, base, false]), ...Object.entries(item?.bonuses || {}).filter(([key, base]) => key !== 'def' && Number(base)).map(([key, base]) => [statNames[key] || key.toUpperCase(), Number(base), key === 'critBonus']), ...Object.entries(item?.effects || {}).filter(([, base]) => Number(base)).map(([key, base]) => [effectNames[key] || key, Number(base), key !== 'mpCostReductionFlat'])];
       const rows = entries.map(([label, base, percent]) => {
-        const current = base * currentRate, next = base * nextRate, gain = next - current;
+        const flatMp = label === '消費MP軽減';
+        const current = flatMp ? Math.min(1, Math.floor(base * currentRate)) : base * currentRate;
+        const next = flatMp ? Math.min(1, Math.floor(base * nextRate)) : base * nextRate;
+        const gain = next - current;
         return `<div><span>${label}</span><b>${format(percent ? current * 100 : current)}${percent ? '%' : ''}<i>→</i>${format(percent ? next * 100 : next)}${percent ? '%' : ''}</b><em>+${format(percent ? gain * 100 : gain)}${percent ? '%' : ''}</em></div>`;
       }).join('');
       return `<section class="enchant-next-stats"><small>NEXT +1</small>${rows || '<p>直接戦闘値の上昇なし</p>'}</section>`;
@@ -5112,10 +5119,10 @@
       const format = value => { const rounded = Math.round(value * 10) / 10; return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1); };
       // 戦闘能力は日本語表示。内部キーは画面へ出さない。
       const combatLabels = { attackPower: '攻撃力', defensePower: '防御力', magicAttackPower: '魔法攻撃力', magicDefensePower: '魔法防御力' };
-      const effectLabels = { strPercent: '力', magPercent: '魔力', physicalDamagePercent: '物理ダメージ', magicDamagePercent: '魔法ダメージ', criticalRateBonus: '会心率', fireDamagePercent: '炎属性ダメージ', healingPowerPercent: '回復量', magicDamageReductionPercent: '被魔法ダメージ', physicalDamageReductionPercent: '被物理ダメージ', resonanceGainPercent: '共鳴獲得量' };
+      const effectLabels = { mpCostReductionFlat: '技・魔法の消費MP', receivedHealingPercent: '被回復量', victoryMpRestorePercent: '勝利時MP回復（上限5）', receivedCriticalDamageReductionPercent: '被会心ダメージ', physicalDamagePercent: '物理ダメージ', magicDamagePercent: '魔法ダメージ', criticalRateBonus: '会心率', fireDamagePercent: '炎属性ダメージ', healingPowerPercent: '回復量', magicDamageReductionPercent: '被魔法ダメージ', physicalDamageReductionPercent: '被物理ダメージ', resonanceGainPercent: '共鳴獲得量' };
       const combatRows = Object.entries(combatLabels).filter(([k]) => def[k]).map(([k, label]) => `${label} +${format(def[k] * rate)}`);
       if (def.bonuses?.def) combatRows.push(`防御力 +${format(def.bonuses.def * rate)}`);
-      const effectRows = Object.entries(def.effects || {}).map(([k, v]) => { const label = effectLabels[k] || k; const sign = k.endsWith('DamageReductionPercent') ? '-' : '+'; return `${label} ${sign}${format(Math.abs(v) * rate * 100)}%`; });
+      const effectRows = Object.entries(def.effects || {}).map(([k, v]) => { const label = effectLabels[k] || k; if (k === 'mpCostReductionFlat') return `${label} -${Math.min(1, Math.floor(v * rate))}（最低1）`; const sign = k.endsWith('DamageReductionPercent') ? '-' : '+'; return `${label} ${sign}${format(Math.abs(v) * rate * 100)}%`; });
       const bonuses = def.bonuses || {}, rows = Object.entries(bonuses).filter(([k]) => k !== 'def');
       const enchStr = enchLv > 0 ? ` [+${enchLv}]` : '';
       const all = [...combatRows, ...rows.map(([key, value]) => key === 'critBonus' ? `会心率 ${value >= 0 ? '+' : ''}${format(value * rate * 100)}%` : `${statLabels[key] || key.toUpperCase()} ${value >= 0 ? '+' : ''}${format(value * rate)}`), ...effectRows];
