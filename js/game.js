@@ -46,7 +46,7 @@
   class BattleGame {
     constructor() {
       document.documentElement.classList.toggle('capacitor-native', !!window.Capacitor?.isNativePlatform?.());
-      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.defeatResolving = false; this.autoBattle = false; this.autoBattleSpeedIndex = -1; this.autoToggleBusy = false; this.autoPickTimer = null; this.autoAdvanceTimer = null; this.simpleBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.enhanceWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.enhanceArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false; this.lastBattleAction = null; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
+      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.defeatResolving = false; this.autoBattle = false; this.autoBattleSpeedIndex = -1; this.autoToggleBusy = false; this.autoPickTimer = null; this.autoAdvanceTimer = null; this.simpleBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.enhanceWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.enhanceArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.lastBattleAction = null; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
       // 旧セーブ・新規プロファイルの両方で楽器学を必ず初期化する。
       this.profile.weaponMastery.instrument ||= { level: 1, exp: 0 };
       this.currentDungeonId = 'dungeon1';
@@ -2360,10 +2360,56 @@
         strip.innerHTML = chips.join(''); strip.dataset.statusOwner = `${e.name}${e.label || ''}`; strip.dataset.enemyUid = e.uid; strip.tabIndex = 0; strip.setAttribute('role', 'button'); strip.title = 'タップで敵の状態と解析情報を確認'; strip.onclick = event => { event.preventDefault(); event.stopPropagation(); this.showStatusGroup(strip.dataset.statusOwner, strip); };
       });
     }
-    resetBattleLog() { this.clearQuickResultPopup(); this.battleLogHistory = []; this.battleEvents = []; this.battleLogExpanded = false; this.lastBattleAction = null; $('#log')?.classList.remove('expanded'); }
-    setLog(text) { if (!text) return; this.battleLogHistory ||= []; this.battleLogHistory.push(text); if (this.battleLogHistory.length > 100) this.battleLogHistory.shift(); this.renderBattleLog(); }
-    renderBattleLog() { const log = $('#log'); if (!log) return; const rows = this.battleLogExpanded ? this.battleLogHistory : this.battleLogHistory.slice(-5); log.innerHTML = `<small>COMBAT LOG // ${this.battleLogExpanded ? 'TAP TO CLOSE' : 'TAP FOR HISTORY'}</small><div class="battle-log-lines">${rows.map(t => `<p>${t}</p>`).join('')}</div>`; log.scrollTop = this.battleLogExpanded ? log.scrollHeight : 0; }
-    toggleBattleLog() { this.battleLogExpanded = !this.battleLogExpanded; $('#log')?.classList.toggle('expanded', this.battleLogExpanded); this.renderBattleLog(); }
+    resetBattleLog() {
+      this.clearQuickResultPopup();
+      this.battleLogHistory = [];
+      this.battleEvents = [];
+      this.lastBattleAction = null;
+      $('#battle-history')?.close();
+    }
+    setLog(text) {
+      if (!text) return;
+      this.battleLogHistory ||= [];
+      this.battleLogHistory.push(text);
+      if (this.battleLogHistory.length > 100) this.battleLogHistory.shift();
+      this.renderBattleLog();
+    }
+    renderBattleLog({ scrollToLatest = false } = {}) {
+      const log = $('#log');
+      if (!log) return;
+      const rows = this.battleLogHistory || [];
+      const appendRows = (container, messages) => {
+        const fragment = document.createDocumentFragment();
+        for (const message of messages) {
+          const row = document.createElement('p');
+          row.textContent = message;
+          fragment.appendChild(row);
+        }
+        container.replaceChildren(fragment);
+      };
+      if (!log.querySelector('.battle-log-lines')) {
+        log.innerHTML = '<small>COMBAT LOG // TAP FOR HISTORY</small><div class="battle-log-lines"></div>';
+      }
+      const preview = log.querySelector('.battle-log-lines');
+      appendRows(preview, rows.slice(-5));
+      preview.scrollTop = preview.scrollHeight;
+
+      if (!$('#battle-history')?.open) return;
+      const history = $('#battle-history-entries');
+      const followLatest = scrollToLatest || history.scrollHeight - history.scrollTop - history.clientHeight <= 8;
+      const lastScroll = history.scrollTop;
+      appendRows(history, rows);
+      history.scrollTop = followLatest ? history.scrollHeight : lastScroll;
+    }
+    toggleBattleLog() {
+      const history = $('#battle-history');
+      if (history.open) {
+        history.close();
+      } else {
+        history.showModal();
+        this.renderBattleLog({ scrollToLatest: true });
+      }
+    }
     clearQuickResultPopup() { $('#quick-result-popup')?.remove(); }
     showQuickResultPopup() {
       const report = this.battleRewards?.quickReport, field = $('#battlefield'); if (!report || !field) return;

@@ -327,7 +327,7 @@
     this.enemies = cp.enemies.map(e => ({ ...e, stats: { ...(e.stats || {}) } }));
     this.battleMode = cp.battleMode || (this.owIsBossBattle() ? 'owBoss' : 'ow');
     this.turn = cp.turn || 1; this.locked = false; this.finished = false;
-    this.battleLogHistory = cp.battleLogHistory || []; this.battleLogExpanded = false;
+    this.battleLogHistory = cp.battleLogHistory || [];
     this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [], newRecipes: [] };
     if (cp.stage === 'step') { this.owShowStep([]); return; }
     if (cp.stage === 'chests') { this.owChestPicks = cp.chestPicks || []; this.owShowChests([], this.owChestPicks); return; }
