@@ -39,4 +39,15 @@ assert.equal(battle.showBossMaterialOffer(), false, '同じ撃破結果で2回�
 assert.equal(granted.drops.zenacad_core, 1, '素材を2倍確率の追加抽選で得る');
 assert.equal(granted.drops.maestri_baton, 1, '装備を2倍確率の追加抽選で得る');
 assert.equal(displayed.length, 2, '追加で得た素材と装備を結果に表示する');
+const resultNodes = Object.fromEntries(['#result-title', '#result-copy', '#result-kicker', '#rewards', '#result-menu', '#result'].map(id => [id, { style: {} }]));
+context.document.querySelector = id => resultNodes[id] || null;
+battle.cleanupBattleTransientUI = () => {};
+battle.pauseAutoBattle = () => {};
+battle.bossMaterialOffer = { enemy, claimed: false };
+battle.showResult('RIFT CLEARED', '', '異界の奥へ進む', '');
+assert.equal(battle.bossMaterialOffer, null, '異世界など別の結果画面へボス広告が漏れない');
+const stagedOffer = { enemy, claimed: false };
+battle.bossMaterialOffer = stagedOffer;
+battle.showResult('SCORE GET', '', 'PHANTOM SCORE', '', { preserveBossOffer: true });
+assert.equal(battle.bossMaterialOffer, stagedOffer, '同じボス戦の段階表示では提案を維持する');
 console.log('boss material popup regression: OK');
