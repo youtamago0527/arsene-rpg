@@ -108,6 +108,11 @@
           else this.open();
           return;
         }
+        // 隠しメニューの存在をカズの反応で知らせる。2回目は次の操作を示す。
+        const line = this.tapCount === 2
+          ? 'これ以上はまずいって……奥のメニューまで開いてまうやろ。'
+          : (Math.random() < .35 ? '俺に触るなよ？……いや、用があるならもう少し話しかけてみ。' : 'なんや、俺に用か？');
+        window.arseneGame?.renderKazuBubble?.(line);
         this.tapTimer = setTimeout(() => { this.tapCount = 0; }, 1800);
       });
     }
