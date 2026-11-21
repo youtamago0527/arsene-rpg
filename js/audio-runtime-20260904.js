@@ -108,15 +108,21 @@
     saveLevels() { try { localStorage.setItem(this.settingsKey, JSON.stringify(this.levels)); } catch {} }
     getVolumes() { return Object.fromEntries(Object.entries(this.levels).map(([key,value]) => [key, Math.round(value * 100)])); }
     setVolume(channel, percent) { if (!(channel in this.levels)) return; const value = Math.max(0, Math.min(100, Number(percent) || 0)) / 100; this.levels[channel] = value; this.saveLevels(); if (channel === 'bgm') { this.musicVolume = this.musicMaxVolume * value; this.applyMusicVolume(); } if (channel === 'sfx' && this.master) this.master.gain.value = this.muted ? 0 : .72 * value; }
+    releaseSoundNodesWhenEnded(source, ...nodes) {
+      source.onended = () => {
+        source.disconnect();
+        for (const node of nodes) node.disconnect();
+      };
+    }
     tone(freq, duration, type = 'sine', volume = .18, slide = 1, delay = 0) {
       if (!this.ctx || this.muted) return; const t = this.ctx.currentTime + delay;
       const o = this.ctx.createOscillator(), g = this.ctx.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(Math.max(25, freq * slide), t + duration);
-      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(volume, t + .012); g.gain.exponentialRampToValueAtTime(.0001, t + duration); o.connect(g); g.connect(this.master); o.start(t); o.stop(t + duration + .02);
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(volume, t + .012); g.gain.exponentialRampToValueAtTime(.0001, t + duration); o.connect(g); g.connect(this.master); this.releaseSoundNodesWhenEnded(o, g); o.start(t); o.stop(t + duration + .02);
     }
     noise(duration = .12, volume = .12, delay = 0, highpass = 900) {
       if (!this.ctx || this.muted) return; const len = Math.ceil(this.ctx.sampleRate * duration), b = this.ctx.createBuffer(1, len, this.ctx.sampleRate), d = b.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
-      const s = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter(), g = this.ctx.createGain(), t = this.ctx.currentTime + delay; s.buffer = b; f.type = 'highpass'; f.frequency.value = highpass; g.gain.setValueAtTime(volume, t); g.gain.exponentialRampToValueAtTime(.0001, t + duration); s.connect(f); f.connect(g); g.connect(this.master); s.start(t);
+      const s = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter(), g = this.ctx.createGain(), t = this.ctx.currentTime + delay; s.buffer = b; f.type = 'highpass'; f.frequency.value = highpass; g.gain.setValueAtTime(volume, t); g.gain.exponentialRampToValueAtTime(.0001, t + duration); s.connect(f); f.connect(g); g.connect(this.master); this.releaseSoundNodesWhenEnded(s, f, g); s.start(t);
     }
     // 効果音ファイルを読み込んでデコードしておく。
     // 失敗しても握りつぶす。鳴らす側は合成音へフォールバックする。
@@ -201,7 +207,7 @@
         g.gain.setValueAtTime(def.gain ?? 1, t + Math.max(0, dur - .08));
         g.gain.exponentialRampToValueAtTime(.0001, t + dur);
       }
-      src.connect(g); g.connect(this.master);
+      src.connect(g); g.connect(this.master); this.releaseSoundNodesWhenEnded(src, g);
       src.start(t, offset, dur);
       src.stop(t + dur + .02);
       return true;
@@ -226,7 +232,7 @@
       g.gain.setValueAtTime(.0001, t);
       g.gain.exponentialRampToValueAtTime(volume, t + attack);
       g.gain.exponentialRampToValueAtTime(.0001, t + duration);
-      src.connect(f); f.connect(g); g.connect(this.master); src.start(t);
+      src.connect(f); f.connect(g); g.connect(this.master); this.releaseSoundNodesWhenEnded(src, f, g); src.start(t);
     }
     sfx(name) {
       // iOSでは復帰直後などにAudioContextが未生成・suspendedへ戻ることがある。

@@ -108,4 +108,35 @@ if (createdAudio.at(-1).volume !== 1 || !nodes.some(([kind, node]) => kind === '
 if (!player.playSfxFile('mealHeal')) throw new Error('meal SFX did not start through Web Audio');
 if (nodes.filter(([kind]) => kind === 'source').at(-1)?.[1]?.gain?.value !== .24) throw new Error('native meal SFX gain is not reduced');
 
+// Repeated battles must release every transient Web Audio node after playback.
+const transientNodes = [];
+const makeNode = () => {
+  const node = {
+    disconnectCount: 0, connect() {}, disconnect() { this.disconnectCount++; }, start() {}, stop() {},
+    frequency: { setValueAtTime() {}, exponentialRampToValueAtTime() {}, value: 0 },
+    gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} },
+    Q: { value: 0 }, playbackRate: { value: 1 }
+  };
+  transientNodes.push(node);
+  return node;
+};
+player.nativeIos = false;
+player.ctx = {
+  state: 'running', currentTime: 0, sampleRate: 100,
+  createOscillator: makeNode, createBufferSource: makeNode,
+  createGain: makeNode, createBiquadFilter: makeNode,
+  createBuffer: () => ({ duration: 1, getChannelData: () => new Float32Array(100) })
+};
+player.master = makeNode();
+player.tone = sandbox.window.ArseneAudio.prototype.tone.bind(player);
+player.noise = sandbox.window.ArseneAudio.prototype.noise.bind(player);
+player.noiseX = sandbox.window.ArseneAudio.prototype.noiseX.bind(player);
+player.tone(440, .1); player.noise(); player.noiseX();
+player.sfxBuffers = { 'assets/audio/sfx/heal-sample-20260904.mp3': { duration: 1 } };
+player.playSfxFile('heal');
+for (const source of transientNodes.filter(node => typeof node.onended === 'function')) source.onended();
+if (transientNodes.some(node => node !== player.master && node.disconnectCount !== 1)) {
+  throw new Error('transient Web Audio nodes remain connected after playback');
+}
+
 console.log('battle sfx routing regression: ok');
