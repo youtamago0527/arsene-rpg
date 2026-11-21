@@ -25,7 +25,7 @@ for (const legacy of ['会心の一撃1.mp3', '回避.mp3', '打撃6.mp3', 'crit
   if (fs.existsSync(path.join(root, '音楽系', '効果音', legacy))) throw new Error(`legacy SFX remains: ${legacy}`);
 }
 if (fs.existsSync(path.join(root, 'js', 'audio.js'))) throw new Error('legacy audio runtime remains');
-if (!index.includes('js/audio-runtime-20260904.js?v=1.0.8')) throw new Error('fresh audio runtime is not loaded');
+if (!index.includes('js/audio-runtime-20260904.js?v=1.0.9')) throw new Error('fresh audio runtime is not loaded');
 for (const name of ['slash', 'quick', 'enemyHit']) {
   if (new RegExp(`case '${name}':`).test(audio)) throw new Error(`obsolete default combat SFX branch remains: ${name}`);
 }
@@ -67,17 +67,17 @@ for (const name of ['swordSwing', 'clawSwing', 'noteSwing', 'shieldSwing', ...Ob
 
 const listeners = {}, createdAudio = [];
 class MockAudio {
-  constructor(src) { this.src = src; this.volume = 1; this.paused = true; this.currentTime = 0; createdAudio.push(this); }
+  constructor(src) { this.src = src; this.volume = 1; this.paused = true; this.currentTime = 0; this.listeners = {}; createdAudio.push(this); }
   pause() { this.paused = true; }
   play() { this.paused = false; return Promise.resolve(); }
-  addEventListener() {}
+  addEventListener(name, callback) { this.listeners[name] = callback; }
   removeAttribute(name) { if (name === 'src') this.src = ''; }
 }
 const sandbox = {
   window: {}, Audio: MockAudio, URL, localStorage: { getItem: () => null, setItem() {} },
   matchMedia: () => ({ matches: false }), document: { baseURI: 'https://example.test/', addEventListener: (name, fn) => { listeners[name] = fn; } },
   BroadcastChannel: undefined, performance: { now: () => 0 }, requestAnimationFrame() {}, fetch: () => Promise.reject(new Error('not used')),
-  setTimeout: () => 0,
+  setTimeout: () => 0, clearTimeout() {},
   console
 };
 vm.runInNewContext(audio, sandbox);
@@ -114,6 +114,13 @@ if (createdAudio.at(-1).volume !== 1 || !nodes.some(([kind, node]) => kind === '
 }
 if (!player.playSfxFile('mealHeal')) throw new Error('meal SFX did not start through Web Audio');
 if (nodes.filter(([kind]) => kind === 'source').at(-1)?.[1]?.gain?.value !== .24) throw new Error('native meal SFX gain is not reduced');
+const firstHeal = createdAudio.at(-2);
+firstHeal.listeners.ended();
+player.lastSfxAt.clear();
+for (let i = 0; i < 30; i++) { if (!player.playSfxFile('heal')) throw new Error('reused native SE failed'); firstHeal.listeners.ended(); player.lastSfxAt.clear(); }
+if (createdAudio.filter(media => media.src.includes('heal-sample')).length !== 2 || player.nativeSfxPool.length !== 2) {
+  throw new Error('repeated native SE allocated new media players instead of reusing them');
+}
 
 // Repeated battles must release every transient Web Audio node after playback.
 const transientNodes = [];
