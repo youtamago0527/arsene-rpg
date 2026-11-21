@@ -3732,7 +3732,7 @@
       }
     }
     bossMaterialDropRows(enemy) {
-      return (enemy?.dropTable || []).filter(row => D.items?.[row.itemId]?.category === 'material');
+      return (enemy?.dropTable || []).filter(row => ['material', 'equipment'].includes(D.items?.[row.itemId]?.category));
     }
     offerRepeatBossMaterialDrop(enemy, firstClear) {
       if (firstClear || !enemy || !window.arseneQOffer?.canUse?.('bossDrop')) return false;
@@ -3753,7 +3753,7 @@
       }
       const victorious = this.finished && this.profile.flags.lastBattleResult === 'victory';
       const material = victorious ? this.bossMaterialOffer : null;
-      actions.innerHTML = this.resultContinue ? '' : `${material && !material.claimed ? '<button data-result-action="boss-material-ad">広告でボス素材を再抽選<small>REWARDED AD</small></button>' : ''}`;
+      actions.innerHTML = this.resultContinue ? '' : `${material && !material.claimed ? '<button data-result-action="boss-material-ad">広告でドロップをもう1回抽選<small>素材・装備／ドロップ率2倍</small></button>' : ''}`;
       actions.hidden = !actions.innerHTML;
       if (material && !material.claimed && !material.prompted && !this.resultContinue) {
         material.prompted = true;
@@ -3768,22 +3768,37 @@
       if (!context || context.claimed) return false;
       const { enemy, rows } = context;
       return window.arseneQOffer?.show('bossDrop', {
-        title: `${enemy.name} 素材追跡`,
-        copy: '広告を見て、このボスの素材だけをもう一度追加抽選する。装備品は対象外。',
+        title: `${enemy.name} ドロップ追加獲得`,
+        copy: '広告を見ると、素材・装備をドロップ率2倍でもう1回抽選する。元の戦利品はそのまま残る。',
         onGrant: () => {
           context.claimed = true;
           this.renderBossResultActions();
+          document.querySelector('#boss-result-ad-actions [data-result-action="boss-material-ad"]')?.remove();
+          const boostedEnemy = { ...enemy, dropTable: rows.map(row => ({ ...row, chance: Math.min(1, (Number(row.chance) || 0) * 2) })) };
           const drops = {};
-          rows.forEach(row => { if (Math.random() < clamp(Number(row.chance) || 0, 0, 1)) drops[row.itemId] = (drops[row.itemId] || 0) + 1; });
+          this.rollDrops(boostedEnemy).forEach(([id, count]) => { drops[id] = (drops[id] || 0) + count; });
           const entries = Object.entries(drops);
-          if (!entries.length) { window.arseneStartFlow?.toast?.('追加抽選：素材は見つからなかった'); return; }
-          this.applyRewards({ exp: 0, gold: 0, drops });
-          entries.forEach(([id, n]) => { this.battleRewards.drops[id] = (this.battleRewards.drops[id] || 0) + n; });
-          const names = entries.map(([id, n]) => `${D.items[id]?.name || id} ×${n}`).join(' / ');
-          document.querySelector('#rewards')?.insertAdjacentHTML('beforeend', `<div class="boss-result-note"><b>Q'S OFFER // BOSS MATERIAL</b><br>${names}</div>`);
-          window.arseneStartFlow?.toast?.(`追加素材：${names}`);
+          if (entries.length) {
+            this.applyRewards({ exp: 0, gold: 0, drops });
+            entries.forEach(([id, n]) => { this.battleRewards.drops[id] = (this.battleRewards.drops[id] || 0) + n; });
+          }
+          const names = entries.length ? entries.map(([id, n]) => `${D.items[id]?.name || id} ×${n}`).join('／') : '追加ドロップなし';
+          document.querySelector('#rewards .drop-list')?.insertAdjacentHTML('afterend', `<div class="boss-double-up-summary"><b>追加抽選の結果</b><span>${names}</span></div>`);
+          this.showBossDoubleUpResult(entries);
         }
       }) || false;
+    }
+    showBossDoubleUpResult(entries) {
+      document.querySelector('.boss-double-up-modal')?.remove();
+      const modal = document.createElement('div');
+      modal.className = 'q-offer-modal boss-double-up-modal';
+      const rows = entries.length ? entries.map(([id, n]) => {
+        const item = D.items[id];
+        return `<div class="boss-double-up-row rarity-${item?.rarity || 'common'}"><span>${item?.category === 'equipment' ? '装備' : '素材'}</span><b>${item?.name || id}</b><strong>×${n}</strong></div>`;
+      }).join('') : '<p class="boss-double-up-empty">今回は追加ドロップなし</p>';
+      modal.innerHTML = `<div class="q-offer-card boss-double-up-card" role="dialog" aria-modal="true" aria-label="追加ドロップ結果"><small>DROP DOUBLE UP</small><h2>追加抽選の結果</h2><p>ドロップ率2倍で、もう1回抽選しました。</p><div class="boss-double-up-list">${rows}</div><button class="q-offer-watch" data-double-up-close>結果を確認</button></div>`;
+      document.body.appendChild(modal);
+      modal.querySelector('[data-double-up-close]')?.addEventListener('click', () => modal.remove(), { once: true });
     }
     async victory() {
       if (this.finished) return;
