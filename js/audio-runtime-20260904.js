@@ -36,7 +36,7 @@
       this.ctx = null; this.master = null; this.musicSource = null; this.musicGain = null; this.muted = false; this.started = false; this.settingsKey = 'arsene-rpg-audio-v1'; this.levels = this.loadLevels(); this.musicMaxVolume = matchMedia('(max-width:760px)').matches ? .18 : .22; this.musicVolume = this.musicMaxVolume * this.levels.bgm; this.fadeToken = 0; this.userActivated = false;
       this.nativeIos = !!(window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === 'ios');
       this.nativeSfxPlayers = new Set();
-      this.nativeSfxByName = new Map(); this.lastSfxAt = new Map(); this.maxNativeSfxPlayers = 10;
+      this.nativeSfxByName = new Map(); this.nativeSfxPool = []; this.lastSfxAt = new Map(); this.maxNativeSfxPlayers = 10;
       this.music = new Audio(audioAssetUrl(bgmPath)); this.music.loop = true; this.music.preload = 'auto'; this.music.volume = this.musicVolume;
       this.audioId = `${Date.now()}-${Math.random()}`; this.audioFocus = typeof BroadcastChannel === 'function' ? new BroadcastChannel('arsene-rpg-audio-focus') : null;
       if (this.audioFocus) this.audioFocus.onmessage = e => { if (e.data?.type === 'claim' && e.data.id !== this.audioId) { this.music.pause(); this.started = false; } };
@@ -156,41 +156,53 @@
         if (now - (this.lastSfxAt.get(name) ?? -Infinity) < (def.cooldownMs || 0)) return true;
         this.lastSfxAt.set(name, now);
         const voices = this.nativeSfxByName.get(name) || new Set();
-        if (voices.size >= (def.maxVoices || 2)) voices.values().next().value?.cleanup();
-        if (this.nativeSfxPlayers.size >= this.maxNativeSfxPlayers) this.nativeSfxPlayers.values().next().value?.cleanup();
-        const media = new Audio(audioAssetUrl(def.url));
-        media.preload = 'auto';
-        media.playbackRate = def.rate || 1;
-        // WKWebView ignores HTMLMediaElement.volume. Keep the element at unity and
-        // route it through Web Audio; the shared master gain then applies the SE
-        // slider to sampled and synthesized sounds identically, including true 0%.
-        let source, gain;
-        try {
-          source = this.ctx.createMediaElementSource(media); gain = this.ctx.createGain();
-          gain.gain.value = def.gain ?? 1; source.connect(gain); gain.connect(this.master);
-          media.volume = 1;
-        } catch { return false; }
-        const player = { media, source, gain, cleanup: null };
-        const cleanup = () => {
-          if (!this.nativeSfxPlayers.has(player)) return;
-          media.pause(); media.removeAttribute('src'); source.disconnect(); gain.disconnect();
-          this.nativeSfxPlayers.delete(player); voices.delete(player);
-          if (!voices.size) this.nativeSfxByName.delete(name);
+        let player = this.nativeSfxPool.find(p => p.name === name && !this.nativeSfxPlayers.has(p));
+        if (!player && voices.size >= (def.maxVoices || 2)) { player = voices.values().next().value; player.cleanup(); }
+        if (!player && this.nativeSfxPool.length >= this.maxNativeSfxPlayers) {
+          const evicted = this.nativeSfxPool.find(p => !this.nativeSfxPlayers.has(p)) || this.nativeSfxPool[0];
+          evicted.cleanup(); evicted.media.pause(); evicted.media.removeAttribute('src'); evicted.source.disconnect(); evicted.gain.disconnect();
+          this.nativeSfxPool.splice(this.nativeSfxPool.indexOf(evicted), 1);
+        }
+        if (!player) {
+          const media = new Audio(audioAssetUrl(def.url));
+          media.preload = 'auto'; media.volume = 1;
+          // WKWebView ignores media.volume. Keep one Web Audio graph per voice,
+          // and reuse it instead of constructing a decoder on every attack.
+          try {
+            const source = this.ctx.createMediaElementSource(media), gain = this.ctx.createGain();
+            source.connect(gain); gain.connect(this.master);
+            player = { name, media, source, gain, generation: 0, fadeTimer: null, stopTimer: null, cleanup: null };
+          } catch { return false; }
+          const voice = player;
+          media.addEventListener('ended', () => voice.cleanup());
+          media.addEventListener('error', () => voice.cleanup());
+          this.nativeSfxPool.push(player);
+        }
+        const voice = player;
+        player.cleanup = () => {
+          if (!this.nativeSfxPlayers.has(voice)) return;
+          clearTimeout(voice.fadeTimer); clearTimeout(voice.stopTimer);
+          voice.media.pause(); this.nativeSfxPlayers.delete(voice);
+          const active = this.nativeSfxByName.get(name); active?.delete(voice);
+          if (active && !active.size) this.nativeSfxByName.delete(name);
         };
-        player.cleanup = cleanup; this.nativeSfxPlayers.add(player); voices.add(player); this.nativeSfxByName.set(name, voices);
-        media.addEventListener('ended', cleanup, { once: true });
-        media.addEventListener('error', cleanup, { once: true });
-        try { media.currentTime = def.offset || 0; } catch {}
-        media.play().catch(cleanup);
+        player.generation++;
+        player.media.playbackRate = def.rate || 1;
+        player.gain.gain.cancelScheduledValues(this.ctx.currentTime);
+        player.gain.gain.value = def.gain ?? 1;
+        this.nativeSfxPlayers.add(player); voices.add(player); this.nativeSfxByName.set(name, voices);
+        const generation = player.generation;
+        try { player.media.currentTime = def.offset || 0; } catch {}
+        player.media.play().catch(() => { if (player.generation === generation) player.cleanup(); });
         if (Number.isFinite(def.maxDur)) {
           const fadeAt = Math.max(0, def.maxDur - .08);
-          setTimeout(() => {
-            if (!this.nativeSfxPlayers.has(player)) return;
+          player.fadeTimer = setTimeout(() => {
+            if (!this.nativeSfxPlayers.has(player) || player.generation !== generation) return;
             const t = this.ctx.currentTime;
-            gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(Math.max(.0001, gain.gain.value), t);
-            gain.gain.exponentialRampToValueAtTime(.0001, t + .08);
+            player.gain.gain.cancelScheduledValues(t); player.gain.gain.setValueAtTime(Math.max(.0001, player.gain.gain.value), t);
+            player.gain.gain.exponentialRampToValueAtTime(.0001, t + .08);
           }, Math.ceil(fadeAt * 1000));
-          setTimeout(cleanup, Math.ceil(def.maxDur * 1000));
+          player.stopTimer = setTimeout(() => { if (player.generation === generation) player.cleanup(); }, Math.ceil(def.maxDur * 1000));
         }
         return true;
       }
