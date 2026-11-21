@@ -231,6 +231,8 @@
 /* Keep optional boss rewards reachable without scrolling the result card. */
 .result-card #boss-result-ad-actions:not([hidden]){position:sticky;bottom:54px;z-index:9;margin:8px 0;background:#030b1b;padding:5px;box-shadow:0 -8px 18px #020713}
 .result-card #boss-result-ad-actions button{touch-action:manipulation;pointer-events:auto}
+.boss-double-up-summary{display:grid;gap:5px;margin:12px 0;padding:12px;border:1px solid #52c7f6;background:#071c35;color:#ecf9ff}.boss-double-up-summary b{color:#79dcff;font-size:14px}.boss-double-up-summary span{font-size:12px;line-height:1.6}
+.boss-double-up-card{max-height:88svh;overflow-y:auto}.boss-double-up-card>small{position:relative;color:#77ddff;letter-spacing:.18em}.boss-double-up-list{position:relative;display:grid;gap:8px;margin:16px 0}.boss-double-up-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;padding:10px;border:1px solid #34739e;background:#071a31;text-align:left}.boss-double-up-row span{font-size:10px;color:#75dfff}.boss-double-up-row b{font-size:13px;overflow-wrap:anywhere}.boss-double-up-row strong{font-size:15px}.boss-double-up-empty{padding:14px;border:1px solid #356187;background:#071a31}
 /* Status text must remain legible at the iPhone layout size. */
 .st-head2 .st-id2 em,.st-head2 .st-avatar-caption{font-size:12px}
 .st-head2 .st-vit span{font-size:12px}
