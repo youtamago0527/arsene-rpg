@@ -3,8 +3,19 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const node = { addEventListener() {}, querySelector() { return node; } };
-const context = { window: {}, document: { ...node, getElementById: () => node }, addEventListener() {} };
+const node = {
+  open: false,
+  addEventListener() {},
+  querySelector() { return node; },
+  showModal() { this.open = true; },
+  close() { this.open = false; }
+};
+const document = {
+  ...node,
+  getElementById: () => node,
+  querySelector: selector => selector === 'dialog[open]' && node.open ? node : null
+};
+const context = { window: {}, document, addEventListener() {} };
 vm.createContext(context);
 for (const file of ['data.js', 'game.js', 'exchange_shop.js', 'login_bonus.js']) {
   const source = fs.readFileSync(path.join(__dirname, '../js', file), 'utf8');
@@ -64,6 +75,18 @@ assert.equal(shop.exchangeShopState().balance, 230, '旧コインを1枚100ア�
 assert.equal(shop.exchangeShopRedeem('ad-skip-ticket').balance, 130);
 assert.equal(shop.profile.premium.adSkipTickets, 7);
 assert.equal(shop.profile.exchangeShop.coins, undefined, '旧コインの残高は交換時に一度だけ変換される');
+
+const automatic = Object.create(context.BattleGame.prototype);
+automatic.profile = { inventory: {} };
+automatic.saveProfile = () => {};
+assert.equal(automatic.openLoginBonus({ automatic: true }), true, '未受領で拠点に入ると表示できる');
+node.close();
+assert.equal(automatic.openLoginBonus({ automatic: true }), false, '同じ日・同じ起動中は閉じた後に再表示しない');
+assert.equal(automatic.openLoginBonus(), true, 'お知らせからは開き直せる');
+node.close();
+automatic.claimLoginBonus();
+delete automatic.loginBonusShownDay;
+assert.equal(automatic.openLoginBonus({ automatic: true }), false, '同日の受取済みデータは起動し直しても表示しない');
 
 game.profile.currentJob = 'mage';
 game.profile.jobs = { mage: { level: 19 }, warrior: { level: 20 } };

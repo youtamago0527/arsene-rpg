@@ -52,8 +52,7 @@
       const state = received ? 'received' : available ? 'available' : 'upcoming';
       return `<li data-reward="${reward.id}" data-state="${state}">
         <small>${index + 1}日目</small><i class="login-bonus-icon" aria-hidden="true"></i>
-        <b>${reward.name}</b><span class="login-bonus-quantity">×${reward.quantity ?? 1}</span>
-        ${received ? '<span class="login-bonus-received">受取済み</span>' : ''}
+        <b>${reward.name}</b><span class="login-bonus-quantity">${received ? '受取済み' : `×${reward.quantity ?? 1}`}</span>
       </li>`;
     }).join('');
     claim.disabled = claimed || !!game.localScenario?.ephemeral;
@@ -61,12 +60,18 @@
     status.textContent = message;
   }
 
-  document.getElementById('login-bonus-open').addEventListener('click', () => {
-    const game = window.arseneGame;
-    if (!game || dialog.open) return;
-    render(game);
+  proto.openLoginBonus = function ({ automatic = false } = {}) {
+    if (dialog.open || document.querySelector('dialog[open]')) return false;
+    const { today, claimed } = this.loginBonusState();
+    if (automatic && (claimed || this.loginBonusShownDay === today || this.localScenario?.ephemeral)) return false;
+    render(this);
     dialog.showModal();
-  });
+    dialog.scrollTop = 0;
+    this.loginBonusShownDay = today;
+    return true;
+  };
+
+  document.getElementById('login-bonus-open').addEventListener('click', () => window.arseneGame?.openLoginBonus());
 
   claim.addEventListener('click', () => {
     const game = window.arseneGame;
@@ -78,6 +83,10 @@
     if (reward) game.audio.sfx('confirm');
   });
   document.addEventListener('visibilitychange', () => {
-    if (dialog.open && !document.hidden && window.arseneGame) render(window.arseneGame);
+    const game = window.arseneGame;
+    if (document.hidden || !game) return;
+    if (dialog.open) render(game);
+    else if (!document.getElementById('menu-screen').hidden && document.getElementById('menu-panel').hidden &&
+      document.getElementById('start-flow').hidden && !window.arseneQOffer?.isOpen?.()) game.openLoginBonus({ automatic: true });
   });
 })();

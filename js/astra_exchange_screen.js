@@ -12,11 +12,18 @@
   ];
   const login = document.getElementById('login-bonus');
   const dialog = document.getElementById('astra-exchange');
+  const notice = document.getElementById('login-bonus-open');
   const list = dialog.querySelector('ul');
   const balance = dialog.querySelector('output');
   const status = dialog.querySelector('[role="status"]');
   const numberFormat = new Intl.NumberFormat('ja-JP');
   let lastExchange = null;
+  let returnToLogin = false;
+
+  function positionBelowStatus() {
+    const edge = Math.ceil(notice.getBoundingClientRect().bottom + 7);
+    dialog.style.setProperty('--astra-top', `${edge}px`);
+  }
 
   function render(game, message = '') {
     const state = game.exchangeShopState();
@@ -28,27 +35,34 @@
       const text = product ? (product.affordable ? '交換' : 'アストラ不足') : '準備中';
       return `<li><article>
         <img src="assets/ui/astra-exchange/${card.id}.webp" alt="">
-        <h3>${product?.name || card.label}${product ? ` ×${product.quantity}` : ''}</h3>
+        <h3>${product?.name || card.label}</h3>
         <small lang="en">${card.en}</small>
-        ${product ? `<p class="astra-price" aria-label="${product.price}アストラ">${numberFormat.format(product.price)}</p>` : '<p class="astra-price">—</p>'}
+        ${product ? `<p class="astra-price" aria-label="${product.quantity}個、${product.price}アストラ"><span>${numberFormat.format(product.price)}</span><span class="astra-quantity">×${product.quantity}</span></p>` : '<p class="astra-price">—</p>'}
         <button type="button" data-astra-product="${card.id}" aria-label="${card.label} ${text}" ${disabled ? 'disabled' : ''}>${text}</button>
       </article></li>`;
     }).join('');
     status.textContent = message;
   }
 
-  login.querySelector('[data-open-astra-exchange]').addEventListener('click', () => {
+  function openExchange({ fromLogin = false } = {}) {
     const game = window.arseneGame;
     if (!game || dialog.open) return;
     render(game);
     lastExchange = null;
-    login.close();
+    returnToLogin = fromLogin;
+    if (fromLogin) login.close();
+    positionBelowStatus();
     dialog.showModal();
     dialog.scrollTop = 0;
-  });
+  }
+
+  login.querySelector('[data-open-astra-exchange]').addEventListener('click', () => openExchange({ fromLogin: true }));
+  document.getElementById('hideout-astra-exchange').addEventListener('click', () => openExchange());
+  window.addEventListener('resize', () => { if (dialog.open) positionBelowStatus(); });
 
   dialog.addEventListener('close', () => {
-    if (!document.getElementById('menu-screen').hidden) document.getElementById('login-bonus-open').click();
+    if (returnToLogin && !document.getElementById('menu-screen').hidden) window.arseneGame?.openLoginBonus();
+    returnToLogin = false;
   });
 
   list.addEventListener('click', event => {
