@@ -36,7 +36,7 @@ const context = {
   clearInterval() {}
 };
 vm.createContext(context);
-for (const file of ['data.js', 'exchange_shop.js', 'q_offer.js']) {
+for (const file of ['data.js', 'otherworld_data.js', 'exchange_shop.js', 'q_offer.js']) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), context, { filename: file });
 }
 

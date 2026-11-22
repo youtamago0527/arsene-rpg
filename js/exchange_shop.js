@@ -9,8 +9,13 @@
     currency: { store: 'exchangeShop', id: 'astra', name: 'アストラ', quantity: 100 },
     rewardedAds: { required: 10, quantity: 100 },
     products: [
-      { id: 'ad-skip-ticket', name: '広告スキップ券', store: 'premium', itemId: 'adSkipTickets', quantity: 1, price: 100 },
-      { id: 'otherworld-ticket', name: '異世界探索券', store: 'premium', itemId: 'otherworldTickets', quantity: 1, price: 100 },
+      { id: 'ad-skip-ticket', name: '広告スキップ券', en: 'AD SKIP TICKET', store: 'premium', itemId: 'adSkipTickets', quantity: 1, price: 100 },
+      { id: 'chaos-arcana', en: 'CHAOS ARCANA', store: 'inventory', itemId: 'arcanaChaos', quantity: 1, price: 100 },
+      { id: 'otherworld-ticket', name: '異世界探索券', en: 'EXPLORATION TICKET', store: 'premium', itemId: 'otherworldTickets', quantity: 1, price: 100 },
+      { id: 'exp-boost', en: 'EXP ×2 (1 DAY)', store: 'inventory', itemId: 'astraExpBoost', quantity: 1, price: 600 },
+      { id: 'reincarnation-arcana', en: 'REINCARNATION ARCANA', store: 'inventory', itemId: 'rebirthArcana', quantity: 1, price: 1000 },
+      { id: 'protection-arcana', en: 'PROTECTION ARCANA', store: 'inventory', itemId: 'protectionArcana', quantity: 1, price: 200 },
+      { id: 'blessed-protection-arcana', en: 'BLESSED PROTECTION ARCANA', store: 'inventory', itemId: 'blessedProtectionArcana', quantity: 1, price: 500 },
       { id: 'health-potions', store: 'inventory', itemId: 'potion', quantity: 3, price: 100 },
       { id: 'mana-potions', store: 'inventory', itemId: 'manaPotion', quantity: 3, price: 100 }
     ]
@@ -55,7 +60,7 @@
     return {
       name, keeper, currencyName: currency.name, balance,
       products: products.map(product => ({
-        id: product.id, name: productName(product), price: product.price, quantity: product.quantity,
+        id: product.id, name: productName(product), en: product.en, price: product.price, quantity: product.quantity,
         owned: owned(this.profile[product.store], product.itemId),
         affordable: balance >= product.price
       }))

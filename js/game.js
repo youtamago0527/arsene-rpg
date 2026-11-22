@@ -3266,11 +3266,16 @@
     activeMealBuff() { const id = this.activeMealBuffType(); return id ? D.foodMenu?.buffs?.[id] || null : null; }
     mealGoldBonusRate() { return this.activeMealBuff()?.goldRate || 0; }
     mealExpBonusRate() { return this.activeMealBuff()?.expRate || 0; }
+    astraExpBoostUntil() {
+      const expiry = this.profile.astraExpBoostExpiresAt;
+      return Number.isSafeInteger(expiry) && expiry > Date.now() ? expiry : 0;
+    }
+    astraExpMultiplier() { return this.astraExpBoostUntil() ? 2 : 1; }
     rewardExpMultiplier() {
       const mode = String(this.battleMode || '');
       const normalDungeon = mode !== 'infiniteScore' && !mode.startsWith('ow');
       const adBoost = normalDungeon && window.arseneQOffer?.isActive?.('exp2') ? 2 : 1;
-      return (1 + this.mealExpBonusRate()) * adBoost * (this.collectionTitleEffect?.('expMultiplier') ?? 1);
+      return (1 + this.mealExpBonusRate()) * Math.max(adBoost, this.astraExpMultiplier()) * (this.collectionTitleEffect?.('expMultiplier') ?? 1);
     }
     rewardGoldMultiplier() {
       const mode = String(this.battleMode || '');
@@ -4522,9 +4527,26 @@
             : '腹、満たしとき。装備のためにも踏ん張りや、ほんま。';
       setTimeout(() => this.renderKazuBubble(line), 0);
     }
-    useMenuItem() {
-      // 回復アイテムは戦闘内のアイテムコマンド専用。拠点回復による低階層周回を防ぐ。
-      this.audio.sfx('ui');
+    useMenuItem(id) {
+      // 回復アイテムは引き続き戦闘中のアイテムコマンドから使う。
+      if (id !== 'astraExpBoost') { this.audio.sfx('ui'); return false; }
+      if (this.localScenario?.ephemeral || !(this.profile.inventory[id] > 0)) return false;
+      const previousStock = this.profile.inventory[id];
+      const previousExpiry = this.profile.astraExpBoostExpiresAt;
+      const start = this.astraExpBoostUntil() || Date.now();
+      this.profile.inventory[id]--;
+      this.profile.astraExpBoostExpiresAt = start + D.items[id].durationMs;
+      try { this.saveProfile(); }
+      catch {
+        this.profile.inventory[id] = previousStock;
+        this.profile.astraExpBoostExpiresAt = previousExpiry;
+        window.arseneStartFlow?.toast('保存できませんでした。もう一度お試しください。');
+        return false;
+      }
+      this.audio.sfx('confirm');
+      this.renderMenuPanel('items');
+      window.arseneStartFlow?.toast('経験値2倍の有効時間を24時間追加しました。');
+      return true;
     }
     // ══ 工房ナビゲーション ════════════════════════════════════
     // 第1階層＝製作／強化／分解／素材（4つなので横スクロールが起きない）
@@ -5138,13 +5160,22 @@
       const rows = list.map(([id, n]) => {
         const it = D.items[id], w = D.weapons[id];
         // アルカナは恒久強化用なので拠点で使用可。HP/MP回復アイテムは戦闘内だけで使える。
-        if (this.itemTab === 'consumable') { const recover = this.recoveryItemInfo(it); return `<div class="item-row rarity-${it.rarity}"><div><b>${it.name}</b><small>${it.description}</small></div><strong>×${n}</strong>${it.arcanaStat ? `<button data-use-arcana="${id}">使う</button>` : recover ? '<button disabled>戦闘中のみ</button>' : ''}</div>`; }
+        if (this.itemTab === 'consumable') {
+          const recover = this.recoveryItemInfo(it);
+          const button = it.arcanaStat ? `<button data-use-arcana="${id}">使う</button>`
+            : id === 'astraExpBoost' ? `<button data-use-item="${id}">使う</button>`
+            : recover ? '<button disabled>戦闘中のみ</button>' : '';
+          return `<div class="item-row rarity-${it.rarity}"><div><b>${it.name}</b><small>${it.description}</small></div><strong>×${n}</strong>${button}</div>`;
+        }
         const equipped = Object.values(this.profile.equipment).includes(id), slot = w ? 'rightHand' : it.slot;
         return `<div class="item-row rarity-${it.rarity}${equipped ? ' item-equipped' : ''}"><div><b>${it.name}${this.enchantSuffix(id)}${equipped ? '<mark class="eq-badge">装備中</mark>' : ''}</b><small>${this.bonusText(id)}</small></div><strong>×${n}</strong><button data-equip-item="${id}" data-equip-slot="${slot}" ${equipped ? 'disabled' : ''}>${equipped ? '装備中' : '装備'}</button></div>`;
       }).join('');
       const emptyMsg = this.itemTab === 'consumable' ? '消費アイテムなし' : this.itemTab === 'weapon' ? 'この種類の武器なし' : 'この部位の防具なし';
+      const boostUntil = this.astraExpBoostUntil();
+      const boostStatus = this.itemTab === 'consumable' && boostUntil
+        ? `<p class="inventory-use-note">経験値2倍 発動中 · ${new Date(boostUntil).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}まで</p>` : '';
       const useNote = this.itemTab === 'consumable' ? '<p class="inventory-use-note">拠点では回復アイテムを使用できません。戦闘中の「アイテム」から使用してください。</p>' : '';
-      panel.innerHTML = `<small>INVENTORY</small><h2>アイテム</h2><div class="inventory-screen"><div class="inventory-vitals"><b>HP ${vitals.hp} / ${stats.maxHp}</b><b>MP ${vitals.mp} / ${stats.maxMp}</b></div><div class="item-tabs">${mainTabs}</div><div class="inventory-subtab-area">${subTabs}</div><div class="inventory-list">${useNote}${rows || `<p class="item-empty">${emptyMsg}</p>`}</div></div>`;
+      panel.innerHTML = `<small>INVENTORY</small><h2>アイテム</h2><div class="inventory-screen"><div class="inventory-vitals"><b>HP ${vitals.hp} / ${stats.maxHp}</b><b>MP ${vitals.mp} / ${stats.maxMp}</b></div><div class="item-tabs">${mainTabs}</div><div class="inventory-subtab-area">${subTabs}</div><div class="inventory-list">${boostStatus}${useNote}${rows || `<p class="item-empty">${emptyMsg}</p>`}</div></div>`;
     }
     armorEnchantContent() {
       const et = D.enchantTable, enchants = this.profile.armorEnchants || {};

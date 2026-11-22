@@ -18,7 +18,7 @@ const document = {
 };
 const context = { window: {}, document, addEventListener() {} };
 vm.createContext(context);
-for (const file of ['data.js', 'game.js', 'exchange_shop.js', 'login_bonus.js']) {
+for (const file of ['data.js', 'otherworld_data.js', 'game.js', 'exchange_shop.js', 'login_bonus.js']) {
   const source = fs.readFileSync(path.join(__dirname, '../js', file), 'utf8');
   vm.runInContext(source, context, { filename: file });
   context.BattleGame = context.window.BattleGame;
@@ -42,7 +42,7 @@ assert.deepEqual(game.profile.inventory, { arcanaChaos: 2, rebirthArcana: 1 });
 assert.equal(game.profile.premium.adSkipTickets, 5);
 assert.equal(game.exchangeShopState().balance, 3100);
 assert.equal(game.exchangeShopState().keeper, 'カズ');
-assert.equal(game.exchangeShopState().products.length, 4);
+assert.equal(game.exchangeShopState().products.length, 9);
 assert.ok(game.exchangeShopState().products.every(product => product.affordable));
 assert.equal(game.exchangeShopRedeem('nonexistent').reason, 'unknownProduct');
 assert.equal(game.exchangeShopRedeem('otherworld-ticket').ok, true);
@@ -79,6 +79,66 @@ assert.equal(shop.exchangeShopState().balance, 230, '旧コインを1枚100ア�
 assert.equal(shop.exchangeShopRedeem('ad-skip-ticket').balance, 130);
 assert.equal(shop.profile.premium.adSkipTickets, 1);
 assert.equal(shop.profile.exchangeShop.coins, undefined, '旧コインの残高は交換時に一度だけ変換される');
+
+const newProducts = {
+  'chaos-arcana': ['arcanaChaos', 100],
+  'exp-boost': ['astraExpBoost', 600],
+  'reincarnation-arcana': ['rebirthArcana', 1000],
+  'protection-arcana': ['protectionArcana', 200],
+  'blessed-protection-arcana': ['blessedProtectionArcana', 500]
+};
+const exchange = Object.create(context.BattleGame.prototype);
+exchange.profile = { inventory: {}, exchangeShop: { astra: 3100 } };
+exchange.saveProfile = () => {};
+exchange.audio = { sfx() {} };
+exchange.renderMenuPanel = () => {};
+const listing = exchange.exchangeShopState().products.filter(product => product.en);
+assert.equal(listing.length, 7);
+for (const [id, [itemId, price]] of Object.entries(newProducts)) {
+  assert.equal(listing.find(product => product.id === id).price, price);
+  const balance = exchange.exchangeShopState().balance;
+  assert.equal(exchange.exchangeShopRedeem(id).balance, balance - price);
+  assert.equal(exchange.profile.inventory[itemId], 1, id);
+}
+assert.equal(exchange.arcanaCount(), 1, '交換した輪廻のアルカナを転生処理が参照する');
+exchange.profile.gold = 1000000;
+exchange.profile.equipment = { rightHand: 'phantomSword' };
+exchange.profile.inventory.phantomSword = 3;
+exchange.profile.weaponEnchants = { phantomSword: 6 };
+exchange.enchantSuccessRate = () => 0;
+exchange.renderMenuSummary = () => {};
+exchange.renderWorkshopKeepingAnchor = () => {};
+context.prompt = () => '2';
+exchange.enchantWeapon('phantomSword');
+assert.equal(exchange.profile.inventory.blessedProtectionArcana, 0);
+assert.equal(exchange.profile.weaponEnchants.phantomSword, 6);
+context.confirm = () => true;
+exchange.enchantWeapon('phantomSword');
+assert.equal(exchange.profile.inventory.protectionArcana, 0);
+assert.equal(exchange.profile.weaponEnchants.phantomSword, 3);
+assert.equal(exchange.profile.inventory.phantomSword, 1);
+delete context.prompt;
+delete context.confirm;
+const duration = 24 * 60 * 60 * 1000;
+const beforeUse = Date.now();
+assert.equal(exchange.useMenuItem('astraExpBoost'), true);
+const expiresAt = exchange.profile.astraExpBoostExpiresAt;
+assert.ok(expiresAt >= beforeUse + duration && expiresAt <= Date.now() + duration);
+assert.equal(exchange.profile.inventory.astraExpBoost, 0);
+assert.equal(exchange.rewardExpMultiplier(), 2);
+context.window.arseneQOffer = { isActive: type => type === 'exp2' };
+assert.equal(exchange.rewardExpMultiplier(), 2, '広告の経験値2倍と重複しても4倍にならない');
+delete context.window.arseneQOffer;
+assert.equal(exchange.exchangeShopRedeem('exp-boost').ok, true);
+exchange.saveProfile = () => { throw new Error('storage is full'); };
+assert.equal(exchange.useMenuItem('astraExpBoost'), false);
+assert.equal(exchange.profile.inventory.astraExpBoost, 1);
+assert.equal(exchange.profile.astraExpBoostExpiresAt, expiresAt);
+exchange.saveProfile = () => {};
+assert.equal(exchange.useMenuItem('astraExpBoost'), true);
+assert.equal(exchange.profile.astraExpBoostExpiresAt, expiresAt + duration);
+exchange.profile.astraExpBoostExpiresAt = Date.now() - 1;
+assert.equal(exchange.rewardExpMultiplier(), 1);
 
 const legacy = Object.create(context.BattleGame.prototype);
 legacy.profile = { exchangeShop: { astra: 100, rewardedAds: 9 } };

@@ -1,15 +1,6 @@
 (() => {
   'use strict';
 
-  const cards = [
-    { id: 'ad-skip-ticket', label: '広告スキップ券', en: 'AD SKIP TICKET' },
-    { id: 'chaos-arcana', label: '混沌のアルカナ', en: 'CHAOS ARCANA' },
-    { id: 'otherworld-ticket', label: '異世界探索券', en: 'EXPLORATION TICKET' },
-    { id: 'exp-boost', label: '1日経験値2倍', en: 'EXP ×2 (1 DAY)' },
-    { id: 'reincarnation-arcana', label: '輪廻のアルカナ', en: 'REINCARNATION ARCANA' },
-    { id: 'protection-arcana', label: '保護のアルカナ', en: 'PROTECTION ARCANA' },
-    { id: 'blessed-protection-arcana', label: '祝福された保護のアルカナ', en: 'BLESSED PROTECTION ARCANA' }
-  ];
   const login = document.getElementById('login-bonus');
   const dialog = document.getElementById('astra-exchange');
   const notice = document.getElementById('login-bonus-open');
@@ -27,18 +18,16 @@
 
   function render(game, message = '') {
     const state = game.exchangeShopState();
-    const products = new Map(state.products.map(item => [item.id, item]));
     balance.textContent = numberFormat.format(state.balance);
-    list.innerHTML = cards.map(card => {
-      const product = products.get(card.id);
-      const disabled = !product?.affordable || game.localScenario?.ephemeral;
-      const text = product ? (product.affordable ? '交換' : 'アストラ不足') : '準備中';
+    list.innerHTML = state.products.filter(product => product.en).map(product => {
+      const disabled = !product.affordable || game.localScenario?.ephemeral;
+      const text = product.affordable ? '交換' : 'アストラ不足';
       return `<li><article>
-        <img src="assets/ui/astra-exchange/${card.id}.webp" alt="">
-        <h3>${product?.name || card.label}</h3>
-        <small lang="en">${card.en}</small>
-        ${product ? `<p class="astra-price" aria-label="${product.quantity}個、${product.price}アストラ"><span>${numberFormat.format(product.price)}</span><span class="astra-quantity">×${product.quantity}</span></p>` : '<p class="astra-price">—</p>'}
-        <button type="button" data-astra-product="${card.id}" aria-label="${card.label} ${text}" ${disabled ? 'disabled' : ''}>${text}</button>
+        <img src="assets/ui/astra-exchange/${product.id}.webp" alt="">
+        <h3>${product.name}</h3>
+        <small lang="en">${product.en}</small>
+        <p class="astra-price" aria-label="${product.quantity}個、${product.price}アストラ"><span>${numberFormat.format(product.price)}</span><span class="astra-quantity">×${product.quantity}</span></p>
+        <button type="button" data-astra-product="${product.id}" aria-label="${product.name} ${text}" ${disabled ? 'disabled' : ''}>${text}</button>
       </article></li>`;
     }).join('');
     status.textContent = message;
