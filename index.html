@@ -45,7 +45,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <link rel="stylesheet" href="css/login-bonus.css?v=3">
+  <link rel="stylesheet" href="css/login-bonus.css?v=4">
+  <link rel="stylesheet" href="css/astra-exchange.css?v=1">
   <link rel="stylesheet" href="css/game.css?v=0.5.8">
   <link rel="stylesheet" href="css/menu.css?v=0.9.5">
   <link rel="stylesheet" href="css/otherworld.css?v=0.3.8">
@@ -170,7 +171,7 @@
   <script src="js/equipment_progression.js?v=2.4.3"></script>
   <script src="js/audio-runtime-20260904.js?v=1.0.9"></script>
   <script src="js/kazu_dialogues.js?v=0.1.4"></script>
-  <script src="js/help_data.js?v=0.6.10"></script>
+  <script src="js/help_data.js?v=0.6.11"></script>
   <script src="js/otherworld_data.js?v=1.6.2"></script>
   <script src="js/infinite_score_data.js?v=0.2.7"></script>
   <script src="js/debug_room.js?v=0.4.6"></script>
@@ -186,9 +187,24 @@
       <ol aria-label="7日間の報酬"></ol>
       <div class="login-bonus-footer">
         <button type="button" data-login-claim>報酬を受け取る</button>
+        <button type="button" data-open-astra-exchange>アストラ交換所</button>
         <p role="status"></p>
       </div>
     </div>
+  </dialog>
+  <dialog id="astra-exchange" aria-labelledby="astra-exchange-title">
+    <header class="astra-exchange-header" tabindex="-1" autofocus>
+      <h2 id="astra-exchange-title">アストラ交換所</h2>
+      <span class="astra-exchange-subtitle" lang="en">ASTRA EXCHANGE</span>
+      <div class="astra-exchange-balance">
+        <span>所持アストラ</span><output aria-label="所持アストラ" aria-live="polite"></output>
+      </div>
+    </header>
+    <ul aria-label="交換アイテム"></ul>
+    <p class="astra-exchange-status" role="status"></p>
+    <form method="dialog" class="astra-exchange-footer">
+      <button type="submit">戻る</button>
+    </form>
   </dialog>
   <dialog id="battle-history" aria-labelledby="battle-history-title">
     <header>
@@ -200,6 +216,7 @@
   <script src="js/game.js?v=4.13.21"></script>
   <script src="js/exchange_shop.js?v=2"></script>
   <script src="js/login_bonus.js?v=4"></script>
+  <script src="js/astra_exchange_screen.js?v=1"></script>
   <script src="js/battle_fx.js?v=0.1.5"></script>
   <script src="js/job_maestro.js?v=0.3.4"></script>
   <script src="js/otherworld.js?v=0.3.7"></script>

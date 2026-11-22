@@ -128,5 +128,14 @@
 #login-bonus button:focus-visible { outline: 2px solid #faba81; outline-offset: 2px; }
 #login-bonus button:disabled { opacity: .65; cursor: default; }
 #login-bonus [data-login-claim]:disabled { --login-claim-art: url("../assets/ui/login-bonus/button_secondary.webp"); }
+#login-bonus [data-open-astra-exchange] {
+  width: min(76%, 304px);
+  min-height: 44px;
+  margin-top: 5px;
+  border: 0;
+  background: url("../assets/ui/login-bonus/button_secondary.webp") center / 100% 100% no-repeat;
+  color: #ffe1c3;
+  cursor: pointer;
+}
 #login-bonus [role="status"] { margin: 7px 0 0; color: #e5c0ac; text-align: center; font-size: 12px; }
 #login-bonus [role="status"]:empty { margin: 0; }

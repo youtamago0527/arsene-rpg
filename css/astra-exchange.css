@@ -1,0 +1,121 @@
+#astra-exchange {
+  --shop-art: url("../assets/ui/astra-exchange/astra-previous.webp");
+  position: fixed;
+  inset: 23dvh 0 max(0px, env(safe-area-inset-bottom));
+  width: min(520px, calc(100% - 12px));
+  max-height: calc(77dvh - env(safe-area-inset-bottom, 0px));
+  margin: 0 auto auto;
+  padding: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #8b704a;
+  border-radius: 6px;
+  background: #080a20 url("../assets/ui/astra-exchange/shop-background.webp") center / cover;
+  color: #f9edce;
+  color-scheme: dark;
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+}
+#astra-exchange::backdrop { background: linear-gradient(transparent 0 23dvh, #03030bb8 23dvh); }
+#astra-exchange .astra-exchange-header {
+  padding: clamp(9px, 3vw, 18px) 10px 5px;
+  background: #101029 url("../assets/ui/astra-exchange/header-background.webp") center / cover no-repeat;
+  text-align: center;
+  text-shadow: 0 1px 4px #050518;
+}
+#astra-exchange h2 { margin: 0; color: #ffe1a1; font-size: clamp(22px, 6vw, 33px); }
+#astra-exchange .astra-exchange-subtitle { display: block; margin: 3px 0; color: #d9ad67; font-size: 11px; letter-spacing: .09em; }
+#astra-exchange .astra-exchange-header::after {
+  display: block;
+  width: 110px;
+  height: 10px;
+  margin: 4px auto 0;
+  background: url("../assets/ui/astra-exchange/celestial-divider.webp") center / contain no-repeat;
+  content: "";
+}
+#astra-exchange .astra-exchange-balance {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .8em;
+  width: min(88%, 320px);
+  min-height: 35px;
+  margin: 5px auto 0;
+  padding: 5px 13px;
+  background: url("../assets/ui/astra-exchange/balance-frame.webp") center / 100% 100% no-repeat;
+  color: #f5dfb3;
+  font-size: 13px;
+}
+#astra-exchange .astra-exchange-balance output,
+#astra-exchange .astra-price { display: flex; align-items: center; justify-content: center; gap: 4px; font-variant-numeric: tabular-nums; }
+#astra-exchange .astra-exchange-balance output { font: 700 17px Georgia, serif; }
+#astra-exchange .astra-exchange-balance output::before,
+#astra-exchange .astra-price[aria-label]::before {
+  width: 19px;
+  height: 17px;
+  background: var(--shop-art) center / contain no-repeat;
+  content: "";
+}
+#astra-exchange ul {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: clamp(3px, 1vw, 6px);
+  margin: 0;
+  padding: 6px 6px 0;
+  list-style: none;
+}
+#astra-exchange li {
+  grid-column: span 2;
+  min-width: 0;
+  background: url("../assets/ui/astra-exchange/card-three-column.webp") center / 100% 100% no-repeat;
+}
+#astra-exchange li:nth-child(n+4) {
+  grid-column: span 3;
+  background-image: url("../assets/ui/astra-exchange/card-two-column.webp");
+}
+#astra-exchange article {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  justify-items: center;
+  align-items: center;
+  height: 100%;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px clamp(5px, 2vw, 10px) 4px;
+  text-align: center;
+  text-shadow: 0 1px 3px #040513;
+}
+#astra-exchange article img { width: min(92%, 112px); height: clamp(34px, 11vw, 57px); object-fit: contain; }
+#astra-exchange article h3 { margin: 0; font-size: clamp(11px, 3vw, 15px); line-height: 1.15; overflow-wrap: anywhere; }
+#astra-exchange article small { display: block; max-width: 100%; color: #d6ad71; font-size: clamp(7px, 1.7vw, 10px); overflow-wrap: anywhere; }
+#astra-exchange .astra-price { margin: 0; color: #ffe3a7; font: 700 clamp(12px, 3.3vw, 17px) Georgia, serif; }
+#astra-exchange article button,
+#astra-exchange .astra-exchange-footer button {
+  border: 0;
+  padding: 5px;
+  color: #ffe6b7;
+  font-weight: 700;
+  text-shadow: 0 1px 3px #040513;
+  cursor: pointer;
+}
+#astra-exchange article button {
+  width: 100%;
+  min-height: 44px;
+  background: url("../assets/ui/astra-exchange/exchange-button.webp") center / 100% 70% no-repeat;
+  font-size: clamp(10px, 3vw, 13px);
+}
+#astra-exchange article button:disabled { opacity: .7; cursor: default; }
+#astra-exchange button:focus-visible { outline: 2px solid #e5bc7e; outline-offset: -1px; }
+#astra-exchange .astra-exchange-status { margin: 4px 6px; color: #f6d898; text-align: center; font-size: 12px; }
+#astra-exchange .astra-exchange-status:empty { display: none; }
+#astra-exchange .astra-exchange-footer {
+  position: sticky;
+  bottom: 0;
+  margin-top: 6px;
+  padding: 6px 11px max(6px, env(safe-area-inset-bottom));
+  background: url("../assets/ui/astra-exchange/footer-background.webp") center / cover no-repeat;
+}
+#astra-exchange .astra-exchange-footer button {
+  width: min(122px, 38%);
+  min-height: 44px;
+  background: url("../assets/ui/astra-exchange/back-button.webp") center / 100% 90% no-repeat;
+}
