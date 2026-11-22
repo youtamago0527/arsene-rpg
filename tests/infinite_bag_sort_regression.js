@@ -16,5 +16,6 @@ assert(css.includes('button.is-equipped'), 'equipped detail blackout style is mi
 assert(!score.includes('is-bag-item${isEquipped?\' equipped\''), 'generic equipped class can collide with menu layout');
 assert(!score.includes('is-bag-detail${isEquipped?\' equipped\''), 'generic equipped class can collapse bag detail layout');
 assert(index.includes('infinite-score.css?v=0.3.21'), 'CSS cache bust was not updated');
-assert(index.includes('infinite_score.js?v=0.3.45'), 'bag markup cache bust was not updated');
+const version = index.match(/infinite_score\.js\?v=(\d+)\.(\d+)\.(\d+)\b/);
+assert(version && (+version[1] > 0 || +version[2] > 3 || (+version[2] === 3 && +version[3] >= 45)), 'bag markup cache bust was not updated');
 console.log('infinite bag sort regression: ok');
