@@ -546,7 +546,31 @@
 
   // ── CARD / SHOP / RETURN ───────────────────────────────────
   P.isCardPicks=function(force=null){const returnUnlocked=(this.isRun()?.floor||1)>=Math.max(1,Number(this.isEffectiveCfg().returnMinFloor)||20);let pool=this.isCfg().cards.filter(x=>x.id!=='return'||returnUnlocked);if(force==='returnCard'&&returnUnlocked)pool=[pool.find(x=>x.id==='return'),...pool.filter(x=>x.id!=='return')];if(force==='sublime')pool=[pool.find(x=>x.id==='sublime'),...pool.filter(x=>x.id!=='sublime')];const out=[];while(out.length<3&&pool.length){const pick=(force&&out.length===0)?pool[0]:this.isPickWeighted(pool);out.push(pick);pool=pool.filter(x=>x.id!==pick.id);}return out;};
-  P.isShowCards=function(force=null){const picks=this.isCardPicks(force);this.isRun().pendingCards=picks;this.saveProfile();this.showResult('ENCHANT CARD','3枚から1枚を選ぶ。選ばなかったカードは消滅する。','INFINITE SCORE',`<div class="is-cards">${picks.map((c,i)=>`<button class="is-card" data-is-card="${i}"><b>《${esc(c.name)}》</b><span>${esc(c.text)}</span></button>`).join('')}</div>`);this.isHideDefaultResultMenu();};
+  const cardArtTones = new Map([
+    ['heal', 'jade'], ['mana', 'blue'], ['treasure', 'gold'], ['hunt', 'red'],
+    ['stairs', 'blue'], ['return', 'gold'], ['forge', 'red'], ['gold', 'gold'],
+    ['quality', 'violet'], ['merchant', 'jade'], ['sublime', 'violet'],
+  ]);
+
+  P.isShowCards = function (force = null) {
+    const run = this.isRun();
+    const picks = this.isCardPicks(force);
+    run.pendingCards = picks;
+    this.saveProfile();
+
+    const cards = picks.map((card, index) => {
+      const tone = cardArtTones.get(card.id) || 'blue';
+      const artId = cardArtTones.has(card.id) ? card.id : 'default';
+      return `<button type="button" class="is-card" data-is-card="${index}" data-card-tone="${tone}">
+        <span class="is-card-art" aria-hidden="true"><img src="assets/ui/infinite-enchant/${artId}.webp" width="184" height="184" alt=""></span>
+        <span class="is-card-details"><b>${esc(card.name)}</b><span>${esc(card.text)}</span></span>
+        <span class="is-card-chevron" aria-hidden="true">›</span>
+      </button>`;
+    }).join('');
+    const prompt = picks.length === 1 ? 'カードを選ぶ。' : `${picks.length}枚から1枚を選ぶ。選ばなかったカードは消滅します。`;
+    this.showResult('ENCHANT CARD', prompt, `無限奏廊 / FLOOR ${run.floor}`, `<div class="is-cards">${cards}</div>`);
+    this.isHideDefaultResultMenu();
+  };
   P.isChooseGear=async function(title,predicate=()=>true){const list=this.isRun().lootBag.filter(x=>x.kind==='equipment'&&predicate(x));if(!list.length)return null;const n=await this.isChoose(title,list.map(x=>({label:D().items[x.itemId]?.name||x.itemId,note:`+${x.plus||0}`})),{kicker:'GEAR SELECT'});return n===null?null:list[n];};
   P.isApplyCard=function(index){const r=this.isRun(),c=r.pendingCards?.[index];if(!c)return;r.pendingCards=null;const stats=this.totalStats();if(c.id==='heal')r.hp=Math.min(stats.maxHp,r.hp+Math.ceil(stats.maxHp*.2));else if(c.id==='mana')r.mp=Math.min(stats.maxMp,r.mp+Math.ceil(stats.maxMp*.2));else if(c.id==='treasure')r.buffs.treasureBonus=Math.min(1,(r.buffs.treasureBonus||0)+.1);else if(c.id==='hunt')r.buffs.rareBonus=Math.min(1,(r.buffs.rareBonus||0)+.05);else if(c.id==='stairs'){this.isAfterBattle();this.isDescend();return;}else if(c.id==='return'){this.isReturnRun();return;}else if(c.id==='gold')r.buffs.goldBonus=(r.buffs.goldBonus||0)+.2;else if(c.id==='quality')r.buffs.qualityBattles=3;else if(c.id==='merchant'){this.isAfterBattle();this.isRenderShop($('#menu-panel'),true);return;}else if(c.id==='forge'){const x=this.isChooseGear('鍛造する装備を選択');if(x)x.plus=(x.plus||0)+1;}else if(c.id==='sublime'){const x=this.isChooseGear('昇華する装備を選択',x=>x.ops?.some(o=>o.rank<4));if(x){const candidates=x.ops.filter(o=>o.rank<4),n=Number(prompt(`強化するOPを選択\n${candidates.map((o,i)=>`${i+1}: ${this.isCfg().opLabels[o.key]||o.key} R${o.rank}`).join('\n')}`))-1,op=candidates[n];if(op){op.rank++;op.value=this.isCfg().opRanks[op.key][op.rank-1];}}}this.isLog(`CARD《${c.name}》`);this.saveProfile();this.isAfterBattle();};
   const isApplyCardNative=P.isApplyCard;
