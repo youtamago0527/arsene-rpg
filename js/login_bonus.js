@@ -4,7 +4,8 @@
   const ticket = { store: 'premium', id: 'adSkipTickets', name: '広告スキップ券' };
   const chaos = { store: 'inventory', id: 'arcanaChaos', name: '混沌のアルカナ' };
   const rebirth = { store: 'inventory', id: 'rebirthArcana', name: '輪廻のアルカナ' };
-  const rewards = [ticket, chaos, ticket, chaos, ticket, chaos, rebirth];
+  const exchangeCoin = window.ARSENE_DATA.exchangeShop.currency;
+  const rewards = [ticket, chaos, ticket, chaos, ticket, exchangeCoin, rebirth];
   const proto = BattleGame.prototype;
 
   proto.loginBonusState = function (now = new Date()) {
