@@ -1475,10 +1475,38 @@
     sparkRateBonus(type, skill) {
       return (this.passiveEffectRate?.('sparkRateBonus') || 0) + (this.equipmentEffectRate?.('sparkRateBonus') || 0);
     }
+    sparkChanceFor(skill, type, score, sourceMultiplier) {
+      return Math.min(1, this.sparkBaseRateForScore(score) * sourceMultiplier * this.traitSparkMult(type) + this.sparkRateBonus(type, skill));
+    }
+    weaponSkillLevelRule(skill) {
+      if (!this.isPlayerContentVisible(skill) || skill.source !== 'weapon' || skill.sparkRank == null || skill.target === 'self') return null;
+      const level = this.profile.weaponSkillLevels?.[skill.id] ?? 1;
+      const rules = this.gb().weaponSkillUpgrades || [];
+      const current = rules.find(rule => rule.level === level);
+      return { level: current?.level ?? 1, multiplier: current?.damage ?? 1 };
+    }
+    leveledWeaponSkillName(skill) {
+      const level = this.weaponSkillLevelRule(skill)?.level ?? 1;
+      return level > 1 ? `${skill.name} Lv${level}` : skill.name;
+    }
+    rollWeaponSkillUpgrade(skill, enemy, type, masteryLevel) {
+      const current = this.weaponSkillLevelRule(skill);
+      if (!enemy || !current || !this.hasWeaponSkill(skill.id)) return null;
+      const next = (this.gb().weaponSkillUpgrades || []).find(row => row.level === current.level + 1);
+      if (!next || masteryLevel < next.mastery || type !== this.equippedWeaponType() || !this.weaponSkillMatchesEquipped(skill)) return null;
+      if (skill.requiredWeaponId && this.profile.equipment?.rightHand !== skill.requiredWeaponId) return null;
+      if (skill.requiresBareFists && !this.usesBareFists()) return null;
+      const score = masteryLevel + Math.max(1, enemy.sparkLevel || 1) - skill.sparkRank - next.rankOffset;
+      const useMultiplier = this.gb().sparkSourceMultipliers?.related ?? .5;
+      if (Math.random() >= this.sparkChanceFor(skill, type, score, useMultiplier)) return null;
+      (this.profile.weaponSkillLevels ||= {})[skill.id] = next.level;
+      this.saveProfile();
+      return { ...skill, name: this.leveledWeaponSkillName(skill), weaponSkillUpgrade: next.level };
+    }
     rollSpark(sourceSkillId, enemy = null) {
       const source = D.skills[sourceSkillId];
       if (this.isNoGrowthJob() || !this.isWeaponMasteryAction(source)) return null;
-      const gb = this.gb(), type = source.weaponType || this.equippedWeaponType(), masteryLevel = this.masteryOf(type).level || 1, enemySparkLevel = Math.max(1, enemy?.sparkLevel || 1);
+      const type = source.weaponType || this.equippedWeaponType(), masteryLevel = this.masteryOf(type).level || 1, enemySparkLevel = Math.max(1, enemy?.sparkLevel || 1);
       const candidates = Object.values(D.skills).filter(s => this.isPlayerContentVisible(s) && s.source === 'weapon' && s.weaponType === type && s.sparkRank != null && !this.hasWeaponSkill(s.id)).sort(() => Math.random() - .5);
       for (const skill of candidates) {
         if (type && this.equippedWeaponType() !== type) continue;
@@ -1487,8 +1515,7 @@
         if (skill.requiredWeaponId && this.profile.equipment?.rightHand !== skill.requiredWeaponId) continue;
         const sourceMultiplier = this.sparkSourceMultiplier(skill, sourceSkillId); if (!(sourceMultiplier > 0)) continue;
         const score = masteryLevel + enemySparkLevel - skill.sparkRank;
-        const baseRate = this.sparkBaseRateForScore(score);
-        const rate = Math.min(1, baseRate * sourceMultiplier * this.traitSparkMult(type) + this.sparkRateBonus(type, skill));
+        const rate = this.sparkChanceFor(skill, type, score, sourceMultiplier);
         if (Math.random() < rate) {
           this.learnedWeaponSkillIds().push(skill.id);
           const pt = this.profile.playtest;
@@ -1497,7 +1524,7 @@
           return skill;
         }
       }
-      return null;
+      return this.rollWeaponSkillUpgrade(source, enemy, type, masteryLevel);
     }
     // 装備中カテゴリの通常攻撃
     basicAttackSkill() { const weapon = this.equippedWeapon(), subtypeId = (D.basicAttackByWeaponSubtype || {})[weapon?.weaponSubtype], map = D.basicAttackByWeaponType || {}; return D.skills[subtypeId || map[this.equippedWeaponType()]] || D.skills.attack; }
@@ -1560,7 +1587,7 @@
       }
       if (vitals?.hp) rows.push(`<div class="growth-row status"><span>最大HP</span><b>+${vitals.hp}</b></div>`);
       if (vitals?.mp) rows.push(`<div class="growth-row status"><span>最大MP</span><b>+${vitals.mp}</b></div>`);
-      const sparkHtml = sparks.map(s => `<div class="growth-spark"><small>NEW TECH</small><b>${s.name}</b><span>${s.nameEn || ''}</span></div>`).join('');
+      const sparkHtml = sparks.map(s => `<div class="growth-spark"><small>${s.weaponSkillUpgrade ? 'TECH LEVEL UP' : 'NEW TECH'}</small><b>${s.name}</b><span>${s.nameEn || ''}</span></div>`).join('');
       return `<div class="growth-result"><header><small>GROWTH</small><b>成長</b></header>${rows.join('')}${sparkHtml}</div>`;
     }
     learnedWeaponSkills() { return this.learnedWeaponSkillIds().map(id => D.skills[id]).filter(skill => this.isPlayerContentVisible(skill)); }
@@ -2801,7 +2828,7 @@
     showWeaponArts() {
       const wt = this.equippedWeaponType();
       const skills = this.learnedWeaponSkills().filter(s => s.weaponType === wt && this.weaponSkillMatchesEquipped(s));
-      const rows = skills.map(s => this.button(s.name, this.skillCostLabel(s), s.id, !this.canPaySkillCosts(s), `weapon-${wt}`, this.skillListDetail(s))).join('');
+      const rows = skills.map(s => this.button(this.leveledWeaponSkillName(s), this.skillCostLabel(s), s.id, !this.canPaySkillCosts(s), `weapon-${wt}`, this.skillListDetail(s))).join('');
       this.panel(this.button('閉じる', 'BACK', 'back') + rows, 'list');
       const actions = { back: () => this.showMainCommands() };
       skills.forEach(s => { actions[s.id] = () => { const sk = D.skills[s.id]; if (sk?.randomTarget || sk?.target === 'all' || sk?.target === 'self') this.executeRound(s.id, -1); else this.chooseTarget(s.id); }; });
@@ -2956,6 +2983,7 @@
       if (critical) value *= balance.critical.multiplier;
       // 武器学は基礎能力へ混ぜず、対応武器で与える最終ダメージだけを伸ばす。
       value *= this.weaponMasteryMultiplier(wType);
+      value *= this.weaponSkillLevelRule(skill)?.multiplier ?? 1;
       return { value: Math.max(1, Math.round(value)), critical, weak };
     }
     // 閃き演出：画面フラッシュ＋効果音＋カットインを見せてから技を発動する
@@ -3947,7 +3975,7 @@
       if (growth?.mastery) { const n = this.weaponTypeName(growth.mastery.type); parts.push(`${n}熟練度 <b>+${growth.mastery.gain}</b>${growth.mastery.leveled ? ` / ${n}武器学 Lv.${growth.mastery.before}→<b>Lv.${growth.mastery.after}</b>` : ''}`); }
       if (growth?.vitals?.hp) parts.push(`最大HP <b>+${growth.vitals.hp}</b>`);
       if (growth?.vitals?.mp) parts.push(`最大MP <b>+${growth.vitals.mp}</b>`);
-      (growth?.sparks || []).forEach(s => parts.push(`NEW TECH <b>${s.name}</b>`));
+      (growth?.sparks || []).forEach(s => parts.push(`${s.weaponSkillUpgrade ? 'TECH LEVEL UP' : 'NEW TECH'} <b>${s.name}</b>`));
       if (drops.length) parts.push(drops.map(([id, n]) => `${D.items[id]?.name || id} ×${n}`).join(' / '));
       if (levels.length) parts.push(`LEVEL UP! → LV.${levels[levels.length - 1].to}`);
       if (jobResult) parts.push(`JEXP <b>+${jobResult.exp}</b>${jobResult.to > jobResult.from ? ` / ${jobResult.jobName} Lv.${jobResult.to}` : ''}`);
@@ -5218,6 +5246,7 @@
       const rows = all.map(s => {
         const has = learned.includes(s.id);
         const open = this.artsOpenId === s.id;
+        const upgrade = this.weaponSkillLevelRule(s);
         // 派生元の技名は出さない。未習得の技（？？？）の名前がここから漏れてしまうため。
         const meta = has
           ? `${s.mp ? `MP ${s.mp}` : 'MP 0'}${s.hits > 1 ? ` / ${s.hits}回攻撃` : ''}${s.target === 'all' ? ' / 全体' : ''}`
@@ -5225,6 +5254,7 @@
         const detail = open && has
           ? `<div class="wa-detail"><p>${s.description || ''}</p><div class="wa-facts">
               <span>威力</span><b>${s.power != null ? `攻撃性能×${s.power}${s.hits > 1 ? ` を${s.hits}回` : ''}` : '—'}</b>
+              ${upgrade && upgrade.level > 1 ? `<span>技Lv補正</span><b>Lv1比 ×${upgrade.multiplier}</b>` : ''}
               <span>消費MP</span><b>${s.mp || 0}</b>
               ${s.hits > 1 ? `<span>ヒット数</span><b>${s.hits}回</b>` : ''}
               ${s.target === 'all' ? '<span>対象</span><b>敵全体</b>' : `<span>対象</span><b>${s.target === 'self' ? '自分' : '敵単体'}</b>`}
@@ -5234,11 +5264,11 @@
           : '';
         return `<div class="wa-item ${has ? 'has' : 'lock'}${open ? ' open' : ''}">
           <button class="wa-head" ${has ? `data-arts-open="${s.id}"` : 'disabled'}>
-            <b>${has ? s.name : '？？？'}</b><small>${meta}</small>${has ? `<em>${open ? '▲' : '▼'}</em>` : '<em class="wa-lock">未修得</em>'}
+            <b>${has ? this.leveledWeaponSkillName(s) : '？？？'}</b><small>${meta}</small>${has ? `<em>${open ? '▲' : '▼'}</em>` : '<em class="wa-lock">未修得</em>'}
           </button>${detail}</div>`;
       }).join('');
       const nextHint = all.every(s => learned.includes(s.id))
-        ? 'この武器の技はすべて習得しています。'
+        ? 'この武器の技はすべて習得しています。武器学Lv51から技Lv2、Lv100から技Lv3を閃けます。'
         : `武器学Lv.${mst.level}。強敵へ挑むほど上位技を閃きやすく、正しい派生技なら確率が大きく上がります。`;
       panel.innerHTML = `<small>WEAPON ARTS</small><h2>装備・ステータス</h2>${this.equipTabsHtml()}
         <div class="item-tabs wa-tabs">${subTabs}</div>
