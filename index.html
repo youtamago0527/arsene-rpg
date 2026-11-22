@@ -45,7 +45,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <link rel="stylesheet" href="css/login-bonus.css?v=2">
+  <link rel="stylesheet" href="css/login-bonus.css?v=3">
   <link rel="stylesheet" href="css/game.css?v=0.5.8">
   <link rel="stylesheet" href="css/menu.css?v=0.9.5">
   <link rel="stylesheet" href="css/otherworld.css?v=0.3.8">
@@ -177,15 +177,18 @@
   <script src="js/job_audit.js?v=0.1.2"></script>
   <script src="js/job_balance_tool.js?v=0.3.2"></script>
   <dialog id="login-bonus" aria-labelledby="login-bonus-title">
-    <header>
-      <h2 id="login-bonus-title">ログインボーナス</h2>
-      <form method="dialog"><button type="submit" autofocus>閉じる</button></form>
-    </header>
-    <img class="login-bonus-art" alt="" hidden>
-    <p>毎日受け取って、7日目に輪廻のアルカナを獲得。</p>
-    <ol aria-label="7日間の報酬"></ol>
-    <button type="button" data-login-claim>報酬を受け取る</button>
-    <p role="status"></p>
+    <div class="login-bonus-panel">
+      <header class="login-bonus-header">
+        <h2 id="login-bonus-title"><span>ログインボーナス</span></h2>
+        <form method="dialog"><button class="login-bonus-close" type="submit" aria-label="閉じる" autofocus><span aria-hidden="true">×</span></button></form>
+      </header>
+      <p class="login-bonus-summary">7日連続で輪廻のアルカナを獲得</p>
+      <ol aria-label="7日間の報酬"></ol>
+      <div class="login-bonus-footer">
+        <button type="button" data-login-claim>報酬を受け取る</button>
+        <p role="status"></p>
+      </div>
+    </div>
   </dialog>
   <dialog id="battle-history" aria-labelledby="battle-history-title">
     <header>
@@ -196,7 +199,7 @@
   </dialog>
   <script src="js/game.js?v=4.13.21"></script>
   <script src="js/exchange_shop.js?v=2"></script>
-  <script src="js/login_bonus.js?v=3"></script>
+  <script src="js/login_bonus.js?v=4"></script>
   <script src="js/battle_fx.js?v=0.1.5"></script>
   <script src="js/job_maestro.js?v=0.3.4"></script>
   <script src="js/otherworld.js?v=0.3.7"></script>

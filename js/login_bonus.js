@@ -49,7 +49,12 @@
     grid.innerHTML = rewards.map((reward, index) => {
       const received = index < completed;
       const available = index === completed && !claimed;
-      return `<li class="${available ? 'available' : ''}"><small>${index + 1}日目</small><b>${reward.name}</b><span>${received ? '受取済み' : `×${reward.quantity ?? 1}`}</span></li>`;
+      const state = received ? 'received' : available ? 'available' : 'upcoming';
+      return `<li data-reward="${reward.id}" data-state="${state}">
+        <small>${index + 1}日目</small><i class="login-bonus-icon" aria-hidden="true"></i>
+        <b>${reward.name}</b><span class="login-bonus-quantity">×${reward.quantity ?? 1}</span>
+        ${received ? '<span class="login-bonus-received">受取済み</span>' : ''}
+      </li>`;
     }).join('');
     claim.disabled = claimed || !!game.localScenario?.ephemeral;
     claim.textContent = claimed ? '本日は受取済み' : `${completed + 1}日目の報酬を受け取る`;
