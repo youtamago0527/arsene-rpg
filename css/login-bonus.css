@@ -1,17 +1,3 @@
-.hideout-art-shell > #login-bonus-open {
-  position: absolute;
-  z-index: 8;
-  left: 4%;
-  bottom: 43%;
-  min-height: 44px;
-  padding: 6px 12px;
-  border: 1px solid #ac8b58;
-  border-radius: 4px;
-  background: #15110ef5;
-  color: #ffe6b2;
-  font-size: clamp(12px, 3vw, 17px);
-  letter-spacing: .04em;
-}
 #login-bonus {
   box-sizing: border-box;
   width: min(560px, calc(100% - 24px));
@@ -22,6 +8,8 @@
   background: #15110e;
   color: #f0e6d4;
 }
+#login-bonus .login-bonus-art { width: 100%; height: auto; margin-top: 12px; }
+#login-bonus .login-bonus-art[hidden] { display: none; }
 #login-bonus::backdrop { background: #030204c9; }
 #login-bonus header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #login-bonus h2 { margin: 0; font-size: clamp(17px, 5vw, 24px); }
