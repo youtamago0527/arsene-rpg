@@ -546,11 +546,11 @@
 
   // ── CARD / SHOP / RETURN ───────────────────────────────────
   P.isCardPicks=function(force=null){const returnUnlocked=(this.isRun()?.floor||1)>=Math.max(1,Number(this.isEffectiveCfg().returnMinFloor)||20);let pool=this.isCfg().cards.filter(x=>x.id!=='return'||returnUnlocked);if(force==='returnCard'&&returnUnlocked)pool=[pool.find(x=>x.id==='return'),...pool.filter(x=>x.id!=='return')];if(force==='sublime')pool=[pool.find(x=>x.id==='sublime'),...pool.filter(x=>x.id!=='sublime')];const out=[];while(out.length<3&&pool.length){const pick=(force&&out.length===0)?pool[0]:this.isPickWeighted(pool);out.push(pick);pool=pool.filter(x=>x.id!==pick.id);}return out;};
-  const cardSigils = {
-    heal: ['jade', '✚'], mana: ['blue', '☽'], treasure: ['gold', '◇'], hunt: ['red', '⌖'],
-    stairs: ['blue', '⌄'], return: ['gold', '⟡'], forge: ['red', '✦'], gold: ['gold', '◎'],
-    quality: ['violet', '✧'], merchant: ['jade', '❖'], sublime: ['violet', '✶'],
-  };
+  const cardArtTones = new Map([
+    ['heal', 'jade'], ['mana', 'blue'], ['treasure', 'gold'], ['hunt', 'red'],
+    ['stairs', 'blue'], ['return', 'gold'], ['forge', 'red'], ['gold', 'gold'],
+    ['quality', 'violet'], ['merchant', 'jade'], ['sublime', 'violet'],
+  ]);
 
   P.isShowCards = function (force = null) {
     const run = this.isRun();
@@ -559,9 +559,10 @@
     this.saveProfile();
 
     const cards = picks.map((card, index) => {
-      const [tone, sigil] = cardSigils[card.id] || ['blue', '◇'];
+      const tone = cardArtTones.get(card.id) || 'blue';
+      const artId = cardArtTones.has(card.id) ? card.id : 'default';
       return `<button type="button" class="is-card" data-is-card="${index}" data-card-tone="${tone}">
-        <span class="is-card-sigil" aria-hidden="true">${sigil}</span>
+        <span class="is-card-art" aria-hidden="true"><img src="assets/ui/infinite-enchant/${artId}.webp" width="184" height="184" alt=""></span>
         <span class="is-card-details"><b>${esc(card.name)}</b><span>${esc(card.text)}</span></span>
         <span class="is-card-chevron" aria-hidden="true">›</span>
       </button>`;
