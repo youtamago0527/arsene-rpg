@@ -3780,10 +3780,10 @@
     bossMaterialDropRows(enemy) {
       return (enemy?.dropTable || []).filter(row => ['material', 'equipment'].includes(D.items?.[row.itemId]?.category));
     }
-    offerRepeatBossMaterialDrop(enemy, firstClear) {
+    offerRepeatBossMaterialDrop(enemy, firstClear, bonusDrop = null) {
       if (firstClear || !enemy || !window.arseneQOffer?.canUse?.('bossDrop')) return false;
-      const rows = this.bossMaterialDropRows(enemy); if (!rows.length) return false;
-      this.bossMaterialOffer = { enemy, rows, claimed: false, prompted: false };
+      const rows = this.bossMaterialDropRows(enemy); if (!rows.length && !bonusDrop) return false;
+      this.bossMaterialOffer = { enemy, rows, bonusDrop, claimed: false, prompted: false };
       this.renderBossResultActions();
       return true;
     }
@@ -3799,7 +3799,7 @@
       }
       const victorious = this.finished && this.profile.flags.lastBattleResult === 'victory';
       const material = victorious ? this.bossMaterialOffer : null;
-      actions.innerHTML = this.resultContinue ? '' : `${material && !material.claimed ? '<button data-result-action="boss-material-ad">広告でドロップをもう1回抽選<small>素材・装備／ドロップ率2倍</small></button>' : ''}`;
+      actions.innerHTML = this.resultContinue ? '' : `${material && !material.claimed ? `<button data-result-action="boss-material-ad">広告でドロップをもう1回抽選<small>素材・装備${material.bonusDrop ? '・輪廻' : ''}／ドロップ率2倍</small></button>` : ''}`;
       actions.hidden = !actions.innerHTML;
       if (material && !material.claimed && !material.prompted && !this.resultContinue) {
         material.prompted = true;
@@ -3812,17 +3812,21 @@
     showBossMaterialOffer() {
       const context = this.bossMaterialOffer;
       if (!context || context.claimed) return false;
-      const { enemy, rows } = context;
+      const { enemy, rows, bonusDrop } = context;
       return window.arseneQOffer?.show('bossDrop', {
         title: `${enemy.name} ドロップ追加獲得`,
-        copy: '広告を見ると、素材・装備をドロップ率2倍でもう1回抽選する。元の戦利品はそのまま残る。',
+        copy: `広告を見ると、素材・装備${bonusDrop ? '・輪廻のアルカナ' : ''}をドロップ率2倍でもう1回抽選する。${bonusDrop ? '輪廻のアルカナは6%。' : ''}元の戦利品はそのまま残る。`,
         onGrant: () => {
+          if (context.claimed || this.bossMaterialOffer !== context) return;
           context.claimed = true;
           this.renderBossResultActions();
           document.querySelector('#boss-result-ad-actions [data-result-action="boss-material-ad"]')?.remove();
           const boostedEnemy = { ...enemy, dropTable: rows.map(row => ({ ...row, chance: Math.min(1, (Number(row.chance) || 0) * 2) })) };
           const drops = {};
           this.rollDrops(boostedEnemy).forEach(([id, count]) => { drops[id] = (drops[id] || 0) + count; });
+          if (bonusDrop && Math.random() < Math.min(1, bonusDrop.chance * 2)) {
+            drops[bonusDrop.itemId] = (drops[bonusDrop.itemId] || 0) + bonusDrop.count;
+          }
           const entries = Object.entries(drops);
           if (entries.length) {
             this.applyRewards({ exp: 0, gold: 0, drops });
@@ -3840,7 +3844,7 @@
       modal.className = 'q-offer-modal boss-double-up-modal';
       const rows = entries.length ? entries.map(([id, n]) => {
         const item = D.items[id];
-        return `<div class="boss-double-up-row rarity-${item?.rarity || 'common'}"><span>${item?.category === 'equipment' ? '装備' : '素材'}</span><b>${item?.name || id}</b><strong>×${n}</strong></div>`;
+        return `<div class="boss-double-up-row rarity-${item?.rarity || 'common'}"><span>${item?.category === 'equipment' ? '装備' : item?.category === 'special' ? '貴重品' : '素材'}</span><b>${item?.name || id}</b><strong>×${n}</strong></div>`;
       }).join('') : '<p class="boss-double-up-empty">今回は追加ドロップなし</p>';
       modal.innerHTML = `<div class="q-offer-card boss-double-up-card" role="dialog" aria-modal="true" aria-label="追加ドロップ結果"><small>DROP DOUBLE UP</small><h2>追加抽選の結果</h2><p>ドロップ率2倍で、もう1回抽選しました。</p><div class="boss-double-up-list">${rows}</div><button class="q-offer-watch" data-double-up-close>結果を確認</button></div>`;
       document.body.appendChild(modal);
@@ -5405,6 +5409,11 @@
         case 'myrthi_cleared': return this.isBossDefeated('myrthi');
         case 'myrthi_cleared_first': return this.isBossDefeated('myrthi');
         case 'job_unlocked': return this.jobSystemUnlocked();
+        case 'rebirth_ready': {
+          const jobId = this.profile.currentJob, job = D.jobs[jobId];
+          return !!job && !job.noGrowth && this.rebirthUnlocked() &&
+            (this.profile.jobs?.[jobId]?.level || 1) >= this.effectiveJobLevelCap();
+        }
         case 'job_mastered': return Object.values(this.profile.jobs || {}).some(j => j.level >= 20);
         case 'has_materials_no_workshop': return !workshopUnlocked && (this.profile.discoveredMaterials || []).length > 0;
         case 'reni_chat': return workshopUnlocked;

@@ -271,7 +271,7 @@
     const modal = document.createElement('div');
     modal.className = 'q-offer-modal q-offer-defeat boss-overdrive-modal';
     const rematchReady = this.rematchProgress(bossId).ready;
-    modal.innerHTML = `<div class="q-offer-card q-revive-card boss-overdrive-copy" role="dialog" aria-label="ボス超越戦"><button class="q-offer-close" data-od-close>✕ CLOSE</button><small class="q-revive-tag"><i></i>Q'S CHALLENGE</small><h2>BOSS OVERDRIVE</h2><span class="od-boss">${def.bossName}</span><p>Q「勝ったくらいで、終わったと思った？」</p><div class="boss-overdrive-actions"><button data-od-level="0" ${rematchReady ? '' : 'disabled'}>通常再戦<span>${rematchReady ? 'NORMAL REMATCH' : '通常再戦は5戦後に解放'}</span></button><button class="danger" data-od-level="1">OVERDRIVE I　×2<span>広告を見て挑戦 / DROP率×4・素材数×2</span></button><button class="od2" data-od-level="2" ${progress.od2Unlocked ? '' : 'disabled'}>OVERDRIVE II　×4<span>${progress.od2Unlocked ? `広告を見て挑戦 / DROP率×4・素材数×4 / ${def.name}` : 'LOCKED // CLEAR OVERDRIVE I'}</span></button><button class="close" data-od-close>戻る<span>CANCEL</span></button></div></div>`;
+    modal.innerHTML = `<div class="q-offer-card q-revive-card boss-overdrive-copy" role="dialog" aria-label="ボス超越戦"><button class="q-offer-close" data-od-close>✕ CLOSE</button><small class="q-revive-tag"><i></i>Q'S CHALLENGE</small><h2>BOSS OVERDRIVE</h2><span class="od-boss">${def.bossName}</span><p>Q「勝ったくらいで、終わったと思った？」</p><div class="boss-overdrive-actions"><button data-od-level="0" ${rematchReady ? '' : 'disabled'}>通常再戦<span>${rematchReady ? 'NORMAL REMATCH' : '通常再戦は5戦後に解放'}</span></button><button class="danger" data-od-level="1">OVERDRIVE I　×2<span>広告を見て挑戦 / DROP率×4・素材数×2</span></button><button class="od2" data-od-level="2" ${progress.od2Unlocked ? '' : 'disabled'}>OVERDRIVE II　×4<span>${progress.od2Unlocked ? `広告を見て挑戦 / DROP率×4・素材数×4 / ${def.name}${this.rebirthUnlocked?.() ? ' / 輪廻3%' : ''}` : 'LOCKED // CLEAR OVERDRIVE I'}</span></button><button class="close" data-od-close>戻る<span>CANCEL</span></button></div></div>`;
     document.body.appendChild(modal);
     modal.addEventListener('click', event => {
       if (event.target.closest('[data-od-close]')) { modal.remove(); return; }
@@ -313,6 +313,13 @@
     return scaled;
   };
 
+  proto.overdriveRebirthDrop = function (enemy) {
+    const active = this.activeBossOverdrive;
+    if (active?.level !== 2 || this.battleMode !== active.bossId || enemy?.id !== active.bossId) return null;
+    const dungeon = /^dungeon([1-7])$/.exec(enemy.dungeonId || this.currentDungeonId);
+    return dungeon ? { itemId: 'rebirthArcana', chance: .03, count: Math.ceil(Number(dungeon[1]) / 2) } : null;
+  };
+
   const originalRollDrops = proto.rollDrops;
   proto.rollDrops = function (enemy) {
     const active = this.activeBossOverdrive;
@@ -324,6 +331,8 @@
       const chance = Math.min(1, ((Number(drop.chance) || 0) + bonus) * 4);
       if (Math.random() < chance) drops.push([drop.itemId, D.items?.[drop.itemId]?.category === 'material' ? (active.level === 2 ? 4 : 2) : 1]);
     });
+    const rebirth = this.overdriveRebirthDrop(enemy);
+    if (rebirth && Math.random() < rebirth.chance) drops.push([rebirth.itemId, rebirth.count]);
     return drops;
   };
 
@@ -345,10 +354,12 @@
     if (level === 2) { progress.od2Cleared = true; acquired = this.acquireBossTitle(def.bossId); }
     this.noteBossRematchSnapshot?.(def.bossId);
     this.saveProfile();
+    const enemy = D.enemies[def.bossId];
+    const rebirth = this.overdriveRebirthDrop(enemy);
     this.activeBossOverdrive = null;
     const finish = () => {
       this.showResult(`OVERDRIVE ${level === 2 ? 'II' : 'I'} CLEARED`, `${def.bossName}の超越戦を制した。`, level === 2 ? (acquired?.first ? 'TITLE ACQUIRED' : 'OVERDRIVE II COMPLETE') : (firstOd1 ? 'OVERDRIVE II UNLOCKED' : 'OVERDRIVE I COMPLETE'), rewardBlock);
-      this.offerRepeatBossMaterialDrop?.(D.enemies[def.bossId], false);
+      this.offerRepeatBossMaterialDrop?.(enemy, false, rebirth);
     };
     if (level === 1) {
       if (!firstOd1) { finish(); return; }

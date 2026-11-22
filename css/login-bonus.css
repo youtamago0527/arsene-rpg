@@ -1,0 +1,54 @@
+.hideout-art-shell > #login-bonus-open {
+  position: absolute;
+  z-index: 8;
+  left: 4%;
+  bottom: 43%;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid #ac8b58;
+  border-radius: 4px;
+  background: #15110ef5;
+  color: #ffe6b2;
+  font-size: clamp(12px, 3vw, 17px);
+  letter-spacing: .04em;
+}
+#login-bonus {
+  box-sizing: border-box;
+  width: min(560px, calc(100% - 24px));
+  max-height: calc(100dvh - 32px);
+  padding: clamp(14px, 4vw, 24px);
+  overflow: auto;
+  border: 1px solid #846840;
+  background: #15110e;
+  color: #f0e6d4;
+}
+#login-bonus::backdrop { background: #030204c9; }
+#login-bonus header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#login-bonus h2 { margin: 0; font-size: clamp(17px, 5vw, 24px); }
+#login-bonus p { color: #cebca7; font-size: 13px; }
+#login-bonus ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 14px 0;
+  padding: 0;
+  list-style: none;
+}
+#login-bonus li {
+  display: grid;
+  align-content: space-between;
+  gap: 4px;
+  min-height: 65px;
+  padding: 6px;
+  border: 1px solid #5e4d38;
+  background: #1e1914;
+  text-align: center;
+  font-size: 12px;
+}
+#login-bonus li:last-child { grid-column: 1 / -1; background: #251a28; }
+#login-bonus li.available { border-color: #edbf72; color: #ffe1a2; box-shadow: inset 0 0 0 1px #edbf72; }
+#login-bonus li span { color: #d1bfa4; }
+#login-bonus button { min-height: 44px; padding: 4px 10px; border: 1px solid #ac8b58; background: #302215; color: #ffe6b2; }
+#login-bonus button:disabled { opacity: .65; }
+#login-bonus [data-login-claim] { width: 100%; }
+#login-bonus [role="status"]:empty { margin: 0; }

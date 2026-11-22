@@ -125,6 +125,24 @@ game.pendingBossOverdrive = { key: 'zenakado', level: 2 };
 assert.deepEqual(game.applyBossOverdriveStats('zenakado', { maxHp: 100, atk: 20 }), { maxHp: 400, atk: 80 });
 game.battleMode = 'zenakado';
 assert.deepEqual(game.rollDrops(bossDrops), [['bossMaterial', 4], ['bossEquipment', 1]], 'OD IIは素材数だけ4倍、装備は1個');
+const previousRandom = Math.random;
+try {
+  Math.random = () => .0299;
+  for (const [index, bossId] of Object.keys(window.ArseneTitleSystem.bossTitles).entries()) {
+    game.battleMode = bossId;
+    game.currentDungeonId = `dungeon${index + 1}`;
+    game.activeBossOverdrive = { bossId, level: 2 };
+    assert.deepEqual(game.rollDrops({ id: bossId }), [['rebirthArcana', Math.ceil((index + 1) / 2)]]);
+    assert.deepEqual(game.rollDrops({ id: 'differentEnemy' }), []);
+  }
+  Math.random = () => .03;
+  assert.deepEqual(game.rollDrops({ id: 'eclaim' }), [], '3%ちょうどは落選');
+  Math.random = () => 0;
+  game.activeBossOverdrive.level = 1;
+  assert.deepEqual(game.rollDrops({ id: 'eclaim' }), [], 'OVERDRIVE Iは輪廻の対象外');
+} finally {
+  Math.random = previousRandom;
+}
 
 assert.deepEqual(
   Object.fromEntries(Object.entries(window.ArseneTitleSystem.bossTitles).map(([boss, title]) => [boss, title.stat])),
@@ -196,11 +214,15 @@ D.enemies = { zenakado: { id: 'zenakado' } };
 const popups = [], results = [];
 popupGame.showBossTitlePopup = options => { popups.push(options); options.onClose?.(); };
 popupGame.showResult = (...args) => results.push(args);
-popupGame.offerRepeatBossMaterialDrop = () => {};
+popupGame.battleMode = 'zenakado';
+popupGame.currentDungeonId = 'dungeon1';
+let offeredBonus;
+popupGame.offerRepeatBossMaterialDrop = (_enemy, _firstClear, bonus) => { offeredBonus = bonus; };
 async function checkOverdrivePopups() {
   popupGame.activeBossOverdrive = { bossId: 'zenakado', level: 1 };
   await popupGame.finishBossOverdriveVictory('reward');
   assert.equal(popups.length, 1, 'OD I初回で次の称号報酬を案内する');
+  assert.equal(offeredBonus, null);
   assert.match(popups[0].copy, /OVERDRIVE IIを初めて撃破すると/, '称号の入手条件を明示する');
   assert.equal(popups[0].preview, true, '未獲得の称号を獲得済みとして表示しない');
   popupGame.activeBossOverdrive = { bossId: 'zenakado', level: 1 };
@@ -214,6 +236,7 @@ async function checkOverdrivePopups() {
   await popupGame.finishBossOverdriveVictory('reward');
   assert.equal(popups.length, firstTitlePopupCount, 'OD II再撃破では称号POPを繰り返さない');
   assert.equal(results.at(-1)[2], 'OVERDRIVE II COMPLETE', 'OD II再撃破の結果画面を称号獲得と表示しない');
+  assert.deepEqual(offeredBonus, { itemId: 'rebirthArcana', chance: .03, count: 1 }, '超越状態を解除しても追加抽選に引き継ぐ');
   console.log('title_system_regression: PASS');
 }
 checkOverdrivePopups().catch(error => { console.error(error); process.exitCode = 1; });

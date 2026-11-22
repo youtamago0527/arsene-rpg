@@ -45,6 +45,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
+  <link rel="stylesheet" href="css/login-bonus.css?v=1">
   <link rel="stylesheet" href="css/game.css?v=0.5.8">
   <link rel="stylesheet" href="css/menu.css?v=0.9.5">
   <link rel="stylesheet" href="css/otherworld.css?v=0.3.8">
@@ -147,6 +148,7 @@
       <section class="hideout-scene" aria-label="麺処 おくのほそ道 店内">
         <div class="hideout-sign">麺処 <b>おくのほそ道</b></div><div class="ramen-lantern">ラ<br>ー<br>メ<br>ン</div><div class="shopkeeper"><i></i><b>カズ（店主）</b><span>腹減ってんだろ？<br>まずは食ってけよ。</span></div><div class="hideout-ren" aria-hidden="true"></div><img class="hideout-fox" src="assets/ui/workshop/helper-fox-pixel.png" alt="工房のお助けキャラ">
       </section>
+      <button id="login-bonus-open" type="button" aria-haspopup="dialog">ログインボーナス</button>
       <nav id="menu-nav" class="hideout-menu" aria-label="拠点メニュー">
         <button data-menu="battle" class="primary dungeon"><i>D</i><b>ダンジョンへ潜入</b><span>DUNGEON</span><small>次の潜入先へ向かう</small></button>
         <button data-menu="food" class="primary food"><i>F</i><b>カズのまかない</b><span>FOOD</span><small>HP・MPを全回復する</small></button>
@@ -168,13 +170,23 @@
   <script src="js/d4_extra_enemies.js?v=0.1.2"></script>
   <script src="js/equipment_progression.js?v=2.4.3"></script>
   <script src="js/audio-runtime-20260904.js?v=1.0.9"></script>
-  <script src="js/kazu_dialogues.js?v=0.1.3"></script>
-  <script src="js/help_data.js?v=0.6.4"></script>
+  <script src="js/kazu_dialogues.js?v=0.1.4"></script>
+  <script src="js/help_data.js?v=0.6.5"></script>
   <script src="js/otherworld_data.js?v=1.6.2"></script>
   <script src="js/infinite_score_data.js?v=0.2.7"></script>
   <script src="js/debug_room.js?v=0.4.6"></script>
   <script src="js/job_audit.js?v=0.1.2"></script>
   <script src="js/job_balance_tool.js?v=0.3.2"></script>
+  <dialog id="login-bonus" aria-labelledby="login-bonus-title">
+    <header>
+      <h2 id="login-bonus-title">ログインボーナス</h2>
+      <form method="dialog"><button type="submit" autofocus>閉じる</button></form>
+    </header>
+    <p>毎日受け取って、7日目に輪廻のアルカナを獲得。</p>
+    <ol aria-label="7日間の報酬"></ol>
+    <button type="button" data-login-claim>報酬を受け取る</button>
+    <p role="status"></p>
+  </dialog>
   <dialog id="battle-history" aria-labelledby="battle-history-title">
     <header>
       <h2 id="battle-history-title">戦闘ログ</h2>
@@ -182,7 +194,8 @@
     </header>
     <div id="battle-history-entries" tabindex="0" aria-label="戦闘ログの履歴"></div>
   </dialog>
-  <script src="js/game.js?v=4.13.19"></script>
+  <script src="js/game.js?v=4.13.20"></script>
+  <script src="js/login_bonus.js?v=1"></script>
   <script src="js/battle_fx.js?v=0.1.5"></script>
   <script src="js/job_maestro.js?v=0.3.4"></script>
   <script src="js/otherworld.js?v=0.3.7"></script>
@@ -195,7 +208,7 @@
   <script src="js/admob.js?v=0.2.1"></script>
   <script src="js/q_offer.js?v=0.2.9"></script>
   <script src="js/infinite_support.js?v=0.1.0"></script>
-  <script src="js/title_system.js?v=0.1.5"></script>
+  <script src="js/title_system.js?v=0.1.6"></script>
   <script src="js/phantom_shop.js?v=0.4.5"></script>
 </body>
 </html>
