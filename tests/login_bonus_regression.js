@@ -5,6 +5,7 @@ const vm = require('node:vm');
 
 const node = {
   open: false,
+  dataset: {},
   addEventListener() {},
   querySelector() { return node; },
   showModal() { this.open = true; },
@@ -92,6 +93,7 @@ const automatic = Object.create(context.BattleGame.prototype);
 automatic.profile = { inventory: {} };
 automatic.saveProfile = () => {};
 assert.equal(automatic.openLoginBonus({ automatic: true }), true, '未受領で拠点に入ると表示できる');
+assert.equal(node.dataset.rewardPending, 'true', '拠点のお知らせに未受取を表示する');
 node.close();
 assert.equal(automatic.openLoginBonus({ automatic: true }), false, '同じ日・同じ起動中は閉じた後に再表示しない');
 assert.equal(automatic.openLoginBonus(), true, 'お知らせからは開き直せる');
@@ -99,6 +101,7 @@ node.close();
 automatic.claimLoginBonus();
 delete automatic.loginBonusShownDay;
 assert.equal(automatic.openLoginBonus({ automatic: true }), false, '同日の受取済みデータは起動し直しても表示しない');
+assert.equal(node.dataset.rewardPending, 'false', '受取済みなら拠点のお知らせを通常表示に戻す');
 
 game.profile.currentJob = 'mage';
 game.profile.jobs = { mage: { level: 19 }, warrior: { level: 20 } };

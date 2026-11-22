@@ -38,30 +38,46 @@
 
   const dialog = document.getElementById('login-bonus');
   const grid = dialog.querySelector('ol');
+  const notice = document.getElementById('login-bonus-open');
+  const noticeLabel = notice.querySelector('small');
   const total = amounts.reduce((sum, amount) => sum + amount, 0);
   dialog.querySelector('[data-login-total]').textContent = numberFormat.format(total);
   const claim = dialog.querySelector('[data-login-claim]');
   const status = dialog.querySelector('[role="status"]');
 
+  function updateNotice(game, { claimed } = game.loginBonusState()) {
+    const pending = !claimed && !game.localScenario?.ephemeral;
+    notice.dataset.rewardPending = String(pending);
+    noticeLabel.textContent = pending ? '報酬未受取' : 'NOTICE';
+  }
+
   function render(game, message = '') {
-    const { claimed, completed } = game.loginBonusState();
+    const state = game.loginBonusState();
+    const { claimed, completed } = state;
+    const previewOnly = !!game.localScenario?.ephemeral;
+    updateNotice(game, state);
     grid.innerHTML = amounts.map((amount, index) => {
       const received = index < completed;
       const available = index === completed && !claimed;
-      const state = received ? 'received' : available ? 'available' : 'upcoming';
-      return `<li data-reward="${currency.id}" data-state="${state}">
-        <small>${index + 1}日目</small><i class="login-bonus-icon" aria-hidden="true"></i>
+      const rewardState = received ? 'received' : available ? 'available' : 'upcoming';
+      const art = index === amounts.length - 1
+        ? '<i class="login-bonus-special-ribbon" aria-hidden="true">SPECIAL BONUS</i>'
+        : '<i class="login-bonus-icon" aria-hidden="true"></i>';
+      return `<li data-reward="${currency.id}" data-state="${rewardState}">
+        <small>${index + 1}日目</small>${art}
         <b>${currency.name}</b><span class="login-bonus-quantity">${received ? '受取済み' : `×${numberFormat.format(amount)}`}</span>
       </li>`;
     }).join('');
-    claim.disabled = claimed || !!game.localScenario?.ephemeral;
+    claim.disabled = claimed || previewOnly;
     claim.textContent = claimed ? '本日は受取済み' : `${completed + 1}日目の報酬を受け取る`;
-    status.textContent = message;
+    status.textContent = message || (previewOnly && !claimed ? 'このプレビューでは報酬は付与されません。' : '');
   }
 
   proto.openLoginBonus = function ({ automatic = false } = {}) {
+    const state = this.loginBonusState();
+    const { today, claimed } = state;
+    updateNotice(this, state);
     if (dialog.open || document.querySelector('dialog[open]')) return false;
-    const { today, claimed } = this.loginBonusState();
     if (automatic && (claimed || this.loginBonusShownDay === today || this.localScenario?.ephemeral)) return false;
     render(this);
     dialog.showModal();
@@ -70,7 +86,7 @@
     return true;
   };
 
-  document.getElementById('login-bonus-open').addEventListener('click', () => window.arseneGame?.openLoginBonus());
+  notice.addEventListener('click', () => window.arseneGame?.openLoginBonus());
 
   claim.addEventListener('click', () => {
     const game = window.arseneGame;
@@ -84,8 +100,13 @@
   document.addEventListener('visibilitychange', () => {
     const game = window.arseneGame;
     if (document.hidden || !game) return;
-    if (dialog.open) render(game);
-    else if (!document.getElementById('menu-screen').hidden && document.getElementById('menu-panel').hidden &&
-      document.getElementById('start-flow').hidden && !window.arseneQOffer?.isOpen?.()) game.openLoginBonus({ automatic: true });
+    if (dialog.open) {
+      render(game);
+    } else if (!document.getElementById('menu-screen').hidden && document.getElementById('menu-panel').hidden &&
+      document.getElementById('start-flow').hidden && !window.arseneQOffer?.isOpen?.()) {
+      game.openLoginBonus({ automatic: true });
+    } else {
+      updateNotice(game);
+    }
   });
 })();
