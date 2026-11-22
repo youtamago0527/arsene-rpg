@@ -185,7 +185,7 @@ window.ARSENE_DATA = {
     sparkInitialCastFree: true,
     weaponSkillUpgrades: [
       { level: 2, mastery: 51, damage: 1.20, rankOffset: 55 },
-      { level: 3, mastery: 100, damage: 1.30, rankOffset: 110 }
+      { level: 3, mastery: 100, damage: 1.44, rankOffset: 110 }
     ],
     // パッシブは転生1回ごとに、全JOB共通でこの値ぶん強くなる（絶対値の+2%）。
     // 旧仕様の「基本値×40%」は、基本値が小さいパッシブほど伸びず

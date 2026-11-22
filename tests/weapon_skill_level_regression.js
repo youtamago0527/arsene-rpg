@@ -72,9 +72,9 @@ async function verify() {
   assert.equal(rollSkill(), null, '武器学が成長しないJOBは強化を閃かない');
   game.profile.currentJob = 'warrior';
   assert.equal(rollSkill().weaponSkillUpgrade, 3, 'Lv100からLv2の技がLv3になる');
-  assert.equal(game.weaponSkillLevelRule(skill).multiplier, 1.3, 'Lv2倍率と重複させない');
+  assert.equal(game.weaponSkillLevelRule(skill).multiplier, 1.44, 'Lv3はLv2の1.2倍');
   const masteryAdjusted = (100 * skill.power - strongEnemy.stats.def) * 1.5;
-  assert.equal(damage(), Math.round(masteryAdjusted * 1.3));
+  assert.equal(damage(), Math.round(masteryAdjusted * 1.44));
   assert.equal(damageAtLevel(2), Math.round(masteryAdjusted * 1.2));
   assert.ok(damage() > damageAtLevel(2));
   assert.equal(rollSkill(), null, '技Lv3が上限');
@@ -85,7 +85,7 @@ async function verify() {
   const panel = {};
   game.renderWeaponArtsPanel(panel);
   assert.ok(panel.innerHTML.includes(`${skill.name} Lv3`));
-  assert.ok(panel.innerHTML.includes('Lv1比 ×1.3'));
+  assert.ok(panel.innerHTML.includes('Lv1比 ×1.44'));
 
   game.profile.weaponSkillLevels = {};
   assert.equal(rollSkill().weaponSkillUpgrade, 2, '武器学100でも1回の抽選では1段階だけ');
