@@ -11,10 +11,13 @@ assert.match(support,/Math\.max\(base,33\)/,'緊急拡張は最大33枠にする
 assert.match(support,/shopCounter/,'ショップ遭遇単位のIDを保存する');
 assert.match(support,/rerollUsed/,'同一ショップで再抽選を一度に制限する');
 assert.match(support,/state\.gear=this\.isGenerateGear\(\)/,'通常装備生成テーブルで再抽選する');
+assert.match(support,/if\(window\.arseneQOffer\.isOpen\?\.\(\)\).*別の広告処理が進行中/,'広告処理中の無反応を画面で説明する');
+assert.match(support,/if\(!opened\)notify\('広告の確認画面を開けませんでした/,'広告画面が開けない場合に理由を表示する');
 assert.match(support,/phase='defeatPending'/,'全滅装備を保険確定まで削除しない');
 assert.match(support,/insuranceAuthorized/,'広告完了後のみ装備選択を許可する');
 assert.match(support,/some\(x=>x\.uid===rescue\.uid\)/,'救出装備の二重保存を防ぐ');
 assert.match(offer,/infiniteReroll[\s\S]*infiniteInsurance[\s\S]*infiniteBag/,'支援3種を共通オファーへ登録する');
+assert.match(offer,/if \(opened === false\) done\(\)/,'別のNOISE演出中も広告処理を完了する');
 assert.match(index,/q_offer\.js[^\n]+[\s\S]*infinite_support\.js/,'共通広告基盤の後に支援処理を読み込む');
 assert.doesNotMatch(support,/adSkipLicense\s*=/,'専用課金や既存購入権を上書きしない');
 console.log('infinite support regression: ok');

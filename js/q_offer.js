@@ -99,9 +99,16 @@
     return { ...picked, category };
   }
   function playIntervention(g, forcedCategory, onComplete) {
-    const picked = chooseDialogue(g, forcedCategory), done = () => onComplete?.(picked);
+    const picked = chooseDialogue(g, forcedCategory);
+    let completed = false;
+    const done = () => { if (completed) return; completed = true; onComplete?.(picked); };
     if (typeof g.playNoiseSequence !== 'function') { done(); return; }
-    g.playNoiseSequence([{ sys: 'NOISE...' }, { who: 'Q', text: picked.text }], { onClose: done });
+    // A different NOISE scene can already be open. In that case playNoiseSequence
+    // resolves false without onClose, so settle the rewarded offer explicitly.
+    try {
+      Promise.resolve(g.playNoiseSequence([{ sys: 'NOISE...' }, { who: 'Q', text: picked.text }], { onClose: done }))
+        .then(opened => { if (opened === false) done(); }, done);
+    } catch { done(); }
   }
   const api = {
     defs,

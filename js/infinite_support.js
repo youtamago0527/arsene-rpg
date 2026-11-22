@@ -9,8 +9,16 @@
   P.isSupportAvailable=function(){return !!window.arseneAdMob?.isNativeIOS?.();};
   P.isSupportSkip=function(){return !!window.arseneQOffer?.hasAdSkip?.();};
   P.isRequestSupport=function(type,onGrant){
-    if(!this.isSupportAvailable()||!window.arseneQOffer)return false;
-    return window.arseneQOffer.show(type,{onGrant});
+    const notify=message=>window.arseneStartFlow?.toast?.(message);
+    if(!this.isSupportAvailable()||!window.arseneQOffer){notify('この端末では広告を利用できません');return false;}
+    if(type==='infiniteReroll'){
+      const state=this.isRun?.()?.shopSupport;
+      if(!state||state.rerollUsed){notify('このショップの再抽選は利用できません');return false;}
+    }
+    if(window.arseneQOffer.isOpen?.()){notify('別の広告処理が進行中です');return false;}
+    const opened=window.arseneQOffer.show(type,{onGrant});
+    if(!opened)notify('広告の確認画面を開けませんでした。もう一度お試しください');
+    return opened;
   };
   P.isEnsureSupportState=function(run=this.isRun?.()){
     if(!run)return null;
