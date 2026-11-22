@@ -3275,7 +3275,7 @@
       const mode = String(this.battleMode || '');
       const normalDungeon = mode !== 'infiniteScore' && !mode.startsWith('ow');
       const adBoost = normalDungeon && window.arseneQOffer?.isActive?.('exp2') ? 2 : 1;
-      return (1 + this.mealExpBonusRate()) * Math.max(adBoost, this.astraExpMultiplier()) * (this.collectionTitleEffect?.('expMultiplier') ?? 1);
+      return (1 + this.mealExpBonusRate()) * adBoost * this.astraExpMultiplier() * (this.collectionTitleEffect?.('expMultiplier') ?? 1);
     }
     rewardGoldMultiplier() {
       const mode = String(this.battleMode || '');

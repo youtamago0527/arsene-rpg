@@ -135,7 +135,10 @@ assert.ok(expiresAt >= beforeUse + duration && expiresAt <= Date.now() + duratio
 assert.equal(exchange.profile.inventory.astraExpBoost, 0);
 assert.equal(exchange.rewardExpMultiplier(), 2);
 context.window.arseneQOffer = { isActive: type => type === 'exp2' };
-assert.equal(exchange.rewardExpMultiplier(), 2, '広告の経験値2倍と重複しても4倍にならない');
+assert.equal(exchange.rewardExpMultiplier(), 4, '通常ダンジョンではアイテムと広告の経験値2倍を重ねがけできる');
+exchange.battleMode = 'infiniteScore';
+assert.equal(exchange.rewardExpMultiplier(), 2, '無限奏廊ではアイテムの倍率だけが有効');
+exchange.battleMode = 'slime';
 delete context.window.arseneQOffer;
 assert.equal(exchange.exchangeShopRedeem('exp-boost').ok, true);
 exchange.saveProfile = () => { throw new Error('storage is full'); };
@@ -147,6 +150,9 @@ assert.equal(exchange.useMenuItem('astraExpBoost'), true);
 assert.equal(exchange.profile.astraExpBoostExpiresAt, expiresAt + duration);
 exchange.profile.astraExpBoostExpiresAt = Date.now() - 1;
 assert.equal(exchange.rewardExpMultiplier(), 1);
+context.window.arseneQOffer = { isActive: type => type === 'exp2' };
+assert.equal(exchange.rewardExpMultiplier(), 2, 'アイテムの期限後も広告の経験値2倍は有効');
+delete context.window.arseneQOffer;
 
 const legacy = Object.create(context.BattleGame.prototype);
 legacy.profile = { exchangeShop: { astra: 100, rewardedAds: 9 } };
