@@ -229,9 +229,10 @@ async function checkOverdrivePopups() {
   await popupGame.finishBossOverdriveVictory('reward');
   assert.equal(popups.length, 1, 'OD I再撃破では解放案内を繰り返さない');
   popupGame.activeBossOverdrive = { bossId: 'zenakado', level: 2 };
+  popupGame.playNoiseSequence = async () => false;
   await popupGame.finishBossOverdriveVictory('reward');
   const firstTitlePopupCount = popups.length;
-  assert.ok(firstTitlePopupCount > 1, 'OD II初回で称号取得を案内する');
+  assert.ok(firstTitlePopupCount > 1, '別の演出が表示中でもOD II初回の称号取得を案内する');
   popupGame.activeBossOverdrive = { bossId: 'zenakado', level: 2 };
   await popupGame.finishBossOverdriveVictory('reward');
   assert.equal(popups.length, firstTitlePopupCount, 'OD II再撃破では称号POPを繰り返さない');

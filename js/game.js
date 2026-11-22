@@ -4003,7 +4003,12 @@
       this.flashTitle('GAME OVER', 'MISSION FAILED'); this.showGameOverOrRevive('戦闘不能になった。カズに救助され、HP1で拠点へ運び込まれた。', 'RETURN TO HIDEOUT', this.battleSummaryHTML() || '');
     }
     showDefeatWithRevive(copy, kicker = 'CHALLENGE FAILED') { this.showGameOverOrRevive(copy, kicker, this.battleSummaryHTML() || '<div class="boss-result-note">報酬・ドロップなし</div>'); }
-    showGameOverOrRevive(copy, kicker, html) { const showGameOver = () => { this.clearBossOverdriveChallenge?.(); this.showResult('GAME OVER', copy, kicker, html); }; if (!this.showReviveOfferIfAvailable(showGameOver)) showGameOver(); }
+    showGameOverOrRevive(copy, kicker, html) {
+      const showGameOver = () => { this.clearBossOverdriveChallenge?.(); this.showResult('GAME OVER', copy, kicker, html); };
+      if (this.showReviveOfferIfAvailable(showGameOver)) return;
+      if (window.arseneQOffer?.remaining?.('revive') === 0) html += '<p>本日の広告復活は上限に達しました。</p>';
+      showGameOver();
+    }
     showReviveOfferIfAvailable(onDecline) { const offer = window.arseneQOffer; if (!offer?.canUse?.('revive')) return false; return offer.show('revive', { onGrant: () => this.reviveAfterAdNoise(), onClose: onDecline }); }
     reviveAfterAdNoise() { return this.reviveAfterDefeat(); }
     reviveAfterDefeat() { const maxHp = this.player?.stats?.maxHp || this.totalStats().maxHp; this.finished = false; this.defeatResolving = false; this.locked = false; this.player.hp = Math.max(1, Math.ceil(maxHp * .5)); this.persistVitals(); const result = $('#result'); result.hidden = true; result.style.display = 'none'; $('#ren').classList.remove('down'); $('#ren').classList.add('idle'); const dungeon = this.getDungeon(this.currentDungeonId), bossTrack = this.battleMode !== 'slime' ? this.bossMusicFor(this.battleMode, this.enemies?.[0]?.form || 1) : null, track = this.owRun ? (this.otherWorldMusic || this.bossMusic) : (bossTrack || dungeon?.music || this.battleMusic); this.audio.playTrack(track); this.updateHUD(); this.setLog(`${this.playerName()}はHP50%で立ち上がった！`); this.flashTitle('REVIVE', 'PHANTOM RISES AGAIN'); this.showMainCommands(); }

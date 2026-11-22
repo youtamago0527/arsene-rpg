@@ -23,11 +23,11 @@ const context = {
     querySelector: () => null,
     querySelectorAll: () => [],
     createElement() {
-      const watch = {};
+      const watch = {}, status = {};
       return {
         classList: { add() {} },
         remove() {},
-        querySelector: selector => selector === '[data-q-watch]' ? watch : {},
+        querySelector: selector => selector === '[data-q-watch]' ? watch : status,
         addEventListener(_event, handler) { this.click = handler; }
       };
     }
@@ -45,16 +45,15 @@ const offer = context.window.arseneQOffer;
 let saved, baseGrants = 0;
 game.profile = { premium: {}, inventory: {} };
 game.saveProfile = () => { saved = JSON.stringify(game.profile); };
-game.playNoiseSequence = (_lines, { onClose }) => { onClose(); onClose(); };
+game.playNoiseSequence = async () => true;
 const progress = () => game.rewardedAdAstraProgress().progress;
 const balance = () => game.exchangeShopState().balance;
-const flush = () => new Promise(resolve => setImmediate(resolve));
+const tap = (modal, target) => modal.click({ target: { closest: selector => selector === target } });
 
 async function watch({ mock = false } = {}) {
   assert.equal(offer.show('bossDrop', { onGrant: () => { baseGrants++; } }), true);
   if (mock) for (let n = 0; n < 3; n++) advanceCountdown();
-  shown.click({ target: { closest: selector => selector === '[data-q-watch]' } });
-  await flush();
+  await tap(shown, '[data-q-watch]');
 }
 
 (async () => {
@@ -65,6 +64,11 @@ async function watch({ mock = false } = {}) {
   adResult = false;
   await watch();
   assert.equal(progress(), 9, '広告の途中終了はカウントしない');
+  assert.match(shown.querySelector('.q-offer-ad span').textContent, /もう一度試す/);
+  assert.equal(shown.querySelector('[data-q-watch]').disabled, false);
+  assert.equal(offer.isOpen(), true, '失敗後も確認画面が残る');
+  await tap(shown, '[data-q-close]');
+  assert.equal(offer.isOpen(), false);
   adResult = true;
 
   game.profile.premium.adSkipTickets = 1;
@@ -100,5 +104,25 @@ async function watch({ mock = false } = {}) {
   assert.throws(() => offer.grant('bossDrop', true), /storage is full/);
   assert.equal(game.rewardedAdAstraProgress().total, 20, '保存失敗時に進捗を元へ戻す');
   assert.equal(balance(), 100);
+  game.saveProfile = () => {};
+  game.playNoiseSequence = async () => false; // An existing battle overlay owns the NOISE scene.
+  let battlesStarted = 0, revivals = 0, extraRolls = 0;
+  assert.equal(offer.show('overdrive', { onGrant: () => { battlesStarted++; } }), true);
+  await tap(shown, '[data-q-watch]');
+  assert.equal(battlesStarted, 1);
+  assert.equal(offer.isOpen(), false, '演出が省略されても次の広告を開ける');
+
+  assert.equal(offer.show('revive', { onGrant: () => { revivals++; } }), true);
+  const reviveModal = shown;
+  adResult = false;
+  await tap(reviveModal, '[data-q-watch]');
+  assert.equal(revivals, 0);
+  adResult = true;
+  await Promise.all([tap(reviveModal, '[data-q-watch]'), tap(reviveModal, '[data-q-watch]')]);
+  assert.equal(revivals, 1, '復活広告を同じ画面から再試行でき、連打しても一度だけ復活する');
+  assert.equal(offer.show('bossDrop', { onGrant: () => { extraRolls++; } }), true);
+  await tap(shown, '[data-q-watch]');
+  assert.equal(extraRolls, 1, '復活後も追加抽選を受け取れる');
+  assert.equal(offer.isOpen(), false);
   console.log('rewarded ad Astra regression: OK');
 })().catch(error => { console.error(error); process.exitCode = 1; });

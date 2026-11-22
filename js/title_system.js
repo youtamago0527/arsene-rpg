@@ -378,8 +378,9 @@
     };
     if (!acquired?.first) { finish(); return; }
     const show = () => this.showBossTitlePopup({ title: `TITLE ACQUIRED　${def.name}`, kicker: 'OVERDRIVE II COMPLETE', copy: `Q「その力、肩書きだけで終わらせないでよ。」`, detail: `${def.statLabel} +1`, onClose: showUnlock });
-    if (typeof this.playNoiseSequence === 'function') this.playNoiseSequence([{ sys: 'NOISE...' }, { who: 'Q', text: 'その力、肩書きだけで終わらせないでよ。' }], { onClose: show });
-    else show();
+    try { await this.playNoiseSequence?.([{ sys: 'NOISE...' }, { who: 'Q', text: 'その力、肩書きだけで終わらせないでよ。' }]); }
+    catch (error) { console.warn('Overdrive title dialogue failed', error); }
+    show();
   };
   proto.clearBossOverdriveChallenge = function () {
     this.pendingBossOverdrive = null;

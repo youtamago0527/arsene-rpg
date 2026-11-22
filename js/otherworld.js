@@ -447,9 +447,11 @@
     };
     const close = () => {
       el.remove(); document.body.classList.remove('ow-glitch');
-      this.renderMenuSummary?.();
-      options.onClose?.();
-      resolve(true);
+      try { this.renderMenuSummary?.(); }
+      finally {
+        try { options.onClose?.(); }
+        finally { resolve(true); }
+      }
     };
     el.addEventListener('click', () => { i++; if (i >= lines.length) close(); else { this.audio?.sfx?.('ui'); render(); } });
     render();
