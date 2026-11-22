@@ -11,7 +11,7 @@
     products: [
       { id: 'ad-skip-ticket', name: '広告スキップ券', en: 'AD SKIP TICKET', store: 'premium', itemId: 'adSkipTickets', quantity: 1, price: 100 },
       { id: 'chaos-arcana', en: 'CHAOS ARCANA', store: 'inventory', itemId: 'arcanaChaos', quantity: 1, price: 100 },
-      { id: 'otherworld-ticket', name: '異世界探索券', en: 'EXPLORATION TICKET', store: 'premium', itemId: 'otherworldTickets', quantity: 1, price: 100 },
+      { id: 'otherworld-ticket', name: '異世界探索券', en: 'EXPLORATION TICKET', store: 'premium', itemId: 'otherworldTickets', quantity: 1, price: 300 },
       { id: 'exp-boost', en: 'EXP ×2 (1 DAY)', store: 'inventory', itemId: 'astraExpBoost', quantity: 1, price: 600 },
       { id: 'reincarnation-arcana', en: 'REINCARNATION ARCANA', store: 'inventory', itemId: 'rebirthArcana', quantity: 1, price: 1000 },
       { id: 'protection-arcana', en: 'PROTECTION ARCANA', store: 'inventory', itemId: 'protectionArcana', quantity: 1, price: 200 },

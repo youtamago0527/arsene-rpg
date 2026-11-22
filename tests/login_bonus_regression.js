@@ -48,7 +48,7 @@ assert.equal(game.exchangeShopRedeem('nonexistent').reason, 'unknownProduct');
 assert.equal(game.exchangeShopRedeem('otherworld-ticket').ok, true);
 game.profile = JSON.parse(saved);
 assert.equal(game.profile.premium.otherworldTickets, 1, '既存の異世界探索券の残高に加算する');
-assert.equal(game.exchangeShopState().balance, 3000);
+assert.equal(game.exchangeShopState().balance, 2800);
 assert.equal(game.claimLoginBonus(date(5)), null, '端末日付を戻しても再取得できない');
 assert.equal(game.claimLoginBonus(date(7)).quantity, 100, '7日目の翌日は次の周期');
 assert.equal(game.claimLoginBonus(date(9)).quantity, 100, '受取を逃した翌日は1日目から');
@@ -93,7 +93,15 @@ exchange.saveProfile = () => {};
 exchange.audio = { sfx() {} };
 exchange.renderMenuPanel = () => {};
 const listing = exchange.exchangeShopState().products.filter(product => product.en);
-assert.equal(listing.length, 7);
+assert.deepEqual(Array.from(listing, product => [product.id, product.price]), [
+  ['ad-skip-ticket', 100],
+  ['chaos-arcana', 100],
+  ['otherworld-ticket', 300],
+  ['exp-boost', 600],
+  ['reincarnation-arcana', 1000],
+  ['protection-arcana', 200],
+  ['blessed-protection-arcana', 500]
+]);
 for (const [id, [itemId, price]] of Object.entries(newProducts)) {
   assert.equal(listing.find(product => product.id === id).price, price);
   const balance = exchange.exchangeShopState().balance;
