@@ -402,6 +402,10 @@
       this.game.profile.flags.openingWatched = true;
       this.game.saveProfile();
       this.root.hidden = true;
+      if (this.game.isEnsureRunShape?.()) {
+        this.game.isAfterBattle();
+        return;
+      }
       await this.game.showMenu('home');
     }
 
