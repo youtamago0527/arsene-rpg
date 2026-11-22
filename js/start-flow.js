@@ -393,16 +393,21 @@
     }
 
     async continueGame() {
-      if (!this.saveExists()) return;
-      await this.game.audio.unlock();
-      this.game.profile = this.game.loadProfile();
-      this.game.applyThemeForCharacter(this.game.profile.selectedCharacter, this.characters);
-      this.game.applyCharacterPresentation();
-      this.game.profile.openingWatched = true;
-      this.game.profile.flags.openingWatched = true;
-      this.game.saveProfile();
-      this.root.hidden = true;
-      await this.game.showMenu('home');
+      if (this.continuingGame || !this.saveExists()) return;
+      this.continuingGame = true;
+      try {
+        await this.game.audio.unlock();
+        this.game.profile = this.game.loadProfile();
+        this.game.applyThemeForCharacter(this.game.profile.selectedCharacter, this.characters);
+        this.game.applyCharacterPresentation();
+        this.game.profile.openingWatched = true;
+        this.game.profile.flags.openingWatched = true;
+        this.game.saveProfile();
+        this.root.hidden = true;
+        await this.game.showMenu('home');
+      } finally {
+        this.continuingGame = false;
+      }
     }
 
     showSettings(returnTo = 'title') {

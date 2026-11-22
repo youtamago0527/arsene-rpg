@@ -17,7 +17,7 @@ assert.match(support,/phase='defeatPending'/,'全滅装備を保険確定まで�
 assert.match(support,/insuranceAuthorized/,'広告完了後のみ装備選択を許可する');
 assert.match(support,/some\(x=>x\.uid===rescue\.uid\)/,'救出装備の二重保存を防ぐ');
 assert.match(offer,/infiniteReroll[\s\S]*infiniteInsurance[\s\S]*infiniteBag/,'支援3種を共通オファーへ登録する');
-assert.match(offer,/if \(opened === false\) done\(\)/,'別のNOISE演出中も広告処理を完了する');
+assert.match(offer,/await playIntervention[\s\S]*api\.grant\(type, nativeAd\)/,'別のNOISE演出中も広告処理を完了する');
 assert.match(index,/q_offer\.js[^\n]+[\s\S]*infinite_support\.js/,'共通広告基盤の後に支援処理を読み込む');
 assert.doesNotMatch(support,/adSkipLicense\s*=/,'専用課金や既存購入権を上書きしない');
 console.log('infinite support regression: ok');

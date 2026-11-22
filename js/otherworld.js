@@ -327,7 +327,7 @@
     this.enemies = cp.enemies.map(e => ({ ...e, stats: { ...(e.stats || {}) } }));
     this.battleMode = cp.battleMode || (this.owIsBossBattle() ? 'owBoss' : 'ow');
     this.turn = cp.turn || 1; this.locked = false; this.finished = false;
-    this.battleLogHistory = cp.battleLogHistory || []; this.battleLogExpanded = false;
+    this.battleLogHistory = cp.battleLogHistory || [];
     this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [], newRecipes: [] };
     if (cp.stage === 'step') { this.owShowStep([]); return; }
     if (cp.stage === 'chests') { this.owChestPicks = cp.chestPicks || []; this.owShowChests([], this.owChestPicks); return; }
@@ -447,9 +447,11 @@
     };
     const close = () => {
       el.remove(); document.body.classList.remove('ow-glitch');
-      this.renderMenuSummary?.();
-      options.onClose?.();
-      resolve(true);
+      try { this.renderMenuSummary?.(); }
+      finally {
+        try { options.onClose?.(); }
+        finally { resolve(true); }
+      }
     };
     el.addEventListener('click', () => { i++; if (i >= lines.length) close(); else { this.audio?.sfx?.('ui'); render(); } });
     render();

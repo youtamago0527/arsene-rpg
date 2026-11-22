@@ -98,17 +98,11 @@
     if (g.profile?.debugUnlocked) console.info(`Q Dialogue: category=${category.toUpperCase()} id=${picked.id}`);
     return { ...picked, category };
   }
-  function playIntervention(g, forcedCategory, onComplete) {
+  async function playIntervention(g, forcedCategory) {
     const picked = chooseDialogue(g, forcedCategory);
-    let completed = false;
-    const done = () => { if (completed) return; completed = true; onComplete?.(picked); };
-    if (typeof g.playNoiseSequence !== 'function') { done(); return; }
-    // A different NOISE scene can already be open. In that case playNoiseSequence
-    // resolves false without onClose, so settle the rewarded offer explicitly.
-    try {
-      Promise.resolve(g.playNoiseSequence([{ sys: 'NOISE...' }, { who: 'Q', text: picked.text }], { onClose: done }))
-        .then(opened => { if (opened === false) done(); }, done);
-    } catch { done(); }
+    // When another NOISE sequence is open, this resolves false immediately.
+    // The caller still settles the earned reward after either outcome.
+    await g.playNoiseSequence?.([{ sys: 'NOISE...' }, { who: 'Q', text: picked.text }]);
   }
   const api = {
     defs,
@@ -124,7 +118,7 @@
     isOpen() { return !!activeModal || offerInFlight; },
     closeActive(options = {}) {
       // 戦闘終了などの画面掃除が、視聴済み広告の報酬待ちを取り消さないようにする。
-      if (!activeModal) return false;
+      if (!activeModal || offerInFlight) return false;
       offerGeneration++;
       return closeActiveModal(options);
     },
@@ -135,39 +129,59 @@
       if (activeModal || offerInFlight) return false;
       const d = { ...(defs[type] || defs.auto2), ...extra }, left = remaining(type);
       const qCopy = String(extra.copy ?? QD.offer?.[type] ?? d.copy).replace(/\n/g, '<br>'), skip = hasAdSkip(g);
-      const adStatus = skip ? (premium(g).adSkipLicense ? '永久スキップ適用' : `スキップ券を使用（残り${Number(premium(g).adSkipTickets) || 0}）`) : '広告を見るか選んでください';
       const nativeAd = !skip && window.arseneAdMob?.isNativeIOS?.();
+      const astra = nativeAd ? g.rewardedAdAstraProgress?.() : null;
+      const adStatus = skip ? (premium(g).adSkipLicense ? '永久スキップ適用' : `スキップ券を使用（残り${Number(premium(g).adSkipTickets) || 0}）`) :
+        astra ? `広告報酬 ${astra.progress}/${astra.required}回　達成ごとに${astra.quantity}アストラ` : '広告を見るか選んでください';
       const countdown = skip || nativeAd ? 'READY' : '3', watchText = skip ? '広告をスキップして発動する' : '広告を見て発動する';
-      const reviveCard = `<div class="q-offer-card q-revive-card" role="dialog" aria-label="戦闘復活"><button class="q-offer-close" data-q-close aria-label="閉じる">✕ CLOSE</button><header><small class="q-revive-tag"><i></i>DAILY REVIVE REWARD</small><h2>怪盗の再起</h2><p>Q「${qCopy}」</p></header><div class="q-revive-details"><div><span><i></i>復活時HP</span><b>最大HPの50%</b></div><div><span><i></i>復帰地点</span><b>現在の戦闘</b></div><div><span><i></i>本日の残り回数</span><b>${left} 回</b></div></div><div class="q-offer-ad"><span>${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch><span>▶　${watchText}</span></button><button class="q-revive-cancel" data-q-close>今回は諦める</button></div>`;
-      const normalCard = `<div class="q-offer-card" role="dialog" aria-label="Q offer"><button class="q-offer-close" data-q-close aria-label="閉じる">×</button><div class="q-offer-q">Q</div><small class="q-offer-kicker">Q'S OFFER</small><h2>${d.title}</h2><p>「${qCopy}」</p><div class="q-offer-ad"><span>${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch>${watchText}<span>${skip ? 'SKIP ENTITLEMENT' : nativeAd ? 'WATCH REWARDED AD' : 'WATCH MOCK AD'}</span></button>${['bossDrop', 'overdrive'].includes(type) ? '<button class="q-offer-decline" data-q-close>広告を見ない</button>' : ''}</div>`;
+      const reviveCard = `<div class="q-offer-card q-revive-card" role="dialog" aria-label="戦闘復活"><button class="q-offer-close" data-q-close aria-label="閉じる">✕ CLOSE</button><header><small class="q-revive-tag"><i></i>DAILY REVIVE REWARD</small><h2>怪盗の再起</h2><p>Q「${qCopy}」</p></header><div class="q-revive-details"><div><span><i></i>復活時HP</span><b>最大HPの50%</b></div><div><span><i></i>復帰地点</span><b>現在の戦闘</b></div><div><span><i></i>本日の残り回数</span><b>${left} 回</b></div></div><div class="q-offer-ad"><span aria-live="polite">${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch><span>▶　${watchText}</span></button><button class="q-revive-cancel" data-q-close>今回は諦める</button></div>`;
+      const normalCard = `<div class="q-offer-card" role="dialog" aria-label="Q offer"><button class="q-offer-close" data-q-close aria-label="閉じる">×</button><div class="q-offer-q">Q</div><small class="q-offer-kicker">Q'S OFFER</small><h2>${d.title}</h2><p>「${qCopy}」</p><div class="q-offer-ad"><span aria-live="polite">${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch>${watchText}<span>${skip ? 'SKIP ENTITLEMENT' : nativeAd ? 'WATCH REWARDED AD' : 'WATCH MOCK AD'}</span></button>${['bossDrop', 'overdrive'].includes(type) ? '<button class="q-offer-decline" data-q-close>広告を見ない</button>' : ''}</div>`;
       const modal = document.createElement('div'); modal.className = 'q-offer-modal'; modal.innerHTML = type === 'revive' ? reviveCard : normalCard; if (type === 'revive') modal.classList.add('q-offer-defeat'); modal._qOnClose = d.onClose; activeModal = modal; setOfferButtonsBusy(true); document.body.appendChild(modal);
       let n = 3; const count = modal.querySelector('[data-q-countdown]'), watch = modal.querySelector('[data-q-watch]'); watch.disabled = !(skip || nativeAd);
       activeTimer = skip || nativeAd ? null : setInterval(() => { n--; if (count) count.textContent = n; if (n <= 0) { clearInterval(activeTimer); activeTimer = null; watch.disabled = false; } }, 1000);
-      modal.addEventListener('click', e => {
+      modal.addEventListener('click', async e => {
+        if (offerInFlight || activeModal !== modal) return;
         if (e.target.closest('[data-q-close]')) { closeActiveModal({ notify: true }); return; }
-        if (e.target.closest('[data-q-watch]') && !watch.disabled) {
-          const generation = ++offerGeneration;
-          offerInFlight = true;
-          watch.disabled = true;
+        if (!e.target.closest('[data-q-watch]') || watch.disabled) return;
+        const generation = ++offerGeneration;
+        const message = modal.querySelector('.q-offer-ad span');
+        offerInFlight = true;
+        watch.disabled = true;
+        if (nativeAd && message) message.textContent = '広告を準備しています…';
+        try {
+          let rewarded;
+          try { rewarded = !nativeAd || await window.arseneAdMob.showRewarded(); }
+          catch { rewarded = false; }
+          if (generation !== offerGeneration) return;
+          if (!rewarded) {
+            if (message) message.textContent = '広告を完了できませんでした。もう一度試すか、閉じてください。';
+            return;
+          }
           closeActiveModal();
-          const showAd = nativeAd ? window.arseneAdMob.showRewarded() : Promise.resolve(true);
-          showAd.then(rewarded => {
-            if (generation !== offerGeneration) return;
-            if (!rewarded) { offerInFlight = false; window.arseneStartFlow?.toast?.('広告を完了できませんでした。再度お試しください'); return; }
-            playIntervention(g, d.forceDialogueCategory, () => {
-              if (generation !== offerGeneration) return;
-              try { const granted = api.grant(type); if (granted) { if (skip) consumeAdSkip(g); d.onGrant?.(); } }
-              finally { if (generation === offerGeneration) offerInFlight = false; }
-            });
-          }).catch(() => { if (generation === offerGeneration) { offerInFlight = false; window.arseneStartFlow?.toast?.('広告を読み込めませんでした。再度お試しください'); } });
+          try { await playIntervention(g, d.forceDialogueCategory); }
+          catch (error) { console.warn('Q offer dialogue failed', error); }
+          if (generation !== offerGeneration) return;
+          const granted = api.grant(type, nativeAd);
+          if (granted) {
+            if (skip) consumeAdSkip(g);
+            d.onGrant?.();
+          } else d.onClose?.();
+        } catch (error) {
+          console.warn('Q offer reward failed', error);
+          d.onClose?.();
+        } finally {
+          if (generation === offerGeneration) offerInFlight = false;
+          if (activeModal === modal) watch.disabled = false;
         }
       });
       return true;
     },
-    grant(type) {
+    grant(type, rewardedAd = false) {
       const g = game(); if (!g) return false;
       const d = defs[type] || defs.auto2, s = state(g), daily = isDaily(type);
       if (daily && Number(s[d.key] || 0) >= DAILY) { window.arseneStartFlow?.toast?.('本日のQ’S OFFERは受け取り済みです'); return false; }
+      const previousState = rewardedAd ? { ...s } : null;
+      const previousWallet = g.profile.exchangeShop;
       if (daily) s[d.key] = (Number(s[d.key]) || 0) + 1;
       if (d.expiry) {
         const duration = Number(d.durationMs) || 30 * 60 * 1000;
@@ -176,7 +190,17 @@
       }
       if (type === 'otherworld') s.otherworldBonus = Number(s.otherworldBonus || 0) + 1;
       // 保護とボス素材は発生した瞬間に効果を適用する。後で消費するトークンは保持しない。
-      save(g); api.indicator();
+      const astra = rewardedAd ? g.recordRewardedAdForAstra?.() : 0;
+      try { save(g); }
+      catch (error) {
+        if (rewardedAd) {
+          g.profile.rewardState = previousState;
+          g.profile.exchangeShop = previousWallet;
+        }
+        throw error;
+      }
+      api.indicator();
+      if (astra) window.arseneStartFlow?.toast?.(`${astra}アストラ獲得！`);
       if (type === 'auto2' && g.autoBattle) g.autoBattleSpeedIndex = g.autoBattleSpeedSteps().length - 1;
       if (type === 'auto2' || type === 'sweep') { g.renderBattleMenu?.(); g.showMainCommands?.(); }
       if (type === 'exp2' || type === 'gold2') {
@@ -224,7 +248,7 @@
       const autoLeft = remaining('auto2'), sweepLeft = remaining('sweep');
       return `${api.adEffectsHTML(true)}<section class="q-battle-offers"><small>Q'S BATTLE SUPPORT</small><div><button data-q-offer="auto2" class="${autoActive ? 'active' : ''}" ${autoLeft <= 0 ? 'disabled' : ''}><b>AUTO ×2</b><span>${autoActive ? '発動中' : autoLeft <= 0 ? '本日分終了' : `広告で解放　残り${autoLeft}`}</span></button><button data-q-offer="sweep" class="${sweepActive ? 'active' : ''}" ${sweepPermanent || sweepLeft <= 0 ? 'disabled' : ''}><b>一掃</b><span>${sweepPermanent ? '永久解放済み' : sweepActive ? '発動中' : sweepLeft <= 0 ? '本日分終了' : `広告で解放　残り${sweepLeft}`}</span></button></div><details class="q-battle-rules"><summary>AUTO・一掃の仕様を確認</summary><p><b>AUTO</b> 通常戦闘をAI操作。倍率は演出速度だけで、能力・ダメージ・報酬は変わりません。回復アイテムを使うことも、敗北することもあります。</p><p><b>一掃</b> 通常Dの雑魚戦だけ。現在の残HP・MP、装備/JOB込みの攻防、習得技、敵全員のHP・攻防から必要ターンと被ダメージを予測します。<strong>予測被ダメージが現在HP以上なら敗北</strong>。回復アイテムは使用せず、エリート・レア・全ボス・異世界には使用できません。勝利時のEXP/GOLD/DROPは通常抽選、武器学は推定ターンに応じて1〜8獲得します。</p></details></section>`;
     },
-    testDialogue(category = 'success') { const g = game(); if (!g) return false; playIntervention(g, category); return true; },
+    testDialogue(category = 'success') { const g = game(); if (!g) return false; playIntervention(g, category).catch(error => console.warn('Q offer dialogue failed', error)); return true; },
     // 文脈限定の「復活・装備復元・ボス素材」はデバッグ入口からも直接起動させない。
     debugHTML() { return `<section class="q-offer-debug"><header><b>Q'S OFFER // DEBUG</b><span>Mock provider・日次上限2回</span></header><div class="q-offer-debug-grid">${['auto2', 'sweep', 'otherworld'].map(k => { const d = defs[k]; return `<button data-q-debug="${k}">${d.title}<small>${d.label}</small></button>`; }).join('')}</div><header><b>DIALOGUE TEST</b><span>強制カテゴリ</span></header><div class="q-offer-debug-grid">${['success', 'hint', 'secret'].map(k => `<button data-q-dialogue="${k}">${k.toUpperCase()}<small>NOISE + Q</small></button>`).join('')}</div></section>`; },
     // 旧セーブ・旧呼び出し互換。設定画面にはQオファーを表示しない。

@@ -9,14 +9,15 @@
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
   // Native dialogs suspend WebAudio on iOS. Keep decisions inside the game UI.
-  P.isGameDialog = function ({ kicker='INFINITE SCORE', title='', message='', choices=[], danger=false }={}) {
+  P.isGameDialog = function ({ kicker='INFINITE SCORE', title='', message='', choices=[], danger=false, dismissible=true }={}) {
     document.getElementById('is-game-dialog')?.remove();
     return new Promise(resolve => {
       const root=document.createElement('div');root.id='is-game-dialog';root.className='is-modal is-game-dialog';
       const buttons=choices.map((choice,index)=>`<button type="button" data-is-dialog-choice="${index}" class="${choice.danger?'danger':''}"><b>${esc(choice.label)}</b>${choice.note?`<span>${esc(choice.note)}</span>`:''}</button>`).join('');
-      root.innerHTML=`<div role="dialog" aria-modal="true" aria-labelledby="is-dialog-title"><small>${esc(kicker)}</small><h2 id="is-dialog-title">${esc(title)}</h2>${message?`<p>${esc(message)}</p>`:''}<div class="is-dialog-choices">${buttons}</div><button type="button" class="is-dialog-cancel" data-is-dialog-cancel>${danger?'やめる':'閉じる'}</button></div>`;
+      const cancel = dismissible ? `<button type="button" class="is-dialog-cancel" data-is-dialog-cancel>${danger?'やめる':'閉じる'}</button>` : '';
+      root.innerHTML=`<div role="dialog" aria-modal="true" aria-labelledby="is-dialog-title"><small>${esc(kicker)}</small><h2 id="is-dialog-title">${esc(title)}</h2>${message?`<p>${esc(message)}</p>`:''}<div class="is-dialog-choices">${buttons}</div>${cancel}</div>`;
       const finish=value=>{root.remove();resolve(value);};
-      root.addEventListener('click',e=>{const pick=e.target.closest('[data-is-dialog-choice]');if(pick){finish(Number(pick.dataset.isDialogChoice));return;}if(e.target===root||e.target.closest('[data-is-dialog-cancel]'))finish(-1);});
+      root.addEventListener('click',e=>{const pick=e.target.closest('[data-is-dialog-choice]');if(pick){finish(Number(pick.dataset.isDialogChoice));return;}if(dismissible&&(e.target===root||e.target.closest('[data-is-dialog-cancel]')))finish(-1);});
       document.body.appendChild(root);root.querySelector('[data-is-dialog-choice], [data-is-dialog-cancel]')?.focus();
     });
   };
@@ -144,13 +145,37 @@
   };
 
   // ── RUN装備を既存戦闘式へ安全に合流 ─────────────────────
+  P.isRunForEquipment = function () {
+    return this.usingInfiniteScoreEquipment ? this.isRun() : null;
+  };
+  P.isSetEquipmentContext = function (inRun) {
+    const run = this.isRun();
+    const wasInRun = this.usingInfiniteScoreEquipment;
+    this.usingInfiniteScoreEquipment = !!(run && inRun);
+    if (!run) return;
+
+    // A legacy save keeps the normal loadout only in homeEquipment. While
+    // outside the run, profile.equipment can receive edits and be saved again.
+    if (this.usingInfiniteScoreEquipment) {
+      if (run.homeEquipmentInProfile) {
+        run.homeEquipment = copy(this.profile.equipment);
+        run.homeEquipmentInProfile = false;
+      } else if (wasInRun) {
+        return;
+      }
+      this.profile.equipment = { rightHand:null, leftHand:null, head:null, body:null, arms:null, feet:null, accessory:null };
+    } else if (!run.homeEquipmentInProfile) {
+      if (run.homeEquipment) this.profile.equipment = copy(run.homeEquipment);
+      run.homeEquipmentInProfile = true;
+    }
+  };
   P.isRunGear = function () {
-    const run = this.isRun(); if (!run) return [];
+    const run = this.isRunForEquipment(); if (!run) return [];
     return Object.values(run.equipment || {}).map(uid => this.isBagEntry(uid)).filter(Boolean);
   };
   const origTotalStats = P.totalStats;
   P.totalStats = function (...args) {
-    const run = this.isRun();
+    const run = this.isRunForEquipment();
     const total = run ? origTotalStats.call(this, {}) : origTotalStats.apply(this, args);
     for (const gear of this.isRunGear()) {
       if (gear.otherWorldGear) continue;
@@ -164,7 +189,7 @@
   };
   const origCombatStats = P.equipmentCombatStats;
   P.equipmentCombatStats = function (...args) {
-    const run = this.isRun();
+    const run = this.isRunForEquipment();
     const out = run ? origCombatStats.call(this, {}) : origCombatStats.apply(this, args), keys = ['attackPower','defensePower','magicAttackPower','magicDefensePower'];
     for (const gear of this.isRunGear()) {
       if (gear.otherWorldGear) continue;
@@ -177,7 +202,7 @@
   };
   const origEquippedWeapon = P.equippedWeapon;
   P.equippedWeapon = function () {
-    const uid = this.isRun()?.equipment?.rightHand, gear = uid && this.isBagEntry(uid), weapon = gear && D().weapons[gear.itemId];
+    const uid = this.isRunForEquipment()?.equipment?.rightHand, gear = uid && this.isBagEntry(uid), weapon = gear && D().weapons[gear.itemId];
     return weapon || origEquippedWeapon.call(this);
   };
   const origEffectRate = P.equipmentEffectRate;
@@ -240,8 +265,9 @@
       bag.push({ uid: `import-${seed}-${bag.length+1}`, kind: D().items[id]?.category === 'equipment' ? 'equipment' : 'item', itemId:id, count:1, imported:true, generated:false, plus:0, ops:[] });
     }
     const stats = origTotalStats.call(this), vitals = this.storedVitals(stats), homeEquipment = copy(this.profile.equipment || {});
-    this.profile.equipment = { rightHand:null, leftHand:null, head:null, body:null, arms:null, feet:null, accessory:null };
+    this.usingInfiniteScoreEquipment = false;
     this.profile.infiniteScore = { active:true, version:2, floor:1, encounterCountOnFloor:0, stairsFound:false, phase:'explore', lootBag:bag, equipment:{}, dungeonGold:0, buffs:{ treasureBonus:0, rareBonus:0, goldBonus:0, qualityBattles:0 }, importedItems:copy(bag), homeEquipment, homeVitals:copy(this.profile.currentVitals || vitals), seed, rngState:seed, uidCounter:bag.length, hp:vitals.hp, mp:vitals.mp, log:[], forcedEvent:null, floorMap:null, opTransferReserved:{ enabled:false, version:1 }, startedAt:Date.now() };
+    this.isSetEquipmentContext(true);
     this.isCreateFloorMap();
     this.isLog('RUN開始', { seed, imported:selected }); this.saveProfile(); this.isPlayExploreMusic(); this.isRenderExplore($('#menu-panel'));
   };
@@ -252,7 +278,7 @@
 
   const originalOwJobNavHTML = P.owJobNavHTML;
   P.owJobNavHTML = function () {
-    if (this.isRun()) return '<div class="ow-jobnav"><button class="ow-jobnav-back" data-lenny="ability-back">← 無限奏廊へ戻る</button></div>';
+    if (this.isRunForEquipment()) return '<div class="ow-jobnav"><button class="ow-jobnav-back" data-lenny="ability-back">← 無限奏廊へ戻る</button></div>';
     return typeof originalOwJobNavHTML === 'function' ? originalOwJobNavHTML.call(this) : '';
   };
   P.isOpenAbilitySettings = function () {
@@ -340,7 +366,7 @@
     if(!this.isAtStairs())return'';
     return '<div class="is-stair-object forced"><b>階段を発見</b><span>このフロアの探索は終了です</span><div><button data-is-action="descend">次の階へ降りる</button></div></div>';
   };
-  P.isExploreMenuHtml=function(){this.renderBattleMenu?.();const source=$('#battle-menu-popover')?.innerHTML||'';return `<div class="is-explore-menu" ${this.isExploreMenuOpen?'':'hidden'}>${source.replaceAll('data-battle-menu-close','data-is-explore-menu-close')}<button class="is-explore-ability" data-is-action="abilities"><b>アビリティ設定</b><span>PHANTOM THIEFのACTION / PASSIVEを変更</span></button></div>`;};
+  P.isExploreMenuHtml=function(){this.renderBattleMenu?.();const source=$('#battle-menu-popover')?.innerHTML||'';return `<div class="is-explore-menu" ${this.isExploreMenuOpen?'':'hidden'}>${source.replaceAll('data-battle-menu-close','data-is-explore-menu-close')}<button class="is-explore-ability" data-is-action="abilities"><b>アビリティ設定</b><span>PHANTOM THIEFのACTION / PASSIVEを変更</span></button><button class="is-explore-ability" data-is-visit-hideout><b>拠点に戻る</b><span>探索をやめるか確認する</span></button></div>`;};
   P.isExploreLogHtml=function(){
     const history=this.isRun()?.log||[],rows=(this.isExploreLogExpanded?history:history.slice(-3)).slice().reverse();
     return `<section class="battle-log is-explore-log${this.isExploreLogExpanded?' expanded':''}" data-is-action="explore-log" role="button" tabindex="0" aria-label="探索ログ。タップで履歴を表示"><small>EXPLORE LOG // ${this.isExploreLogExpanded?'TAP TO CLOSE':'TAP FOR HISTORY'}</small><div class="battle-log-lines">${rows.length?rows.map(x=>`<p>F${x.floor} // ${esc(x.message)}</p>`).join(''):'<p>無限奏廊に侵入した</p>'}</div></section>`;
@@ -450,6 +476,7 @@
   P.isStartBattle=async function(rare=false){const r=this.isRun(),cfg=this.isEffectiveCfg();let pool=this.isEnemyPoolForFloor(r.floor,rare);if(rare&&!pool.length){rare=false;pool=this.isEnemyPoolForFloor(r.floor,false);}if(!pool.length)return;document.querySelector('.is-encounter-transition')?.remove();const transition=document.createElement('div');transition.className='is-encounter-transition';transition.innerHTML=`<b>${rare?'RARE ENCOUNTER':'ENCOUNTER'}</b><span>FLOOR ${r.floor}</span>`;document.body.appendChild(transition);await new Promise(resolve=>setTimeout(resolve,520));const count=rare?1:(1+Math.floor(this.isRand()*Math.min(3,1+Math.floor(r.floor/5)))),scale=1+(r.floor-1)*cfg.enemyScalePerFloor;this.closeBattleMenu?.();this.cancelAutoPick?.();const stats=this.totalStats();this.player=this.freshBattlePlayer(stats,clamp(r.hp,1,stats.maxHp),clamp(r.mp,0,stats.maxMp));this.enemies=Array.from({length:count},(_,i)=>{const id=pool[Math.floor(this.isRand()*pool.length)],e=this.makeEnemy(id,i);for(const k of ['maxHp','atk','def','mag','mnd','spd','agi','dex'])if(e.stats[k]!=null)e.stats[k]=Math.max(1,Math.round(e.stats[k]*scale));e.hp=e.stats.maxHp;e.infiniteScore=true;e.rareRun=rare;return e;});this.battleMode='infiniteScore';this.turn=1;this.locked=false;this.finished=false;this.resetBattleLog();this.battleRewards={exp:0,gold:0,drops:{},levels:[],masteryResults:[],jobResults:[],newRecipes:[]};$('#menu-screen').hidden=true;$('#menu-screen').style.display='none';$('#game').hidden=false;$('#game').style.display='grid';$('#result').hidden=true;$('#result').style.display='none';$('#ren').className='ren fighter idle';this.applySetBattleVisual();const bf=$('#battlefield'),roomBg=r.currentRoomBackground||this.isRoomBackground();bf.dataset.dungeon='infiniteScore';bf.style.backgroundImage=`linear-gradient(#09132a55,#02071355),url("${roomBg}")`;bf.style.backgroundSize='auto,cover';bf.style.backgroundPosition='center,center center';this.renderEnemies();this.applyEquipmentVisual();this.updateHUD();this.setLog(`無限奏廊 FLOOR ${r.floor}：${this.enemies.map(e=>e.name).join('と')}が現れた！`);this.flashTitle(rare?'RARE ENCOUNTER':'INFINITE SCORE',`FLOOR ${r.floor}`);this.showMainCommands();this.isLog('戦闘開始',{rare,count,scale,roomBg});setTimeout(()=>transition.remove(),240);};
   const isStartBattleWithMusic=P.isStartBattle;
   P.isStartBattle=function(rare=false){
+    this.isSetEquipmentContext(true);
     this.prepareBattleInteractionState?.();
     // ブラックアウト開始直後から拠点を消す。元の開始処理が戦闘DOMを作るまで
     // HIDEOUTが一瞬だけ背面に見える状態を防ぐ。
@@ -504,7 +531,7 @@
   const isVictoryKeepingAuto=P.victory;
   P.victory=function(...args){const keep=this.battleMode==='infiniteScore'&&!!this.autoBattle,index=this.autoBattleSpeedIndex,result=isVictoryKeepingAuto.apply(this,args);if(keep){this.autoBattle=true;this.autoBattleSpeedIndex=index;}return result;};
   const origDefeat=P.defeat;
-  P.defeat=async function(){if(this.battleMode!=='infiniteScore'||!this.isRun())return origDefeat.call(this);this.finished=true;this.endAutoBattle?.();const run=this.isRun(),lost=this.isBagUsed(),lostIds=new Set((run.importedItems||[]).map(x=>x.itemId)),home=copy(run.homeEquipment||this.profile.equipment);for(const slot of Object.keys(home))if(lostIds.has(home[slot]))home[slot]=null;this.profile.equipment=home;this.profile.currentVitals=copy(run.homeVitals||this.profile.currentVitals);this.profile.infiniteScore={active:false,lastResult:'defeat',lostCount:lost,endedAt:Date.now()};this.profile.flags.owRestoreJobPending=true;this.saveProfile();this.audio.stopMusic?.(400);this.audio.sfx('defeat');this.showResult('GAME OVER','持ち込んだ物も、拾った物も、すべて無限奏廊へ消えた。','ALL LOOT LOST',`<div class="is-warning"><strong>LOST</strong><p>${lost}枠の戦利品を失いました。</p><p>基礎能力・JOB・転生・武器学・習得技・RE:MIXは失われません。</p></div>`);};
+  P.defeat=async function(){if(this.battleMode!=='infiniteScore'||!this.isRun())return origDefeat.call(this);this.finished=true;this.endAutoBattle?.();const run=this.isRun(),lost=this.isBagUsed(),lostIds=new Set((run.importedItems||[]).map(x=>x.itemId)),home=copy(run.homeEquipmentInProfile ? this.profile.equipment : (run.homeEquipment||this.profile.equipment));for(const slot of Object.keys(home))if(lostIds.has(home[slot]))home[slot]=null;this.profile.equipment=home;this.profile.currentVitals=copy(run.homeVitals||this.profile.currentVitals);this.profile.infiniteScore={active:false,lastResult:'defeat',lostCount:lost,endedAt:Date.now()};this.profile.flags.owRestoreJobPending=true;this.saveProfile();this.audio.stopMusic?.(400);this.audio.sfx('defeat');this.showResult('GAME OVER','持ち込んだ物も、拾った物も、すべて無限奏廊へ消えた。','ALL LOOT LOST',`<div class="is-warning"><strong>LOST</strong><p>${lost}枠の戦利品を失いました。</p><p>基礎能力・JOB・転生・武器学・習得技・RE:MIXは失われません。</p></div>`);};
 
   P.isAfterBattle=function(){
     const result=$('#result'),game=$('#game'),menu=$('#menu-screen');
@@ -540,16 +567,89 @@
   P.isSellPrice=function(x){if(x.kind!=='equipment')return 1;const ri=['common','rare','epic','legendary','mythic'].indexOf(x.rarity);return Math.max(2,Math.min(12,2+(ri<0?0:ri*2)+(x.plus||0)+(x.ops?.length||0)));};
   P.isBuy=async function(id,price){const r=this.isRun();if(r.dungeonGold<price)return;if(this.isBagUsed()>=this.isBagLimit()){await this.isNotify('LOOT BAGが満杯です','先にアイテムを使用・装備・破棄して空きを作ってください。',{kicker:'SHOP // BAG FULL'});return;}r.dungeonGold-=price;const x=id==='gear'?this.isGenerateGear():{uid:this.isUid('buy'),kind:'item',itemId:id,count:1};this.isAddLoot(x);this.isRenderShop($('#menu-panel'),!!this.isShopMerchantMode,false);};
   P.isSell=async function(uid){const r=this.isRun(),x=this.isBagEntry(uid);if(!x)return;const slots=Object.keys(r.equipment).filter(s=>r.equipment[s]===uid),name=D().items[x.itemId]?.name||x.itemId;if(slots.length&&!await this.isConfirm('装備中のアイテムです',`${name}を外して売却しますか？`,{kicker:'SHOP // SELL',confirmLabel:'外して売る',danger:true}))return;slots.forEach(s=>delete r.equipment[s]);r.dungeonGold+=this.isSellPrice(x);r.lootBag.splice(r.lootBag.indexOf(x),1);this.isLog(`売却：${name}`);this.isRenderShopSell($('#menu-panel'));};
-  P.isReturnRun=function(){const r=this.isRun();if(!r)return;for(const x of r.lootBag){if(x.kind==='equipment'&&x.generated)this.profile.infiniteScoreGear.push(copy(x));this.profile.inventory[x.itemId]=(this.profile.inventory[x.itemId]||0)+(x.count||1);}const count=r.lootBag.length,floor=r.floor;this.profile.equipment=copy(r.homeEquipment||this.profile.equipment);this.profile.currentVitals=copy(r.homeVitals||this.profile.currentVitals);this.profile.infiniteScore={active:false,lastResult:'return',returnedCount:count,lastFloor:floor,endedAt:Date.now()};this.profile.flags.owRestoreJobPending=true;this.saveProfile();document.getElementById('is-modal')?.remove();this.showResult('RETURN SUCCESS',`${count}枠の戦利品を通常所持品へ持ち帰った。`,'INFINITE SCORE // ESCAPED',`<div class="is-stairs"><b>FLOOR ${floor}から生還</b><p>生成装備のレアリティ・OP・強化値は専用インスタンス記録にも保存されています。</p></div>`);};
+  P.isReturnRun=function(){const r=this.isRun();if(!r)return;for(const x of r.lootBag){if(x.kind==='equipment'&&x.generated)this.profile.infiniteScoreGear.push(copy(x));this.profile.inventory[x.itemId]=(this.profile.inventory[x.itemId]||0)+(x.count||1);}const count=r.lootBag.length,floor=r.floor;this.profile.equipment=copy(r.homeEquipmentInProfile ? this.profile.equipment : (r.homeEquipment||this.profile.equipment));this.profile.currentVitals=copy(r.homeVitals||this.profile.currentVitals);this.profile.infiniteScore={active:false,lastResult:'return',returnedCount:count,lastFloor:floor,endedAt:Date.now()};this.profile.flags.owRestoreJobPending=true;this.saveProfile();document.getElementById('is-modal')?.remove();this.showResult('RETURN SUCCESS',`${count}枠の戦利品を通常所持品へ持ち帰った。`,'INFINITE SCORE // ESCAPED',`<div class="is-stairs"><b>FLOOR ${floor}から生還</b><p>生成装備のレアリティ・OP・強化値は専用インスタンス記録にも保存されています。</p></div>`);};
 
   // RETURNを奏廊専用アイテムとして登録（通常UIで未所持なら見えない）。
   D().items.infiniteReturn ||= {id:'infiniteReturn',name:'RETURN',nameEn:'RETURN',category:'consumable',rarity:'legendary',description:'無限奏廊から戦利品を持って即時帰還する。',infiniteScoreOnly:true,effect:{returnRun:true}};
 
+  P.isAbandonRun = function () {
+    const run = this.isRun();
+    if (!run) return;
+    this.isSetEquipmentContext(false);
+    const lostIds = new Set((run.importedItems || []).map(item => item.itemId));
+    for (const [slot, id] of Object.entries(this.profile.equipment)) {
+      if (lostIds.has(id) && !(this.profile.inventory[id] > 0)) this.profile.equipment[slot] = null;
+    }
+    const { rightHand, leftHand } = this.profile.equipment;
+    if (lostIds.has(leftHand) && leftHand === rightHand && this.profile.inventory[leftHand] < 2) this.profile.equipment.leftHand = null;
+    this.profile.currentVitals = copy(run.homeVitals || this.profile.currentVitals);
+    this.profile.infiniteScore = {
+      active: false, lastResult: 'abandon', lastFloor: run.floor, lostCount: run.lootBag?.length || 0, endedAt: Date.now(),
+    };
+    this.profile.flags.owRestoreJobPending = true;
+    this.player = null;
+    this.battleMode = null;
+    this.isRoomResult = null;
+    this.isExploreMenuOpen = false;
+    this.isRunEquipSlot = null;
+    document.getElementById('is-modal')?.remove();
+    this.saveProfile();
+    return this.showMenu('home');
+  };
+
+  P.isChooseActiveRun = async function () {
+    if (this.isRunChoiceOpen) return;
+    const run = this.isEnsureRunShape();
+    if (!run) return;
+    this.isRunChoiceOpen = true;
+    try {
+      while (this.isRun() === run) {
+        const choice = await this.isGameDialog({
+          title: '無限奏廊の探索が残っています',
+          message: `FLOOR ${run.floor}から探索を続けられます。`,
+          dismissible: false,
+          choices: [
+            { label: '探索に戻る' },
+            { label: '探索をやめる', note: '持ち込み品と戦利品を失います', danger: true },
+          ],
+        });
+        if (this.isRun() !== run) return;
+        if (choice === 0) {
+          this.isExploreMenuOpen = false;
+          this.isSetEquipmentContext(true);
+          if (!this.isPhantomThief() && this.isJobUnlocked?.('phantomThief')) this.switchJobState('phantomThief', false);
+          return this.isAfterBattle();
+        }
+        const abandon = await this.isConfirm('探索をやめますか？',
+          '持ち込んだ品と探索中の戦利品をすべて失います。拠点へ戻ると、この探索は再開できません。',
+          { confirmLabel: '探索をやめて拠点へ戻る', danger: true });
+        if (abandon && this.isRun() === run) return this.isAbandonRun();
+      }
+    } finally {
+      this.isRunChoiceOpen = false;
+    }
+  };
+
   // ── パネル接続と操作 ─────────────────────────────────────
+  const origShowMenu = P.showMenu;
+  P.showMenu = function (panel = 'home') {
+    if (this.isRun()) return this.isChooseActiveRun();
+    this.isSetEquipmentContext(false);
+    if (this.owAbilityFrom === 'infinite-score') {
+      this.owAbilityFrom = null;
+      this.owAbilityReturn = false;
+    }
+    return origShowMenu.call(this, panel);
+  };
+
   const origRenderPanel=P.renderMenuPanel,infinitePanel=$('#menu-panel'),infinitePanelHome=infinitePanel?.parentNode,infinitePanelNext=infinitePanel?.nextSibling;
   P.renderMenuPanel=function(name){
     name=String(name||'');
     const panel=$('#menu-panel');
+    const isScorePanel = name.startsWith('infinite-score') && name !== 'infinite-score-warning' && name !== 'infinite-score-import';
+    const isScoreAbilityPanel = name === 'job' && this.isRunForEquipment() && this.owAbilityReturn && this.owAbilityFrom === 'infinite-score';
+    if (this.isRun() && !isScorePanel && !isScoreAbilityPanel) return this.isChooseActiveRun();
+    this.isSetEquipmentContext(isScorePanel || isScoreAbilityPanel);
     if(panel&&name.startsWith('infinite-score')){
       panel.dataset.panel=name;
       if(panel.parentNode!==document.body)document.body.appendChild(panel);
@@ -658,6 +758,12 @@
   P.isForgeExecute=async function(){const s=this.isForgeState(),x=this.isBagEntry(s.selectedUid);if(!x||s.busy)return;s.busy=true;this.isRenderWorkshop($('#menu-panel'));try{if(s.mode==='enhance')await this.isForgeEnhance(x.uid);else if(s.mode==='merge')await this.isForgeMerge(x.uid,s.materialUid);else if(s.mode==='transfer')await this.isForgeTransfer(s.sourceUid,x.uid,s.opIndex);else await this.isForgeDelete(x.uid,s.opIndex);}finally{s.busy=false;if(this.isRun())this.isRenderWorkshop($('#menu-panel'));}};
 
   document.addEventListener('click',e=>{const g=window.arseneGame;if(!g)return;const button=e.target.closest('[data-is-forge-mode],[data-is-forge-select],[data-is-forge-material],[data-is-forge-source],[data-is-forge-op],[data-is-forge-execute],[data-is-forge-help],[data-action="workshop-exit"],[data-is-action="workshop-exit"]');if(!button)return;e.preventDefault();e.stopImmediatePropagation();const s=g.isForgeState();if(button.matches('[data-is-forge-mode]')){s.mode=button.dataset.isForgeMode;s.materialUid=null;s.sourceUid=null;s.opIndex=0;}else if(button.matches('[data-is-forge-select]')){s.selectedUid=button.dataset.isForgeSelect;s.materialUid=null;s.sourceUid=null;s.opIndex=0;}else if(button.matches('[data-is-forge-material]'))s.materialUid=button.dataset.isForgeMaterial;else if(button.matches('[data-is-forge-source]')){s.sourceUid=button.dataset.isForgeSource;s.opIndex=0;}else if(button.matches('[data-is-forge-op]'))s.opIndex=Number(button.dataset.isForgeOp)||0;else if(button.matches('[data-is-forge-help]'))s.help=!s.help;else if(button.matches('[data-is-forge-execute]')){g.isForgeExecute();return;}else{g.isRollStairs();g.renderMenuPanel('infinite-score');return;}g.isRenderWorkshop($('#menu-panel'));},true);
+  document.addEventListener('click', event => {
+    const game = window.arseneGame;
+    if (!game || !event.target.closest('[data-is-visit-hideout]')) return;
+    event.preventDefault();
+    game.showMenu('home');
+  });
   document.addEventListener('click',e=>{if(e.target.closest('[data-is-action="resume"]'))window.arseneGame?.isPlayExploreMusic?.();},true);
   document.addEventListener('click',e=>{
     const button=e.target.closest('[data-is-job-change-import]'),g=window.arseneGame;
