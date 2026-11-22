@@ -13,7 +13,7 @@ assert.match(bridge, /onRewardedVideoAdDismissed[\s\S]*finish\(false\)/, '途中
 assert.match(bridge, /requestInFlight[\s\S]*if \(requestInFlight\) return false/, '広告要求の多重起動を防ぐ');
 assert.match(bridge, /requestConsentInfo\(\)[\s\S]*showConsentForm\(\)[\s\S]*canRequestAds/, '同意確認後だけ広告を要求する');
 assert.match(bridge, /showPrivacyOptionsForm\(\)/, '広告プライバシー設定を再表示できる');
-assert.match(offer, /showAd\.then\(rewarded => \{[\s\S]*if \(generation !== offerGeneration\) return;[\s\S]*if \(!rewarded\)[\s\S]*return;[\s\S]*api\.grant\(type\)/, '広告成功と現行generationの両方を満たした時だけ付与する');
+assert.match(offer, /showAd\.then\(rewarded => \{[\s\S]*if \(generation !== offerGeneration\) return;[\s\S]*if \(!rewarded\)[\s\S]*return;[\s\S]*api\.grant\(type, nativeAd\)/, '広告成功と現行generationの両方を満たした時だけ付与する');
 const appPublisher = plist.match(/<key>GADApplicationIdentifier<\/key>\s*<string>ca-app-pub-(\d+)~\d+<\/string>/)?.[1];
 const rewardedMatch = bridge.match(/const IOS_REWARDED_AD_ID = '(ca-app-pub-(\d+)\/\d+)'/);
 assert.ok(appPublisher, '有効なiOS AdMob App IDを設定する');

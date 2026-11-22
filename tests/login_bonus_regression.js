@@ -17,7 +17,7 @@ const game = Object.create(context.BattleGame.prototype);
 let saved;
 game.profile = { inventory: {}, premium: { adSkipTickets: 5 } };
 game.saveProfile = () => { saved = JSON.stringify(game.profile); };
-const ids = ['adSkipTickets', 'arcanaChaos', 'adSkipTickets', 'arcanaChaos', 'adSkipTickets', 'coins', 'rebirthArcana'];
+const ids = ['adSkipTickets', 'arcanaChaos', 'adSkipTickets', 'arcanaChaos', 'adSkipTickets', 'astra', 'rebirthArcana'];
 ids.forEach((id, index) => {
   assert.equal(game.claimLoginBonus(date(index)).id, id, `day ${index + 1}`);
   game.profile = JSON.parse(saved);
@@ -25,9 +25,9 @@ ids.forEach((id, index) => {
 });
 assert.deepEqual(game.profile.inventory, { arcanaChaos: 2, rebirthArcana: 1 });
 assert.equal(game.profile.premium.adSkipTickets, 8);
-assert.equal(game.exchangeShopState().balance, 1);
+assert.equal(game.exchangeShopState().balance, 100);
 assert.equal(game.exchangeShopState().keeper, 'カズ');
-assert.equal(game.exchangeShopState().products.length, 3);
+assert.equal(game.exchangeShopState().products.length, 4);
 assert.ok(game.exchangeShopState().products.every(product => product.affordable));
 assert.equal(game.exchangeShopRedeem('nonexistent').reason, 'unknownProduct');
 assert.equal(game.exchangeShopRedeem('otherworld-ticket').ok, true);
@@ -49,14 +49,21 @@ shop.profile = { inventory: { potion: 2 }, premium: { otherworldTickets: 5 } };
 assert.equal(shop.exchangeShopState().balance, 0, '既存セーブには無料通貨の残高がない');
 shop.saveProfile = () => {};
 for (let day = 0; day < 14; day++) shop.claimLoginBonus(date(day));
-assert.equal(shop.exchangeShopState().balance, 2, '周期が変わってもコインを持ち越せる');
+assert.equal(shop.exchangeShopState().balance, 200, '周期が変わってもアストラを持ち越せる');
 assert.equal(shop.exchangeShopRedeem('health-potions').quantity, 3);
 assert.equal(shop.profile.inventory.potion, 5);
 assert.equal(shop.profile.premium.otherworldTickets, 5, '回復薬を選んでも探索券は動かない');
 shop.saveProfile = () => { throw new Error('storage is full'); };
 assert.equal(shop.exchangeShopRedeem('mana-potions').reason, 'saveFailed');
-assert.equal(shop.exchangeShopState().balance, 1);
+assert.equal(shop.exchangeShopState().balance, 100);
 assert.equal(shop.profile.inventory.manaPotion, undefined);
+
+shop.profile.exchangeShop = { coins: 2, astra: 30 };
+shop.saveProfile = () => {};
+assert.equal(shop.exchangeShopState().balance, 230, '旧コインを1枚100アストラで引き継ぐ');
+assert.equal(shop.exchangeShopRedeem('ad-skip-ticket').balance, 130);
+assert.equal(shop.profile.premium.adSkipTickets, 7);
+assert.equal(shop.profile.exchangeShop.coins, undefined, '旧コインの残高は交換時に一度だけ変換される');
 
 game.profile.currentJob = 'mage';
 game.profile.jobs = { mage: { level: 19 }, warrior: { level: 20 } };

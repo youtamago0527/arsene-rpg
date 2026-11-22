@@ -25,9 +25,10 @@
     const reward = rewards[completed];
     const previousBonus = this.profile.loginBonus;
     const previousStore = this.profile[reward.store];
-    const count = Math.max(0, Number(previousStore?.[reward.id]) || 0);
+    const store = reward === exchangeCoin ? this.exchangeShopWallet() : previousStore;
+    const count = Math.max(0, Number(store?.[reward.id]) || 0);
     this.profile.loginBonus = { lastClaimDay: today, streak: completed + 1 };
-    this.profile[reward.store] = { ...previousStore, [reward.id]: count + 1 };
+    this.profile[reward.store] = { ...store, [reward.id]: count + (reward.quantity ?? 1) };
     try {
       this.saveProfile();
     } catch (error) {
@@ -48,7 +49,7 @@
     grid.innerHTML = rewards.map((reward, index) => {
       const received = index < completed;
       const available = index === completed && !claimed;
-      return `<li class="${available ? 'available' : ''}"><small>${index + 1}日目</small><b>${reward.name}</b><span>${received ? '受取済み' : '×1'}</span></li>`;
+      return `<li class="${available ? 'available' : ''}"><small>${index + 1}日目</small><b>${reward.name}</b><span>${received ? '受取済み' : `×${reward.quantity ?? 1}`}</span></li>`;
     }).join('');
     claim.disabled = claimed || !!game.localScenario?.ephemeral;
     claim.textContent = claimed ? '本日は受取済み' : `${completed + 1}日目の報酬を受け取る`;
@@ -68,7 +69,7 @@
     let reward;
     try { reward = game.claimLoginBonus(); }
     catch { render(game, '保存できませんでした。もう一度お試しください。'); return; }
-    render(game, reward ? `${reward.name}を1個受け取りました。` : '');
+    render(game, reward ? `${reward.name} ×${reward.quantity ?? 1} を受け取りました。` : '');
     if (reward) game.audio.sfx('confirm');
   });
   document.addEventListener('visibilitychange', () => {

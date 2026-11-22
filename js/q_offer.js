@@ -128,8 +128,10 @@
       if (activeModal || offerInFlight) return false;
       const d = { ...(defs[type] || defs.auto2), ...extra }, left = remaining(type);
       const qCopy = String(extra.copy ?? QD.offer?.[type] ?? d.copy).replace(/\n/g, '<br>'), skip = hasAdSkip(g);
-      const adStatus = skip ? (premium(g).adSkipLicense ? '永久スキップ適用' : `スキップ券を使用（残り${Number(premium(g).adSkipTickets) || 0}）`) : '広告を見るか選んでください';
       const nativeAd = !skip && window.arseneAdMob?.isNativeIOS?.();
+      const astra = nativeAd ? g.rewardedAdAstraProgress?.() : null;
+      const adStatus = skip ? (premium(g).adSkipLicense ? '永久スキップ適用' : `スキップ券を使用（残り${Number(premium(g).adSkipTickets) || 0}）`) :
+        astra ? `広告報酬 ${astra.progress}/${astra.required}回　達成ごとに${astra.quantity}アストラ` : '広告を見るか選んでください';
       const countdown = skip || nativeAd ? 'READY' : '3', watchText = skip ? '広告をスキップして発動する' : '広告を見て発動する';
       const reviveCard = `<div class="q-offer-card q-revive-card" role="dialog" aria-label="戦闘復活"><button class="q-offer-close" data-q-close aria-label="閉じる">✕ CLOSE</button><header><small class="q-revive-tag"><i></i>DAILY REVIVE REWARD</small><h2>怪盗の再起</h2><p>Q「${qCopy}」</p></header><div class="q-revive-details"><div><span><i></i>復活時HP</span><b>最大HPの50%</b></div><div><span><i></i>復帰地点</span><b>現在の戦闘</b></div><div><span><i></i>本日の残り回数</span><b>${left} 回</b></div></div><div class="q-offer-ad"><span>${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch><span>▶　${watchText}</span></button><button class="q-revive-cancel" data-q-close>今回は諦める</button></div>`;
       const normalCard = `<div class="q-offer-card" role="dialog" aria-label="Q offer"><button class="q-offer-close" data-q-close aria-label="閉じる">×</button><div class="q-offer-q">Q</div><small class="q-offer-kicker">Q'S OFFER</small><h2>${d.title}</h2><p>「${qCopy}」</p><div class="q-offer-ad"><span>${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch>${watchText}<span>${skip ? 'SKIP ENTITLEMENT' : nativeAd ? 'WATCH REWARDED AD' : 'WATCH MOCK AD'}</span></button>${['bossDrop', 'overdrive'].includes(type) ? '<button class="q-offer-decline" data-q-close>広告を見ない</button>' : ''}</div>`;
@@ -148,8 +150,8 @@
             if (generation !== offerGeneration) return;
             if (!rewarded) { offerInFlight = false; window.arseneStartFlow?.toast?.('広告を完了できませんでした。再度お試しください'); return; }
             playIntervention(g, d.forceDialogueCategory, () => {
-              if (generation !== offerGeneration) return;
-              try { const granted = api.grant(type); if (granted) { if (skip) consumeAdSkip(g); d.onGrant?.(); } }
+              if (generation !== offerGeneration || !offerInFlight) return;
+              try { const granted = api.grant(type, nativeAd); if (granted) { if (skip) consumeAdSkip(g); d.onGrant?.(); } }
               finally { if (generation === offerGeneration) offerInFlight = false; }
             });
           }).catch(() => { if (generation === offerGeneration) { offerInFlight = false; window.arseneStartFlow?.toast?.('広告を読み込めませんでした。再度お試しください'); } });
@@ -157,10 +159,12 @@
       });
       return true;
     },
-    grant(type) {
+    grant(type, rewardedAd = false) {
       const g = game(); if (!g) return false;
       const d = defs[type] || defs.auto2, s = state(g), daily = isDaily(type);
       if (daily && Number(s[d.key] || 0) >= DAILY) { window.arseneStartFlow?.toast?.('本日のQ’S OFFERは受け取り済みです'); return false; }
+      const previousState = rewardedAd ? { ...s } : null;
+      const previousWallet = g.profile.exchangeShop;
       if (daily) s[d.key] = (Number(s[d.key]) || 0) + 1;
       if (d.expiry) {
         const duration = Number(d.durationMs) || 30 * 60 * 1000;
@@ -169,7 +173,17 @@
       }
       if (type === 'otherworld') s.otherworldBonus = Number(s.otherworldBonus || 0) + 1;
       // 保護とボス素材は発生した瞬間に効果を適用する。後で消費するトークンは保持しない。
-      save(g); api.indicator();
+      const astra = rewardedAd ? g.recordRewardedAdForAstra?.() : 0;
+      try { save(g); }
+      catch (error) {
+        if (rewardedAd) {
+          g.profile.rewardState = previousState;
+          g.profile.exchangeShop = previousWallet;
+        }
+        throw error;
+      }
+      api.indicator();
+      if (astra) window.arseneStartFlow?.toast?.(`${astra}アストラ獲得！`);
       if (type === 'auto2' && g.autoBattle) g.autoBattleSpeedIndex = g.autoBattleSpeedSteps().length - 1;
       if (type === 'auto2' || type === 'sweep') { g.renderBattleMenu?.(); g.showMainCommands?.(); }
       if (type === 'exp2' || type === 'gold2') {
