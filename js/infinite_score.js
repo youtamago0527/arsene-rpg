@@ -9,14 +9,15 @@
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
   // Native dialogs suspend WebAudio on iOS. Keep decisions inside the game UI.
-  P.isGameDialog = function ({ kicker='INFINITE SCORE', title='', message='', choices=[], danger=false }={}) {
+  P.isGameDialog = function ({ kicker='INFINITE SCORE', title='', message='', choices=[], danger=false, dismissible=true }={}) {
     document.getElementById('is-game-dialog')?.remove();
     return new Promise(resolve => {
       const root=document.createElement('div');root.id='is-game-dialog';root.className='is-modal is-game-dialog';
       const buttons=choices.map((choice,index)=>`<button type="button" data-is-dialog-choice="${index}" class="${choice.danger?'danger':''}"><b>${esc(choice.label)}</b>${choice.note?`<span>${esc(choice.note)}</span>`:''}</button>`).join('');
-      root.innerHTML=`<div role="dialog" aria-modal="true" aria-labelledby="is-dialog-title"><small>${esc(kicker)}</small><h2 id="is-dialog-title">${esc(title)}</h2>${message?`<p>${esc(message)}</p>`:''}<div class="is-dialog-choices">${buttons}</div><button type="button" class="is-dialog-cancel" data-is-dialog-cancel>${danger?'やめる':'閉じる'}</button></div>`;
+      const cancel = dismissible ? `<button type="button" class="is-dialog-cancel" data-is-dialog-cancel>${danger?'やめる':'閉じる'}</button>` : '';
+      root.innerHTML=`<div role="dialog" aria-modal="true" aria-labelledby="is-dialog-title"><small>${esc(kicker)}</small><h2 id="is-dialog-title">${esc(title)}</h2>${message?`<p>${esc(message)}</p>`:''}<div class="is-dialog-choices">${buttons}</div>${cancel}</div>`;
       const finish=value=>{root.remove();resolve(value);};
-      root.addEventListener('click',e=>{const pick=e.target.closest('[data-is-dialog-choice]');if(pick){finish(Number(pick.dataset.isDialogChoice));return;}if(e.target===root||e.target.closest('[data-is-dialog-cancel]'))finish(-1);});
+      root.addEventListener('click',e=>{const pick=e.target.closest('[data-is-dialog-choice]');if(pick){finish(Number(pick.dataset.isDialogChoice));return;}if(dismissible&&(e.target===root||e.target.closest('[data-is-dialog-cancel]')))finish(-1);});
       document.body.appendChild(root);root.querySelector('[data-is-dialog-choice], [data-is-dialog-cancel]')?.focus();
     });
   };
@@ -365,7 +366,7 @@
     if(!this.isAtStairs())return'';
     return '<div class="is-stair-object forced"><b>階段を発見</b><span>このフロアの探索は終了です</span><div><button data-is-action="descend">次の階へ降りる</button></div></div>';
   };
-  P.isExploreMenuHtml=function(){this.renderBattleMenu?.();const source=$('#battle-menu-popover')?.innerHTML||'';return `<div class="is-explore-menu" ${this.isExploreMenuOpen?'':'hidden'}>${source.replaceAll('data-battle-menu-close','data-is-explore-menu-close')}<button class="is-explore-ability" data-is-action="abilities"><b>アビリティ設定</b><span>PHANTOM THIEFのACTION / PASSIVEを変更</span></button></div>`;};
+  P.isExploreMenuHtml=function(){this.renderBattleMenu?.();const source=$('#battle-menu-popover')?.innerHTML||'';return `<div class="is-explore-menu" ${this.isExploreMenuOpen?'':'hidden'}>${source.replaceAll('data-battle-menu-close','data-is-explore-menu-close')}<button class="is-explore-ability" data-is-action="abilities"><b>アビリティ設定</b><span>PHANTOM THIEFのACTION / PASSIVEを変更</span></button><button class="is-explore-ability" data-is-visit-hideout><b>拠点に戻る</b><span>探索をやめるか確認する</span></button></div>`;};
   P.isExploreLogHtml=function(){
     const history=this.isRun()?.log||[],rows=(this.isExploreLogExpanded?history:history.slice(-3)).slice().reverse();
     return `<section class="battle-log is-explore-log${this.isExploreLogExpanded?' expanded':''}" data-is-action="explore-log" role="button" tabindex="0" aria-label="探索ログ。タップで履歴を表示"><small>EXPLORE LOG // ${this.isExploreLogExpanded?'TAP TO CLOSE':'TAP FOR HISTORY'}</small><div class="battle-log-lines">${rows.length?rows.map(x=>`<p>F${x.floor} // ${esc(x.message)}</p>`).join(''):'<p>無限奏廊に侵入した</p>'}</div></section>`;
@@ -571,9 +572,68 @@
   // RETURNを奏廊専用アイテムとして登録（通常UIで未所持なら見えない）。
   D().items.infiniteReturn ||= {id:'infiniteReturn',name:'RETURN',nameEn:'RETURN',category:'consumable',rarity:'legendary',description:'無限奏廊から戦利品を持って即時帰還する。',infiniteScoreOnly:true,effect:{returnRun:true}};
 
+  P.isAbandonRun = function () {
+    const run = this.isRun();
+    if (!run) return;
+    this.isSetEquipmentContext(false);
+    const lostIds = new Set((run.importedItems || []).map(item => item.itemId));
+    for (const [slot, id] of Object.entries(this.profile.equipment)) {
+      if (lostIds.has(id) && !(this.profile.inventory[id] > 0)) this.profile.equipment[slot] = null;
+    }
+    const { rightHand, leftHand } = this.profile.equipment;
+    if (lostIds.has(leftHand) && leftHand === rightHand && this.profile.inventory[leftHand] < 2) this.profile.equipment.leftHand = null;
+    this.profile.currentVitals = copy(run.homeVitals || this.profile.currentVitals);
+    this.profile.infiniteScore = {
+      active: false, lastResult: 'abandon', lastFloor: run.floor, lostCount: run.lootBag?.length || 0, endedAt: Date.now(),
+    };
+    this.profile.flags.owRestoreJobPending = true;
+    this.player = null;
+    this.battleMode = null;
+    this.isRoomResult = null;
+    this.isExploreMenuOpen = false;
+    this.isRunEquipSlot = null;
+    document.getElementById('is-modal')?.remove();
+    this.saveProfile();
+    return this.showMenu('home');
+  };
+
+  P.isChooseActiveRun = async function () {
+    if (this.isRunChoiceOpen) return;
+    const run = this.isEnsureRunShape();
+    if (!run) return;
+    this.isRunChoiceOpen = true;
+    try {
+      while (this.isRun() === run) {
+        const choice = await this.isGameDialog({
+          title: '無限奏廊の探索が残っています',
+          message: `FLOOR ${run.floor}から探索を続けられます。`,
+          dismissible: false,
+          choices: [
+            { label: '探索に戻る' },
+            { label: '探索をやめる', note: '持ち込み品と戦利品を失います', danger: true },
+          ],
+        });
+        if (this.isRun() !== run) return;
+        if (choice === 0) {
+          this.isExploreMenuOpen = false;
+          this.isSetEquipmentContext(true);
+          if (!this.isPhantomThief() && this.isJobUnlocked?.('phantomThief')) this.switchJobState('phantomThief', false);
+          return this.isAfterBattle();
+        }
+        const abandon = await this.isConfirm('探索をやめますか？',
+          '持ち込んだ品と探索中の戦利品をすべて失います。拠点へ戻ると、この探索は再開できません。',
+          { confirmLabel: '探索をやめて拠点へ戻る', danger: true });
+        if (abandon && this.isRun() === run) return this.isAbandonRun();
+      }
+    } finally {
+      this.isRunChoiceOpen = false;
+    }
+  };
+
   // ── パネル接続と操作 ─────────────────────────────────────
   const origShowMenu = P.showMenu;
   P.showMenu = function (panel = 'home') {
+    if (this.isRun()) return this.isChooseActiveRun();
     this.isSetEquipmentContext(false);
     if (this.owAbilityFrom === 'infinite-score') {
       this.owAbilityFrom = null;
@@ -586,8 +646,9 @@
   P.renderMenuPanel=function(name){
     name=String(name||'');
     const panel=$('#menu-panel');
-    const isScorePanel = name.startsWith('infinite-score') && !['infinite-score-warning', 'infinite-score-import'].includes(name);
-    const isScoreAbilityPanel = name === 'job' && this.owAbilityReturn && this.owAbilityFrom === 'infinite-score';
+    const isScorePanel = name.startsWith('infinite-score') && name !== 'infinite-score-warning' && name !== 'infinite-score-import';
+    const isScoreAbilityPanel = name === 'job' && this.isRunForEquipment() && this.owAbilityReturn && this.owAbilityFrom === 'infinite-score';
+    if (this.isRun() && !isScorePanel && !isScoreAbilityPanel) return this.isChooseActiveRun();
     this.isSetEquipmentContext(isScorePanel || isScoreAbilityPanel);
     if(panel&&name.startsWith('infinite-score')){
       panel.dataset.panel=name;
@@ -697,6 +758,12 @@
   P.isForgeExecute=async function(){const s=this.isForgeState(),x=this.isBagEntry(s.selectedUid);if(!x||s.busy)return;s.busy=true;this.isRenderWorkshop($('#menu-panel'));try{if(s.mode==='enhance')await this.isForgeEnhance(x.uid);else if(s.mode==='merge')await this.isForgeMerge(x.uid,s.materialUid);else if(s.mode==='transfer')await this.isForgeTransfer(s.sourceUid,x.uid,s.opIndex);else await this.isForgeDelete(x.uid,s.opIndex);}finally{s.busy=false;if(this.isRun())this.isRenderWorkshop($('#menu-panel'));}};
 
   document.addEventListener('click',e=>{const g=window.arseneGame;if(!g)return;const button=e.target.closest('[data-is-forge-mode],[data-is-forge-select],[data-is-forge-material],[data-is-forge-source],[data-is-forge-op],[data-is-forge-execute],[data-is-forge-help],[data-action="workshop-exit"],[data-is-action="workshop-exit"]');if(!button)return;e.preventDefault();e.stopImmediatePropagation();const s=g.isForgeState();if(button.matches('[data-is-forge-mode]')){s.mode=button.dataset.isForgeMode;s.materialUid=null;s.sourceUid=null;s.opIndex=0;}else if(button.matches('[data-is-forge-select]')){s.selectedUid=button.dataset.isForgeSelect;s.materialUid=null;s.sourceUid=null;s.opIndex=0;}else if(button.matches('[data-is-forge-material]'))s.materialUid=button.dataset.isForgeMaterial;else if(button.matches('[data-is-forge-source]')){s.sourceUid=button.dataset.isForgeSource;s.opIndex=0;}else if(button.matches('[data-is-forge-op]'))s.opIndex=Number(button.dataset.isForgeOp)||0;else if(button.matches('[data-is-forge-help]'))s.help=!s.help;else if(button.matches('[data-is-forge-execute]')){g.isForgeExecute();return;}else{g.isRollStairs();g.renderMenuPanel('infinite-score');return;}g.isRenderWorkshop($('#menu-panel'));},true);
+  document.addEventListener('click', event => {
+    const game = window.arseneGame;
+    if (!game || !event.target.closest('[data-is-visit-hideout]')) return;
+    event.preventDefault();
+    game.showMenu('home');
+  });
   document.addEventListener('click',e=>{if(e.target.closest('[data-is-action="resume"]'))window.arseneGame?.isPlayExploreMusic?.();},true);
   document.addEventListener('click',e=>{
     const button=e.target.closest('[data-is-job-change-import]'),g=window.arseneGame;
