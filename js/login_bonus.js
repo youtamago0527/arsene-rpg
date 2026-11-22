@@ -1,11 +1,9 @@
 (() => {
   'use strict';
 
-  const ticket = { store: 'premium', id: 'adSkipTickets', name: '広告スキップ券' };
-  const chaos = { store: 'inventory', id: 'arcanaChaos', name: '混沌のアルカナ' };
-  const rebirth = { store: 'inventory', id: 'rebirthArcana', name: '輪廻のアルカナ' };
-  const exchangeCoin = window.ARSENE_DATA.exchangeShop.currency;
-  const rewards = [ticket, chaos, ticket, chaos, ticket, exchangeCoin, rebirth];
+  const currency = window.ARSENE_DATA.exchangeShop.currency;
+  const amounts = [100, 200, 300, 400, 500, 600, 1000];
+  const numberFormat = new Intl.NumberFormat('ja-JP');
   const proto = BattleGame.prototype;
 
   proto.loginBonusState = function (now = new Date()) {
@@ -14,21 +12,20 @@
     const { lastClaimDay, streak } = this.profile.loginBonus || {};
     const hasClaim = Number.isInteger(lastClaimDay);
     const claimed = hasClaim && today <= lastClaimDay;
-    const completed = Number.isInteger(streak) && streak >= 1 && streak <= rewards.length ? streak : 0;
-    const continuing = hasClaim && today === lastClaimDay + 1 && completed < rewards.length;
+    const completed = Number.isInteger(streak) && streak >= 1 && streak <= amounts.length ? streak : 0;
+    const continuing = hasClaim && today === lastClaimDay + 1 && completed < amounts.length;
     return { today, claimed, completed: claimed || continuing ? completed : 0 };
   };
 
   proto.claimLoginBonus = function (now = new Date()) {
     const { today, claimed, completed } = this.loginBonusState(now);
     if (claimed || this.localScenario?.ephemeral) return null;
-    const reward = rewards[completed];
+    const reward = { ...currency, quantity: amounts[completed] };
     const previousBonus = this.profile.loginBonus;
     const previousStore = this.profile[reward.store];
-    const store = reward === exchangeCoin ? this.exchangeShopWallet() : previousStore;
-    const count = Math.max(0, Number(store?.[reward.id]) || 0);
+    const wallet = this.exchangeShopWallet();
     this.profile.loginBonus = { lastClaimDay: today, streak: completed + 1 };
-    this.profile[reward.store] = { ...store, [reward.id]: count + (reward.quantity ?? 1) };
+    this.profile[reward.store] = { ...wallet, [reward.id]: wallet[reward.id] + reward.quantity };
     try {
       this.saveProfile();
     } catch (error) {
@@ -41,18 +38,20 @@
 
   const dialog = document.getElementById('login-bonus');
   const grid = dialog.querySelector('ol');
+  const total = amounts.reduce((sum, amount) => sum + amount, 0);
+  dialog.querySelector('[data-login-total]').textContent = numberFormat.format(total);
   const claim = dialog.querySelector('[data-login-claim]');
   const status = dialog.querySelector('[role="status"]');
 
   function render(game, message = '') {
     const { claimed, completed } = game.loginBonusState();
-    grid.innerHTML = rewards.map((reward, index) => {
+    grid.innerHTML = amounts.map((amount, index) => {
       const received = index < completed;
       const available = index === completed && !claimed;
       const state = received ? 'received' : available ? 'available' : 'upcoming';
-      return `<li data-reward="${reward.id}" data-state="${state}">
+      return `<li data-reward="${currency.id}" data-state="${state}">
         <small>${index + 1}日目</small><i class="login-bonus-icon" aria-hidden="true"></i>
-        <b>${reward.name}</b><span class="login-bonus-quantity">${received ? '受取済み' : `×${reward.quantity ?? 1}`}</span>
+        <b>${currency.name}</b><span class="login-bonus-quantity">${received ? '受取済み' : `×${numberFormat.format(amount)}`}</span>
       </li>`;
     }).join('');
     claim.disabled = claimed || !!game.localScenario?.ephemeral;
@@ -79,7 +78,7 @@
     let reward;
     try { reward = game.claimLoginBonus(); }
     catch { render(game, '保存できませんでした。もう一度お試しください。'); return; }
-    render(game, reward ? `${reward.name} ×${reward.quantity ?? 1} を受け取りました。` : '');
+    render(game, reward ? `${reward.name} ×${numberFormat.format(reward.quantity)} を受け取りました。` : '');
     if (reward) game.audio.sfx('confirm');
   });
   document.addEventListener('visibilitychange', () => {

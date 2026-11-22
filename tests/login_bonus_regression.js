@@ -26,17 +26,20 @@ for (const file of ['data.js', 'game.js', 'exchange_shop.js', 'login_bonus.js'])
 const date = day => new Date(2026, 9, 29 + day, 2);
 const game = Object.create(context.BattleGame.prototype);
 let saved;
-game.profile = { inventory: {}, premium: { adSkipTickets: 5 } };
+game.profile = { inventory: { arcanaChaos: 2, rebirthArcana: 1 }, premium: { adSkipTickets: 5 } };
 game.saveProfile = () => { saved = JSON.stringify(game.profile); };
-const ids = ['adSkipTickets', 'arcanaChaos', 'adSkipTickets', 'arcanaChaos', 'adSkipTickets', 'astra', 'rebirthArcana'];
-ids.forEach((id, index) => {
-  assert.equal(game.claimLoginBonus(date(index)).id, id, `day ${index + 1}`);
+const quantities = [100, 200, 300, 400, 500, 600, 1000];
+quantities.forEach((quantity, index) => {
+  const reward = game.claimLoginBonus(date(index));
+  assert.equal(reward.id, 'astra', `day ${index + 1}`);
+  assert.equal(reward.quantity, quantity);
+  assert.equal(game.exchangeShopState().balance, quantities.slice(0, index + 1).reduce((sum, value) => sum + value, 0));
   game.profile = JSON.parse(saved);
   assert.equal(game.claimLoginBonus(date(index)), null, '再読み込みしても同じ日に再取得できない');
 });
 assert.deepEqual(game.profile.inventory, { arcanaChaos: 2, rebirthArcana: 1 });
-assert.equal(game.profile.premium.adSkipTickets, 8);
-assert.equal(game.exchangeShopState().balance, 100);
+assert.equal(game.profile.premium.adSkipTickets, 5);
+assert.equal(game.exchangeShopState().balance, 3100);
 assert.equal(game.exchangeShopState().keeper, 'カズ');
 assert.equal(game.exchangeShopState().products.length, 4);
 assert.ok(game.exchangeShopState().products.every(product => product.affordable));
@@ -44,11 +47,10 @@ assert.equal(game.exchangeShopRedeem('nonexistent').reason, 'unknownProduct');
 assert.equal(game.exchangeShopRedeem('otherworld-ticket').ok, true);
 game.profile = JSON.parse(saved);
 assert.equal(game.profile.premium.otherworldTickets, 1, '既存の異世界探索券の残高に加算する');
-assert.equal(game.exchangeShopRedeem('otherworld-ticket').reason, 'insufficientCoins');
-assert.equal(game.exchangeShopState().balance, 0);
+assert.equal(game.exchangeShopState().balance, 3000);
 assert.equal(game.claimLoginBonus(date(5)), null, '端末日付を戻しても再取得できない');
-assert.equal(game.claimLoginBonus(date(7)).id, 'adSkipTickets', '7日目の翌日は次の周期');
-assert.equal(game.claimLoginBonus(date(9)).id, 'adSkipTickets', '受取を逃した翌日は1日目から');
+assert.equal(game.claimLoginBonus(date(7)).quantity, 100, '7日目の翌日は次の周期');
+assert.equal(game.claimLoginBonus(date(9)).quantity, 100, '受取を逃した翌日は1日目から');
 
 const beforeFailure = saved;
 game.saveProfile = () => { throw new Error('storage is full'); };
@@ -58,23 +60,33 @@ assert.equal(JSON.stringify(game.profile), beforeFailure);
 const shop = Object.create(context.BattleGame.prototype);
 shop.profile = { inventory: { potion: 2 }, premium: { otherworldTickets: 5 } };
 assert.equal(shop.exchangeShopState().balance, 0, '既存セーブには無料通貨の残高がない');
+assert.equal(shop.exchangeShopRedeem('otherworld-ticket').reason, 'insufficientCoins');
 shop.saveProfile = () => {};
 for (let day = 0; day < 14; day++) shop.claimLoginBonus(date(day));
-assert.equal(shop.exchangeShopState().balance, 200, '周期が変わってもアストラを持ち越せる');
+assert.equal(shop.exchangeShopState().balance, 6200, '周期が変わってもアストラを持ち越せる');
 assert.equal(shop.exchangeShopRedeem('health-potions').quantity, 3);
 assert.equal(shop.profile.inventory.potion, 5);
 assert.equal(shop.profile.premium.otherworldTickets, 5, '回復薬を選んでも探索券は動かない');
 shop.saveProfile = () => { throw new Error('storage is full'); };
 assert.equal(shop.exchangeShopRedeem('mana-potions').reason, 'saveFailed');
-assert.equal(shop.exchangeShopState().balance, 100);
+assert.equal(shop.exchangeShopState().balance, 6100);
 assert.equal(shop.profile.inventory.manaPotion, undefined);
 
 shop.profile.exchangeShop = { coins: 2, astra: 30 };
 shop.saveProfile = () => {};
 assert.equal(shop.exchangeShopState().balance, 230, '旧コインを1枚100アストラで引き継ぐ');
 assert.equal(shop.exchangeShopRedeem('ad-skip-ticket').balance, 130);
-assert.equal(shop.profile.premium.adSkipTickets, 7);
+assert.equal(shop.profile.premium.adSkipTickets, 1);
 assert.equal(shop.profile.exchangeShop.coins, undefined, '旧コインの残高は交換時に一度だけ変換される');
+
+const legacy = Object.create(context.BattleGame.prototype);
+legacy.profile = { exchangeShop: { astra: 100, rewardedAds: 9 } };
+legacy.profile.loginBonus = { lastClaimDay: legacy.loginBonusState(date(5)).today, streak: 6 };
+legacy.saveProfile = () => {};
+assert.equal(legacy.claimLoginBonus(date(5)), null, '旧報酬を受け取った日は追加で受け取れない');
+assert.equal(legacy.claimLoginBonus(date(6)).quantity, 1000, '旧セーブの連続日数を引き継ぐ');
+assert.equal(legacy.exchangeShopState().balance, 1100);
+assert.equal(legacy.rewardedAdAstraProgress().total, 9);
 
 const automatic = Object.create(context.BattleGame.prototype);
 automatic.profile = { inventory: {} };

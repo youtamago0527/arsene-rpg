@@ -502,7 +502,7 @@
       <div class="lenny-menu lenny-menu--art">
         <button type="button" data-lenny-entry="workshop" data-menu="workshop"><b>工房</b><span>装備の製作・強化・分解</span></button>
         <button type="button" data-lenny-entry="otherworld" data-lenny="otherworld"><b>異世界</b><span>異界干渉力 ${inf.left} / ${inf.max}</span>${isNew ? '<mark>NEW</mark>' : ''}</button>
-        <button type="button" data-lenny-entry="astra" data-open-astra-exchange aria-haspopup="dialog" aria-controls="astra-exchange"><b>アストラ交換所</b></button>
+        <button class="astra-exchange-entry" type="button" data-lenny-entry="astra" data-open-astra-exchange aria-haspopup="dialog" aria-controls="astra-exchange"><b>アストラ交換所</b></button>
         <button type="button" data-lenny-entry="phantom" data-lenny="tutorial"><b>PHANTOM THIEFについて</b><span>仕様をもう一度確認する</span></button>
         <button type="button" data-lenny-entry="hideout" data-menu="home"><b>閉じる</b><span>拠点へ戻る</span></button>
       </div>`;

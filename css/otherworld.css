@@ -80,7 +80,7 @@ body.ow-glitch #menu-screen{animation:ow-shake .5s steps(2) 3}
 .lenny-menu--art button mark { top: 21%; right: 15%; padding: 2px 5px; background: #6c2d97; }
 .lenny-menu--art [data-lenny-entry="workshop"] { --lenny-entry-art: url("../assets/ui/lenny-menu/workshop.webp"); }
 .lenny-menu--art [data-lenny-entry="otherworld"] { --lenny-entry-art: url("../assets/ui/lenny-menu/otherworld.webp"); }
-.lenny-menu--art [data-lenny-entry="astra"] { --lenny-entry-art: url("../assets/ui/lenny-menu/astra-exchange.webp"); }
+.lenny-menu--art [data-lenny-entry="astra"] { --lenny-entry-art: var(--astra-exchange-entry-art); }
 .lenny-menu--art [data-lenny-entry="phantom"] { --lenny-entry-art: url("../assets/ui/lenny-menu/phantom-thief.webp"); }
 .lenny-menu--art [data-lenny-entry="phantom"] b { font-size: clamp(13px, 4.1vw, 21px); }
 .lenny-menu--art [data-lenny-entry="hideout"] { --lenny-entry-art: url("../assets/ui/lenny-menu/hideout.webp"); }
