@@ -56,7 +56,10 @@
     dialog.scrollTop = 0;
   }
 
-  login.querySelector('[data-open-astra-exchange]').addEventListener('click', () => openExchange({ fromLogin: true }));
+  document.addEventListener('click', event => {
+    const button = event.target.closest('[data-open-astra-exchange]');
+    if (button) openExchange({ fromLogin: login.contains(button) });
+  });
   document.getElementById('hideout-astra-exchange').addEventListener('click', () => openExchange());
   window.addEventListener('resize', () => { if (dialog.open) positionBelowStatus(); });
 

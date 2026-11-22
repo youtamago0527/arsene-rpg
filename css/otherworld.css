@@ -50,6 +50,41 @@ body.ow-glitch #menu-screen{animation:ow-shake .5s steps(2) 3}
 .lenny-menu button span{font-size:11px;color:#7d95ad}
 .lenny-menu button mark{position:absolute;right:12px;top:12px;padding:1px 8px;border-radius:99px;background:#c40044;color:#fff;font-size:9px;letter-spacing:.12em}
 
+.lenny-menu--art {
+  width: min(100%, 460px);
+  margin-inline: auto;
+  gap: clamp(7px, 2vw, 11px);
+}
+.lenny-menu--art button {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 56px;
+  aspect-ratio: 820 / 168;
+  align-content: center;
+  gap: 3px;
+  padding: 7px 14% 7px 24%;
+  border: 0;
+  border-radius: 0;
+  background: var(--lenny-entry-art) center / 100% 100% no-repeat;
+  color: #ffedc5;
+  text-shadow: 0 1px 3px #060316;
+}
+.lenny-menu--art button:hover { background: var(--lenny-entry-art) center / 100% 100% no-repeat; filter: brightness(1.1); }
+.lenny-menu--art button:focus-visible { outline: 2px solid #f8dd92; outline-offset: 2px; }
+.lenny-menu--art button:active { filter: brightness(1.17); }
+.lenny-menu--art button b {
+  font: 700 clamp(15px, 4.9vw, 24px)/1.17 "Yu Mincho", Georgia, serif;
+  overflow-wrap: anywhere;
+}
+.lenny-menu--art button span { color: #eee0f9; font-size: clamp(10px, 3.4vw, 13px); line-height: 1.16; }
+.lenny-menu--art button mark { top: 21%; right: 15%; padding: 2px 5px; background: #6c2d97; }
+.lenny-menu--art [data-lenny-entry="workshop"] { --lenny-entry-art: url("../assets/ui/lenny-menu/workshop.webp"); }
+.lenny-menu--art [data-lenny-entry="otherworld"] { --lenny-entry-art: url("../assets/ui/lenny-menu/otherworld.webp"); }
+.lenny-menu--art [data-lenny-entry="astra"] { --lenny-entry-art: url("../assets/ui/lenny-menu/astra-exchange.webp"); }
+.lenny-menu--art [data-lenny-entry="phantom"] { --lenny-entry-art: url("../assets/ui/lenny-menu/phantom-thief.webp"); }
+.lenny-menu--art [data-lenny-entry="phantom"] b { font-size: clamp(13px, 4.1vw, 21px); }
+.lenny-menu--art [data-lenny-entry="hideout"] { --lenny-entry-art: url("../assets/ui/lenny-menu/hideout.webp"); }
+
 /* ── PHANTOM THIEF チュートリアル ── */
 .pt-dots{display:flex;gap:5px;margin:0 0 12px}
 .pt-dots i{flex:1;height:3px;border-radius:2px;background:#182a40}
