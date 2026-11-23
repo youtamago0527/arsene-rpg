@@ -757,7 +757,7 @@
         // 左手武器の攻撃性能は左手追撃でだけ使用する。右手火力へ二重加算しない。
         if (slot === 'leftHand' && D.weapons[id]) continue;
         // 強化はその装備自身の戦闘値へ掛かる。能力補正と特殊効果は各集計側で同率を掛ける。
-        const rate = 1 + this.enchantLevel(id) * (D.enchantTable?.powerRate ?? 0.15);
+        const rate = this.enchantPowerMultiplier(this.enchantLevel(id));
         for (const k of BattleGame.COMBAT_KEYS) if (typeof def[k] === 'number') out[k] += def[k] * rate;
         if (typeof def.bonuses?.def === 'number') out.defensePower += def.bonuses.def * rate;
       }
@@ -922,7 +922,7 @@
       for (const id of Object.values(equipment || {})) {
         if (!id) continue;
         const e = this.equipmentDefinition(id)?.effects;
-        const rate = 1 + this.enchantLevel(id) * (D.enchantTable?.powerRate ?? 0.15);
+        const rate = this.enchantPowerMultiplier(this.enchantLevel(id));
         if (e && typeof e[type] === 'number') sum += e[type] * rate;
       }
       return sum;
@@ -1683,6 +1683,12 @@
       const steps = level - (table.length - 1);
       return Math.round(last * Math.pow(et.goldGrowth ?? 1.4, steps));
     }
+    enchantPowerMultiplier(level) {
+      const safeLevel = Math.max(0, Number(level) || 0);
+      const base = D.enchantTable?.powerRate ?? .15;
+      const over = D.enchantTable?.overEnchantPowerRate ?? base * 2;
+      return 1 + Math.min(safeLevel, 3) * base + Math.max(0, safeLevel - 3) * over;
+    }
     equipmentDefinition(id) { return D.weapons[id] || D.accessories[id] || D.armors?.[id] || D.equipment?.[id] || null; }
     equipmentBonuses(equipment = this.profile.equipment) {
       const result = {}; const add = (source, rate = 1) => Object.entries(source?.bonuses || {}).forEach(([k, v]) => {
@@ -1691,7 +1697,7 @@
         result[k] = (result[k] || 0) + scaled;
       });
       Object.entries(equipment).forEach(([, id]) => {
-        const rate = 1 + this.enchantLevel(id) * (D.enchantTable?.powerRate ?? 0.15);
+        const rate = this.enchantPowerMultiplier(this.enchantLevel(id));
         add(this.equipmentDefinition(id), rate);
       }); return result;
     }
@@ -4702,10 +4708,10 @@
       if (!groups.some(group => group.id === this.enhanceWeaponType)) this.enhanceWeaponType = groups[0]?.id;
       const groupHtml = `<div class="ws-group">${groups.map(group => `<button data-enhance-weapon-type="${group.id}" class="${this.enhanceWeaponType === group.id ? 'active' : ''}"><b>${group.name}</b><span>${group.nameEn}</span><i>${group.items.length}</i></button>`).join('')}</div>`;
       const selected = groups.find(group => group.id === this.enhanceWeaponType);
-      return `<div class="workshop-section-title"><b>武器強化</b><span>WEAPON ENCHANT</span></div>${groupHtml}<p class="workshop-warning">同じ武器1個を素材として強化します。+3まで成功率100%。+4以降は失敗で武器が消滅します。</p><div class="enchant-grid">${(selected?.items || []).map(cardFor).join('')}</div>`;
+      return `<div class="workshop-section-title"><b>武器強化</b><span>WEAPON ENCHANT</span></div>${groupHtml}<p class="workshop-warning">同じ武器1個を素材として強化します。+3までは1段15%、+4以降は1段30%上昇。+3まで成功率100%。+4以降は失敗で武器が消滅します。</p><div class="enchant-grid">${(selected?.items || []).map(cardFor).join('')}</div>`;
     }
     enchantGainHTML(item, level = 0) {
-      const powerRate = D.enchantTable?.powerRate ?? .15, currentRate = 1 + level * powerRate, nextRate = currentRate + powerRate;
+      const currentRate = this.enchantPowerMultiplier(level), nextRate = this.enchantPowerMultiplier(level + 1);
       const values = {
         '攻撃': Number(item?.attackPower || 0),
         '魔攻': Number(item?.magicAttackPower || 0),
@@ -5106,7 +5112,7 @@
       if (!groups.some(group => group.id === this.enhanceArmorFilter)) this.enhanceArmorFilter = groups[0]?.id;
       const groupHtml = `<div class="ws-group">${groups.map(group => `<button data-enhance-armor="${group.id}" class="${this.enhanceArmorFilter === group.id ? 'active' : ''}"><b>${group.name}</b><span>${group.enName}</span><i>${group.items.length}</i></button>`).join('')}</div>`;
       const selected = groups.find(group => group.id === this.enhanceArmorFilter);
-      return `<div class="workshop-section-title"><b>防具強化</b><span>ARMOR ENCHANT</span></div>${groupHtml}<p class="workshop-warning">同じ防具1個を素材として強化します。+3まで成功率100%。+4以降は失敗で防具が消滅します。</p><div class="enchant-grid">${(selected?.items || []).map(cardFor).join('')}</div>`;
+      return `<div class="workshop-section-title"><b>防具強化</b><span>ARMOR ENCHANT</span></div>${groupHtml}<p class="workshop-warning">同じ防具1個を素材として強化します。+3までは1段15%、+4以降は1段30%上昇。+3まで成功率100%。+4以降は失敗で防具が消滅します。</p><div class="enchant-grid">${(selected?.items || []).map(cardFor).join('')}</div>`;
     }
     enchantArmor(itemId, anchorTop = null) {
       const item = D.items[itemId]; if (!item) return;
@@ -5130,7 +5136,7 @@
     }
     bonusText(id) {
       const def = this.equipmentDefinition(id) || {}, enchLv = this.enchantLevel(id);
-      const rate = 1 + enchLv * (D.enchantTable?.powerRate ?? .15);
+      const rate = this.enchantPowerMultiplier(enchLv);
       const format = value => { const rounded = Math.round(value * 10) / 10; return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1); };
       // 戦闘能力は日本語表示。内部キーは画面へ出さない。
       const combatLabels = { attackPower: '攻撃力', defensePower: '防御力', magicAttackPower: '魔法攻撃力', magicDefensePower: '魔法防御力' };

@@ -54,7 +54,7 @@
     floors: '階層', winsToClear: 'クリアに必要な勝利数', encounterProgression: '出現テーブル',
     minWins: 'この勝利数から', pool: '出現する敵', unlockCondition: '解放条件',
     recommendedLevel: '推奨Lv', background: '背景', thumbnail: 'サムネイル', music: 'BGM',
-    successRates: '成功率(+1から順に)', goldCosts: '費用(+1から順に)', maxLevel: '最大強化', powerRate: '1段階あたりの上昇率',
+    successRates: '成功率(+1から順に)', goldCosts: '費用(+1から順に)', maxLevel: '最大強化', powerRate: '+3までの1段階あたりの上昇率', overEnchantPowerRate: '+4以降の1段階あたりの上昇率',
     attackScale: '攻撃倍率', defenseK: '防御の効きにくさK', base: '基準値', growth: '伸び', curve: 'カーブ',
     critical: '会心', luckRate: '運の寄与', multiplier: '倍率', variance: 'ばらつき',
     playerVariance: '味方ダメージのばらつき', enemyVariance: '敵ダメージのばらつき',
@@ -135,7 +135,7 @@
     { g: '装備', key: 'accessories', label: 'アクセサリ', list: true, hint: 'bonuses / effects' },
     { g: '装備', key: 'items', label: 'アイテム・素材', list: true, hint: '消費・素材・キーアイテム' },
     { g: '装備', key: 'recipes', label: '工房レシピ', list: true, hint: 'materials / gold / materialUnlockId' },
-    { g: '装備', key: 'enchantTable', label: '強化', list: false, hint: '成功率 / 費用 / powerRate（+1あたりの上昇率）' },
+    { g: '装備', key: 'enchantTable', label: '強化', list: false, hint: '成功率 / 費用 / +3までの上昇率 / +4以降の上昇率' },
 
     { g: '技', key: 'skills', label: '通常攻撃', list: true, hint: '武器種ごとの「たたかう」', filter: s => s.kind === 'weapon' && !s.prerequisiteSkill },
     { g: '技', key: 'skills', label: '武器技（閃き）', list: true, hint: 'sparkRank / sparkFrom / sparkExclusive', filter: s => s.source === 'weapon' && s.sparkRank != null },
