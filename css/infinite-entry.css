@@ -1,0 +1,47 @@
+#menu-panel[data-panel="infinite-score-warning"] {
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background: #030714 !important;
+}
+
+#menu-panel[data-panel="infinite-score-warning"] .is-entry-art {
+  position: relative;
+  width: min(100vw, calc(var(--app-viewport-height, 100svh) * 0.5625));
+  aspect-ratio: 9 / 16;
+  flex: none;
+  overflow: hidden;
+}
+
+.is-entry-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  user-select: none;
+  pointer-events: none;
+}
+
+.is-entry-art .is-entry-hotspot {
+  position: absolute;
+  z-index: 1;
+  top: 80.1%;
+  height: 8.1%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.is-entry-art .is-entry-import { left: 4%; width: 52%; }
+.is-entry-art .is-entry-back { left: 58%; width: 39%; }
+.is-entry-art .is-entry-hotspot:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: -5px;
+}
