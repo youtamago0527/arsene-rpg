@@ -1,4 +1,5 @@
-#menu-panel[data-panel="infinite-score-warning"] {
+#menu-panel[data-panel="infinite-score-warning"],
+#menu-panel[data-panel="infinite-score-import"] {
   box-sizing: border-box !important;
   padding: 0 !important;
   overflow: hidden !important;
@@ -8,7 +9,8 @@
   background: #030714 !important;
 }
 
-#menu-panel[data-panel="infinite-score-warning"] .is-entry-art {
+#menu-panel[data-panel="infinite-score-warning"] .is-entry-art,
+#menu-panel[data-panel="infinite-score-import"] .is-prep-art {
   position: relative;
   width: min(100vw, calc(var(--app-viewport-height, 100svh) * 0.5625));
   aspect-ratio: 9 / 16;
@@ -22,6 +24,26 @@
   height: 100%;
   object-fit: fill;
   user-select: none;
+  pointer-events: none;
+}
+
+.is-entry-art .is-entry-rule {
+  position: absolute;
+  z-index: 1;
+  top: 53.6%;
+  left: 16%;
+  width: 68%;
+  height: 7.4%;
+  margin: 0;
+  display: block;
+  padding-top: 0.5%;
+  background: linear-gradient(90deg, #210b19 0%, #1d0b1a 45%, #260c1c 100%);
+  color: #f7e9e9;
+  font-family: serif;
+  font-size: clamp(12px, 3.25vw, 23px);
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
   pointer-events: none;
 }
 
@@ -42,6 +64,37 @@
 .is-entry-art .is-entry-import { left: 4%; width: 52%; }
 .is-entry-art .is-entry-back { left: 58%; width: 39%; }
 .is-entry-art .is-entry-hotspot:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: -5px;
+}
+
+/* 元画像の上端にあるスマートフォンのステータスバーだけを表示領域外へ出す。 */
+#menu-panel[data-panel="infinite-score-import"] .is-prep-art {
+  aspect-ratio: 720 / 1235;
+}
+.is-prep-art img {
+  position: absolute;
+  top: -3.5%;
+  left: 0;
+  width: 100%;
+  height: 103.5%;
+  user-select: none;
+  pointer-events: none;
+}
+.is-prep-art .is-prep-hotspot {
+  position: absolute;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.is-prep-art .is-prep-back { top: 0.7%; left: 70%; width: 29%; height: 6%; }
+.is-prep-art .is-prep-begin { top: 78.5%; left: 11%; width: 78%; height: 10%; }
+.is-prep-art .is-prep-hotspot:focus-visible {
   outline: 3px solid #fff;
   outline-offset: -5px;
 }
