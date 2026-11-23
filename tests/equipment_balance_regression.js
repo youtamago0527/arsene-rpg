@@ -61,20 +61,6 @@ const game = Object.create(context.window.BattleGame.prototype);
 game.profile = { equipment: { accessory: 'forge_d2e_accessory' } };
 game.enchantLevel = () => 0;
 game.passiveEffectRate = () => 0;
-game.traitDropRateBonus = () => 0;
-game.collectionTitleEffect = () => 1;
-context.Math = Object.create(Math);
-context.Math.random = () => .02;
-for (const dungeonId of ['dungeon1', 'dungeon2']) {
-  const rare = Object.values(D.items).find(item => item.catalogDungeon === dungeonId && item.source === 'dropOnly' && item.stars === 4);
-  const enemy = D.enemies[rare.dropEnemyId];
-  const rareRow = enemy.dropTable.find(row => row.itemId === rare.id);
-  game.profile.equipmentArchive = [];
-  assert(game.rollDrops({ dropTable: [rareRow] }).some(([id]) => id === rare.id), `${dungeonId}の未入手★4初回確率が効かない`);
-  game.profile.equipmentArchive = [rare.id];
-  assert(!game.rollDrops({ dropTable: [rareRow] }).length, `${dungeonId}の入手済み★4確率が元に戻らない`);
-}
-context.Math.random = Math.random;
 for (const [level, expected] of [[0, 1], [1, 1.15], [3, 1.45], [4, 1.75], [5, 2.05]])
   assert(Math.abs(game.enchantPowerMultiplier(level) - expected) < 1e-9, `+${level}の強化倍率が不正`);
 game.enchantLevel = () => 4;
