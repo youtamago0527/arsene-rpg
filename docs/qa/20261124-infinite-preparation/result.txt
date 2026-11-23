@@ -1,0 +1,28 @@
+ARSÈNE RPG infinite preparation — iOS Simulator QA
+Date: 2026-11-24 JST
+Source: c1692e74ae9934f03aaeebaa22d9f81fcca48295
+Branch: staging/infinite-preparation-qa-20261124
+Device: newly created ARSENE Preparation QA / iPhone 17 / iOS 26.5, portrait.
+UUID: A21CEF5D-2194-4084-960C-C8FDA5F1E1CA
+
+PASS: New supplied preparation artwork fits portrait screen, including title, all five rule cards, entry button and bottom ornament. Old inventory selection form does not appear.
+PASS: Baked-in demo status bar (2:28 / playback / 19 battery) is hidden. Native iOS live status bar remains above artwork, intentionally distinguished from image demo bar.
+PASS: Visible upper-right 警告へ戻る center (737,411) opens warning artwork. Screenshot 02.
+PASS: Reopen preparation; visible 侵入する center (455,1520) starts FLOOR 1 RUN. First-entry Seripes dialogue was advanced via visible controls; screenshot 03 shows RUN開始, PHANTOM THIEF, LOOT BAG 0/30.
+Coordinates use 912x1944 CUA window screenshot including toolbar/bezel, not CSS pixels.
+PASS: Save snapshot taken immediately after real UI start shows currentJob phantomThief (fixture began warrior); lootBag=[], importedItems=[], run.equipment={}, all profile equipment slots null; homeEquipment retains original sword and other null slots. Assertions saved.
+PASS: To isolate return/restoration, terminated ONLY new dedicated test app, added one RETURN item to the real started RUN's lootBag in its dedicated save, relaunched and resumed via UI. Tapped 帰還 then 帰還する; RETURN SUCCESS appears (screenshot 04). This does not test obtaining RETURN through 20F progression.
+PASS: 拠点へ restores warrior and original equipment exactly: rightHand forge_d1_sword (鉄の剣), all other slots null. Equipment UI screenshot 05 and saved-data equality assertions confirm restoration.
+
+Build identity and validation
+pnpm run cap:sync: PASS, including web build / Capacitor sync / 9 runtime files and 10 audio asset verification.
+Xcode build: PASS, -project in arsene-infinite-preparation-qa-20261124, StoreKitVerification / Debug / iphonesimulator / CODE_SIGNING_ALLOWED=NO.
+Previous QA DerivedData was reused as a build cache. Generated App.app was copied with APFS clone to THIS worktree audit/build/App.app, SHA256-compared to c1692e7 source for js/infinite_score.js, css/infinite-entry.css, index.html and supplied preparation image (all match), then reinstalled from THIS path before all UI verification above. native-bundle-sha256.json records hashes.
+Five regression tests PASS: help_regression, mobile_app_regression, infinite_ui_regression, infinite_safe_layout_regression, infinite_entry_reward_balance_regression.
+
+Scope and limitations
+Only a new dedicated Simulator received test fixture changes. Existing real-device and other Simulator saves were not changed. No App Store submission, publication, purchases or ads.
+Fixture uses unlocked progression, warrior Lv20, forge_d1_sword, populated normal inventory. Legacy inventory IDs in the seed fixture normalize on loading (mageStaff/phantomSword/ironClaw merge into forge IDs); raw seed inventory equality is therefore not a valid migration-free assertion. Empty RUN imports and preserved original equipment were checked directly in the native save.
+This is one iPhone 17 portrait configuration and one original equipment setup. Other sizes, dual-wield-specific sanitation, normal unlock progression and 20F acquisition were not tested.
+On resume, normal profile weapon sanitation displayed staff on the home HUD while RUN gear stayed empty; original sword was nevertheless restored after RETURN. No additional source changes made.
+Raw test profiles, SQLite backups, full native build log and native App.app are local in audit/. Evidence-only commit; generated native setup files restored before commit.

@@ -1,0 +1,22 @@
+{
+  "js/infinite_score.js": {
+    "source": "3cf1c7b95cc0c65a2a09d00fd017a20ac10c1e8fb25ddcef2b52a572190567e1",
+    "nativeBundle": "3cf1c7b95cc0c65a2a09d00fd017a20ac10c1e8fb25ddcef2b52a572190567e1",
+    "match": true
+  },
+  "css/infinite-entry.css": {
+    "source": "6e2c93738b7bdbac2a9dd00a3187fde2281189770cba26fa31519d4d49372b5f",
+    "nativeBundle": "6e2c93738b7bdbac2a9dd00a3187fde2281189770cba26fa31519d4d49372b5f",
+    "match": true
+  },
+  "assets/ui/infinite-score-preparation.jpg": {
+    "source": "f3b8e90788b4451f4ea7c1f240f0fa1eba0311f46d40abdfc44a17575e9191cd",
+    "nativeBundle": "f3b8e90788b4451f4ea7c1f240f0fa1eba0311f46d40abdfc44a17575e9191cd",
+    "match": true
+  },
+  "index.html": {
+    "source": "b9b35dc43fa6e6a3db69f3eea96f400514e8c1835b59e77d5c61363a12752c12",
+    "nativeBundle": "b9b35dc43fa6e6a3db69f3eea96f400514e8c1835b59e77d5c61363a12752c12",
+    "match": true
+  }
+}

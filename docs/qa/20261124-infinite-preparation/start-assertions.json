@@ -1,0 +1,9 @@
+{
+  "autoPhantomThief": true,
+  "floor1": true,
+  "emptyLootBag": true,
+  "emptyImportedItems": true,
+  "emptyRunEquipment": true,
+  "emptyProfileEquipment": true,
+  "homeEquipmentPreserved": true
+}
