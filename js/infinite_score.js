@@ -414,14 +414,102 @@
   P.isSortBag=function(){const r=this.isRun();if(!r||r.lootBag.length<2)return;const slots=['rightHand','leftHand','head','body','arms','feet','accessory'],rarities=['mythic','legendary','epic','rare','uncommon','common'];r.lootBag.sort((a,b)=>{const ai=D().items[a.itemId]||{},bi=D().items[b.itemId]||{},ae=ai.category==='equipment',be=bi.category==='equipment',aEquipped=Object.values(r.equipment||{}).includes(a.uid),bEquipped=Object.values(r.equipment||{}).includes(b.uid);return Number(bEquipped)-Number(aEquipped)||Number(be)-Number(ae)||(ae&&be?(slots.indexOf(ai.slot)-slots.indexOf(bi.slot)||rarities.indexOf(a.rarity)-rarities.indexOf(b.rarity)||(b.plus||0)-(a.plus||0)):0)||String(ai.name||a.itemId).localeCompare(String(bi.name||b.itemId),'ja')||String(a.uid).localeCompare(String(b.uid));});this.isLog('LOOT BAGを整頓');this.isSave();this.audio?.sfx?.('ui');this.isRenderBag($('#menu-panel'));};
   P.isGearValues = function(x){const def=this.equipmentDefinition?.(x?.itemId)||{},mult=x?.generated?(x.multiplier||1):1,out={};for(const key of ['attackPower','defensePower','magicAttackPower','magicDefensePower'])out[key]=Math.round((Number(def[key])||0)*mult)+(x?.ops||[]).filter(o=>o.key===key).reduce((n,o)=>n+o.value,0);return out;};
   P.isItemHtml = function(x){const item=D().items[x.itemId]||{},rar=this.isCfg().rarity[x.rarity]||{},values=this.isGearValues(x),currentUid=this.isRun()?.equipment?.[item.slot],current=currentUid&&currentUid!==x.uid?this.isBagEntry(currentUid):null,currentValues=current?this.isGearValues(current):{},combat=Object.entries(values).filter(([,v])=>v).map(([k,v])=>{const delta=current? v-(currentValues[k]||0):null;return `${this.isCfg().opLabels[k]} ${v}${delta===null?'':` (${delta>=0?'+':''}${delta})`}`;}).join(' / ');return `<article class="is-item"><div><strong>${esc(item.name||x.itemId)} ${x.plus?`+${x.plus}`:''}</strong><small>${esc(item.slot||item.category||x.kind)} ${x.count>1?`×${x.count}`:''}${combat?` / ${combat}`:''}</small></div><span class="is-rarity" style="color:${rar.color||'#aaa'}">${rar.name||''}</span>${x.ops?.length?`<div class="is-ops">${x.ops.map(o=>`${esc(this.isCfg().opLabels[o.key]||o.key)} ${o.key==='critBonus'?`+${Math.round(o.value*100)}%`:`+${o.value}`} (R${o.rank})`).join(' / ')}</div>`:''}<div class="is-item-actions">${item.category==='equipment'?`<button data-is-equip="${x.uid}">装備</button>`:''}${item.effect?`<button data-is-use="${x.uid}">使用</button>`:''}<button data-is-drop="${x.uid}">捨てる</button></div></article>`;};
+
+  const slotTiles = {rightHand:0,leftHand:1,head:2,body:3,arms:4,feet:5,accessory:6};
+  const weaponTiles = {sword:0,shield:1,martial:7,staff:8,instrument:9};
+  const rarityNames = {common:'コモン',uncommon:'アンコモン',rare:'レア',epic:'エピック',legendary:'レジェンド',mythic:'ミシック'};
+  const combatKeys = ['attackPower','magicAttackPower','defensePower','magicDefensePower'];
+  const baseKeys = ['str','vit','mag','mnd','agi','dex','luk','maxHp','maxMp'];
+  const flatOps = new Set([...combatKeys,...baseKeys,'bagPlus']);
+  function gearIcon(slot, gear) {
+    const weapon = D().weapons[gear?.itemId]?.weaponType;
+    const tile = weaponTiles[weapon] ?? slotTiles[slot] ?? 0;
+    return `<i aria-hidden="true" class="rg-icon ${tile===9?'lyre':''}" style="background-position:${(tile%3)*50}% ${Math.floor(tile/3)*50}%"></i>`;
+  }
+  function gearName(game, gear) {
+    if (!gear) return 'なし';
+    const name = gear.otherWorldGear ? game.owgName(gear) : D().items[gear.itemId]?.name || gear.itemId;
+    const plus = gear.tuneLevel || gear.plus;
+    return esc(name + (plus ? ' +' + plus : ''));
+  }
+  function gearLines(game, gear) {
+    if (!gear) return '<span class="rg-empty">なし</span>';
+    const item = D().items[gear.itemId], labels = game.isCfg().opLabels;
+    const rarity = gear.rarity || item.rarity;
+    const stats = gear.otherWorldGear
+      ? Object.entries(game.owgEffectiveStats(gear)).map(([k,s])=>[k,s.total]) : Object.entries(game.isGearValues(gear));
+    const ops = gear.ops || [];
+    return `<span class="rg-title"><b>${gearName(game,gear)}</b><em>${esc(rarityNames[rarity]||rarity)}</em><em>OP ${ops.length}</em></span>
+      <span class="rg-base">${stats.filter(([,v])=>v).map(([k,v])=>esc(labels[k]||k)+' '+v).join(' ／ ')}</span>
+      <span class="rg-ops">${ops.map(op=>{
+        const value=Number(op.value);
+        const amount=flatOps.has(op.key)?value:Number((value*100).toFixed(2))+'%';
+        return `<span>◆ ${esc(labels[op.key]||op.key)} ${value>=0?'+':''}${amount}</span>`;
+      }).join('')}</span>`;
+  }
+  function rarityColor(game,gear) {
+    return game.isCfg().rarity[gear?.rarity || D().items[gear?.itemId]?.rarity]?.color || '#6f8ba5';
+  }
+  function runStats(game) {
+    return {...game.totalStats(),...game.equipmentCombatStats()};
+  }
+  function gearComparison(game,slot,chosen,current,status) {
+    const before=runStats(game);
+    let after=before;
+    if (chosen && chosen.uid!==current?.uid && !status) {
+      const preview=Object.create(game), run=game.isRun();
+      preview.profile={...game.profile,infiniteScore:{...run,equipment:{...run.equipment,[slot]:chosen.uid}}};
+      after=runStats(preview);
+    }
+    const labels=game.isCfg().opLabels;
+    const rows=[...combatKeys,...baseKeys].map(k=>{
+      const a=before[k]||0,b=after[k]||0,delta=Number((b-a).toFixed(2));
+      return `<tr><th>${esc(labels[k]||k)}</th><td>${a}</td>${status?'':`<td>${b}</td><td class="${delta>0?'rg-up':delta<0?'rg-down':''}">${delta>0?'+':''}${delta}</td>`}</tr>`;
+    }).join('');
+    return `<div class="rg-comparison"><p>${status?'現在のステータス':gearName(game,current)+' → '+gearName(game,chosen)}</p>
+      <table><thead><tr><th>能力</th><th>現在</th>${status?'':'<th>候補</th><th>差</th>'}</tr></thead><tbody>${rows}</tbody></table>
+      ${chosen && current?.uid!==chosen.uid?`<button class="rg-confirm" data-is-run-equip="${esc(chosen.uid)}">${gearName(game,chosen)}に付け替える</button>`:''}</div>`;
+  }
   P.isRenderEquipment=function(panel){
-    const r=this.isRun(),slots=D().equipmentSlots||[],active=this.isRunEquipSlot&&slots.some(s=>s.id===this.isRunEquipSlot)?this.isRunEquipSlot:null;
-    const candidates=slot=>r.lootBag.filter(x=>{const item=D().items[x.itemId];return x.kind==='equipment'&&item?.category==='equipment'&&item.slot===slot;});
-    const slotHtml=slots.map(slot=>{const uid=r.equipment[slot.id],x=uid&&this.isBagEntry(uid),item=x&&D().items[x.itemId],count=candidates(slot.id).length;return `<button type="button" data-is-run-slot="${slot.id}" class="equipment-slot ${x?'filled':'empty'} ${active===slot.id?'slot-active':''}"><span>${slot.name}<small>${slot.enName}</small></span><b>${item?esc(item.name):'なし'}</b>${count?`<i class="slot-count">${count}</i>`:''}</button>`;}).join('');
-    let overlay='';
-    if(active){const slot=slots.find(s=>s.id===active),current=r.equipment[active],list=candidates(active);overlay=`<section class="equipment-selector-overlay is-run-equipment-overlay" role="dialog" aria-modal="true" aria-label="${slot?.name||'装備'}を選択"><header><div><small>INFINITE SCORE // RUN EQUIPMENT</small><b>${slot?.name||'装備'}の装備 <span>${slot?.enName||''}</span></b></div><button type="button" data-is-run-slot-close aria-label="装備部位一覧へ戻る">×</button></header>${current?`<button class="equip-unequip" data-is-run-unequip="${active}">${slot?.name||'装備'}を外す<span>UNEQUIP</span></button>`:''}<div class="equipment-candidate-list">${list.map(x=>{const item=D().items[x.itemId]||{},values=this.isGearValues(x),bonus=Object.entries(values).filter(([,v])=>v).map(([k,v])=>`${this.isCfg().opLabels[k]||k} ${v}`).join(' / '),equipped=current===x.uid;return `<button data-is-run-equip="${x.uid}" class="equipment-candidate rarity-${item.rarity||x.rarity} ${equipped?'equipped-now':''}" ${equipped?'disabled':''}><span class="candidate-title"><b>${esc(item.name||x.itemId)}${x.plus?` +${x.plus}`:''}</b>${equipped?'<em>EQUIPPED</em>':''}</span><strong>${esc(bonus||item.description||'補正なし')}</strong>${x.ops?.length?`<small>${x.ops.map(o=>`${esc(this.isCfg().opLabels[o.key]||o.key)} R${o.rank}`).join(' / ')}</small>`:''}</button>`;}).join('')||'<p class="item-empty">この部位に装備できる戦利品がありません。</p>'}</div></section>`;}
-    panel.dataset.panel='infinite-score-equipment';panel.innerHTML=`<button class="panel-home" data-is-action="explore">探索画面へ</button>${this.isHeader()}<small>RUN EQUIPMENT</small><h2>奏廊装備</h2><div class="equipment-screen"><section class="equipment-slots-wrap"><h3>装備中 <span>CURRENT LOADOUT</span></h3><div class="equipment-slots">${slotHtml}</div></section><section class="equipment-workbench"><div class="equip-hint"><b>装備部位を選んでください</b><span>奏廊内で拾った装備だけを使用します。通常装備とは同期しません。</span></div></section></div>${this.owgResonanceSectionHTML?.()||''}${overlay}`;
+    const run=this.isRun(), slots=D().equipmentSlots;
+    const active=slots.find(slot=>slot.id===this.isRunEquipSlot);
+    const slotRows=slots.map(slot=>{
+      const gear=this.isBagEntry(run.equipment[slot.id]);
+      return `<button class="rg-slot" data-is-run-slot="${esc(slot.id)}" aria-expanded="${slot===active}" style="--accent:${rarityColor(this,gear)}">
+        ${gearIcon(slot.id,gear)}<span class="rg-slot-name">${esc(slot.name)}<small>${esc(slot.enName)}</small></span>
+        <span class="rg-lines">${gearLines(this,gear)}</span><span aria-hidden="true">›</span></button>`;
+    }).join('');
+    let picker='';
+    if(active){
+      const list=run.lootBag.filter(x=>x.kind==='equipment' && D().items[x.itemId]?.slot===active.id);
+      const current=list.find(x=>x.uid===run.equipment[active.id]);
+      const chosen=list.find(x=>x.uid===this.isEquipPreviewUid) || current || list[0];
+      const status=this.isEquipShowStatus===true;
+      const cards=list.map(x=>`<button class="rg-card" data-rg-preview="${esc(x.uid)}" aria-pressed="${x===chosen}" style="--accent:${rarityColor(this,x)}">
+        ${gearIcon(active.id,x)}<span class="rg-lines">${gearLines(this,x)}${x===current?'<small>装備中</small>':''}</span></button>`).join('');
+      picker=`<section class="rg-picker"><header><h3>${esc(active.name)}の装備</h3><button data-is-run-slot-close aria-label="候補を閉じる">×</button>
+        <button data-rg-mode="compare" aria-pressed="${!status}">装備比較</button><button data-rg-mode="status" aria-pressed="${status}">ステータス</button></header>
+        <div class="rg-columns"><div class="rg-list">${cards || '<p>この部位の戦利品はありません。</p>'}
+        ${current?`<button data-is-run-unequip="${esc(active.id)}">${esc(active.name)}を外す</button>`:''}</div>
+        ${gearComparison(this,active.id,chosen,current,status || !chosen)}</div></section>`;
+    }
+    panel.dataset.panel='infinite-score-equipment';
+    panel.innerHTML=`<main class="rg-screen"><header class="rg-head"><h2>装備</h2><button class="panel-home" data-is-action="explore">探索画面へ</button></header>
+      <div class="rg-slots">${slotRows}</div>${picker || '<p class="rg-hint">付け替えたい部位を選んでください。</p>'}${this.owgResonanceSectionHTML?.()||''}</main>`;
   };
+  document.addEventListener('click',event=>{
+    const button=event.target.closest('.rg-screen button'), game=window.arseneGame;
+    if(!button || !game)return;
+    if(button.hasAttribute('data-is-run-slot')){
+      game.isEquipPreviewUid=null;
+      game.isEquipShowStatus=false;
+    }else if(button.dataset.rgPreview || button.dataset.rgMode){
+      if(button.dataset.rgPreview){game.isEquipPreviewUid=button.dataset.rgPreview;game.isEquipShowStatus=false;}
+      else game.isEquipShowStatus=button.dataset.rgMode==='status';
+      game.isRenderEquipment($('#menu-panel'));
+    }
+  },true);
+
   P.isRenderDebug=function(panel){const c=this.isEffectiveCfg();panel.dataset.panel='infinite-score-debug';panel.innerHTML=`${this.isHeader()}<small>INFINITE SCORE DEV TOOLS</small><h2>DEBUG</h2><div class="is-debug"><div class="is-debug-grid">${[['floor','現在階',this.isRun().floor],['mapRows','MAP行数',c.mapRows],['stairBaseRate','階段初期率',c.stairBaseRate],['stairRateIncrease','階段上昇率',c.stairRateIncrease],['bagLimit','バッグ上限',c.bagLimit],['equippedUsesBag','装備も枠使用(1/0)',c.equippedUsesBag?1:0],['treasureRate','宝箱率',c.treasureRate],['rareEnemyRate','レア敵率',c.rareEnemyRate],['returnItemRate','RETURN率',c.returnItemRate],['shopRate','SHOP率',c.shopRate],['trapRate','TRAP率',c.trapRate],['cardRate','CARD率',c.cardRate],['sublimationRate','昇華率',c.sublimationRate],['enemyScalePerFloor','敵強化/階',c.enemyScalePerFloor]].map(([k,l,v])=>`<label>${l}<input data-is-debug-key="${k}" type="number" step="0.01" value="${v}"></label>`).join('')}</div><div class="is-actions"><button data-is-debug-force="treasure">次回宝箱</button><button data-is-debug-force="shop">次回ショップ</button><button data-is-debug-force="merchant">次回行商人</button><button data-is-debug-force="returnCard">次回RETURNカード</button><button data-is-debug-force="rare">次回レア敵</button><button data-is-debug-force="sublime">次回昇華</button><button data-is-debug-force="stairs">次回階段</button><button data-is-action="generate">装備生成</button><button class="danger" data-is-action="death-test">死亡テスト</button><button data-is-action="debug-reset">設定を初期化</button></div></div><div class="is-log">${(this.isRun().log||[]).slice().reverse().map(x=>`F${x.floor} ${esc(x.message)}`).join('<br>')}</div>${this.isToolbar()}`;};
   const origIsRenderDebug=P.isRenderDebug;
   P.isRenderDebug=function(panel){origIsRenderDebug.call(this,panel);const box=panel.querySelector('.is-debug-grid'),c=this.isEffectiveCfg();box?.insertAdjacentHTML('beforeend',`<label>装備DROP率<input data-is-debug-key="gearDropRate" type="number" step="0.01" value="${c.gearDropRate}"></label><label>奏貨倍率<input data-is-debug-key="currencyMultiplier" type="number" step="0.1" value="${c.currencyMultiplier}"></label>`);const actions=panel.querySelector('.is-debug .is-actions');actions?.insertAdjacentHTML('beforeend','<button data-is-generate-specified>指定装備生成</button>');};
