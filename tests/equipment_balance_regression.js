@@ -48,7 +48,7 @@ for (const [dungeonId, expectedRate, minimumMagicItems, agiCap] of [
 
 for (const enemy of Object.values(D.enemies)) {
   const bossEquipment = (enemy.dropTable || []).filter(drop => Number(D.items[drop.itemId]?.stars) === 5 && D.items[drop.itemId]?.source !== 'secretGuitar');
-  assert(bossEquipment.every(drop => drop.chance === .001), `${enemy.id}のボス現物率が不正`);
+  assert(bossEquipment.every(drop => drop.chance === .01), `${enemy.id}のボス現物率が不正`);
   const secretGuitars = (enemy.dropTable || []).filter(drop => D.items[drop.itemId]?.source === 'secretGuitar');
   assert(secretGuitars.every(drop => drop.chance === D.guitarSeries.policy.defaultDropChance), `${enemy.id}の隠しギター率が不正`);
 }
