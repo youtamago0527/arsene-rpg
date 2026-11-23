@@ -254,6 +254,19 @@
 .title-screen .title-action-copy small{font:500 clamp(8px,1.25svh,11px) "Noto Sans JP",sans-serif;letter-spacing:.1em;color:#d9d4e9;text-shadow:0 2px 7px #000}
 .title-screen .title-action:hover,.title-screen .title-action:focus-visible{outline:2px solid #fff;outline-offset:3px;filter:brightness(1.2)}
 .title-screen .title-action:disabled{opacity:.45;filter:grayscale(.8);cursor:not-allowed}
+.title-official-links{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+  width:min(100%,360px);flex:none;
+}
+.title-official-links a{
+  display:flex;align-items:center;justify-content:center;gap:5px;min-height:44px;
+  padding:4px 6px;border:1px solid #716394;background:#100f24e8;
+  color:#f1e9ff;font:600 12px/1.25 "Noto Sans JP",sans-serif;text-decoration:none;
+}
+.title-official-links a span{color:#c5a9e5}
+.title-official-links a:hover,.title-official-links a:focus-visible{
+  border-color:#d9b9f7;background:#23183beF;outline:1px solid #d9b9f7;outline-offset:2px;
+}
 .title-screen .flow-version{right:0;left:0;bottom:3%;text-align:center;color:#d3c7e3;font-size:9px;line-height:1.6;text-shadow:0 2px 8px #000}
 @media(max-height:680px){.title-screen .title-content{inset:27% 6% 7%}.title-screen .title-content .title-logo{max-height:24%}.title-screen .title-menu{max-height:40svh}.title-screen .flow-version{bottom:1%}}
 
