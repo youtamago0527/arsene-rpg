@@ -9,11 +9,15 @@
   --bag-fine: #a9bed0;
   --bag-art: url("../assets/ui/infinite-score/bag/items.webp");
   width: min(100%, 540px);
+  height: 100%;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
   container-type: inline-size;
   color: #f3f7ff;
   writing-mode: horizontal-tb;
 }
+.is-bag-screen > :not(.is-bag-inventory) { flex: none; }
 
 .is-bag-brand {
   aspect-ratio: 941 / 212;
@@ -63,6 +67,12 @@
   outline: 1px solid #ae91616e;
   outline-offset: -4px;
 }
+.is-bag-inventory {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+}
+.is-bag-inventory > :not(.is-bag-list) { flex: none; }
 .is-bag-title { display: flex; justify-content: space-between; align-items: center; gap: 4px; padding: 0 2px 6px; border-bottom: 1px solid #61728b; }
 #menu-panel .is-bag-title h2 {
   margin: 0;
@@ -117,8 +127,8 @@
 .is-bag-icon.icon-pouch, .is-bag-icon.icon-jelly, .is-bag-icon.icon-coin, .is-bag-icon.icon-earring { --item-y: 100%; }
 
 .is-bag-list {
-  --bag-row: clamp(44px, 11cqw, 59px);
-  max-height: calc(var(--bag-row) * 5 + 4px);
+  --bag-row: clamp(44px, 11.5cqw, 59px);
+  flex: 1 1 0;
   min-height: calc(var(--bag-row) * 2);
   padding: 3px 3px 1px;
   overflow: auto;
@@ -177,7 +187,7 @@
 .is-bag-rarity::before { content: ""; position: absolute; z-index: -1; inset: 1px; clip-path: var(--badge-clip); background: #08121d; }
 .is-bag-count { min-width: 2em; font: italic 700 clamp(10px, 3cqw, 16px)/1 Georgia, serif; text-align: right; white-space: nowrap; }
 .is-bag-arrow { width: 7px; height: 12px; background: #adc4d6; clip-path: polygon(0 0,100% 50%,0 100%); }
-.is-bag-empty { margin: 0; padding: 26px 5px; text-align: center; font: 700 13px var(--bag-serif); color: var(--bag-fine); }
+.is-bag-empty { min-height: 100%; display: grid; place-items: center; margin: 0; padding: 16px 5px; text-align: center; font: 700 13px var(--bag-serif); color: var(--bag-fine); }
 
 .is-bag-detail { margin-top: 6px; }
 .is-bag-detail > header { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: start; gap: clamp(6px, 2.6cqw, 14px); padding: 2px; }
