@@ -61,6 +61,11 @@ const game = Object.create(context.window.BattleGame.prototype);
 game.profile = { equipment: { accessory: 'forge_d2e_accessory' } };
 game.enchantLevel = () => 0;
 game.passiveEffectRate = () => 0;
+for (const [level, expected] of [[0, 1], [1, 1.15], [3, 1.45], [4, 1.75], [5, 2.05]])
+  assert(Math.abs(game.enchantPowerMultiplier(level) - expected) < 1e-9, `+${level}の強化倍率が不正`);
+game.enchantLevel = () => 4;
+assert(Math.abs(game.equipmentEffectRate('mpCostReductionFlat') - 1.75) < 1e-9, '+4の装備効果が強化倍率を使わない');
+game.enchantLevel = () => 0;
 assert.strictEqual(game.skillMpCost({ mp: 6, source: 'job' }), 5, 'JOB魔法のMPが1減らない');
 assert.strictEqual(game.skillMpCost({ mp: 1, source: 'weapon' }), 1, 'MP消費が0になってしまう');
 game.profile.equipment.accessory = 'forge_d3_accessory';
