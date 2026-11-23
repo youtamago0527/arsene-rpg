@@ -445,6 +445,8 @@
   if (seripesEnemy) {
     if (!seripesEnemy.dropTable.some(d => d.itemId === 'reprise_fragment')) seripesEnemy.dropTable.push({ itemId: 'reprise_fragment', chance: 1 });
     if (!seripesEnemy.dropTable.some(d => d.itemId === 'seripes_core')) seripesEnemy.dropTable.push({ itemId: 'seripes_core', chance: .45 });
+    for (const id of D.bossEquipmentSeries.seripes.equipment)
+      if (!seripesEnemy.dropTable.some(d => d.itemId === id)) seripesEnemy.dropTable.push({ itemId: id, chance: .001 });
   }
 
   Object.assign(D.bossEquipmentSeries.zenacad, { primaryJob: 'magicKnight', recommendedJobs: ['magicKnight', 'mage'], concept: '魔奏士を主軸に、魔導士も扱える器用さ・魔力型シリーズ。' });
@@ -498,7 +500,47 @@
     }
   };
   const astactEnemy = D.enemies.astact;
-  if (astactEnemy) for (const id of ['astact_core', 'staccato_fragment']) if (!astactEnemy.dropTable.some(d => d.itemId === id)) astactEnemy.dropTable.push({ itemId: id, chance: 1 });
+  if (astactEnemy) for (const id of ['astact_core', 'staccato_fragment', ...D.bossEquipmentSeries.astact.equipment])
+    if (!astactEnemy.dropTable.some(d => d.itemId === id)) astactEnemy.dropTable.push({ itemId: id, chance: id === 'astact_core' || id === 'staccato_fragment' ? 1 : .001 });
+
+  // ══ D5ボス：オスティナ / OSTINATO ════════════════════════
+  D.items.ostina_core = { id: 'ostina_core', name: '反復の奏核', nameEn: 'OSTINATO CORE', category: 'material', rarity: 'legendary', bossId: 'ostina', description: '繰り返す狩律を閉じ込めたオスティナの奏核。' };
+  D.items.ostinato_fragment = { id: 'ostinato_fragment', name: '狩律の残片', nameEn: 'OSTINATO FRAGMENT', category: 'material', rarity: 'epic', bossId: 'ostina', description: '追撃のリズムを残す弦の欠片。' };
+  for (const id of ['ostina_core', 'ostinato_fragment']) if (!D.workshop.materialIds.includes(id)) D.workshop.materialIds.push(id);
+  const O5 = { dungeonId: 'dungeon5', catalogDungeon: 'dungeon5', stars: 5, rarity: 'legendary', seriesId: 'ostina', source: 'boss' };
+  addWeapon('ostina_bow', { ...O5, name: '反復の狩弓', nameEn: 'OSTINATO HUNT BOW', weaponType: 'bow', power: 4.2, attackPower: 610, bonuses: { dex: 24, agi: 18, luk: 6 }, description: 'オスティナの狩律を刻む弓。次の矢が前の一射へ重なる。' });
+  D.weapons.ostina_bow.attackMotion = 'shoot';
+  addArmor('ostina_circlet', { ...O5, name: '狩律の額冠', nameEn: 'HUNTING CIRCLET', slot: 'head', magicDefensePower: 210, bonuses: { dex: 16, mnd: 12 }, description: '標的の気配を見失わないための額冠。' });
+  addArmor('ostina_coat', { ...O5, name: '反復の狩装', nameEn: 'OSTINATO COAT', slot: 'body', defensePower: 260, bonuses: { maxHp: 90, dex: 14 }, description: '幾度の追撃にも姿勢を崩さない狩装。' });
+  addArmor('ostina_gloves', { ...O5, name: '追奏の手甲', nameEn: 'PURSUIT GAUNTLETS', slot: 'arms', attackPower: 135, defensePower: 75, bonuses: { dex: 18, str: 10 }, description: '弦を引く指先に次の一射を覚えさせる手甲。' });
+  addArmor('ostina_boots', { ...O5, name: '狩影の脚甲', nameEn: 'HUNTER SHADOW BOOTS', slot: 'feet', defensePower: 86, magicDefensePower: 86, bonuses: { agi: 20, dex: 12 }, description: '獲物の一歩先へ静かに踏み込む脚甲。' });
+  addArmor('ostina_sigil', { ...O5, name: '第五奏の狩印', nameEn: 'FIFTH MAESTRI SIGIL', slot: 'accessory', bonuses: { dex: 14, agi: 10, luk: 4 }, description: '第五奏卿の狩律を刻んだ印。追撃の拍を整える。' });
+  const ostinaRecipes = {
+    ostina_bow_recipe: ['ostina_bow', 5600, [['ostina_core', 2], ['ostinato_fragment', 10], ['hunterThread', 12]]],
+    ostina_circlet_recipe: ['ostina_circlet', 4100, [['ostina_core', 1], ['ostinato_fragment', 7], ['venomCore', 8]]],
+    ostina_coat_recipe: ['ostina_coat', 5000, [['ostina_core', 2], ['ostinato_fragment', 9], ['hunterThread', 10]]],
+    ostina_gloves_recipe: ['ostina_gloves', 4300, [['ostina_core', 1], ['ostinato_fragment', 8], ['venomCore', 8]]],
+    ostina_boots_recipe: ['ostina_boots', 4100, [['ostina_core', 1], ['ostinato_fragment', 7], ['hunterThread', 9]]],
+    ostina_sigil_recipe: ['ostina_sigil', 4500, [['ostina_core', 2], ['ostinato_fragment', 8], ['venomCore', 9]]]
+  };
+  Object.entries(ostinaRecipes).forEach(([id, [resultItemId, gold, mats]]) => addRecipe(id, { seriesId: 'ostina', craftCategory: 'boss', dungeonId: 'dungeon5', resultItemId, gold, materials: mats.map(([itemId, count]) => ({ itemId, count })) }));
+  D.bossEquipmentSeries.ostina = {
+    id: 'ostina', name: 'OSTINATO SERIES', nameJa: 'オスティナシリーズ', stars: 5,
+    unlockCondition: { bossDefeated: 'ostina' }, primaryJob: 'hunter', recommendedJobs: ['hunter'],
+    equipment: ['ostina_bow', 'ostina_circlet', 'ostina_coat', 'ostina_gloves', 'ostina_boots', 'ostina_sigil'],
+    recipes: Object.keys(ostinaRecipes), dismantle: { materialId: 'ostinato_fragment', count: 3 },
+    concept: '獲物を逃がさず、反復する射撃で仕留める狩人の装備。',
+    setBonuses: {
+      2: { id: 'tracking', name: 'TRACKING', description: '器用さ +8%', effect: { dexPercent: 8 } },
+      4: { id: 'pursuit', name: 'PURSUIT', description: '素早さ +8%', effect: { agiPercent: 8 } },
+      6: { id: 'ostinato', name: 'OSTINATO', description: '物理攻撃が10%で追加発動', effect: { physicalRepeatChance: .10 } }
+    }
+  };
+  const ostinaEnemy = D.enemies.ostina;
+  if (ostinaEnemy) {
+    for (const [id, chance] of [['ostina_core', .45], ['ostinato_fragment', 1], ...D.bossEquipmentSeries.ostina.equipment.map(id => [id, .001])])
+      if (!ostinaEnemy.dropTable.some(drop => drop.itemId === id)) ostinaEnemy.dropTable.push({ itemId: id, chance });
+  }
 
   // ══ ★5の正規化 ════════════════════════════════════════════
   // ★5 = そのDungeonの★3 × 3.71（★3+5 ×1.10 ×1.75 ×1.10 の帰結）。
@@ -507,17 +549,17 @@
   // そのシリーズの全装備の攻撃・防御へ掛けて相対関係を保つ。
   // ★3 × 3.90。★4+6（★3×3.67）をわずかに上回る位置に置き、
   // 「+6まで鍛えても★5がまだ上、でも集めるのは大変」という拮抗を作る。
-  const star5Attack = { dungeon1: 47, dungeon2: 70, dungeon3: 140, dungeon4: 421 };
+  const star5Attack = { dungeon1: 47, dungeon2: 70, dungeon3: 140, dungeon4: 421, dungeon5: 620 };
   // ★5防具の予算（def+mdef）。そのDungeonの★3仕上げ品 × 3.90。
   // ゼナカド・ミルティの防具は元々 bonuses しか持たず防御力が0で、
   // D3/D4の★5と比較すらできなかったため、ここで部位別に配分する。
-  const star5ArmorBudget = { dungeon1: 43, dungeon2: 90, dungeon3: 179, dungeon4: 538 };
+  const star5ArmorBudget = { dungeon1: 43, dungeon2: 90, dungeon3: 179, dungeon4: 538, dungeon5: 680 };
   // 配分は★3工房と同じ役割分担（盾＝物理、頭＝魔防、体＝物理、腕・足＝薄め、アクセ＝0）。
   const star5SlotSplit = {
     leftHand: [.85, .20], head: [0, .65], body: [.85, 0],
     arms: [.20, 0], feet: [.20, .20], accessory: [0, 0]
   };
-  const seriesDungeon = { zenacad: 'dungeon1', myrthi: 'dungeon2', seripes: 'dungeon3', astact: 'dungeon4' };
+  const seriesDungeon = { zenacad: 'dungeon1', myrthi: 'dungeon2', seripes: 'dungeon3', astact: 'dungeon4', ostina: 'dungeon5' };
   const powerKeys = ['attackPower', 'magicAttackPower', 'defensePower', 'magicDefensePower'];
   const gearOf = id => D.weapons[id] || D.armors?.[id] || D.accessories?.[id] || D.equipment?.[id];
   for (const [seriesId, dungeonId] of Object.entries(seriesDungeon)) {
