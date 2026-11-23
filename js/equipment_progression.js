@@ -242,8 +242,6 @@
   // 旧値は約1%。さらにDROP特性の+2%が加算され、D1の一部敵は候補が2個あったため
   // 1戦で★4を引く確率が約6%まで膨らんでいた。★3製作を先に体験できる水準へ落とす。
   const dungeonChance = { dungeon1: .0040, dungeon2: .0035, dungeon3: .0030, dungeon4: .0025 };
-  // D1/D2の★4は各敵固有。初回収集までだけ確率を上げ、重複の偏りを抑える。
-  D.rareFirstDiscoveryChance = { dungeon1: .03, dungeon2: .03 };
   const dungeonRank = { dungeon1: 1, dungeon2: 2, dungeon3: 3, dungeon4: 4 };
   // ★4の基礎性能。★3の仕上げ品 +5(×1.75) をさらに1.10倍した値＝★3の1.93倍。
   // 「★3を+5まで鍛えた人が、拾った瞬間に乗り換えたくなる」水準（§65）。
