@@ -19,10 +19,10 @@
     { id:'accessory', slot:'accessory', names:['境界の指環','深界の黒環','幻奏環《アルカナ》','無限環《ゼロ》'] }
   ];
   const series = [
-    { stars:3, id:'boundary', name:'境界', power:34, armor:18, color:'#62c5e8' },
-    { stars:4, id:'deep', name:'深界', power:52, armor:29, color:'#8d70ff' },
-    { stars:5, id:'phantasm', name:'幻奏', power:78, armor:44, color:'#e05eff' },
-    { stars:6, id:'infinite', name:'無限', power:112, armor:64, color:'#ffbd4a' }
+    { stars:3, id:'boundary', name:'境界', power:160, armor:85, color:'#62c5e8' },
+    { stars:4, id:'deep', name:'深界', power:260, armor:150, color:'#8d70ff' },
+    { stars:5, id:'phantasm', name:'幻奏', power:425, armor:235, color:'#e05eff' },
+    { stars:6, id:'infinite', name:'無限', power:575, armor:315, color:'#ffbd4a' }
   ];
   D.otherWorldGearSeries = series;
   D.otherWorldGearIds = [];

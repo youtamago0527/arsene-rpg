@@ -9,9 +9,8 @@
     bagLimit: 30, equippedUsesBag: true, maxFloor: 9999,
     mapRows: 8, mapWidth: 3,
     stairBaseRate: 15, stairRateIncrease: 15, stairMaxRate: 100,
-    // D3クリア直後では20Fが壁、D5クリア相当でようやく到達できる基準。
-    // 線形+16%/Fにより 10F=2.44倍、20F=4.04倍、100F=16.84倍。
-    currencyMode: 'dungeon', enemyScalePerFloor: .16, returnMinFloor: 20,
+    // D3クリア後の挑戦。入口からD4通常敵の1.25倍、以降は1階ごとに16%ずつ加算。
+    currencyMode: 'dungeon', enemyBaseScale: 1.25, enemyScalePerFloor: .16, returnMinFloor: 20,
     cardRate: .45, battleCardRate: .20, treasureRate: .18, shopRate: .02, trapRate: .10, gearDropRate: .14, currencyMultiplier: 1,
     rareEnemyRate: .035, returnItemRate: .008, recoveryDropRate: .05, sublimationRate: .02,
     chestRates: { wood: 70, silver: 25, gold: 5 },
@@ -61,12 +60,12 @@
     ],
     // 出現する原種も段階更新する。倍率だけでなく、見た目と行動も攻略進度に合わせる。
     enemyTiers: [
-      { minFloor: 1, maxFloor: 4, pool: ['shadowSlime', 'nightBat', 'ratThief'] },
-      { minFloor: 5, maxFloor: 10, pool: ['shadowSlime', 'nightBat', 'ratThief', 'goblin', 'soulMage', 'ghostBone'] },
-      { minFloor: 11, maxFloor: 15, pool: ['hushMoth', 'chimeImp', 'fadingChorister', 'mutedHound', 'silentHarmonist', 'echoWraith'] },
-      { minFloor: 16, maxFloor: 9999, pool: ['voidWatcher', 'abyssalKnight', 'voidGargoyle', 'chaosWitch', 'fortressGolem', 'riftAssailant'] }
+      { minFloor: 1, maxFloor: 4, pool: ['flashHound', 'moonEdgeKnight', 'mapleOni', 'lanternMask', 'toriiFox'] },
+      { minFloor: 5, maxFloor: 10, pool: ['severKite', 'mirrorGuard', 'staccatoChanter', 'graveMetronome', 'afterimageStalker'] },
+      { minFloor: 11, maxFloor: 15, pool: ['severedChoir', 'instantExecutioner', 'edgeColossus', 'moonEdgeKnight', 'mapleOni'] },
+      { minFloor: 16, maxFloor: 9999, pool: ['voidWatcher', 'abyssalKnight', 'voidGargoyle', 'chaosWitch', 'fortressGolem', 'riftAssailant', 'instantExecutioner', 'edgeColossus'] }
     ].map(tier => ({ ...tier, pool: tier.pool.filter(id => D.enemies?.[id]) })),
-    enemyPool: ['shadowSlime', 'nightBat', 'ratThief'].filter(id => D.enemies?.[id]),
+    enemyPool: ['flashHound', 'moonEdgeKnight', 'mapleOni'].filter(id => D.enemies?.[id]),
     rareEnemyTiers: [{ minFloor: 16, maxFloor: 9999, pool: ['merox'] }].map(tier => ({ ...tier, pool: tier.pool.filter(id => D.enemies?.[id]) })),
     rareEnemyPool: [],
     consumablePool: ['owPotion20', 'owManaPotion20'],
