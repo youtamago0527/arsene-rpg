@@ -1,0 +1,25 @@
+ARSÈNE RPG Infinite Score entry — iOS Simulator QA
+Date: 2026-11-24 JST
+Source: b60dfad2fb01fc8c7f8ce5406888b40c641088a4 (origin/feature/ios-capacitor at fetch)
+QA branch: staging/infinite-entry-qa-20261124
+Device: dedicated ARSENE Audit iPhone / iPhone 17 / iOS 26.5, portrait.
+Simulator UUID: 35144D8A-9353-4A62-954B-E2D039B52112
+
+Results
+PASS: Supplied artwork contains no baked-in time, battery, or upper-right 異世界へ戻る button. Verified source artwork and rendered entry screenshot.
+CAVEAT: Native iOS status bar (live time/Wi-Fi/battery) remains visible above artwork. If the requirement is to hide the operating-system status bar too, that requirement is NOT met by b60dfad.
+PASS: Complete portrait artwork is visible, including top ornament, warning text, both lower buttons, and bottom ornament. No artwork crop observed on this iPhone 17 portrait Simulator.
+PASS: Tapped visible center of 侵入準備へ at CUA window screenshot coordinate (295,1539), opened 持ち込み選択 (LOADOUT) with inventory and entry options. Screenshot 02.
+PASS: Used 警告へ戻る to return to entry; tapped visible center of 戻る at (678,1540), opened 異世界侵入先 (OTHER WORLD / SELECT MODE). Screenshot 03.
+Coordinates refer to 912x1944 CUA window screenshot including Simulator toolbar/bezel, not app CSS pixels.
+
+Setup and scope
+Isolated worktree created at exact requested source commit. Existing Mac branches, real-device saves and the other booted iPhone 17e Simulator were not modified.
+A backed-up test save was used only in the dedicated QA Simulator to unlock Other World and PHANTOM THIEF. This verifies entry UI, not normal progression/unlock behavior. No dungeon run, purchase, advertisement, App Store submission or publication performed.
+Navigation: Continue -> fox -> 異世界 -> PageDown -> 無限奏廊へ. CUA wheel/drag did not move this Simulator menu; hardware-keyboard PageDown did. This input limitation did not block entry/button verification.
+
+Validation
+pnpm run cap:sync: PASS (web build, Capacitor sync, iOS bundle verifier: 9 runtime files / 10 audio assets).
+Xcode build: PASS, StoreKitVerification scheme, Debug iphonesimulator, CODE_SIGNING_ALLOWED=NO. App installed/launched on dedicated Simulator.
+Regression tests: PASS: tests/help_regression.js, tests/mobile_app_regression.js, tests/infinite_ui_regression.js, tests/infinite_safe_layout_regression.js, tests/infinite_entry_reward_balance_regression.js.
+Raw Xcode log, test fixture, original Simulator save backup and DerivedData retained locally under audit/, excluded from this evidence commit. Product sources unchanged.
