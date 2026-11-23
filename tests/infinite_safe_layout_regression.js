@@ -4,7 +4,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const safe = fs.readFileSync(path.join(root, 'css/ios-safe-area.css'), 'utf8');
-const score = fs.readFileSync(path.join(root, 'css/infinite-score.css'), 'utf8');
+const bag = fs.readFileSync(path.join(root, 'css/infinite-bag.css'), 'utf8');
 const infinite = fs.readFileSync(path.join(root, 'js/infinite_score.js'), 'utf8');
 
 assert(index.includes("classList.add('standalone-app')"), 'home-screen standalone detection is missing');
@@ -17,8 +17,8 @@ assert(safe.includes('padding-top:calc(var(--safe-top) + 10px)!important'), 'Inf
 assert(safe.includes('padding-bottom:calc(var(--safe-bottom) + 16px)!important'), 'Infinite subview bottom safe area is missing');
 assert(safe.includes('top:max(8px,var(--safe-top))!important'), 'sticky Infinite back buttons can enter the top safe area');
 assert(safe.includes('[data-panel="infinite-score-workshop"]{box-sizing:border-box!important;padding:0!important}'), 'forge outer panel can receive duplicate safe-area padding');
-assert(score.includes('writing-mode:horizontal-tb'), 'equipped bag text direction is not locked');
-assert(score.includes('word-break:keep-all'), 'equipped bag labels can still collapse vertically');
+assert(bag.includes('writing-mode: horizontal-tb'), 'bag text direction is not locked');
+assert(bag.includes('word-break: keep-all'), 'bag labels can still collapse vertically');
 assert(infinite.includes('stealProgress=this.phantomStealProgress()'), 'exploration HUD does not use shared steal progress');
 assert(infinite.includes('<small>STEAL PROGRESS</small>'), 'exploration HUD steal progress label is missing');
 assert(!infinite.includes('${job} Lv.${jobLevel}'), 'phantom thief level is still shown in exploration HUD');

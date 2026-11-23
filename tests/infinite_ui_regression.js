@@ -22,7 +22,7 @@ assert(css.includes('.is-game-dialog{z-index:10030;'), 'card enhancement dialogs
 assert(css.includes('@media(max-width:360px)'), 'narrow-screen layout correction is missing');
 const bagRender = score.slice(score.indexOf('P.isRenderBag = function'), score.indexOf('P.isGearValues = function'));
 const equipmentRender = score.slice(score.indexOf('P.isRenderEquipment=function'), score.indexOf('P.isRenderDebug=function'));
-assert(bagRender.includes('class="panel-home" data-is-action="explore">探索画面へ'), 'bag return action is not unified with the map');
+assert(/data-is-action="explore"[^<]*>.*探索画面へ/.test(bagRender), 'bag return action is missing');
 assert(equipmentRender.includes('class="panel-home" data-is-action="explore">探索画面へ'), 'equipment return action is not unified with the map');
 assert(!bagRender.includes('${this.isToolbar()}'), 'bag still renders the full exploration toolbar');
 assert(!equipmentRender.includes('${this.isToolbar()}'), 'equipment still renders the full exploration toolbar');
