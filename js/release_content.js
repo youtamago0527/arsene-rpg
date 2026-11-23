@@ -32,6 +32,7 @@
     roninProof: { id: 'roninProof', name: '刀術士の証', nameEn: 'PROOF OF THE RONIN', category: 'key', rarity: 'epic', description: '一瞬を見切り、返す者の証。' },
     hunterProof: { id: 'hunterProof', name: '狩人の証', nameEn: 'PROOF OF THE HUNTER', category: 'key', rarity: 'epic', description: '弱りを見逃さず、仕留める者の証。' },
     splurgeGuitar: { id: 'splurgeGuitar', name: '《奮発して買ったギター》', nameEn: 'THE GUITAR I SPLURGED ON', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, dungeonId: 'dungeon4', catalogDungeon: 'dungeon4', source: 'secretGuitar', guitarSkillTree: 'versicrellGuitar', archiveHint: '入手経路不明。値札の気配だけが、断月のどこかに微かに残っている。', description: 'フェゴリアが惜しみなく金を注ぎ込んだ特注ギター。銀環の系譜を継ぐ音を、さらに強烈な出力で叩きつける。' },
+    memberGiftGuitar: { id: 'memberGiftGuitar', name: '《メンバーからもらったギター》', nameEn: 'A GUITAR FROM THE BAND', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, dungeonId: 'dungeon5', catalogDungeon: 'dungeon5', source: 'secretGuitar', guitarSkillTree: 'versicrellGuitar', archiveHint: '入手経路不明。反復の狩庭に残された、誰かの大切な一本。', description: 'NESTUAが仲間から受け取ったギター。共に重ねた音が、今も弦の奥に残っている。' },
     d4MoonKatana: { id: 'd4MoonKatana', name: '月鋼の刀', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 2, catalogDungeon: 'dungeon4', description: '月刃鉱を打った、扱いやすい工房刀。' },
     d4FlashCoat: { id: 'd4FlashCoat', name: '瞬歩の外套', category: 'equipment', slot: 'body', rarity: 'rare', stars: 2, catalogDungeon: 'dungeon4', description: '短い踏み込みを妨げない軽装。' },
     d4SightCharm: { id: 'd4SightCharm', name: '見切りの緒', category: 'equipment', slot: 'accessory', rarity: 'rare', stars: 2, catalogDungeon: 'dungeon4', description: '敵の初動を読むための組紐。' },
@@ -41,6 +42,7 @@
   });
   Object.assign(D.weapons, {
     splurgeGuitar: { id: 'splurgeGuitar', name: '《奮発して買ったギター》', nameEn: 'THE GUITAR I SPLURGED ON', dungeonId: 'dungeon4', weaponType: 'instrument', battlePose: 'guitar', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', damageStat: 'dex', power: 6.4, magicAttackPower: 464, guitarSeriesId: 'secretGuitar', guitarSkillTree: 'versicrellGuitar', bonuses: { dex: 32, mag: 24, agi: 14, critBonus: .10 }, effects: { criticalRateBonus: .10, magicDamagePercent: .15 } },
+    memberGiftGuitar: { id: 'memberGiftGuitar', name: '《メンバーからもらったギター》', nameEn: 'A GUITAR FROM THE BAND', dungeonId: 'dungeon5', weaponType: 'instrument', battlePose: 'guitar', weaponSprite: 'guitar_versicrell', battleSprite: null, attackMotion: 'soundCast', damageStat: 'dex', power: 6.8, magicAttackPower: 620, guitarSeriesId: 'secretGuitar', guitarSkillTree: 'versicrellGuitar', bonuses: { dex: 38, mag: 30, agi: 18, critBonus: .12 }, effects: { criticalRateBonus: .12, magicDamagePercent: .18 } },
     d4MoonKatana: { id: 'd4MoonKatana', name: '月鋼の刀', dungeonId: 'dungeon4', weaponType: 'sword', weaponSubtype: 'katana', twoHanded: true, attackMotion: 'slash', attackPower: 42, bonuses: { agi: 7, dex: 5 }, effects: { criticalRateBonus: .05 } },
     d5HunterBow: { id: 'd5HunterBow', name: '狩律の弓', dungeonId: 'dungeon5', weaponType: 'bow', attackMotion: 'shoot', attackPower: 48, bonuses: { dex: 10, agi: 4 }, effects: { criticalRateBonus: .04 } }
   });
@@ -97,6 +99,8 @@
       stats: { maxHp: 64350, atk: 1092, def: 975, mag: 1131, mnd: 1014, dex: 819, agi: 203, spd: 203 }
     }
   });
+  if (!D.enemies.d5MidBoss.dropTable.some(drop => drop.itemId === 'memberGiftGuitar'))
+    D.enemies.d5MidBoss.dropTable.push({ itemId: 'memberGiftGuitar', chance: .002 });
 
   const floor = (id, name, nameEn, wins, bg, materials, scale, pool) => ({
     id, name, nameEn, winsToClear: wins, background: bg, thumbnail: bg, materials,
@@ -122,6 +126,7 @@
   D.guitarSeries ||= { policy: {}, entries: [] };
   D.guitarSeries.entries ||= [];
   if (!D.guitarSeries.entries.some(entry => entry.itemId === 'splurgeGuitar')) D.guitarSeries.entries.push({ dungeonId: 'dungeon4', itemId: 'splurgeGuitar', dropEnemyId: 'd4MidBoss', skillTreeId: 'versicrellGuitar' });
+  if (!D.guitarSeries.entries.some(entry => entry.itemId === 'memberGiftGuitar')) D.guitarSeries.entries.push({ dungeonId: 'dungeon5', itemId: 'memberGiftGuitar', dropEnemyId: 'd5MidBoss', skillTreeId: 'versicrellGuitar' });
   D.dungeons.push({
     id: 'dungeon5', name: '反復の狩庭', nameEn: 'OSTINATO HUNTING GROUND', background: d3bg[1], thumbnail: d3bg[1], recommendedLevel: 34,
     description: '毒と追撃が繰り返される狩庭。防御・回復と短期決着の両方が必要になる。', unlockCondition: 'dungeon4Clear', bossId: 'ostina', midBossId: 'd5MidBoss', midBossAfterFloor: 2,
