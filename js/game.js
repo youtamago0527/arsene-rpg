@@ -3647,8 +3647,11 @@
         const item = D.items[d.itemId], equipment = item?.category === 'equipment';
         // DROP特性の+2%は通常素材には従来どおり加算するが、希少装備へ加算すると
         // 0.4%が2.4%になるため、装備だけは倍率として適用する。
+        const firstDiscoveryRate = equipment && item?.source === 'dropOnly' && Number(item.stars) === 4
+          && !this.profile.equipmentArchive?.includes(item.id)
+          ? D.rareFirstDiscoveryChance?.[item.catalogDungeon] : null;
         const chance = equipment
-          ? (Number(d.chance) || 0) * mult * (1 + bonus)
+          ? (firstDiscoveryRate ?? (Number(d.chance) || 0)) * mult * (1 + bonus)
           : (Number(d.chance) || 0) * mult + bonus;
         if (Math.random() >= Math.min(1, chance)) return;
         if (equipment) equipmentHits.push(d.itemId);
