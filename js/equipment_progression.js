@@ -446,7 +446,7 @@
     if (!seripesEnemy.dropTable.some(d => d.itemId === 'reprise_fragment')) seripesEnemy.dropTable.push({ itemId: 'reprise_fragment', chance: 1 });
     if (!seripesEnemy.dropTable.some(d => d.itemId === 'seripes_core')) seripesEnemy.dropTable.push({ itemId: 'seripes_core', chance: .45 });
     for (const id of D.bossEquipmentSeries.seripes.equipment)
-      if (!seripesEnemy.dropTable.some(d => d.itemId === id)) seripesEnemy.dropTable.push({ itemId: id, chance: .001 });
+      if (!seripesEnemy.dropTable.some(d => d.itemId === id)) seripesEnemy.dropTable.push({ itemId: id, chance: .01 });
   }
 
   Object.assign(D.bossEquipmentSeries.zenacad, { primaryJob: 'magicKnight', recommendedJobs: ['magicKnight', 'mage'], concept: '魔奏士を主軸に、魔導士も扱える器用さ・魔力型シリーズ。' });
@@ -501,7 +501,7 @@
   };
   const astactEnemy = D.enemies.astact;
   if (astactEnemy) for (const id of ['astact_core', 'staccato_fragment', ...D.bossEquipmentSeries.astact.equipment])
-    if (!astactEnemy.dropTable.some(d => d.itemId === id)) astactEnemy.dropTable.push({ itemId: id, chance: id === 'astact_core' || id === 'staccato_fragment' ? 1 : .001 });
+    if (!astactEnemy.dropTable.some(d => d.itemId === id)) astactEnemy.dropTable.push({ itemId: id, chance: id === 'astact_core' || id === 'staccato_fragment' ? 1 : .01 });
 
   // ══ D5ボス：オスティナ / OSTINATO ════════════════════════
   D.items.ostina_core = { id: 'ostina_core', name: '反復の奏核', nameEn: 'OSTINATO CORE', category: 'material', rarity: 'legendary', bossId: 'ostina', description: '繰り返す狩律を閉じ込めたオスティナの奏核。' };
@@ -538,7 +538,7 @@
   };
   const ostinaEnemy = D.enemies.ostina;
   if (ostinaEnemy) {
-    for (const [id, chance] of [['ostina_core', .45], ['ostinato_fragment', 1], ...D.bossEquipmentSeries.ostina.equipment.map(id => [id, .001])])
+    for (const [id, chance] of [['ostina_core', .45], ['ostinato_fragment', 1], ...D.bossEquipmentSeries.ostina.equipment.map(id => [id, .01])])
       if (!ostinaEnemy.dropTable.some(drop => drop.itemId === id)) ostinaEnemy.dropTable.push({ itemId: id, chance });
   }
 
@@ -594,11 +594,11 @@
     if (D.items[id]) Object.assign(D.items[id], { stars: 5, rarity: 'legendary', source: 'boss', catalogDungeon: D.items[id].catalogDungeon || seriesDungeon[series.id] || 'dungeon3' });
   }));
 
-  // ★5現物は素材製作とは別枠の大当たり。各装備3%の独立抽選では一度に複数落ち、
-  // シリーズ収集も★4より早くなっていたため、全ボス共通で1個あたり0.1%へ正規化する。
+  // ★5現物は素材製作とは別枠の大当たり。通常1点1%、広告の追加抽選では2%。
+  // rollDrops 側で同一ボスからの装備現物を最大1個に制限する。
   Object.values(D.enemies || {}).forEach(enemy => (enemy.dropTable || []).forEach(drop => {
     const item = D.items[drop.itemId];
-    if (item?.category === 'equipment' && item.source !== 'secretGuitar' && (item.source === 'boss' || Number(item.stars) === 5)) drop.chance = .001;
+    if (item?.category === 'equipment' && item.source !== 'secretGuitar' && (item.source === 'boss' || Number(item.stars) === 5)) drop.chance = .01;
   }));
 
   D.equipmentBalanceTargets = {

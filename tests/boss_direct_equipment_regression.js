@@ -16,7 +16,7 @@ for (const bossId of ['seripes', 'astact', 'ostina']) {
   for (const id of series.equipment) {
     assert.strictEqual(D.items[id]?.category, 'equipment', `${id}は装備品`);
     assert(D.weapons[id] || D.armors[id] || D.accessories[id], `${id}の装備定義が必要`);
-    assert.strictEqual(enemy.dropTable.find(row => row.itemId === id)?.chance, .001, `${id}は現物ドロップ`);
+    assert.strictEqual(enemy.dropTable.find(row => row.itemId === id)?.chance, .01, `${id}は現物ドロップ`);
   }
   for (const recipeId of series.recipes) {
     const recipe = D.recipes[recipeId];
