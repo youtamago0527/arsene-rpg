@@ -209,10 +209,11 @@
     slot.innerHTML = `<article class="ow-mode-card infinite"><div class="ow-mode-badges"><em>高危険度</em><span>INFINITE SCORE</span></div><h3>無限奏廊</h3><strong>${active ? `FLOOR ${active.floor}から再開` : '終わりなき探索へ'}</strong><p>HP・MPを引き継いで進む連続探索。死亡すると持ち込み品と探索中の戦利品を失います。</p><div class="ow-mode-stats"><span><small>進行</small><b>${active ? `FLOOR ${active.floor}` : 'ENDLESS'}</b></span><span><small>帰還</small><b>任意</b></span><span><small>HP / MP</small><b>継続</b></span><span><small>死亡時</small><b>戦利品消失</b></span></div><button class="ow-mode-action danger" data-is-action="${active ? 'resume' : 'warning'}"><b>${active ? '探索を再開' : '無限奏廊へ'}</b><span>${active ? '前回の続きから侵入' : '危険事項を確認して侵入'}</span></button></article>`;
   };
   P.isRenderWarning = function (panel) {
-    panel.innerHTML = `<button class="panel-home" data-lenny="otherworld">異世界へ戻る</button><small>INFINITE SCORE</small><h2>無限奏廊</h2>
-      <div class="is-warning"><strong>WARNING</strong><p>持ち込んだ装備・アイテムも、死亡時にはすべて失われます。</p><p>持ち帰れるのは、生還した時のみです。</p></div>
-      <p class="ow-rule">「持ち帰るまで、それはお前のものじゃない。」</p>
-      <div class="is-actions"><button class="is-primary" data-is-action="import">侵入準備へ</button><button data-lenny="otherworld">戻る</button></div>`;
+    panel.innerHTML = `<div class="is-entry-art">
+      <img src="assets/ui/infinite-score-entry.jpg" alt="無限奏廊。持ち込んだ装備とアイテムは死亡時に失われ、持ち帰れるのは生還した時のみ。" draggable="false">
+      <button class="is-entry-hotspot is-entry-import" type="button" data-is-action="import" aria-label="侵入準備へ"></button>
+      <button class="is-entry-hotspot is-entry-back" type="button" data-lenny="otherworld" aria-label="異世界へ戻る"></button>
+    </div>`;
   };
   P.isImportable = function () {
     return Object.entries(this.profile.inventory || {}).filter(([id, count]) => count > 0 && D().items[id] && !D().items[id].keyItem && !D().items[id].arcanaStat);
