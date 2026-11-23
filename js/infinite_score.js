@@ -401,15 +401,123 @@
     setTimeout(()=>el.remove(),520);
   };
   P.isBindLongPress = function(panel){panel.querySelectorAll('.is-route-choice[data-is-choice]').forEach(btn=>{const resolve=e=>{if(btn.dataset.isResolved)return;e.preventDefault();e.stopPropagation();btn.dataset.isResolved='1';this.isResolveChoice(+btn.dataset.isChoice);};btn.addEventListener('contextmenu',e=>e.preventDefault());btn.addEventListener('pointerdown',resolve,{once:true});btn.addEventListener('click',resolve,{once:true});});};
-  P.isBagDetailHtml=function(x){
-    if(!x)return `<section class="is-bag-detail empty"><small>ITEM DETAIL</small><h3>アイテムを選択</h3><p>上の一覧から確認したいアイテムをタップしてください。</p></section>`;
-    const item=D().items[x.itemId]||{},rar=this.isCfg().rarity[x.rarity]||{},values=this.isGearValues(x),equippedUid=item.slot&&this.isRun()?.equipment?.[item.slot],isEquipped=equippedUid===x.uid,equipped=equippedUid&&!isEquipped?this.isBagEntry(equippedUid):null,equippedValues=equipped?this.isGearValues(equipped):{},name=x.otherWorldGear&&this.owgName?this.owgName(x):(item.name||x.itemId),combat=Object.entries(values).filter(([,v])=>v).map(([k,v])=>{const delta=equipped?v-(equippedValues[k]||0):v,state=delta>0?'up':delta<0?'down':'same';return `<span class="${state}"><i>${esc(this.isCfg().opLabels[k]||k)}</i><b>${v}</b><em>${delta>0?'▲':delta<0?'▼':'—'} ${delta>0?'+':''}${delta}</em></span>`;}).join(''),ops=(x.ops||[]).map(o=>`<li><span>${esc(this.isCfg().opLabels[o.key]||o.key)}</span><b>${o.key==='critBonus'?`+${Math.round(o.value*100)}%`:`+${o.value}`}</b><em>R${o.rank}</em></li>`).join('');
-    return `<section class="is-bag-detail${isEquipped?' is-equipped':''}" style="--bag-accent:${rar.color||'#52d9ff'}"><header><div><small>${esc(item.slot||item.category||x.kind||'ITEM')}</small><h3>${esc(name)} ${x.plus?`+${x.plus}`:''}</h3></div><strong>${isEquipped?'EQUIPPED':esc(rar.name||'ITEM')}</strong></header><p>${esc(item.description||'奏廊で入手した戦利品。生還すると持ち帰ることができる。')}</p>${combat?`<div class="is-bag-stats">${combat}</div>`:''}${ops?`<div class="is-bag-ops"><small>OPTION EFFECTS</small><ul>${ops}</ul></div>`:''}<div class="is-bag-detail-actions">${item.category==='equipment'?(isEquipped?'<button class="is-equipped" disabled aria-disabled="true">装備中</button>':`<button class="primary" data-is-equip="${x.uid}">装備する</button>`):''}${item.effect?`<button class="primary" data-is-use="${x.uid}">使用する</button>`:''}<button class="danger" data-is-drop="${x.uid}">捨てる</button></div></section>`;
+  const bagFilters=[['all','すべて'],['equipment','装備','sword'],['material','素材','potion'],['accessory','アクセ','ring']];
+  const bagSlots={
+    rightHand:['sword','武器・右手'],leftHand:['shield','盾・左手'],head:['helmet','頭'],
+    body:['armor','胴'],arms:['gloves','腕'],feet:['boots','足'],accessory:['ring','アクセサリ']
   };
-  P.isRenderBag = function(panel){
-    const r=this.isRun();panel.dataset.panel='infinite-score-bag';
-    const equipped=new Set(Object.values(r.equipment||{}).filter(Boolean)),rows=r.lootBag.map((x,index)=>{const item=D().items[x.itemId]||{},rar=this.isCfg().rarity[x.rarity]||{},name=x.otherWorldGear&&this.owgName?this.owgName(x):(item.name||x.itemId),isEquipped=equipped.has(x.uid);return `<article class="is-bag-item${isEquipped?' is-equipped':''}" style="--bag-accent:${rar.color||'#52d9ff'}"><button type="button" class="is-bag-row" data-is-bag-select="${x.uid}" aria-expanded="false"><i>${String(index+1).padStart(2,'0')}</i><span><small>${esc(item.slot||item.category||x.kind||'ITEM')}</small><b>${esc(name)} ${x.plus?`+${x.plus}`:''}</b>${isEquipped?'<mark>装備中</mark>':''}</span><em>${isEquipped?'EQUIPPED':esc(rar.name||'ITEM')}</em><strong>▼</strong></button><div class="is-bag-inline-detail" hidden>${this.isBagDetailHtml(x)}</div></article>`;}).join('');
-    panel.innerHTML=`<button class="panel-home" data-is-action="explore">探索画面へ</button>${this.isHeader()}<section class="is-bag-screen"><header class="is-bag-title"><div><small>LOOT BAG // PHANTOM STORAGE</small><h2>戦利品バッグ</h2></div><div class="is-bag-title-actions"><strong>${this.isBagUsed()}<span>/ ${this.isBagLimit()}</span></strong><button type="button" data-is-bag-sort ${r.lootBag.length<2?'disabled':''}><i>⇅</i>整頓</button></div></header><div class="is-bag-list">${rows||'<p class="is-bag-empty">戦利品はまだ入っていない。</p>'}</div></section>`;
+  const bagItemIcons={
+    infiniteReturn:'return',otherworldShard:'shard',otherworldCore:'core',
+    slimeJelly:'jelly',stolenCoin:'coin',goblinEarring:'earring'
+  };
+  const bagIcon=(icon)=>`<span class="is-bag-icon icon-${icon}" aria-hidden="true"></span>`;
+  const bagValue=(key,value)=>key==='critBonus'?`${Number((value*100).toFixed(2))}%`:Number(value.toFixed(3));
+
+  P.isBagPresentation=function(x){
+    const item=D().items[x.itemId]||{},slot=bagSlots[item.slot],isEquipped=!!slot&&this.isRun()?.equipment?.[item.slot]===x.uid;
+    const rarityId=x.itemId==='infiniteReturn'?'important':x.rarity||item.rarity||'common';
+    const rarity=this.isCfg().rarity[rarityId]||{};
+    const color={rare:'#80e5f5',uncommon:'#aee095',important:'#f0a2dc'}[rarityId]||rarity.color||'#c9d4df';
+    const name=x.otherWorldGear&&this.owgName?this.owgName(x):item.name||x.itemId;
+    const shield=D().weapons?.[x.itemId]?.weaponType==='shield';
+    const icon=bagItemIcons[x.itemId]||(shield?'shield':slot?.[0])||(item.category==='consumable'?'potion':item.category==='special'?'arcana':'shard');
+    const type=shield&&item.slot==='rightHand'?'盾・右手':slot?.[1]||({material:'素材',consumable:'消耗品',special:'特殊アイテム'}[item.category]||'アイテム');
+    const label=item.slot&&item.slot!=='accessory'?`${item.slot.toUpperCase()}（${type}）`:type;
+    return {item,isEquipped,icon,label,name:`${name}${x.plus?` +${x.plus}`:''}`,
+      badge:`<span class="is-bag-rarity" style="--bag-rarity:${color}">${esc(rarity.name||rarityId.toUpperCase())}</span>`};
+  };
+
+  P.isBagGearStats=function(x){
+    if(!x)return {};
+    const definition=this.equipmentDefinition?.(x.itemId)||{};
+    const scale=x.otherWorldGear?(x.quality||100)/100*(1+(x.tuneLevel||0)*.08):(x.multiplier||1);
+    const effective=x.otherWorldGear&&this.owgEffectiveStats?.(x);
+    const combat=effective?Object.fromEntries(Object.entries(effective).map(([key,val])=>[key,val.total])):this.isGearValues(x);
+    const stats={...combat};
+    for(const [key,value] of Object.entries(definition.bonuses||{}))stats[key]=Math.round(value*scale);
+    for(const {key,value} of x.ops||[]){
+      if(!['attackPower','defensePower','magicAttackPower','magicDefensePower'].includes(key)){
+        stats[key]=(stats[key]||0)+value;
+      }
+    }
+    return stats;
+  };
+
+  P.isBagDetailHtml=function(x){
+    if(!x)return '';
+    const {item,isEquipped,icon,label,name,badge}=this.isBagPresentation(x);
+    const equipment=item.category==='equipment',uid=esc(x.uid),labels=this.isCfg().opLabels;
+    const current=this.isBagEntry(this.isRun().equipment?.[item.slot]);
+    const values=equipment?this.isBagGearStats(x):{},previous=equipment?this.isBagGearStats(current):{};
+    const stats=[...new Set([...Object.keys(values),...Object.keys(previous)])].map(key=>{
+      const value=values[key]||0,delta=value-(previous[key]||0),direction=delta>0?'up':delta<0?'down':'same';
+      if(!value&&!delta)return '';
+      return `<span><i>${esc(labels[key]||key)}</i><b>${bagValue(key,value)}</b>${!isEquipped?`<em class="${direction}">${delta>0?'▲ +':delta<0?'▼ ':'— '}${bagValue(key,delta)}</em>`:''}</span>`;
+    }).join('');
+    const ops=(x.ops||[]).map(o=>`<li>${esc(labels[o.key]||o.key)} <b>+${bagValue(o.key,o.value)}</b> <small>R${o.rank}</small></li>`).join('');
+    const vitals=item.effect&&!item.effect.returnRun?this.totalStats():null;
+    const recovery=vitals&&this.recoveryItemInfo?.(item,vitals);
+    const full=recovery&&this.isRun()[recovery.key]>=vitals[recovery.maxKey];
+    const primary=equipment?(isEquipped?'disabled aria-disabled="true"':`data-is-equip="${uid}"`):
+      x.itemId==='infiniteReturn'?'data-is-action="return-check"':
+      recovery&&!full?`data-is-use="${uid}"`:'disabled aria-disabled="true"';
+    const action=equipment?(isEquipped?'装備中':'装備する'):x.itemId==='infiniteReturn'?'帰還する':full?'回復済み':'使う';
+    return `<section class="is-bag-detail is-bag-frame" aria-label="選択中のアイテム">
+      <header>${bagIcon(icon)}<div class="is-bag-detail-copy"><div><h3>${esc(name)}</h3>${badge}</div>
+        <small>${esc(label)}</small><p>${esc(item.description||'奏廊で入手した戦利品。生還すると持ち帰ることができる。')}</p></div></header>
+      <div class="is-bag-detail-actions">
+        <button type="button" class="is-bag-control is-bag-primary" ${primary}>${action}</button>
+        <button type="button" class="is-bag-control" data-is-bag-details aria-controls="is-bag-more" aria-expanded="false">詳細</button>
+        <button type="button" class="is-bag-control" data-is-drop="${uid}">捨てる</button>
+      </div>
+      <div id="is-bag-more" hidden>
+        ${x.quality?`<p>品質 ${x.quality}% ／ 強化 +${x.tuneLevel||0}</p>`:''}
+        ${stats?`<div class="is-bag-stats">${stats}</div>`:''}
+        ${ops?`<ul class="is-bag-ops" aria-label="追加効果">${ops}</ul>`:''}
+        ${!equipment?`<p>所持数 ×${x.count||1}${item.effect?.returnRun?' ／ 戦利品を持って帰還できます。':''}</p>`:''}
+        ${equipment&&!stats&&!ops&&!x.quality?'<p>能力補正なし</p>':''}
+      </div>
+    </section>`;
+  };
+
+  P.isRenderBag = function(panel,resetList=false){
+    const run=this.isRun();
+    if(!run||!panel)return;
+    const oldList=panel.querySelector('.is-bag-list'),scroll=resetList?0:oldList?.scrollTop||0;
+    const state=this.isBagView?.run===run?this.isBagView:(this.isBagView={run,filter:'all',uid:null});
+    const visible=run.lootBag.filter(x=>{
+      const item=D().items[x.itemId];
+      if(state.filter==='equipment')return item?.category==='equipment'&&item.slot!=='accessory';
+      if(state.filter==='accessory')return item?.slot==='accessory';
+      if(state.filter==='material')return item?.category==='material';
+      return true;
+    });
+    const selected=visible.find(x=>x.uid===state.uid)||visible[0];
+    state.uid=selected?.uid;
+    const rows=visible.map((x,index)=>{
+      const {icon,name,label,badge,isEquipped}=this.isBagPresentation(x);
+      return `<button type="button" class="is-bag-row" data-is-bag-select="${esc(x.uid)}" aria-controls="is-bag-selection" aria-pressed="${x===selected}">
+        <span class="is-bag-index">${String(index+1).padStart(2,'0')}</span>${bagIcon(icon)}
+        <span class="is-bag-row-name"><b>${esc(name)}</b><small>${esc(label)}${isEquipped?' · 装備中':''}</small></span>
+        ${badge}<span class="is-bag-count">×${x.count||1}</span><span class="is-bag-arrow" aria-hidden="true"></span>
+      </button>`;
+    }).join('');
+    const stats=this.totalStats(),used=this.isBagUsed(),limit=this.isBagLimit();
+    panel.dataset.panel='infinite-score-bag';
+    panel.innerHTML=`<main class="is-bag-screen">
+      <header class="is-bag-brand"><b>無限奏廊</b><small>MUGEN SŌRŌ</small></header>
+      <div class="is-bag-floor"><b>無限奏廊</b><span>FLOOR ${run.floor}</span><button type="button" class="is-bag-control" data-is-action="explore"><span aria-hidden="true">‹</span> 探索画面へ</button></div>
+      <div class="is-bag-vitals">${[['HP',`${run.hp} / ${stats.maxHp}`],['MP',`${run.mp} / ${stats.maxMp}`],['LOOT BAG',`${used} / ${limit}`],['奏貨',run.dungeonGold]].map(([label,value])=>`<div><small>${label}</small><b>${value}</b></div>`).join('')}</div>
+      <section class="is-bag-frame is-bag-inventory" aria-labelledby="is-bag-title">
+        <header class="is-bag-title"><h2 id="is-bag-title">${bagIcon('pouch')}戦利品バッグ</h2>
+          <div class="is-bag-title-actions"><strong>${used}<span> / ${limit}</span></strong><button type="button" class="is-bag-control" data-is-bag-sort ${run.lootBag.length<2?'disabled':''}>⇅ 整頓</button></div></header>
+        <div class="is-bag-filters" role="group" aria-label="戦利品の絞り込み">${bagFilters.map(([id,label,icon])=>`<button type="button" class="is-bag-control" data-is-bag-filter="${id}" aria-pressed="${id===state.filter}">${icon?bagIcon(icon):''}${label}</button>`).join('')}</div>
+        <div class="is-bag-list" aria-label="戦利品一覧">${rows||`<p class="is-bag-empty">${run.lootBag.length?'この種類の戦利品はありません。':'戦利品はまだ入っていません。'}</p>`}</div>
+      </section>
+      <div id="is-bag-selection">${this.isBagDetailHtml(selected)}</div>
+      <div class="is-bag-footer" aria-hidden="true"></div>
+    </main>`;
+    panel.querySelector('.is-bag-list').scrollTop=scroll;
   };
   P.isSortBag=function(){const r=this.isRun();if(!r||r.lootBag.length<2)return;const slots=['rightHand','leftHand','head','body','arms','feet','accessory'],rarities=['mythic','legendary','epic','rare','uncommon','common'];r.lootBag.sort((a,b)=>{const ai=D().items[a.itemId]||{},bi=D().items[b.itemId]||{},ae=ai.category==='equipment',be=bi.category==='equipment',aEquipped=Object.values(r.equipment||{}).includes(a.uid),bEquipped=Object.values(r.equipment||{}).includes(b.uid);return Number(bEquipped)-Number(aEquipped)||Number(be)-Number(ae)||(ae&&be?(slots.indexOf(ai.slot)-slots.indexOf(bi.slot)||rarities.indexOf(a.rarity)-rarities.indexOf(b.rarity)||(b.plus||0)-(a.plus||0)):0)||String(ai.name||a.itemId).localeCompare(String(bi.name||b.itemId),'ja')||String(a.uid).localeCompare(String(b.uid));});this.isLog('LOOT BAGを整頓');this.isSave();this.audio?.sfx?.('ui');this.isRenderBag($('#menu-panel'));};
   P.isGearValues = function(x){const def=this.equipmentDefinition?.(x?.itemId)||{},mult=x?.generated?(x.multiplier||1):1,out={};for(const key of ['attackPower','defensePower','magicAttackPower','magicDefensePower'])out[key]=Math.round((Number(def[key])||0)*mult)+(x?.ops||[]).filter(o=>o.key===key).reduce((n,o)=>n+o.value,0);return out;};
@@ -524,7 +632,7 @@
   P.isGenerateDebugGear=async function(){const n=await this.isChoose('生成する装備の★',['★3','★4','★5','★6'],{kicker:'DEBUG // GEAR GENERATOR'});return n===null?null:this.isGenerateGear({stars:n+3});};
   P.isAddLoot=function(entry){const r=this.isRun();if(!r)return false;const count=Math.max(1,Math.floor(Number(entry.count)||1)),isReturn=entry.itemId==='infiniteReturn',hadReturn=this.isHasReturn();let added=0;for(let i=0;i<count;i++){const one={...copy(entry),uid:i===0?entry.uid:this.isUid('loot'),count:1};if(this.isBagUsed()>=this.isBagLimit()){r.pendingLoot=one;this.isSave();this.isShowBagFull();break;}r.lootBag.push(one);added++;}if(isReturn&&!hadReturn&&added)r.returnButtonNew=true;if(added){this.isLog(`入手：${D().items[entry.itemId]?.name||entry.itemId}${added>1?` ×${added}`:''}`);this.isShowLootPop(entry,added);}return added===count;};
   P.isShowBagFull=function(){const r=this.isRun(),x=r?.pendingLoot;if(!x)return;document.getElementById('is-modal')?.remove();const el=document.createElement('div');el.id='is-modal';el.className='is-modal';el.innerHTML=`<div><small>LOOT BAG FULL</small><h2>${esc(D().items[x.itemId]?.name||x.itemId)}</h2><p>バッグ ${this.isBagUsed()} / ${this.isBagLimit()}。使用・装備・破棄で空きを作ってください。</p><div class="is-list">${r.lootBag.map(y=>this.isItemHtml(y)).join('')}</div><div class="is-actions"><button data-is-action="retry-loot">拾う</button><button data-is-action="discard-loot">拾わない</button></div></div>`;document.body.appendChild(el);};
-  P.isEquip=function(uid){const x=this.isBagEntry(uid),item=D().items[x?.itemId];if(!x||item?.category!=='equipment')return;this.isRun().equipment[item.slot||'accessory']=uid;this.isLog(`装備：${item.name}`);this.isSave();this.isRenderEquipment($('#menu-panel'));};
+  P.isEquip=function(uid,stayInBag=false){const x=this.isBagEntry(uid),item=D().items[x?.itemId];if(!x||item?.category!=='equipment')return;this.isRun().equipment[item.slot||'accessory']=uid;this.isLog(`装備：${item.name}`);this.isSave();const panel=$('#menu-panel');if(stayInBag)this.isRenderBag(panel);else this.isRenderEquipment(panel);};
   P.isUseBagItem=function(uid){const x=this.isBagEntry(uid),item=D().items[x?.itemId],effect=item?.effect;if(!x||!effect)return;if(x.itemId==='infiniteReturn'){this.isReturnRun();return;}const r=this.isRun(),stats=this.totalStats(),recovery=this.recoveryItemInfo?.(item,stats);if(!recovery)return;const gain=Math.min(recovery.amount,stats[recovery.maxKey]-r[recovery.key]);if(gain<=0)return;r[recovery.key]+=gain;r.lootBag.splice(r.lootBag.indexOf(x),1);this.isLog(`使用：${item.name}（${recovery.key.toUpperCase()} +${gain}）`);this.isRenderBag($('#menu-panel'));};
   P.isDrop=function(uid){const r=this.isRun(),x=this.isBagEntry(uid);if(!x)return;Object.keys(r.equipment).forEach(s=>{if(r.equipment[s]===uid)delete r.equipment[s]});r.lootBag.splice(r.lootBag.indexOf(x),1);this.isLog(`破棄：${D().items[x.itemId]?.name||x.itemId}`);this.isSave();if(r.pendingLoot&&document.getElementById('is-modal'))this.isShowBagFull();else this.isRenderBag($('#menu-panel'));};
   P.isDeleteOp=async function(uid){const x=this.isBagEntry(uid);if(!x?.ops?.length)return;const idx=await this.isChoose('削除するOPを選択',x.ops.map(o=>({label:this.isCfg().opLabels[o.key]||o.key,note:`RANK ${o.rank}`})),{kicker:'OPTION DELETE'});if(idx!==null&&x.ops[idx]){x.ops.splice(idx,1);this.isLog('OP削除');this.isRenderBag($('#menu-panel'));}};
@@ -750,8 +858,37 @@
   document.addEventListener('click',e=>{const a=e.target.closest('[data-is-action="explore-log"]'),g=window.arseneGame;if(!a||!g)return;e.preventDefault();e.stopImmediatePropagation();g.isExploreLogExpanded=!g.isExploreLogExpanded;g.isRenderExplore($('#menu-panel'));});
   document.addEventListener('click',async e=>{const card=e.target.closest('[data-is-card]'),g=window.arseneGame;if(!card||!g)return;e.preventDefault();e.stopImmediatePropagation();if(card.dataset.isResolved)return;card.dataset.isResolved='1';card.disabled=true;await g.isApplyCard(+card.dataset.isCard);},true);
   document.addEventListener('click',e=>{const a=e.target.closest('[data-is-action="shop-sell"],[data-is-action="shop-buy"]'),g=window.arseneGame;if(!a||!g)return;e.preventDefault();e.stopImmediatePropagation();const panel=$('#menu-panel');if(a.dataset.isAction==='shop-sell')g.isRenderShopSell(panel);else g.isRenderShop(panel,!!g.isShopMerchantMode,false);},true);
-  document.addEventListener('click',e=>{const row=e.target.closest('[data-is-bag-select]');if(!row)return;e.preventDefault();e.stopImmediatePropagation();const item=row.closest('.is-bag-item'),wasOpen=item?.classList.contains('open'),list=item?.parentElement;if(!item||!list)return;list.querySelectorAll('.is-bag-item.open').forEach(other=>{other.classList.remove('open');other.querySelector('.is-bag-row')?.setAttribute('aria-expanded','false');const detail=other.querySelector('.is-bag-inline-detail');if(detail)detail.hidden=true;});if(!wasOpen){item.classList.add('open');row.setAttribute('aria-expanded','true');const detail=item.querySelector('.is-bag-inline-detail');if(detail)detail.hidden=false;}},true);
-  document.addEventListener('click',e=>{const button=e.target.closest('[data-is-bag-sort]'),g=window.arseneGame;if(!button||!g)return;e.preventDefault();e.stopImmediatePropagation();g.isSortBag();},true);
+  document.addEventListener('click',e=>{
+    const screen=e.target.closest('.is-bag-screen'),g=window.arseneGame;
+    const control=e.target.closest('[data-is-bag-select],[data-is-bag-filter],[data-is-bag-details],[data-is-bag-sort],[data-is-equip]');
+    if(!screen||!control||!g||control.disabled)return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if(control.hasAttribute('data-is-bag-sort')){g.isSortBag();return;}
+    if(control.dataset.isBagFilter){
+      g.isBagView.filter=control.dataset.isBagFilter;
+      const panel=$('#menu-panel');
+      g.isRenderBag(panel,true);
+      panel.querySelector('[data-is-bag-filter][aria-pressed="true"]')?.focus({preventScroll:true});
+      return;
+    }
+    if(control.dataset.isBagSelect){
+      const item=g.isBagEntry(control.dataset.isBagSelect);
+      if(!item||g.isBagView.uid===item.uid)return;
+      g.isBagView.uid=item.uid;
+      screen.querySelector('[data-is-bag-select][aria-pressed="true"]')?.setAttribute('aria-pressed','false');
+      control.setAttribute('aria-pressed','true');
+      screen.querySelector('#is-bag-selection').innerHTML=g.isBagDetailHtml(item);
+      return;
+    }
+    if(control.hasAttribute('data-is-bag-details')){
+      const details=screen.querySelector('#is-bag-more');
+      details.hidden=!details.hidden;
+      control.setAttribute('aria-expanded',String(!details.hidden));
+      return;
+    }
+    if(control.dataset.isEquip)g.isEquip(control.dataset.isEquip,true);
+  },true);
   document.addEventListener('click',e=>{const a=e.target.closest('[data-is-action]'),g=window.arseneGame;if(!a||!g)return;const act=a.dataset.isAction;if(!['stairs-continue','stairs-open'].includes(act))return;e.preventDefault();e.stopImmediatePropagation();if(act==='stairs-continue')g.isStairPromptDismissed=g.isFloorMap()?.currentId;else g.isStairPromptDismissed=null;g.isRenderExplore($('#menu-panel'));},true);
   document.addEventListener('click',async e=>{const g=window.arseneGame;if(!g)return;const action=e.target.closest('[data-is-action="return-check"]'),drop=e.target.closest('[data-is-drop]');if(!action&&!drop)return;e.preventDefault();e.stopImmediatePropagation();if(action){const item=g.isRun()?.lootBag.find(x=>x.itemId==='infiniteReturn');if(!item){await g.isNotify('RETURNを持っていません','探索中にRETURNを入手すると帰還できます。');return;}if(await g.isConfirm('無限奏廊から帰還しますか？','現在のLOOT BAGをすべて持ち帰ります。',{kicker:'RETURN CHECK',confirmLabel:'帰還する'}))g.isUseBagItem(item.uid);return;}const x=g.isBagEntry(drop.dataset.isDrop),name=D().items[x?.itemId]?.name||x?.itemId;if(x&&await g.isConfirm(`${name}を捨てますか？`,'捨てた戦利品は元に戻せません。',{kicker:'LOOT DISCARD',confirmLabel:'捨てる',danger:true}))g.isDrop(x.uid);},true);
   document.addEventListener('click',e=>{const g=window.arseneGame;if(!g)return;const a=e.target.closest('[data-is-action]');if(a){e.preventDefault();const act=a.dataset.isAction,p=$('#menu-panel');if(act==='warning')g.renderMenuPanel('infinite-score-warning');else if(act==='import')g.renderMenuPanel('infinite-score-import');else if(act==='begin'||act==='begin-empty')g.isBegin();else if(act==='resume'||act==='explore'){g.isExploreOverlayMode=null;g.renderMenuPanel('infinite-score');}else if(act==='map')g.renderMenuPanel('infinite-score-map');else if(act==='route-advance'){g.isExploreOverlayMode='advance';g.isRun().pendingChoices=null;g.isRenderExplore(p);}else if(act==='route-examine'){g.isExploreOverlayMode='examine';g.isRun().pendingChoices=null;g.isRenderExplore(p);}else if(act==='route-close'){g.isExploreOverlayMode=null;g.isRenderExplore(p);}else if(act==='route-choice'){if(a.dataset.isResolved)return;a.dataset.isResolved='1';g.isResolveChoice(+a.dataset.isChoice);}else if(act==='explore-menu'){g.isExploreMenuOpen=!g.isExploreMenuOpen;g.isRenderExplore(p);}else if(act==='explore-menu-close'){g.isExploreMenuOpen=false;g.isRenderExplore(p);}else if(act==='return-notice-close'){g.isRenderExplore(p);}else if(act==='treasure-open')g.isOpenTreasure();else if(act==='room-result-close'){const remap=g.isRoomResult?.remapOnClose;g.isRoomResult=null;if(remap)g.isRemapCurrentFloor('宝箱部屋踏破');g.isRenderExplore(p);}else if(act==='return-locked'){window.arseneStartFlow?.toast('RETURNを入手すると帰還できます');}else if(act==='map-back')g.isMapBack();else if(act==='map-remap'){g.isRemapCurrentFloor();g.isRenderExplore(p);}else if(act==='bag')g.renderMenuPanel('infinite-score-bag');else if(act==='equipment')g.renderMenuPanel('infinite-score-equipment');else if(act==='abilities')g.isOpenAbilitySettings();else if(act==='debug')g.renderMenuPanel('infinite-score-debug');else if(act==='choices')g.renderMenuPanel('infinite-score-choices');else if(act==='battle')g.isStartBattle(false);else if(act==='descend'){g.isDescend();g.renderMenuPanel('infinite-score');}else if(act==='after-battle')g.isAfterBattle();else if(act==='return-check'){if(confirm('現在のLOOT BAGを持って帰還しますか？（RETURNが必要）')){const x=g.isRun()?.lootBag.find(x=>x.itemId==='infiniteReturn');if(x)g.isUseBagItem(x.uid);else alert('RETURNを持っていません。');}}else if(act==='generate'){g.isAddLoot(g.isGenerateGear());g.isRenderDebug(p);}else if(act==='death-test'){if(confirm('死亡処理を実行し、RUN内の全アイテムをロストしますか？')){g.battleMode='infiniteScore';g.defeat();}}else if(act==='debug-reset'){g.profile.infiniteScoreDebug={};g.saveProfile();g.isRenderDebug(p);}else if(act==='retry-loot'){const r=g.isRun();if(g.isBagUsed()<g.isBagLimit()){const x=r.pendingLoot;r.pendingLoot=null;g.isAddLoot(x);document.getElementById('is-modal')?.remove();g.isRenderBag(p);}}else if(act==='discard-loot'){g.isRun().pendingLoot=null;g.saveProfile();document.getElementById('is-modal')?.remove();}return;}
