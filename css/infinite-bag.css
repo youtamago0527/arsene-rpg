@@ -6,7 +6,8 @@
 
 .is-bag-screen {
   --bag-serif: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif CJK JP", serif;
-  --bag-fine: #a9bed0;
+  --bag-sans: "Hiragino Sans", "Yu Gothic UI", Meiryo, "Noto Sans JP", system-ui, sans-serif;
+  --bag-fine: #bdcddd;
   --bag-art: url("../assets/ui/infinite-score/bag/items.webp");
   width: min(100%, 540px);
   height: 100%;
@@ -15,6 +16,7 @@
   flex-direction: column;
   container-type: inline-size;
   color: #f3f7ff;
+  font-family: var(--bag-sans);
   writing-mode: horizontal-tb;
 }
 .is-bag-screen > :not(.is-bag-inventory) { flex: none; }
@@ -43,7 +45,7 @@
   border-image: url("../assets/ui/infinite-score/bag/steel-panel.webp") 34 fill stretch;
 }
 .is-bag-floor b { font: 700 clamp(16px, 4.4cqw, 25px)/1 var(--bag-serif); white-space: nowrap; }
-.is-bag-floor > span { color: #a5e7ff; font: 700 clamp(13px, 3.6cqw, 22px)/1 Georgia, serif; white-space: nowrap; }
+.is-bag-floor > span { color: #a5e7ff; font: 700 clamp(13px, 3.6cqw, 22px)/1 var(--bag-sans); white-space: nowrap; }
 .is-bag-floor button { white-space: nowrap; }
 .is-bag-floor button span { color: #a5e7ff; }
 .is-bag-vitals { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; margin: 6px 3px 8px; }
@@ -56,8 +58,8 @@
   border: 1px solid #6e849b;
   background: linear-gradient(150deg,#0b1729,#040916);
 }
-.is-bag-vitals small { color: var(--bag-fine); font-size: clamp(8px, 2.35cqw, 12px); line-height: 1.2; }
-.is-bag-vitals b { font: 700 clamp(12px, 3.6cqw, 19px)/1.15 Georgia, var(--bag-serif); white-space: nowrap; }
+.is-bag-vitals small { color: var(--bag-fine); font: 600 clamp(10px, 2.65cqw, 13px)/1.2 var(--bag-sans); }
+.is-bag-vitals b { font: 700 clamp(12px, 3.6cqw, 19px)/1.2 var(--bag-sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .is-bag-frame {
   border: clamp(9px, 2.7cqw, 14px) solid transparent;
@@ -98,9 +100,9 @@
   border-radius: 0;
   color: #f3f7ff;
   background: url("../assets/ui/infinite-score/bag/steel-button.webp") center / 100% 100% no-repeat;
-  font: 700 clamp(11px, 3.1cqw, 16px)/1.1 var(--bag-serif);
+  font: 700 clamp(12px, 3.25cqw, 17px)/1.25 var(--bag-sans);
   box-shadow: none;
-  text-shadow: 0 1px 2px #020513;
+  text-shadow: none;
 }
 #menu-panel .is-bag-control[aria-pressed="true"],
 #menu-panel .is-bag-control.is-bag-primary {
@@ -165,37 +167,37 @@
   border: 1px solid #587b99;
   background: #051022;
   color: #d6effb;
-  font: 700 clamp(9px, 2.8cqw, 15px)/1 Georgia, serif;
+  font: 700 clamp(10px, 2.85cqw, 15px)/1 var(--bag-sans);
 }
 .is-bag-row-name { display: grid; gap: 2px; min-width: 0; }
 .is-bag-row-name b, .is-bag-row-name small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; word-break: keep-all; }
-.is-bag-row-name b { font: 700 clamp(12px, 3.6cqw, 20px)/1.15 var(--bag-serif); }
-.is-bag-row-name small { color: var(--bag-fine); font-size: clamp(8px, 2.2cqw, 12px); line-height: 1.2; }
+.is-bag-row-name b { font: 700 clamp(13px, 3.9cqw, 20px)/1.23 var(--bag-sans); }
+.is-bag-row-name small { color: var(--bag-fine); font: 600 clamp(10px, 2.65cqw, 13px)/1.25 var(--bag-sans); }
 .is-bag-rarity {
   --badge-clip: polygon(8% 0,92% 0,100% 50%,92% 100%,8% 100%,0 50%);
   position: relative;
   isolation: isolate;
-  padding: 4px clamp(5px, 1.7cqw, 11px);
+  padding: 4px clamp(5px, 1.4cqw, 9px);
   clip-path: var(--badge-clip);
   background: var(--bag-rarity);
   color: var(--bag-rarity);
-  font: 700 clamp(7px, 2.1cqw, 12px)/1 Georgia, serif;
+  font: 700 clamp(9px, 2.45cqw, 12px)/1.1 var(--bag-sans);
   white-space: nowrap;
   text-align: center;
 }
 .is-bag-row .is-bag-rarity { min-width: clamp(46px, 15cqw, 82px); }
 .is-bag-rarity::before { content: ""; position: absolute; z-index: -1; inset: 1px; clip-path: var(--badge-clip); background: #08121d; }
-.is-bag-count { min-width: 2em; font: italic 700 clamp(10px, 3cqw, 16px)/1 Georgia, serif; text-align: right; white-space: nowrap; }
+.is-bag-count { min-width: 2em; font: 700 clamp(10px, 3cqw, 16px)/1 var(--bag-sans); text-align: right; white-space: nowrap; }
 .is-bag-arrow { width: 7px; height: 12px; background: #adc4d6; clip-path: polygon(0 0,100% 50%,0 100%); }
-.is-bag-empty { min-height: 100%; display: grid; place-items: center; margin: 0; padding: 16px 5px; text-align: center; font: 700 13px var(--bag-serif); color: var(--bag-fine); }
+.is-bag-empty { min-height: 100%; display: grid; place-items: center; margin: 0; padding: 16px 5px; text-align: center; font: 600 13px var(--bag-sans); color: var(--bag-fine); }
 
 .is-bag-detail { margin-top: 6px; }
 .is-bag-detail > header { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: start; gap: clamp(6px, 2.6cqw, 14px); padding: 2px; }
 .is-bag-detail > header .is-bag-icon { width: clamp(51px, 16cqw, 90px); }
 .is-bag-detail-copy > div { display: flex; justify-content: space-between; align-items: start; gap: 5px; }
-.is-bag-detail-copy h3 { margin: 0; font: 700 clamp(14px, 4.05cqw, 22px)/1.2 var(--bag-serif); overflow-wrap: anywhere; }
-.is-bag-detail-copy small { color: var(--bag-fine); font-size: clamp(9px, 2.35cqw, 13px); }
-.is-bag-detail-copy p { margin: 3px 0 0; padding-top: 4px; border-top: 1px solid #496078; color: #e1e6ed; font: 500 clamp(11px, 2.7cqw, 14px)/1.5 var(--bag-serif); overflow-wrap: anywhere; }
+.is-bag-detail-copy h3 { margin: 0; font: 700 clamp(14px, 4.3cqw, 23px)/1.25 var(--bag-sans); overflow-wrap: anywhere; }
+.is-bag-detail-copy small { color: var(--bag-fine); font: 600 clamp(10px, 2.7cqw, 14px)/1.35 var(--bag-sans); }
+.is-bag-detail-copy p { margin: 3px 0 0; padding-top: 4px; border-top: 1px solid #496078; color: #e1e6ed; font: 500 clamp(12px, 3cqw, 15px)/1.5 var(--bag-sans); overflow-wrap: anywhere; }
 .is-bag-detail-actions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; margin-top: 4px; padding: 6px 2px 0; border-top: 1px solid #394f68; }
 #menu-panel .is-bag-detail-actions .is-bag-control { min-height: 38px; font-size: clamp(13px, 3.5cqw, 19px); }
 #is-bag-more { margin-top: 8px; padding: 8px 3px 2px; border-top: 1px solid #394f68; color: var(--bag-fine); font-size: 12px; }
