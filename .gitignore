@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .DS_Store
+services/infinite-ranking/.dev.vars
+services/infinite-ranking/.wrangler/
 
 # Xcode user-local state and generated build products
 ios/App/Pods/

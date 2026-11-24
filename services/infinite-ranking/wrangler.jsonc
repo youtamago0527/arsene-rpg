@@ -1,0 +1,16 @@
+{
+  "name": "arsene-infinite-ranking",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-09-18",
+  "vars": {
+    "APPLE_BUNDLE_ID": "com.arsene.remix",
+    "ALLOWED_ORIGINS": "https://localhost,capacitor://localhost"
+  },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "arsene-infinite-ranking",
+    "database_id": "REPLACE_WITH_RANKING_D1_ID",
+    "migrations_dir": "migrations"
+  }],
+  "triggers": { "crons": ["5 15 * * *"] }
+}

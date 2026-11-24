@@ -1,0 +1,2 @@
+SESSION_SECRET=replace-with-a-unique-random-secret-of-at-least-32-bytes
+GAME_CENTER_CA_PEMS="replace-with-verified-Apple-Game-Center-issuer-PEM"
