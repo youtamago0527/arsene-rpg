@@ -1,15 +1,54 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const vm = require('node:vm');
 const gear = fs.readFileSync('js/otherworld_gear.js', 'utf8');
 const infinite = fs.readFileSync('js/infinite_score.js', 'utf8');
-const css = fs.readFileSync('css/menu.css', 'utf8');
+const support = fs.readFileSync('js/infinite_support.js', 'utf8');
 
-assert.match(gear, /owgResonanceSectionHTML/, '装備欄に異世界共鳴UIを提供する');
-assert.match(gear, /\[2,4,6\]\.map/, '2・4・6 SETを表示する');
-assert.match(gear, /oldBossSetBonusSectionHTML[\s\S]*owgResonanceSectionHTML/, 'ボスセットUIに異世界共鳴UIを併設する');
-assert.match(gear, /infiniteScore\?\.active/, '終了済みランの未帰還装備を通常装備欄へ混入させない');
-assert.doesNotMatch(infinite, /owgResonanceSectionHTML/, '無限奏廊の装備画面にはセット一覧を表示しない');
-assert.match(css, /conic-gradient\(#ff2a6d,#ffcc00,#00ffcc,#05d9e8,#7000ff,#ff2a6d\)/, '異世界共鳴の外周を虹色にする');
-assert.match(css, /@keyframes ow-rainbow-rotate/, '虹色外周を回転させる');
+class BattleGame {
+  isRun() { return this.profile.infiniteScore.active ? this.profile.infiniteScore : null; }
+  activeSetEffects() { return this.isRun() ? {} : { vitPercent: 8, damageReductionPercent: 10 }; }
+  equipmentEffectRate() { return 0; }
+  bossSetBonusSectionHTML() { return 'BOSS SET'; }
+  defeat() { return 'defeated'; }
+}
 
-console.log('otherworld resonance UI regression: ok');
+const data = { items: {}, weapons: {}, armors: {}, skills: {} };
+vm.runInNewContext(gear, { window: { BattleGame, ARSENE_DATA: data }, document: { addEventListener() {} } });
+
+assert.doesNotMatch(gear + infinite + support, /owgResonanceSectionHTML|otherWorldLastStand|owgLastStandUsed/);
+const game = new BattleGame();
+const allGear = ['sword','head','body','arms','feet','accessory'].map(part => ({
+  uid: part, itemId: `owg_infinite_${part}`, otherWorldGear: true, stars: 6, quality: 105, ops: []
+}));
+const slots = Object.fromEntries(allGear.map(x => [data.items[x.itemId].slot, x.uid]));
+const run = { active: true, lootBag: allGear, equipment: slots };
+game.profile = { inventory: {}, infiniteScore: run, otherWorldGear: [], otherWorldEquipment: {} };
+game.player = { hp: 0 };
+
+assert.deepEqual(game.activeSetEffects(), {}, '異世界装備6部位を揃えても奏廊内で発動しない');
+assert.equal(game.defeat(), 'defeated', '致死ダメージでも通常の敗北処理へ進む');
+assert.equal(game.player.hp, 0);
+allGear[0].ops.push(
+  { key: 'damageReductionPercent', value: .05 },
+  { key: 'repeatChance', value: .075 },
+  { key: 'physicalDamagePercent', value: .10 }
+);
+assert.deepEqual({ ...game.activeSetEffects() }, {
+  damageReductionPercent: 5, physicalRepeatChance: .075, magicRepeatChance: .075
+}, '軽減・追加発動は装備個別のOPから適用する');
+assert.equal(game.equipmentEffectRate('physicalDamagePercent'), .10);
+
+run.active = false;
+assert.deepEqual(game.activeSetEffects(), { vitPercent: 8, damageReductionPercent: 10 }, '帰還前の装備は通常戦闘へ混入しない');
+game.profile.otherWorldGear = allGear;
+game.profile.otherWorldEquipment = slots;
+assert.deepEqual({ ...game.activeSetEffects() }, {
+  vitPercent: 8, damageReductionPercent: 15, physicalRepeatChance: .075, magicRepeatChance: .075
+}, '帰還後も異世界のセット効果は発動せず、ボスセットと個別OPを適用する');
+assert.equal(game.bossSetBonusSectionHTML(), 'BOSS SET');
+const panel = { dataset: {} };
+game.owgRenderVault(panel);
+assert.match(panel.innerHTML, /終奏神器/);
+assert.doesNotMatch(panel.innerHTML, /共鳴|\/6<\/span>/);
+console.log('otherworld resonance removal regression: ok');
