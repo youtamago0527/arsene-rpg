@@ -85,6 +85,18 @@
         refreshEntry();
       } catch {
         nextCheck = Date.now() + 60 * 1000;
+        if (!announcement) {
+          try {
+            const bundled = await fetch(new URL('data/app-update-notice.json', document.baseURI), {
+              signal: AbortSignal.timeout(2000)
+            });
+            const local = bundled.ok ? parseAnnouncement(await bundled.json()) : null;
+            if (local && !announcement) {
+              announcement = local;
+              refreshEntry();
+            }
+          } catch {}
+        }
       } finally {
         checking = null;
       }
