@@ -507,7 +507,7 @@
     panel.innerHTML=`<main class="is-bag-screen">
       <header class="is-bag-brand"><b>無限奏廊</b><small>MUGEN SŌRŌ</small></header>
       <div class="is-bag-floor"><b>無限奏廊</b><span>FLOOR ${run.floor}</span><button type="button" class="is-bag-control" data-is-action="explore"><span aria-hidden="true">‹</span> 探索画面へ</button></div>
-      <div class="is-bag-vitals">${[['HP',`${run.hp} / ${stats.maxHp}`],['MP',`${run.mp} / ${stats.maxMp}`],['LOOT BAG',`${used} / ${limit}`],['奏貨',run.dungeonGold]].map(([label,value])=>`<div><small>${label}</small><b>${value}</b></div>`).join('')}</div>
+      <div class="is-bag-vitals">${[['HP',`${run.hp} / ${stats.maxHp}`],['MP',`${run.mp} / ${stats.maxMp}`],['LOOT BAG',`${used} / ${limit}`],['奏貨',run.dungeonGold]].map(([label,value])=>`<div><small>${label}</small><b${String(value).length>10?' class="is-bag-vital-long"':''}>${value}</b></div>`).join('')}</div>
       <section class="is-bag-frame is-bag-inventory" aria-labelledby="is-bag-title">
         <header class="is-bag-title"><h2 id="is-bag-title">${bagIcon('pouch')}戦利品バッグ</h2>
           <div class="is-bag-title-actions"><strong>${used}<span> / ${limit}</span></strong><button type="button" class="is-bag-control" data-is-bag-sort ${run.lootBag.length<2?'disabled':''}>⇅ 整頓</button></div></header>
