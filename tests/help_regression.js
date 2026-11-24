@@ -16,7 +16,7 @@ const visible = unlocked => help.filter(row => !row.lockedBy || unlocked.has(row
 assert.equal(new Set(help.map(row => row.id)).size, help.length, 'HELP id must be unique');
 
 const initial = visible(new Set());
-for (const id of ['workshop', 'magicKnight', 'phantomThief', 'otherWorld', 'otherWorldAdvanced', 'enhance', 'dualBlade', 'rebirth', 'guardian', 'levelCap', 'levelCapFinal']) {
+for (const id of ['workshop', 'magicKnight', 'phantomThief', 'otherWorld', 'infiniteScore', 'otherWorldAdvanced', 'enhance', 'dualBlade', 'rebirth', 'guardian', 'levelCap', 'levelCapFinal']) {
   assert(!initial.includes(id), `${id} must not be visible before unlock`);
 }
 assert(!body('job').includes('PHANTOM'), 'initial JOB help must not spoil PHANTOM THIEF');
@@ -30,6 +30,7 @@ assert(body('magicKnight').includes('Lv5') && body('magicKnight').includes('ア�
 assert(body('otherWorld').includes('土＝器用さ'), 'Saturday arcana must grant DEX');
 assert(!body('otherWorld').includes('土＝運'), 'obsolete Saturday LUK reward must not return');
 assert(!body('otherWorld').includes('上級'), 'base other-world HELP must not spoil the advanced tier');
+assert(!visible(new Set(['otherWorld'])).includes('infiniteScore'), 'Infinite Score help must wait for its own unlock');
 assert(body('otherWorldAdvanced').includes('中級の4倍'), 'advanced other-world HELP must document its scale');
 assert(body('phantomThief').includes('ACTION 2個') && body('phantomThief').includes('PASSIVE 2個'), 'RE:MIX slot counts must be documented');
 assert(body('levelCap').includes('Lv40') && !body('levelCap').includes('Lv70'), 'D3 cap HELP must not spoil the D5 cap');

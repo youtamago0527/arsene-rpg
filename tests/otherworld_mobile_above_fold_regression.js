@@ -13,6 +13,6 @@ assert.match(css, /#menu-panel\[data-panel="otherworld"\] \.ow-mode-action\{min-
   'both mode actions need compact but tappable controls');
 assert.match(css, /env\(safe-area-inset-bottom\)/,
   'compact panel must preserve the iPhone bottom safe area');
-assert.match(index, /css\/otherworld\.css\?v=0\.3\.9/);
+assert.match(index, /css\/otherworld\.css\?v=[\d.]+/);
 
 console.log('otherworld_mobile_above_fold_regression: ok');

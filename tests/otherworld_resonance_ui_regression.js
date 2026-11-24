@@ -13,8 +13,12 @@ class BattleGame {
   defeat() { return 'defeated'; }
 }
 
-const data = { items: {}, weapons: {}, armors: {}, skills: {} };
-vm.runInNewContext(gear, { window: { BattleGame, ARSENE_DATA: data }, document: { addEventListener() {} } });
+const data = { items: {}, weapons: {}, armors: {}, enemies: {}, skills: {} };
+const context = vm.createContext({ window: { BattleGame, ARSENE_DATA: data }, document: { addEventListener() {} } });
+for (const file of ['infinite_score_data','infinite_gear_v2_data','infinite_gear_v2']) {
+  vm.runInContext(fs.readFileSync(`js/${file}.js`,'utf8'), context);
+}
+vm.runInContext(gear, context);
 
 assert.doesNotMatch(gear + infinite + support, /owgResonanceSectionHTML|otherWorldLastStand|owgLastStandUsed/);
 const game = new BattleGame();

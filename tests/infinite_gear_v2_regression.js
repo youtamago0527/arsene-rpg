@@ -1,0 +1,179 @@
+const assert = require('node:assert/strict');
+const { readFileSync } = require('node:fs');
+const { runInNewContext } = require('node:vm');
+const { test } = require('node:test');
+
+class BattleGame {
+  isRun() { return this.profile.infiniteScore?.active ? this.profile.infiniteScore : null; }
+  isBagEntry(uid) { return this.isRun()?.lootBag.find(x => x.uid === uid); }
+  isRand() { return .42; }
+  totalStats(equipment = this.profile.equipment) {
+    return { maxHp:100, maxMp:40, str:10, vit:20, mag:15, mnd:12, agi:9, dex:10, luk:10,
+      ...(equipment?.head ? { vit:24 } : {}) };
+  }
+  equipmentCombatStats(equipment = this.profile.equipment) {
+    return { attackPower:equipment?.rightHand ? 200 : 0, defensePower:0, magicAttackPower:0, magicDefensePower:0 };
+  }
+  equipmentDefinition(id) { return data.weapons[id] || data.armors[id]; }
+  equipmentEffectRate() { return 0; }
+  activeSetEffects() { return {}; }
+  skillMpCost(skill) { return skill.mp; }
+  basicAttackSkill() { return { id:'attack' }; }
+}
+const data = { items:{}, weapons:{}, armors:{}, enemies:{}, skills:{} };
+const context = { window:{ ARSENE_DATA:data, BattleGame },document:{addEventListener(){}},console:{error(){}} };
+for (const file of ['infinite_score_data','infinite_gear_v2_data','infinite_gear_v2','otherworld_gear','infinite_gear_forge']) {
+  runInNewContext(readFileSync('js/'+file+'.js','utf8'),context,{filename:file+'.js'});
+}
+const statModel = data.infiniteGear;
+const cfg = data.infiniteGearV2;
+const plain = value => JSON.parse(JSON.stringify(value));
+const roll = (rarity, part='sword', floor=1, random=()=>.42, uid='item') =>
+  statModel.generate({ uid,floor,part,random,rarity });
+
+test('drop rarity is interpolated; all six outcomes are reachable on floor 1', () => {
+  for (const [floor,rates] of cfg.rarityRates) {
+    assert.deepEqual(plain(statModel.ratesAt(floor)),plain(rates));
+    assert(Math.abs(rates.reduce((a,b)=>a+b,0)-100)<1e-9);
+  }
+  let prior = 0;
+  statModel.ratesAt(1).forEach((pct,i)=>{
+    const draw=[(prior+pct/2)/100,0];
+    assert.equal(roll(undefined,'sword',1,()=>draw.shift()??0).tier,i+1);
+    prior+=pct;
+  });
+  for (const floor of [2,13,24,49,99,150,350,750]) {
+    assert(Math.abs(statModel.ratesAt(floor).reduce((a,b)=>a+b,0)-100)<1e-9);
+  }
+  assert.equal(statModel.ratesAt(13)[0],65);
+  assert.deepEqual(plain(statModel.ratesAt(999)),plain(statModel.ratesAt(500)));
+});
+
+test('base stats, independent option counts and values, and grade pools', () => {
+  for (let tier=1;tier<=5;tier++) {
+    const [min,max]=cfg.ranges.weapon[tier-1];
+    assert.equal(roll(tier,'sword',1,()=>0).baseStats.attackPower,min);
+    assert.equal(roll(tier,'sword',1,()=>.99999).baseStats.attackPower,max);
+    assert.equal(roll(tier,'sword',50,()=>0).baseStats.attackPower,Math.floor(min*198/100));
+    const rank=cfg.tiers[tier-1];
+    for (const random of [()=>0,()=>.17,()=>.42,()=>.61,()=>.91,()=>.99999]) {
+      const gear=roll(tier,'sword',100,random);
+      assert.equal(gear.obtainedFloor,100);
+      assert.equal(gear.name,rank.prefix+'魔剣');
+      assert(gear.ops.length>=rank.count[0]&&gear.ops.length<=rank.count[1]);
+      assert.equal(new Set(gear.ops.map(x=>x.key)).size,gear.ops.length);
+      for (const op of gear.ops) {
+        assert(op.value>=rank.values[0]&&op.value<=rank.values[1]);
+        assert(rank.weights[cfg.grades.indexOf(op.grade)]>0);
+      }
+    }
+  }
+  const armor=roll(1,'body',1,()=>0);
+  assert.equal(armor.baseStats.defensePower,25);
+  assert(!Object.hasOwn(armor.baseStats,'attackPower'));
+  assert.equal(roll(1,'accessory',1,()=>0).baseStats.maxHp,15);
+  assert.equal(roll(1,'staff',1,()=>0).baseStats.magicAttackPower,83);
+});
+
+test('INFINITY guarantees, tail behavior, and format/stat safety', () => {
+  for (const floor of [1,50,100,200,500,1000]) {
+    const item=roll(6,'sword',floor,()=>0);
+    assert.equal(item.ops.length,6);
+    assert.equal(item.baseStats.attackPower,1+(floor-1)*20);
+    assert(item.ops.every(op=>op.value===floor));
+    assert.equal(new Set(item.ops.map(op=>op.key)).size,6);
+  }
+  const low=roll(6,'sword',1,()=>.5),high=roll(6,'sword',1,()=>.9999999);
+  assert(high.baseStats.attackPower>low.baseStats.attackPower);
+  assert(high.ops.every(op=>op.value>low.ops[0].value));
+  const enhanced={...high,plus:1_000_000};
+  assert(statModel.strengthened(enhanced).attackPower<=cfg.limits.stat);
+  assert(!/Infinity|NaN/.test(statModel.opText(high.ops[0])));
+  assert.equal(statModel.damage(1e99,{}, {skill:{},enemy:{},basic:true}),cfg.limits.stat);
+});
+
+function gameWithGear(...items) {
+  const game=new BattleGame();
+  game.profile={equipment:{rightHand:'normal-sword',head:'normal-hat'},otherWorldGear:[],otherWorldEquipment:{},
+    infiniteScore:{active:true,gearVersion:2,floor:900,hp:50,mp:20,equipment:{},lootBag:items,log:[]}};
+  game.saveProfile=()=>{ game.saves=(game.saves||0)+1;game.saved=JSON.stringify(game.profile); };
+  return game;
+}
+
+test('confirmed same-name fusion is atomic; OPs, base rolls and original drop floor survive loading', async () => {
+  const target=roll(2,'sword',50,()=>.42,'target');
+  const source=roll(2,'sword',70,()=>.17,'source');
+  const wrong=roll(1,'sword',1,()=>.42,'wrong-rarity');
+  const renamed={...source,name:'別名'};
+  assert(!statModel.canMerge(target,renamed));
+  const game=gameWithGear(target,source,wrong);
+  game.isRun().equipment.rightHand=source.uid;
+  source.locked=true;
+  let confirmation='';
+  game.isConfirm=async (_, text)=>{confirmation=text;return false;};
+  assert(!await game.isForgeMerge(target.uid,source.uid));
+  assert.match(confirmation,/装備中/);
+  assert.match(confirmation,/ロック中/);
+  assert.match(confirmation,/完全に消滅/);
+  assert.equal(game.isRun().lootBag.length,3);
+  assert.equal(game.saves,undefined);
+  game.isConfirm=async ()=>true;
+  assert(!await game.isForgeMerge(target.uid,wrong.uid));
+  assert(await game.isForgeMerge(target.uid,source.uid));
+  const upgraded=game.isBagEntry(target.uid);
+  assert.equal(game.saves,1);
+  assert.equal(upgraded.plus,1);
+  assert(!game.isBagEntry(source.uid));
+  assert(!game.isRun().equipment.rightHand);
+  assert.deepEqual(plain(upgraded.ops),plain(target.ops));
+  assert.deepEqual(plain(upgraded.baseStats),plain(target.baseStats));
+  game.profile=JSON.parse(game.saved);
+  assert.equal(game.isBagEntry(target.uid).obtainedFloor,50);
+  assert.deepEqual(game.isBagEntry(target.uid),plain(upgraded));
+  assert.equal(game.owgEffectiveStats(game.isBagEntry(target.uid)).attackPower.total,Math.floor(target.baseStats.attackPower*1.2+1e-7));
+});
+
+test('transplant preserves grade and value and rolls back if saving fails', async () => {
+  const a=roll(5,'sword',1,()=>.42,'source');
+  const b=roll(2,'sword',1,()=>.42,'target');
+  const c=roll(6,'sword',1,()=>.42,'infinity');
+  const d=roll(5,'shield',1,()=>.42,'shield');
+  const op={key:'skillDamageRate',grade:'EPIC',value:79};
+  a.ops=[op];
+  b.ops=[{key:'maxHpRate',grade:'COMMON',value:18},{...op,value:20}];
+  assert(!statModel.canTransfer(a,c));
+  assert(!statModel.canTransfer(d,b));
+  assert(!statModel.canReplace(a,b,0,0),'an OP cannot be duplicated in another slot');
+  assert(statModel.canReplace(a,b,0,1));
+  const game=gameWithGear(a,b,c,d);
+  game.isConfirm=async ()=>true;
+  const save=game.saveProfile;
+  game.saveProfile=()=>{throw new Error('storage unavailable');};
+  assert(!await game.isForgeTransfer(a.uid,b.uid,0,1));
+  assert.equal(game.isBagEntry(b.uid).ops[1].value,20);
+  assert(game.isBagEntry(a.uid));
+  game.saveProfile=save;
+  assert(await game.isForgeTransfer(a.uid,b.uid,0,1));
+  assert.equal(game.saves,1);
+  assert.equal(game.isBagEntry(a.uid),undefined);
+  assert.equal(game.isBagEntry(b.uid).ops.length,2);
+  assert.deepEqual(plain(game.isBagEntry(b.uid).ops[1]),op);
+});
+
+test('V2 affects only equipped bonuses; legacy individuals remain usable and ordinary gear is untouched', () => {
+  const newSword=roll(1,'sword',1,()=>0,'new');
+  const oldSword={uid:'old',itemId:'owg_boundary_sword',otherWorldGear:true,quality:110,tuneLevel:2,ops:[{key:'attackPower',value:7,rank:1}]};
+  newSword.ops=[{key:'attackPowerRate',grade:'COMMON',value:10},{key:'maxHpRate',grade:'COMMON',value:10}];
+  const game=gameWithGear(newSword,oldSword);
+  assert(!statModel.canMerge(newSword,oldSword));
+  assert.equal(game.owgEffectiveStats(oldSword).attackPower.total,
+    Math.round(data.weapons[oldSword.itemId].attackPower*1.10*1.16)+7);
+  game.isRun().equipment.rightHand=newSword.uid;
+  assert.equal(game.equipmentCombatStats().attackPower,88);
+  assert.equal(game.totalStats().maxHp,110);
+  game.profile.infiniteScore.active=false;
+  assert.equal(game.equipmentCombatStats().attackPower,200);
+  assert.equal(game.totalStats().maxHp,100);
+  const ordinary=game.owgAdjustDamage(200,{id:'skill'},{kind:'boss'},true,false);
+  assert.equal(ordinary,200);
+});

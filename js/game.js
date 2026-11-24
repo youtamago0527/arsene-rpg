@@ -1344,6 +1344,7 @@
       if (key === 'levelCapFinal') return this.isBossDefeated('ostina') || !!f.dungeon5Clear;
       if (key === 'rebirth') return this.rebirthUnlocked();
       if (key === 'phantomThief') return this.isJobUnlocked('phantomThief');
+      if (key === 'infiniteScore') return !!this.isInfiniteScoreUnlocked?.();
       if (key === 'otherWorld') return !!f.otherWorldUnlocked;
       if (key === 'otherWorldAdvanced') return this.isBossDefeated('astact') || !!f.dungeon4Clear;
       if (key === 'phantomShop') return !!f.phantomShopUnlocked;
@@ -2934,6 +2935,7 @@
       if (critical) value *= balance.critical.multiplier;
       // 武器学は基礎能力へ混ぜず、対応武器で与える最終ダメージだけを伸ばす。
       value *= this.weaponMasteryMultiplier(wType);
+      if (this.owgAdjustDamage) value = this.owgAdjustDamage(value, skill, enemy, critical, weak);
       return { value: Math.max(1, Math.round(value)), critical, weak };
     }
     // 閃き演出：画面フラッシュ＋効果音＋カットインを見せてから技を発動する

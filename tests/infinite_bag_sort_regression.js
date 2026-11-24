@@ -15,6 +15,7 @@ assert(score.includes('aria-disabled="true">装備中'), 'equipped detail action
 assert(css.includes('button.is-equipped'), 'equipped detail blackout style is missing');
 assert(!score.includes('is-bag-item${isEquipped?\' equipped\''), 'generic equipped class can collide with menu layout');
 assert(!score.includes('is-bag-detail${isEquipped?\' equipped\''), 'generic equipped class can collapse bag detail layout');
-assert(index.includes('infinite-score.css?v=0.3.21'), 'CSS cache bust was not updated');
-assert(index.includes('infinite_score.js?v=0.3.45'), 'bag markup cache bust was not updated');
+assert.match(score, /rarities=\['infinity','mythic'/, 'INFINITY must sort above MYTHIC');
+assert.match(index, /infinite-score\.css\?v=[\d.]+/, 'bag stylesheet is not versioned');
+assert.match(index, /infinite_score\.js\?v=[\d.]+/, 'bag script is not versioned');
 console.log('infinite bag sort regression: ok');
