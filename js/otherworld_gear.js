@@ -176,7 +176,9 @@
     const base=Math.max(1,Math.round(gearV2.damage(value,rates,{
       basic:skill.id===this.basicAttackSkill().id, skill,enemy,critical,
       turn:this.turn,hp:this.player.hp,maxHp:this.player.stats.maxHp,
-      alive:this.enemies?.filter(target=>target.hp>0).length||0
+      alive:this.enemies?.filter(target=>target.hp>0).length||0,
+      previousBasicHit:this.player.owgBasicHitTurn===this.turn-1,
+      previousGuardHit:this.player.owgGuardHitTurn===this.turn-1
     })));
     const additionalDamage=gearV2.extraDamage(base,rates);
     return {value:base+additionalDamage, additionalDamage};
@@ -201,6 +203,54 @@
       this.setLog(`《${hp?'HP吸収':'被ダメージ時MP回復'}》${hp?'HP':'MP'}が${gained}回復！`);
     }
     return gained;
+  };
+  function restoreBattleVital(game,key,rate,label) {
+    const player=game.player;
+    if (!rate || !player?.hp) return 0;
+    const max=player.stats[key==='hp'?'maxHp':'maxMp'];
+    const gained=Math.min(Math.max(0,max-player[key]),Math.floor(max*rate+1e-9));
+    if (gained>0) {
+      player[key]+=gained;
+      const vital=key.toUpperCase();
+      game.setLog(`《${label}》${vital}が${gained}回復！`);
+      game.floating(document.querySelector('#ren'),`${vital} +${gained}`,'heal');
+    }
+    return gained;
+  }
+  const oldBeginTurn=P.beginPlayerTurn;
+  P.beginPlayerTurn=async function(...args){
+    if (restoreBattleVital(this,'hp',this.owgEffects().turnHealRate,'戦闘再生')) {
+      this.persistVitals();
+      this.updateHUD();
+    }
+    return oldBeginTurn.apply(this,args);
+  };
+  P.owgOpeningWard=function(damage){
+    if (damage<=0 || this.player.owgWardUsed) return damage;
+    const rate=this.owgEffects().firstHitWardRate;
+    if (!rate) return damage;
+    this.player.owgWardUsed=true;
+    const reduced=Math.round(damage*(1-rate));
+    if (reduced<damage) this.setLog(`《初撃防壁》被ダメージ -${damage-reduced}`);
+    return reduced;
+  };
+  P.owgOnGuardHit=function(actual){
+    if (actual<=0 || !this.player.hp || this.player.buffs?.guardUntil!==this.turn ||
+        this.player.owgGuardHitTurn===this.turn) return;
+    this.player.owgGuardHitTurn=this.turn;
+    restoreBattleVital(this,'mp',this.owgEffects().guardMpRate,'防御充填');
+  };
+  P.owgAfterLandedHit=function(target,actual,skill){
+    if (actual<=0) return;
+    const effects=this.owgEffects();
+    if (effects.basicToSkillRate && skill?.id===this.basicAttackSkill().id) this.player.owgBasicHitTurn=this.turn;
+    if (!effects.weaponDefBreakRate || target.hp<=0) return;
+    target.owgBreachHits=(target.owgBreachHits||0)+1;
+    if (target.owgBreachHits<3) return;
+    target.owgBreachHits=0;
+    target.owgBreachUntil=this.turn+1;
+    target.owgBreachRate=effects.weaponDefBreakRate;
+    this.setLog(`《護り崩し》${target.name}の物理・魔法防御 -${gearV2.number(effects.weaponDefBreakRate*100)}%`);
   };
   const oldWeapon=P.equippedWeapon; P.equippedWeapon=function(){const run=this.isRun?.(),uid=run?.equipment?.rightHand||this.profile.otherWorldEquipment?.rightHand,x=this.owgEntry(uid);if(x)return D.weapons[x.itemId]||oldWeapon.call(this);return oldWeapon.call(this);};
   const oldSkills=P.availableSkills; P.availableSkills=function(){const list=oldSkills.call(this),skills=this.owgEquipped().map(x=>D.skills[x.uniqueSkillId]).filter(Boolean);return [...new Map([...list,...skills].map(x=>[x.id,x])).values()];};
@@ -237,7 +287,17 @@
   const oldApplyRewards=P.applyRewards;P.applyRewards=function(reward){const fx=this.owgEffects(),next={...reward,drops:{...(reward?.drops||{})}};if(next.exp)next.exp=Math.round(next.exp*(1+(fx.expUp||0)));if(next.gold)next.gold=Math.round(next.gold*(1+(fx.goldUp||0)));const bonus=Math.max(0,fx.materialDropUp||0);for(const [id,n] of Object.entries(next.drops))if(D.items[id]?.category==='material'){let extra=0;for(let i=0;i<n;i++)if(Math.random()<bonus)extra++;next.drops[id]+=extra;}return oldApplyRewards.call(this,next);};
   const oldJobExp=P.grantJobExp;P.grantJobExp=function(exp,...args){return oldJobExp.call(this,Math.round(exp*(1+(this.owgEffects().jobExpUp||0))),...args);};
   const oldWeaponExp=P.grantWeaponExp;P.grantWeaponExp=function(exp,...args){return oldWeaponExp.call(this,Math.round(exp*(1+(this.owgEffects().masteryExpUp||0))),...args);};
-  const oldVictory=P.victory;P.victory=async function(...args){if(this.battleMode==='infiniteScore'&&this.isRun?.()?.floor>=25){const floor=this.isRun().floor,rate=floor>=150?.12:floor>=100?.08:floor>=50?.05:.02;if(this.isRand()<rate)this.isAddLoot({uid:this.isUid('core'),kind:'item',itemId:'otherworldCore',count:1});}return oldVictory.apply(this,args);};
+  const oldVictory=P.victory;
+  P.victory=async function(...args){
+    const run=this.battleMode==='infiniteScore' ? this.isRun?.() : null;
+    if (run && !this.finished) restoreBattleVital(this,'hp',this.owgEffects().victoryHealRate,'戦後手当');
+    const floor=run?.floor;
+    if (floor>=25) {
+      const rate=floor>=150?.12:floor>=100?.08:floor>=50?.05:.02;
+      if(this.isRand()<rate)this.isAddLoot({uid:this.isUid('core'),kind:'item',itemId:'otherworldCore',count:1});
+    }
+    return oldVictory.apply(this,args);
+  };
   document.addEventListener('click',e=>{
     const equip=e.target.closest('[data-owg-equip]'),g=window.arseneGame;
     if(equip&&g)g.owgEquip(equip.dataset.owgEquip);

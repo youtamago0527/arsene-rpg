@@ -16,6 +16,7 @@ class BattleGame {
   }
   equipmentDefinition(id) { return data.weapons[id] || data.armors[id]; }
   equipmentEffectRate() { return 0; }
+  async beginPlayerTurn() {}
   activeSetEffects() { return {}; }
   skillMpCost(skill) { return skill.mp; }
   basicAttackSkill() { return { id:'attack' }; }
@@ -63,7 +64,7 @@ test('base stats, independent option counts and values, and grade pools', () => 
       assert(gear.ops.length>=rank.count[0]&&gear.ops.length<=rank.count[1]);
       assert.equal(new Set(gear.ops.map(x=>x.key)).size,gear.ops.length);
       for (const op of gear.ops) {
-        const special = cfg.ops.find(definition=>definition.key===op.key && definition.chance);
+        const special = cfg.ops.find(definition=>definition.key===op.key && definition.values);
         if (special) assert(special.values.includes(op.value));
         else assert(op.value>=rank.values[0]&&op.value<=rank.values[1]);
         assert(rank.weights[cfg.grades.indexOf(op.grade)]>0);
@@ -82,7 +83,10 @@ test('INFINITY guarantees, tail behavior, and format/stat safety', () => {
     const item=roll(6,'accessory',floor,()=>0);
     assert.equal(item.ops.length,6);
     assert.equal(roll(6,'sword',floor,()=>0).baseStats.attackPower,1+(floor-1)*20);
-    assert(item.ops.every(op=>op.value===floor));
+    for (const op of item.ops) {
+      const fixed = cfg.ops.find(definition=>definition.key===op.key)?.values;
+      assert.equal(op.value,fixed?.[0] ?? floor);
+    }
     assert.equal(new Set(item.ops.map(op=>op.key)).size,6);
   }
   const low=roll(6,'sword',1,()=>.5),high=roll(6,'sword',1,()=>.9999999);
@@ -134,6 +138,60 @@ test('additional damage can exceed the final base hit, and recovery carries over
   assert.equal(game.owgRestoreFromDamage('mp',200),1);
   game.player.hp=0;
   assert.equal(game.owgRestoreFromDamage('mp',1_000),0);
+});
+
+test('tactical OPs appear only on their equipment families and keep the listed values', () => {
+  const tactical = cfg.ops.filter(op=>op.values && !op.chance);
+  assert.equal(tactical.length,10);
+  let seed=57823;
+  const random=()=>((seed=(Math.imul(1664525,seed)+1013904223)>>>0)/2**32);
+  const rolled = new Set();
+  for (const part of cfg.parts) {
+    for (let i=0;i<120;i++) {
+      const gear=roll(i%6+1,part.id,500,random);
+      for (const option of gear.ops) {
+        const definition=tactical.find(op=>op.key===option.key);
+        if (!definition) continue;
+        assert(Object.values(part.base).some(([table])=>table===definition.table));
+        assert(definition.values.includes(option.value));
+        rolled.add(option.key);
+      }
+    }
+  }
+  assert.equal(rolled.size,tactical.length);
+});
+
+test('turn, guard, first-hit and three-hit procs stay scoped to their trigger', async () => {
+  const sword = {...roll(6,'sword'),ops:[{key:'basicToSkillRate',value:25},{key:'weaponDefBreakRate',value:12}]};
+  const armor = {...roll(6,'body',1,()=>.5,'body'),ops:[{key:'firstHitWardRate',value:20},{key:'guardMpRate',value:5},{key:'guardStrikeRate',value:20}]};
+  const accessory = {...roll(6,'accessory',1,()=>.5,'ring'),ops:[{key:'turnHealRate',value:3},{key:'victoryHealRate',value:4}]};
+  const game = gameWithGear(sword,armor,accessory);
+  game.isRun().equipment={rightHand:sword.uid,body:armor.uid,accessory:accessory.uid};
+  game.player={hp:50,mp:20,stats:{maxHp:100,maxMp:40},buffs:{}};
+  game.floating=game.setLog=game.updateHUD=game.persistVitals=()=>{};
+  game.turn=1;
+  await game.beginPlayerTurn();
+  assert.equal(game.player.hp,53);
+  assert.equal(game.owgOpeningWard(0),0);
+  assert.equal(game.owgOpeningWard(100),80);
+  assert.equal(game.owgOpeningWard(100),100);
+  game.owgOnGuardHit(80);
+  assert.equal(game.player.mp,20);
+  game.player.buffs.guardUntil=1;
+  game.owgOnGuardHit(80);
+  game.owgOnGuardHit(80);
+  assert.equal(game.player.mp,22);
+  const target={hp:100,stats:{maxHp:100}};
+  for (let i=0;i<2;i++) game.owgAfterLandedHit(target,5,{id:'attack'});
+  assert.equal(target.owgBreachUntil,undefined);
+  game.owgAfterLandedHit(target,5,{id:'attack'});
+  assert.equal(target.owgBreachUntil,2);
+  assert.equal(target.owgBreachRate,.12);
+  game.turn=2;
+  assert.equal(game.owgAdjustDamage(100,{id:'spell'},target,false).value,145);
+  assert.equal(game.owgAdjustDamage(100,{id:'attack'},target,false).value,120);
+  game.turn=3;
+  assert.equal(game.owgAdjustDamage(100,{id:'spell'},target,false).value,100);
 });
 
 function gameWithGear(...items) {
