@@ -59,12 +59,14 @@ one paid line item, the configured Price ID, quantity 1, `mode=payment`,
 
 ## 4. Migration and deployment from another PC
 
+Cloudflare Pages builds this project with `node scripts/build-pages.mjs` and publishes `dist`. The portal is served at `/` and the game at `/play`.
+
 Install Node and pnpm, clone the same commit, authenticate Wrangler, and then run:
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm test:web-store
-pnpm run build
+node scripts/build-pages.mjs
 pnpm exec wrangler d1 migrations apply <D1_DATABASE_NAME> --remote
 pnpm exec wrangler pages deploy dist --project-name <PAGES_PROJECT_NAME>
 ```
