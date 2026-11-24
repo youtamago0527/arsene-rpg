@@ -12,7 +12,7 @@ for (const boss of ['zenakado', 'myrthi', 'versicrell', 'seripes']) {
 assert.match(game, /this\.battleMode === 'd5MidBoss'[\s\S]*?offerRepeatBossMaterialDrop\(e, firstClear\); return;/, 'D5中ボスの再戦勝利でも提案する');
 assert.match(game, /dungeon\.midBossId === this\.battleMode[\s\S]*?offerRepeatBossMaterialDrop\(e, firstClear\); return;/, '各ダンジョン中ボスの再戦勝利でも提案する');
 assert.match(game, /\['astact', 'ostina'\]\.includes\(this\.battleMode\)[\s\S]*?offerRepeatBossMaterialDrop\(e, firstClear\); return;/, 'D4・D5ボスの再戦勝利でも提案する');
-assert.match(game, /offerRepeatBossMaterialDrop\(enemy, firstClear\)[\s\S]*?if \(firstClear \|\| !enemy/, '初回撃破は素材再抽選の対象外');
+assert.match(game, /offerRepeatBossMaterialDrop\(enemy, firstClear(?:, [^)]*)?\)[\s\S]*?if \(firstClear \|\| !enemy/, '初回撃破は素材再抽選の対象外');
 assert.match(game, /setTimeout\(\(\) => \{[\s\S]*?this\.showBossMaterialOffer\(\)/, '再戦リザルトが表示された後に確認POPを開く');
 assert.doesNotMatch(
   game.match(/renderBossResultActions\(\) \{[\s\S]*?showBossMaterialOffer\(\) \{/)[0],
@@ -44,6 +44,20 @@ assert.equal(battle.showBossMaterialOffer(), false, '同じ撃破結果で2回�
 assert.equal(granted.drops.zenacad_core, 1, '素材を2倍確率の追加抽選で得る');
 assert.equal(granted.drops.maestri_baton, 1, '装備を2倍確率の追加抽選で得る');
 assert.equal(displayed.length, 2, '追加で得た素材と装備を結果に表示する');
+const rebirth = { itemId: 'rebirthArcana', chance: .03, count: 2 };
+context.window.arseneQOffer.canUse = () => true;
+for (const [roll, wins] of [[.0599, true], [.06, false]]) {
+  vm.runInContext(`Math.random = () => ${roll}`, context);
+  assert.equal(battle.offerRepeatBossMaterialDrop(enemy, true, rebirth), false);
+  assert.equal(battle.offerRepeatBossMaterialDrop({ name: 'ボス', dropTable: [] }, false, rebirth), true);
+  assert.equal(battle.showBossMaterialOffer(), true);
+  granted = null;
+  offer.onGrant();
+  assert.equal(granted?.drops.rebirthArcana, wins ? 2 : undefined, '広告では6%で輪廻を追加抽選');
+  const total = battle.battleRewards.drops.rebirthArcana;
+  offer.onGrant();
+  assert.equal(battle.battleRewards.drops.rebirthArcana, total, '同じ広告では重複付与しない');
+}
 const resultNodes = Object.fromEntries(['#result-title', '#result-copy', '#result-kicker', '#rewards', '#result-menu', '#result'].map(id => [id, { style: {} }]));
 context.document.querySelector = id => resultNodes[id] || null;
 battle.cleanupBattleTransientUI = () => {};

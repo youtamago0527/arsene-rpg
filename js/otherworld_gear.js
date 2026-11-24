@@ -70,7 +70,7 @@
   const oldFresh=P.freshProfile; P.freshProfile=function(){return normalize(oldFresh.call(this));};
   if (window.arseneGame?.profile) normalize(window.arseneGame.profile);
   P.owgEntry=function(uid){return (this.profile.otherWorldGear||[]).find(x=>x.uid===uid)||(this.isRun?.()?.lootBag||[]).find(x=>x.uid===uid);};
-  P.owgEquipped=function(){const run=this.profile?.infiniteScore?.active?this.isRun?.():null;if(run)return Object.values(run.equipment||{}).map(uid=>this.owgEntry(uid)).filter(x=>x?.otherWorldGear);return Object.values(this.profile.otherWorldEquipment||{}).map(uid=>(this.profile.otherWorldGear||[]).find(x=>x.uid===uid)).filter(Boolean);};
+  P.owgEquipped=function(){const run=this.isRunForEquipment?.();if(run)return Object.values(run.equipment||{}).map(uid=>this.owgEntry(uid)).filter(x=>x?.otherWorldGear);return Object.values(this.profile.otherWorldEquipment||{}).map(uid=>(this.profile.otherWorldGear||[]).find(x=>x.uid===uid)).filter(Boolean);};
   P.owgDefinition=function(x){return this.equipmentDefinition?.(x?.itemId)||{};};
   P.owgName=function(x){
     if (!x) return '';
@@ -103,7 +103,7 @@
     }).join(' ／ ');
   };
 
-  const oldReturn=P.isReturnRun; P.isReturnRun=function(){const r=this.isRun?.();if(!r)return oldReturn.call(this);normalize(this.profile);for(const x of r.lootBag){if(x.otherWorldGear)this.profile.otherWorldGear.push(copy(x));else this.profile.inventory[x.itemId]=(this.profile.inventory[x.itemId]||0)+(x.count||1);}const count=r.lootBag.length,floor=r.floor;this.profile.equipment=copy(r.homeEquipment||this.profile.equipment);this.profile.currentVitals=copy(r.homeVitals||this.profile.currentVitals);this.profile.infiniteScore={active:false,lastResult:'return',returnedCount:count,lastFloor:floor,endedAt:Date.now()};this.profile.flags.owRestoreJobPending=true;this.saveProfile();document.getElementById('is-modal')?.remove();this.showResult('RETURN SUCCESS',`${count}枠の戦利品を持ち帰った。`,'INFINITE SCORE // ESCAPED',`<div class="is-stairs"><b>FLOOR ${floor}から生還</b><p>異世界装備は《異世界装備庫》へ保管されました。</p></div>`);};
+  const oldReturn=P.isReturnRun; P.isReturnRun=function(){const r=this.isRun?.();if(!r)return oldReturn.call(this);normalize(this.profile);for(const x of r.lootBag){if(x.otherWorldGear)this.profile.otherWorldGear.push(copy(x));else this.profile.inventory[x.itemId]=(this.profile.inventory[x.itemId]||0)+(x.count||1);}const count=r.lootBag.length,floor=r.floor;this.profile.equipment=copy(r.homeEquipmentInProfile ? this.profile.equipment : (r.homeEquipment||this.profile.equipment));this.profile.currentVitals=copy(r.homeVitals||this.profile.currentVitals);this.profile.infiniteScore={active:false,lastResult:'return',returnedCount:count,lastFloor:floor,endedAt:Date.now()};this.profile.flags.owRestoreJobPending=true;this.saveProfile();document.getElementById('is-modal')?.remove();this.showResult('RETURN SUCCESS',`${count}枠の戦利品を持ち帰った。`,'INFINITE SCORE // ESCAPED',`<div class="is-stairs"><b>FLOOR ${floor}から生還</b><p>異世界装備は《異世界装備庫》へ保管されました。</p></div>`);};
 
   P.owgEffects=function(){
     const equipped=this.owgEquipped(), out=gearV2.optionRates(equipped);

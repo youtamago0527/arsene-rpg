@@ -183,6 +183,10 @@ window.ARSENE_DATA = {
     ],
     sparkSourceMultipliers: { basic: .25, related: .5, direct: 2.0 },
     sparkInitialCastFree: true,
+    weaponSkillUpgrades: [
+      { level: 2, mastery: 51, damage: 1.20, rankOffset: 55 },
+      { level: 3, mastery: 100, damage: 1.44, rankOffset: 110 }
+    ],
     // パッシブは転生1回ごとに、全JOB共通でこの値ぶん強くなる（絶対値の+2%）。
     // 旧仕様の「基本値×40%」は、基本値が小さいパッシブほど伸びず
     // 転生しても上がった気がしない、という問題があったため一律へ変更した。
@@ -1157,6 +1161,8 @@ window.ARSENE_DATA = {
     dualBladeProof: { id: 'dualBladeProof', name: '双刃士の証', nameEn: 'PROOF OF THE DUAL BLADE', category: 'key', rarity: 'epic', description: '左右の刃を舞のように繋ぐ者の資格を示す黒紅の証。' },
     magicKnightProof: { id: 'magicKnightProof', name: '魔奏士の証', nameEn: 'PROOF OF THE ARCANE PLAYER', category: 'key', rarity: 'epic', description: '旋律と魔を繋ぐ古い紋章。新たな生き方を選ぶ資格を示す。' },
     arcaneMaestroProof: { id: 'arcaneMaestroProof', name: '楽奏の証', nameEn: 'PROOF OF THE ARCANE MAESTRO', category: 'key', rarity: 'epic', description: '音と魔を繋ぐ古い譜面。楽器を武器として扱う資格を示す。' },
+    astraExpBoost: { id: 'astraExpBoost', name: '1日経験値2倍', nameEn: 'EXP ×2 (1 DAY)', category: 'consumable', rarity: 'epic', noSell: true, durationMs: 24 * 60 * 60 * 1000, description: '拠点で使うと24時間、敵撃破EXPとJOB EXPが2倍になる。追加使用で残り時間を24時間延長する。' },
+    blessedProtectionArcana: { id: 'blessedProtectionArcana', name: '祝福された保護のアルカナ', nameEn: 'BLESSED PROTECTION ARCANA', category: 'special', rarity: 'legendary', noSell: true, description: '武器強化前に1個消費し、強化に失敗した場合も武器・OP・現在の強化値を維持する。' },
     rebirthArcana: { id: 'rebirthArcana', name: '輪廻のアルカナ', nameEn: 'ARCANA OF REBIRTH', category: 'special', rarity: 'legendary', noSell: true, description: '極めた力を捨て、さらなる高みへ至るためのアルカナ。JOB Lv20からの転生に1個消費する。' },
 
     // ══ D1 通常工房装備（24種）══════════════════════════════════

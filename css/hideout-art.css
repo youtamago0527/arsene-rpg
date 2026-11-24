@@ -381,6 +381,20 @@
 }
 .hideout-art-shell .hideout-resources>button>small::before{display:none!important}
 
+.hideout-art-shell #login-bonus-open[data-reward-pending="true"] > small {
+  left: 50%!important;
+  right: auto!important;
+  width: max-content!important;
+  min-height: 10px;
+  padding-inline: 5px;
+  border-radius: 9px;
+  background: #922444;
+  color: #fff2de!important;
+  font-size: clamp(7px, 1.85vw, 11px)!important;
+  letter-spacing: .03em!important;
+  transform: translateX(-50%);
+}
+
 /* 京介：金黒の上下分割素材。ライブHP/MPは右上の余白へ寄せ、
    下部画像の実際の金枠へ各タップ領域を個別に合わせる。 */
 .hideout-art-shell[data-selected-character-id="kyosuke"] .hideout-top-art{left:1.1%!important;width:97.8%!important}
