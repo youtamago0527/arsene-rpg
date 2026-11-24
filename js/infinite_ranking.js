@@ -142,33 +142,42 @@
   const tiers = values => '<dl class="is-rank-tiers">' + [['1位',values.first],['2〜5位',values.topFive],['6〜10位',values.topTen]]
     .map(([label, points]) => '<div><dt>' + label + '</dt><dd>' + format.format(points) + ' pt</dd></div>').join('') + '</dl>';
 
-  function boardHtml(data) {
-    const rows = data.rows.map(row => `<li${row.isMe ? ' class="is-rank-me"' : ''}><b>${row.place}</b><span>${escape(row.displayName)}</span><strong>F${row.floor}</strong></li>`);
-    const rewardHtml = (kind, label) => {
-      const rewards = data.rewards.filter(row => row.kind === kind).map(row =>
-        `<li><span>${escape(row.date)} ・ ${row.place}位</span><strong>+${format.format(row.points)} pt</strong></li>`);
-      return `<h4>${label}</h4><ul>${rewards.join('') || '<li>付与履歴はありません。</li>'}</ul>`;
-    };
-    return `<div class="is-rank-summary"><b>${escape(data.displayName)}</b><strong>${format.format(data.points)} <small>アルカナpt</small></strong></div>
-      <p>自分の順位 <b>${data.me ? `${data.me.place}位 ・ F${data.me.floor}` : '記録なし'}</b></p>
-      <ol aria-label="無限奏廊の順位">${rows.join('') || '<li>まだ帰還記録がありません。</li>'}</ol>
-      <h3>日次報酬</h3><p>次の締め ${time(data.nextDailyAt)}（日本時間）</p>${tiers({first:1000,topFive:500,topTen:300})}
-      <h3>週間報酬</h3><p>次の締め ${time(data.nextWeeklyAt)}（日本時間）</p>
-      ${data.weeklyRewards ? tiers(data.weeklyRewards) : '<p>週間報酬の配分は未設定です。</p>'}
-      <h3>アルカナポイント付与履歴</h3>${rewardHtml('daily', '日次')}${rewardHtml('weekly', '週間')}`;
+  function boardHtml(data, period, history) {
+    const overall = period === 'overall';
+    const me = overall ? data.overallMe : data.me;
+    const rows = (overall ? data.overallRows : data.rows).map(row => `<li class="rank-place-${row.place}${row.isMe ? ' is-rank-me' : ''}">
+      <b>${row.place}位</b><span>${escape(row.displayName)}</span><strong>F${row.floor}</strong></li>`);
+    const tabs = (key, choices, selected) => choices.map(([id,label]) =>
+      `<button type="button" data-rank-${key}="${id}" aria-pressed="${id===selected}">${label}</button>`).join('');
+    const rewards = data.rewards.filter(row => row.kind === history).map(row =>
+      `<li><span>${escape(row.date)} ・ ${row.place}位</span><strong>+${format.format(row.points)} pt</strong></li>`);
+    return `<section class="rank-frame rank-summary">
+      <div class="rank-player"><img src="assets/ui/rank-crest.webp" alt=""><b>${escape(data.displayName)}</b></div>
+      <div><small>現在の順位</small><strong>${me ? me.place+'位':'―'}</strong></div>
+      <div><small>アルカナpt</small><strong>${format.format(data.points)} pt</strong></div>
+      <p>到達階層 <b>${me ? 'F'+me.floor:'―'}</b>　│　 自己ベスト <b>${data.overallMe ? 'F'+data.overallMe.floor:'―'}</b></p></section>
+      <nav aria-label="順位の期間">${tabs('period',[['overall','総合ランキング'],['weekly','週間ランキング']],period)}</nav>
+      <section class="rank-frame"><ol aria-label="無限奏廊の順位">${rows.join('') || '<li>まだ帰還記録がありません。</li>'}</ol></section>
+      <section class="rank-frame"><h3>ランキング報酬</h3><div class="rank-prizes">
+      <article><h4>日次報酬</h4><small>次の締め ${time(data.nextDailyAt)}</small>${tiers({first:1000,topFive:500,topTen:300})}</article>
+      <article><h4>週間報酬</h4><small>次の締め ${time(data.nextWeeklyAt)}</small>${data.weeklyRewards ? tiers(data.weeklyRewards) : '<p>週間報酬の配分は未設定です。</p>'}</article></div></section>
+      <section class="rank-frame"><div class="rank-history"><h3>アルカナポイント付与履歴</h3><nav aria-label="付与履歴の期間">${tabs('history',[['daily','日次'],['weekly','週間']],history)}</nav></div>
+      <ul>${rewards.join('') || '<li>付与履歴はありません。</li>'}</ul></section>`;
   }
 
-  async function loadBoard(game, content) {
+
+
+  async function loadBoard(game, content, render) {
     const session = await account(true);
     if (!session.player.name) {
-      content.innerHTML = `<form data-is-rank-form><label>ランキング表示名<input name="displayName" minlength="2" maxlength="20" required></label>
+      content.innerHTML = `<form data-is-rank-form><label>ランキングに登録する名前<input placeholder="表示名を入力" autocomplete="off" name="displayName" minlength="2" maxlength="20" required></label>
         <p>表示名・順位・到達階をランキングに表示します。</p><button type="submit">登録する</button><p data-is-rank-error role="status"></p></form>`;
       return;
     }
     write(accountKey, session.nativeId);
     await flush(game).catch(() => { notice = '帰還記録を送信待ちにしています。'; });
     const data = await withAccount('/v1/leaderboard', undefined, { interactive:true });
-    content.innerHTML = boardHtml(data) + (notice ? `<p role="status">${escape(notice)}</p>` : '') + '<button data-is-rank-reload>更新する</button>';
+    render(data);
   }
 
   function open(game) {
@@ -180,12 +189,28 @@
     dialog.innerHTML = `<header><h2 id="is-ranking-title">無限奏廊ランキング</h2><button data-is-rank-close aria-label="閉じる">×</button></header>
       <div data-is-rank-content aria-live="polite"></div>`;
     const content = dialog.querySelector('[data-is-rank-content]');
+    let board, period = 'overall', history = 'daily';
+    const render = data => {
+      board = data;
+      if (!Array.isArray(data.overallRows)) period = 'weekly';
+      content.innerHTML = boardHtml(data, period, history) + (notice ? '<p role="status">' + escape(notice) + '</p>' : '') + '<button data-is-rank-reload>更新する</button>';
+      if (!Array.isArray(data.overallRows)) content.querySelector('[data-rank-period="overall"]').disabled = true;
+    };
     const load = async () => {
       content.innerHTML = '<p>ランキングに接続中…</p>';
-      try { await loadBoard(game, content); }
+      try { await loadBoard(game, content, render); }
       catch (error) { content.innerHTML = `<p>${escape(describe(error))}</p><button data-is-rank-reload>再試行</button>`; }
     };
     dialog.addEventListener('click', event => {
+      const tab = event.target.closest('[data-rank-period], [data-rank-history]');
+      if (tab && board) {
+        if (tab.dataset.rankPeriod) period = tab.dataset.rankPeriod;
+        if (tab.dataset.rankHistory) history = tab.dataset.rankHistory;
+        render(board);
+        const key = tab.dataset.rankPeriod ? 'period' : 'history';
+        content.querySelector('[data-rank-' + key + '][aria-pressed="true"]').focus({preventScroll:true});
+        return;
+      }
       if (event.target.closest('[data-is-rank-close]')) dialog.close();
       else if (event.target.closest('[data-is-rank-reload]')) void load();
     });

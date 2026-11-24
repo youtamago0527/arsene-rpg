@@ -29,9 +29,22 @@ export async function getLeaderboard(db, playerId, now) {
     db.prepare(`SELECT cutoff, kind, place, points FROM reward_ledger WHERE player_id = ?
       ORDER BY cutoff DESC, kind ASC LIMIT 30`).bind(playerId),
     db.prepare(`SELECT first_points AS first, top_five_points AS topFive, top_ten_points AS topTen
-      FROM weekly_reward_policy WHERE effective_week <= ? ORDER BY effective_week DESC LIMIT 1`).bind(dayLabel(week))
+      FROM weekly_reward_policy WHERE effective_week <= ? ORDER BY effective_week DESC LIMIT 1`).bind(dayLabel(week)),
+    db.prepare(`WITH attempts AS (
+      SELECT *, ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY floor DESC, received_at ASC) AS best
+      FROM weekly_best
+    ), ranked AS (
+      SELECT player_id, floor, ROW_NUMBER() OVER (ORDER BY ${rankingOrder}) AS place
+      FROM attempts WHERE best = 1
+    )
+    SELECT place, floor, display_name AS displayName, player_id = ?1 AS isMe
+    FROM ranked JOIN players ON players.id = ranked.player_id
+    WHERE place <= 50 OR player_id = ?1 ORDER BY place`).bind(playerId)
   ]);
+  const lifetime = results[5].results;
   return {
+    overallRows: lifetime.filter(row => row.place <= 50),
+    overallMe: lifetime.find(row => row.isMe) || null,
     rows: results[0].results.map((row, index) => ({...row, place:index+1})),
     me: results[1].results[0] || null,
     points: results[2].results[0].points,

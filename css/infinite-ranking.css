@@ -1,51 +1,37 @@
 #is-ranking-dialog {
-  box-sizing: border-box;
-  width: min(520px, calc(100% - max(24px, var(--safe-left) + var(--safe-right))));
-  max-height: calc(var(--app-viewport-height, 100dvh) - var(--safe-top, 0px) - var(--safe-bottom, 0px) - 24px);
-  padding: 0;
-  border: 1px solid #376687;
-  background: #06101e;
-  color: #f1f7ff;
-  font: 500 14px/1.55 "Noto Sans JP", system-ui, sans-serif;
-  overflow: auto;
+  box-sizing:border-box; width:min(560px,calc(100vw - 8px));
+  max-height:calc(var(--app-viewport-height,100dvh) - var(--safe-top,0px) - var(--safe-bottom,0px) - 8px);
+  margin:auto;padding:0;border:1px solid #4b4969;color:#ecf4ff;
+  background:linear-gradient(155deg,#091024,#02091b 65%,#100b22);
+  font:500 clamp(13px,3.2vw,16px)/1.45 system-ui,sans-serif;overflow:auto;overscroll-behavior:contain;
 }
-#is-ranking-dialog::backdrop { background: #01040dd9; }
-#is-ranking-dialog > header {
-  position: sticky;
-  top: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 14px;
-  background: #101e31;
-  border-bottom: 1px solid #32536c;
-}
-#is-ranking-dialog h2 { font-size: 18px; margin: 0; }
-#is-ranking-dialog h3 { font-size: 15px; margin: 17px 0 3px; }
-#is-ranking-dialog h4 { margin: 10px 0 4px; }
-#is-ranking-dialog p { margin: 4px 0 10px; }
-#is-ranking-dialog [data-is-rank-content] { padding: 12px 14px; }
-#is-ranking-dialog button {
-  min-height: 44px;
-  min-width: 44px;
-  padding: 5px 12px;
-  border: 1px solid #427b9c;
-  background: #152c45;
-  color: inherit;
-  font: inherit;
-}
-#is-ranking-dialog button:disabled { opacity: .55; }
-#is-ranking-dialog input { display: block; box-sizing: border-box; width: 100%; min-height: 44px; margin: 6px 0; padding: 8px; border: 1px solid #496784; background: #091526; color: inherit; font: inherit; font-size: 16px; }
-.is-rank-summary { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px; background: #152137; }
-.is-rank-summary b { overflow-wrap: anywhere; }
-.is-rank-summary strong { color: #8fe9ff; white-space: nowrap; }
-#is-ranking-dialog ol, #is-ranking-dialog ul { list-style: none; padding: 0; margin: 6px 0 12px; }
-#is-ranking-dialog ol { max-height: 36vh; overflow: auto; overscroll-behavior: contain; }
-#is-ranking-dialog li { display: flex; align-items: center; gap: 9px; padding: 7px 6px; border-bottom: 1px solid #293b50; }
-#is-ranking-dialog li strong { margin-left: auto; white-space: nowrap; }
-#is-ranking-dialog li span { overflow-wrap: anywhere; }
-#is-ranking-dialog li.is-rank-me { background: #183f5a; }
-.is-rank-tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 6px 0; text-align: center; }
-.is-rank-tiers div { padding: 6px 2px; background: #122035; }
-.is-rank-tiers dd { margin: 0; color: #8fe9ff; font-weight: 700; }
+#is-ranking-dialog *{box-sizing:border-box}
+#is-ranking-dialog::backdrop{background:#01040de8}
+#is-ranking-dialog>header{position:relative;width:100%;aspect-ratio:720/154;background:url('../assets/ui/rank-header.webp') center/100% 100%}
+#is-ranking-title,#is-ranking-dialog ol li:nth-child(-n+3)[class^=rank-place] b{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+#is-ranking-dialog button{color:#f2f5ff;font:inherit;font-weight:650;border:1px solid #627088;border-radius:5px;background:linear-gradient(#13243d,#040b19);min-height:40px;padding:5px 10px;cursor:pointer}
+#is-ranking-dialog header [data-is-rank-close]{position:absolute;right:0;top:0;width:max(12%,44px);height:max(53%,44px);color:transparent;background:transparent;border:0}
+#is-ranking-dialog button:focus-visible{outline:2px solid #acf2ff;outline-offset:-2px}
+#is-ranking-dialog button[aria-pressed=true]{border-color:#72dbff;box-shadow:inset 0 0 12px #14698b;background:linear-gradient(#143653,#061327)}
+#is-ranking-dialog button:disabled{opacity:.55}
+#is-ranking-dialog [data-is-rank-content]{display:grid;gap:8px;padding:0 6px 12px}
+#is-ranking-dialog .rank-frame,#is-ranking-dialog form{border:10px solid transparent;border-image:url('../assets/ui/rank-frame.webp') 26 24 stretch;background:#030c1d;padding:2px 4px}
+#is-ranking-dialog h3,#is-ranking-dialog h4{margin:2px 0 5px;font-family:serif;color:#f9eddf;letter-spacing:.04em}
+#is-ranking-dialog h3{text-align:center;font-size:1.12em}
+#is-ranking-dialog p{margin:6px 0}
+.rank-summary{display:grid;grid-template-columns:minmax(0,1.15fr) 1fr 1fr;align-items:center;text-align:center}
+.rank-summary small,.rank-summary strong{display:block}.rank-summary strong{font-size:1.25em;color:#ffdd7c}.rank-summary>div:nth-child(3) strong,.rank-summary p b,#is-ranking-dialog li strong,.is-rank-tiers dd{color:#9eefff}
+.rank-summary .rank-player{display:flex;align-items:center;gap:4px;text-align:left;overflow-wrap:anywhere}.rank-player img{width:28%;height:auto}.rank-summary p{grid-column:1/-1;border-top:1px solid #435069;padding-top:4px}
+#is-ranking-dialog nav{display:flex;gap:4px}#is-ranking-dialog nav button{flex:1}
+#is-ranking-dialog ol,#is-ranking-dialog ul{list-style:none;padding:0;margin:0}
+#is-ranking-dialog ol{max-height:40dvh;overflow:auto}
+#is-ranking-dialog li{display:flex;gap:8px;align-items:center;border-bottom:1px solid #34455e;padding:4px 6px}
+#is-ranking-dialog li span{overflow-wrap:anywhere;min-width:0}#is-ranking-dialog li strong{margin-left:auto;white-space:nowrap}
+#is-ranking-dialog ol li>b{min-width:18%;text-align:center}
+#is-ranking-dialog ol li:is(.rank-place-1,.rank-place-2,.rank-place-3){min-height:clamp(32px,8vw,45px);padding-left:37%;border:1px solid var(--metal);border-radius:12px;background:var(--badge) left center/36% 100% no-repeat,linear-gradient(#091124,#091022 65%,#242331);box-shadow:inset 0 0 5px var(--metal);margin-bottom:3px}
+.rank-place-1{--metal:#e2b65e;--badge:url('../assets/ui/rank-gold.webp')}.rank-place-2{--metal:#a1a9c9;--badge:url('../assets/ui/rank-silver.webp')}.rank-place-3{--metal:#c18d79;--badge:url('../assets/ui/rank-bronze.webp')}.is-rank-me span{color:#ffe5a4}
+.rank-prizes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.rank-prizes article{border:1px solid #3b7594;border-radius:5px;padding:5px;background:linear-gradient(140deg,#102b40,#071124)}.rank-prizes article+article{border-color:#754d94;background:linear-gradient(140deg,#281b3a,#0c0e24)}
+.rank-prizes small{font-size:.83em}.rank-prizes p{font-size:.88em}
+.is-rank-tiers{display:flex;flex-wrap:wrap;gap:3px;margin:7px 0 0}.is-rank-tiers div{flex:1;text-align:center;background:#101f33;border:1px solid #345572;font-size:.85em}.is-rank-tiers dd{margin:0;font-weight:bold}
+.rank-history{display:flex;align-items:center;justify-content:space-between;gap:4px}.rank-history nav button{white-space:nowrap}#is-ranking-dialog .rank-history h3{text-align:left}
+#is-ranking-dialog form label{font-weight:700}#is-ranking-dialog input{display:block;width:100%;font:inherit;font-size:16px;color:white;background:#071426;border:1px solid #667e99;border-radius:4px;padding:10px;margin:6px 0}

@@ -138,6 +138,9 @@ test('registration, score ownership, replay, rank boundaries, and one shared Mon
 
   const fresh = await request('/leaderboard', { token:first.token });
   assert.deepEqual(fresh.me, { floor:220, place:1 });
+  assert.equal(fresh.overallMe.floor,220);
+  assert.equal(fresh.overallRows[1].floor,210);
+  assert.equal(fresh.rows.length,1);
   assert.equal(fresh.points,5500);
   assert(fresh.rewards.some(row => row.kind === 'weekly' && row.place === 2));
   assert(fresh.rewards.some(row => row.kind === 'daily' && row.place === 1));
