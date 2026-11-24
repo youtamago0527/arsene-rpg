@@ -3,6 +3,9 @@
   'use strict';
   const D = window.ARSENE_DATA;
   const op = (key, label, grade) => ({key, label, grade});
+  // Fixed ranges for action and recovery effects, including on INFINITY equipment.
+  const tactical = (key,label,grade,table,values,totalCapPercent) =>
+    ({key,label,grade,table,values,totalCapPercent});
   D.infiniteGearV2 = {
     tiers: [
       {id:'common', name:'COMMON', prefix:'異界の', color:'#c3c8d1', count:[1,1], values:[3,10], weights:[100,0,0,0,0]},
@@ -62,7 +65,17 @@
       { ...op('hitMpRecoveryRate','被ダメージ時MP回復',3), table:'armor', chance:.0075, values:[.25,.5,.75,1], totalCapPercent:2 },
       op('echoDamageRate','追加ダメージ',4),op('openingDamageRate','初手ダメージ',4),
       op('executeDamageRate','敵HP30%以下ダメージ',4),op('healthyDamageRate','自身HP90%以上ダメージ',4),
-      op('groupDamageRate','敵複数時ダメージ',4),op('mpEfficiencyRate','消費MP効率',4)
+      op('groupDamageRate','敵複数時ダメージ',4),op('mpEfficiencyRate','消費MP効率',4),
+      tactical('firstHitWardRate','初撃防壁',3,'armor',[8,12,16,20],30),
+      tactical('physicalDamageReductionPercent','物理耐性',2,'armor',[2,3,4,5],12),
+      tactical('magicDamageReductionPercent','魔法耐性',2,'armor',[2,3,4,5],12),
+      tactical('guardMpRate','防御充填',3,'armor',[3,4,5],8),
+      tactical('guardStrikeRate','守勢からの一撃',4,'armor',[12,16,20,25],40),
+      tactical('turnHealRate','戦闘再生',3,'accessoryHp',[1,2,3],3),
+      tactical('victoryHealRate','戦後手当',2,'accessoryHp',[2,3,4],4),
+      tactical('potionBoostRate','薬効増幅',2,'accessoryHp',[10,15,20,25],25),
+      tactical('weaponDefBreakRate','護り崩し',3,'weapon',[6,8,10,12],12),
+      tactical('basicToSkillRate','連携強化',4,'weapon',[12,16,20,25],25)
     ]
   };
 })();

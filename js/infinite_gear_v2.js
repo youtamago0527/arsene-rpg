@@ -45,15 +45,19 @@
     return Math.floor(scale * Math.expm1(-Math.log1p(-sample(random))/shape));
   }
 
+  function rollOption(op,rarity,floor,random) {
+    const value = op.values ? op.values[Math.floor(sample(random)*op.values.length)]
+      : rarity.values ? between(rarity.values,random)
+        : clampInteger(floor*cfg.infinity.opMinimumPerFloor + tail(random,cfg.infinity.opTail),cfg.limits.optionPercent);
+    return {key:op.key,grade:cfg.grades[op.grade],value};
+  }
+
   function rollOptions(rarity,part,floor,random) {
     const count = between(rarity.count,random), ops = [];
     // These odds apply once per eligible item, including when the ordinary grade pool runs out.
     const special = rareOptions.find(op=>rarity.weights[op.grade] && allowedOn(op,part) && sample(random)<op.chance);
-    if (special) ops.push({
-      key:special.key, grade:cfg.grades[special.grade],
-      value:special.values[Math.floor(sample(random)*special.values.length)]
-    });
-    const available = cfg.ops.filter(op=>!op.chance);
+    if (special) ops.push(rollOption(special,rarity,floor,random));
+    const available = cfg.ops.filter(op=>!op.chance && allowedOn(op,part));
     for (let i=ops.length;i<count;i++) {
       const weights = rarity.weights.map((weight,grade)=>available.some(op=>op.grade===grade) ? weight : 0);
       const grade = weighted(weights,random);
@@ -61,9 +65,7 @@
       if (!pool.length) throw new Error('Not enough unique OPs in Infinite gear grade tables');
       const pick = pool[Math.floor(sample(random)*pool.length)];
       available.splice(available.indexOf(pick),1);
-      const value = rarity.values ? between(rarity.values,random)
-        : clampInteger(floor*cfg.infinity.opMinimumPerFloor + tail(random,cfg.infinity.opTail),cfg.limits.optionPercent);
-      ops.push({key:pick.key,grade:cfg.grades[grade],value});
+      ops.push(rollOption(pick,rarity,floor,random));
     }
     return ops;
   }
@@ -148,7 +150,7 @@
       !target.ops.some((existing,index)=>existing.key===op.key && index!==targetIndex);
   }
 
-  function damage(value, rates, {basic,skill,enemy,critical,turn,hp,maxHp,alive}) {
+  function damage(value, rates, {basic,skill,enemy,critical,turn,hp,maxHp,alive,previousBasicHit,previousGuardHit}) {
     const multiplier =
       (!basic ? rate(rates,'skillDamageRate') : 0) +
       (skill.element ? rate(rates,'elementDamageRate') : 0) +
@@ -156,7 +158,9 @@
       (critical ? rate(rates,'criticalDamageRate') : 0) +
       (turn===1 ? rate(rates,'openingDamageRate') : 0) +
       (enemy.hp>0 && enemy.hp<=enemy.stats?.maxHp*.3 ? rate(rates,'executeDamageRate') : 0) +
-      (hp>=maxHp*.9 ? rate(rates,'healthyDamageRate') : 0) + (alive>=2 ? rate(rates,'groupDamageRate') : 0);
+      (hp>=maxHp*.9 ? rate(rates,'healthyDamageRate') : 0) + (alive>=2 ? rate(rates,'groupDamageRate') : 0) +
+      (!basic && previousBasicHit ? rate(rates,'basicToSkillRate') : 0) +
+      (previousGuardHit ? rate(rates,'guardStrikeRate') : 0);
     return Math.min(cfg.limits.stat,value*(1+multiplier));
   }
 

@@ -2709,9 +2709,14 @@
       const key = effect.hp || effect.hpRate ? 'hp' : effect.mp || effect.mpRate ? 'mp' : null;
       if (!key) return null;
       const maxKey = key === 'hp' ? 'maxHp' : 'maxMp';
-      const rate = Number(effect[`${key}Rate`]) || 0;
-      const amount = rate > 0 ? Math.max(1, Math.ceil((Number(stats?.[maxKey]) || 0) * rate)) : Math.max(0, Number(effect[key]) || 0);
-      return { key, maxKey, rate, amount, label: rate > 0 ? `${key.toUpperCase()} ${Math.round(rate * 100)}%` : `${key.toUpperCase()} +${amount}` };
+      const baseRate = Number(effect[`${key}Rate`]) || 0;
+      const baseAmount = Math.max(0, Number(effect[key]) || 0);
+      const boost = this.owgEffects?.().potionBoostRate || 0;
+      const rate = baseRate * (1 + boost);
+      const amount = rate > 0 ? Math.max(1, Math.ceil((Number(stats?.[maxKey]) || 0) * rate - (boost ? 1e-9 : 0)))
+        : boost ? Math.round(baseAmount * (1 + boost)) : baseAmount;
+      const percent = boost ? Math.round(rate * 1000) / 10 : Math.round(rate * 100);
+      return { key, maxKey, rate, amount, label: rate > 0 ? `${key.toUpperCase()} ${percent}%` : `${key.toUpperCase()} +${amount}` };
     }
     battleUsableItems() {
       return Object.values(D.items)
@@ -2885,7 +2890,8 @@
       const buffRate = isMagicSkill ? (this.turn <= (enemy.mdefBuffUntil || 0) ? (enemy.mdefBuffRate || 0) : 0) : (this.turn <= (enemy.defBuffUntil || 0) ? (enemy.defBuffRate || 0) : 0);
       const fortissimo = this.turn <= (enemy.fortissimoUntil || 0) ? (enemy.fortissimoRate || 0) : 0;
       const criticalPierce = critical ? .50 : 0;
-      const effectiveDef = neutral ? 0 : enemyDefStat * (1 + buffRate + fortissimo) * (1 - defDown) * (1 - (skill.ignoreDef || 0)) * (1 - criticalPierce);
+      const breach = enemy.owgBreachUntil >= this.turn ? enemy.owgBreachRate : 0;
+      const effectiveDef = neutral ? 0 : enemyDefStat * (1 + buffRate + fortissimo) * (1 - defDown) * (1 - (skill.ignoreDef || 0)) * (1 - criticalPierce) * (1 - breach);
       let value = skill.kind === 'hybrid' ? (s.str || 0) * skill.strScale + (s.mag || 0) * skill.magScale - effectiveDef : attackPower * power + (s.agi || 0) * (skill.agiScale || 0) - effectiveDef;
       // ちからためは物理攻撃にのみ乗る（杖の通常攻撃は damageType:'magical' なので対象外）
       const isPhysical = skill.kind === 'physical' || (skill.kind === 'weapon' && skill.damageType !== 'magical');
@@ -2920,11 +2926,13 @@
       const adjusted = this.owgAdjustDamage?.(value, skill, enemy, critical);
       return { ...(adjusted || { value: Math.max(1, Math.round(value)) }), critical, weak };
     }
-    applyPlayerHit(target, hit) {
+    applyPlayerHit(target, hit, skill) {
       if (target.infiniteHp) target.debugDamageTaken = (target.debugDamageTaken || 0) + hit.value;
       const previousHp = target.hp;
       target.hp = target.infiniteHp ? target.stats.maxHp : Math.max(target.cannotDefeat ? 1 : 0, target.hp - hit.value);
-      if (this.owgRestoreFromDamage?.('hp', previousHp - target.hp) > 0) this.persistVitals();
+      const actual = previousHp - target.hp;
+      if (this.owgRestoreFromDamage?.('hp', actual) > 0) this.persistVitals();
+      this.owgAfterLandedHit?.(target, actual, skill);
     }
     showPlayerHit(element, hit, type = 'damage') {
       const label = hit.additionalDamage ? `${hit.value - hit.additionalDamage} (+${hit.additionalDamage})` : hit.value;
@@ -2995,7 +3003,7 @@
         const d = this.damageFor(hitSkill, target, outcome); total += d.value; if (d.critical) criticals++;
         this.refundMpFromSpell(d.value, skill); // 魔導士《魔力還流》
         perHit[target.uid] = (perHit[target.uid] || 0) + d.value;
-        this.applyPlayerHit(target, d);
+        this.applyPlayerHit(target, d, skill);
         this.recordSeripesHit(target, skill, d.value);
         // 撃破した瞬間に見た目も倒す。ここで付けないと「HP0なのに敵が残る」状態になる。
         if (target.hp <= 0) { target.alive = false; tEl.classList.add('defeated'); }
@@ -3290,7 +3298,7 @@
         if (!outcome.hit) { this.comboDanceMiss(); this.triggerEvade('player', target, skill, { source: 'playerAttackAll' }); this.floating(el, 'EVADE', 'miss'); await this.battleSleep(180); continue; }
         this.comboDanceHit();
         el.classList.add('hit');
-        const d = this.damageFor(skill, target, outcome); this.applyPlayerHit(target, d);
+        const d = this.damageFor(skill, target, outcome); this.applyPlayerHit(target, d, skill);
         this.refundMpFromSpell(d.value, skill); // 魔導士《魔力還流》
         this.recordSeripesHit(target, skill, d.value);
         this.showPlayerHit(el, d); if (d.weak && !d.critical) this.floating(el, 'WEAK!', 'weak-label'); this.attackImpactFx ? this.attackImpactFx(skill, el, d.critical) : this.audio.sfx(d.critical ? 'critical' : 'enemyHit'); this.updateHUD();
@@ -3325,6 +3333,7 @@
       const lowHpSkill = this.activePassives().find(p => p.passiveEffect?.type === 'lowHpDamageReduction');
       const lowHpPassive = lowHpSkill?.passiveEffect;
       if (lowHpPassive && before / Math.max(1, this.player.stats.maxHp) <= (lowHpPassive.hpThreshold ?? .30)) damage = Math.max(0, Math.round(damage * (1 - this.passiveRate(lowHpSkill))));
+      damage = this.owgOpeningWard?.(damage) ?? damage;
       // REPRISE FULL SET は既存の《不落》(lastStand) をそのまま借りる。
       // 守護士は素で《不落》を持つためセットを着ても何も増えない。
       // 本家適性として「HPが減らずに耐える」へ格上げする（回数は1回のまま）。
@@ -3367,6 +3376,7 @@
         }
       }
       this.owgRestoreFromDamage?.('mp', actual);
+      this.owgOnGuardHit?.(actual);
       this.persistVitals(); return actual;
     }
     async enemySupportAction(enemy, chosen) {
