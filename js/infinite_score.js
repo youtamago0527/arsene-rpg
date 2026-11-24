@@ -495,7 +495,7 @@
     }
     panel.dataset.panel='infinite-score-equipment';
     panel.innerHTML=`<main class="rg-screen"><header class="rg-head"><h2>装備</h2><button class="panel-home" data-is-action="explore">探索画面へ</button></header>
-      <div class="rg-slots">${slotRows}</div>${picker || '<p class="rg-hint">付け替えたい部位を選んでください。</p>'}${this.owgResonanceSectionHTML?.()||''}</main>`;
+      <div class="rg-slots">${slotRows}</div>${picker || '<p class="rg-hint">付け替えたい部位を選んでください。</p>'}</main>`;
   };
   document.addEventListener('click',event=>{
     const button=event.target.closest('.rg-screen button'), game=window.arseneGame;
