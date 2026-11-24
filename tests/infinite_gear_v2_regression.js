@@ -70,7 +70,8 @@ test('base stats, independent option counts and values, and grade pools', () => 
       assert.equal(new Set(unique.map(x=>x.key)).size,unique.length);
       for (const op of gear.ops) {
         const special = cfg.ops.find(definition=>definition.key===op.key && definition.values);
-        if (special) assert(special.values.includes(op.value));
+        if (special?.uncappedGrowth) assert(op.value>=special.values[0]);
+        else if (special) assert(special.values.includes(op.value));
         else assert(op.value>=rank.values[0]&&op.value<=rank.values[1]);
         assert(rank.weights[cfg.grades.indexOf(op.grade)]>0);
       }
@@ -89,7 +90,8 @@ test('INFINITY guarantees, tail behavior, and format/stat safety', () => {
     assert.equal(item.ops.length,6);
     assert.equal(roll(6,'sword',floor,()=>0).baseStats.attackPower,1+(floor-1)*20);
     for (const op of item.ops) {
-      const fixed = cfg.ops.find(definition=>definition.key===op.key)?.values;
+      const definition = cfg.ops.find(definition=>definition.key===op.key);
+      const fixed = definition.uncappedGrowth ? null : definition.values;
       assert.equal(op.value,fixed?.[0] ?? floor);
     }
     const unique=nonRepeatableOps(item);
@@ -240,15 +242,24 @@ test('returned reward OPs require equipped gear and a normal battle, and add tog
   assert.match(statModel.opText(sword.ops[0]),/通常D.*JOB EXP/);
 });
 
-test('reward options can roll six times, be transplanted twice, and fill all seven equipment slots', () => {
+test('reward OPs roll past their base ranges and can stack a 1,000% roll into all 42 slots', () => {
   const expKey='normalDungeonExpRate', goldKey='normalDungeonGoldRate';
   const parts=['sword','buckler','head','body','arms','feet','accessory'];
   const near=(actual,expected)=>assert(Math.abs(actual-expected)<1e-12);
-  for (const [key,gradeDraw,value,rate] of [[expKey,.20,20,8.4],[goldKey,.025,25,10.5]]) {
-    const draws=[0,0,0,...Array.from({length:6},()=>[gradeDraw,.99999,.99999]).flat()];
-    const source=roll(6,'accessory',1,()=>draws.shift()??.999,'source');
+  for (const [key,gradeDraw,normalTier] of [[expKey,.20,5],[goldKey,.025,3]]) {
+    const draws=[0,0,0,...Array.from({length:6},()=>[gradeDraw,.99999,0]).flat()];
+    const source=roll(6,'accessory',1000,()=>draws.shift()??.999,'source');
     assert.equal(source.ops.length,6);
-    assert(source.ops.every(op=>op.key===key && op.value===value));
+    assert(source.ops.every(op=>op.key===key && op.value===1000));
+    const extremeDraws=[0,0,0,gradeDraw,.99999,1];
+    const extreme=roll(6,'accessory',1000,()=>extremeDraws.shift()??.5).ops[0];
+    assert.equal(extreme.key,key);
+    assert(extreme.value>cfg.limits.optionPercent);
+    assert.equal(statModel.optionRates([{...source,ops:[extreme]}])[key],extreme.value/100);
+    const normalDraws=[0,0,0,normalTier===5?.20:.99999,.99999,0,1];
+    const normal=roll(normalTier,'accessory',1,()=>normalDraws.shift()??.5).ops[0];
+    assert.equal(normal.key,key);
+    assert(normal.value>cfg.limits.optionPercent);
     const target=roll(6,'accessory',1,()=>.5,'target');
     target.ops[0]={...source.ops[0]};
     assert(statModel.canReplace(source,target,0,1),'repeatable OP may fill another slot');
@@ -260,9 +271,9 @@ test('reward options can roll six times, be transplanted twice, and fill all sev
     game.profile.otherWorldGear=equipment;
     game.profile.otherWorldEquipment=Object.fromEntries(equipment.map(gear=>[gear.slot,gear.uid]));
     game.battleMode='slime';
-    near(statModel.optionRates(equipment)[key],rate);
-    if (key===expKey) near(game.rewardExpMultiplier(),1.5*9.4);
-    else near(game.rewardGoldMultiplier(),2*11.5);
+    near(statModel.optionRates(equipment)[key],420);
+    if (key===expKey) near(game.rewardExpMultiplier(),1.5*421);
+    else near(game.rewardGoldMultiplier(),2*421);
   }
 });
 
