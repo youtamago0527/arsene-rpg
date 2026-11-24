@@ -3622,15 +3622,16 @@
       (enemy.rolledDrops || []).forEach(([id, n]) => { drops[id] = (drops[id] || 0) + n; });
       Object.entries(enemy.stolenItems || {}).forEach(([id, n]) => { drops[id] = (drops[id] || 0) + n; });
       if (recoveredGold || Object.keys(enemy.stolenItems || {}).length) this.setLog(`${enemy.name}を撃破！ 盗まれた戦利品を取り返した。`);
-      const levels = this.applyRewards({ exp, gold, drops });
+      const awarded = { exp, gold };
+      const levels = this.applyRewards({ exp, gold, drops }, awarded);
       // 武器学EXPは撃破EXP比例ではなく、武器ACTIONの実行時に付与済み。
       const job = this.grantJobExp(exp);
-      rewards.exp += exp; rewards.gold += gold;
+      rewards.exp += awarded.exp; rewards.gold += awarded.gold;
       Object.entries(drops).forEach(([id, n]) => { rewards.drops[id] = (rewards.drops[id] || 0) + n; });
       rewards.levels.push(...levels); if (job) rewards.jobResults.push(job);
       if (job?.to > job?.from && !this.quickResolving) this.queueGrowthBubble('JOB Lv.UP!', `${job.jobName} Lv.${job.from} → ${job.to}`);
       this.updateHUD();
-      return { exp, gold };
+      return awarded;
     }
     battleSummaryHTML() {
       const r = this.battleRewards, notices = `${r?.quickReport || ''}${r?.checkpointNotice || ''}`; if (!r || (!r.exp && !r.gold && !Object.keys(r.drops).length)) return notices;

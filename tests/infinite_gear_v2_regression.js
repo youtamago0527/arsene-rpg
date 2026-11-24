@@ -16,6 +16,9 @@ class BattleGame {
   }
   equipmentDefinition(id) { return data.weapons[id] || data.armors[id]; }
   equipmentEffectRate() { return 0; }
+  rewardExpMultiplier() { return 1.5; }
+  rewardGoldMultiplier() { return 2; }
+  applyRewards(reward) { this.creditedReward=reward; return []; }
   async beginPlayerTurn() {}
   activeSetEffects() { return {}; }
   skillMpCost(skill) { return skill.mp; }
@@ -141,7 +144,7 @@ test('additional damage can exceed the final base hit, and recovery carries over
 });
 
 test('tactical OPs appear only on their equipment families and keep the listed values', () => {
-  const tactical = cfg.ops.filter(op=>op.values && !op.chance && !op.stats);
+  const tactical = cfg.ops.filter(op=>op.values && !op.chance && !op.stats && op.table);
   assert.equal(tactical.length,10);
   let seed=57823;
   const random=()=>((seed=(Math.imul(1664525,seed)+1013904223)>>>0)/2**32);
@@ -205,6 +208,45 @@ test('all-stat and paired options stack additively and transfer as one OP', () =
   assert.equal(game.totalStats().maxHp,108);
   assert.match(statModel.opText(all),/全能の律.*8%.*最大HP・MP/);
   assert.match(statModel.opText(source.ops[1]),/物理攻撃力・素早さ/);
+});
+
+test('returned reward OPs require equipped gear and a normal battle; combined bonuses are capped', () => {
+  const expKey='normalDungeonExpRate', goldKey='normalDungeonGoldRate';
+  const make=(part,uid)=>({...roll(5,part,20,()=>.5,uid),ops:[{key:expKey,value:20,grade:'LEGEND'},{key:goldKey,value:25,grade:'EPIC'}]});
+  const sword=make('sword','sword'), head=make('head','head'), ring=make('accessory','ring');
+  const game=gameWithGear(sword);
+  game.profile.infiniteScore.active=false;
+  game.profile.otherWorldGear=[sword,head,ring];
+  game.battleMode='slime';
+  assert.equal(game.rewardExpMultiplier(),1.5);
+  assert.equal(game.rewardGoldMultiplier(),2);
+  game.profile.otherWorldEquipment={rightHand:'sword',head:'head',accessory:'ring'};
+  assert(Math.abs(game.rewardExpMultiplier()-2.1)<1e-12);
+  assert.equal(game.rewardGoldMultiplier(),3.2);
+  for (const mode of ['infiniteScore','ow','owBoss','debugOverpower']) {
+    game.battleMode=mode;
+    assert.equal(game.rewardExpMultiplier(),1.5);
+    assert.equal(game.rewardGoldMultiplier(),2);
+  }
+  game.battleMode='myrthi';
+  assert.equal(game.rewardGoldMultiplier(),3.2);
+  game.profile.infiniteScore.active=true;
+  game.isRun().equipment={rightHand:sword.uid};
+  assert.equal(game.rewardExpMultiplier(),1.5);
+  assert.equal(game.rewardGoldMultiplier(),2);
+  assert.match(statModel.opText(sword.ops[0]),/通常D.*JOB EXP/);
+});
+
+test('awarded battle totals can include legacy OP bonuses without applying them twice', () => {
+  const game=gameWithGear();
+  game.profile.infiniteScore.active=false;
+  game.profile.otherWorldGear=[{uid:'old',itemId:'owg_boundary_sword',ops:[{key:'expUp',value:.1},{key:'goldUp',value:.2}]}];
+  game.profile.otherWorldEquipment={rightHand:'old'};
+  const awarded={exp:144,gold:142};
+  game.applyRewards({exp:144,gold:142,drops:{}},awarded);
+  assert.deepEqual(awarded,{exp:158,gold:170});
+  assert.equal(game.creditedReward.exp,158);
+  assert.equal(game.creditedReward.gold,170);
 });
 
 test('turn, guard, first-hit and three-hit procs stay scoped to their trigger', async () => {
