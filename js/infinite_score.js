@@ -467,37 +467,42 @@
     const rows=[...combatKeys,...baseKeys].map(k=>{
       const a=before[k]||0,b=after[k]||0,delta=Number((b-a).toFixed(2));
       return `<tr><th>${esc(labels[k]||k)}</th><td>${D().infiniteGear.number(a)}</td>${status?'':`<td>${D().infiniteGear.number(b)}</td><td class="${delta>0?'rg-up':delta<0?'rg-down':''}">${delta>0?'+':''}${D().infiniteGear.number(delta)}</td>`}</tr>`;
-    }).join('');
+    });
+    const table = entries => `<table><thead><tr><th>能力</th><th>現在</th>${status?'':'<th>候補</th><th>差</th>'}</tr></thead><tbody>${entries.join('')}</tbody></table>`;
+    const split = Math.ceil(rows.length / 2);
     return `<div class="rg-comparison"><p>${status?'現在のステータス':gearName(game,current)+' → '+gearName(game,chosen)}</p>
-      <table><thead><tr><th>能力</th><th>現在</th>${status?'':'<th>候補</th><th>差</th>'}</tr></thead><tbody>${rows}</tbody></table>
+      <div class="rg-stat-tables" role="group" aria-label="能力一覧">${table(rows.slice(0,split))}${table(rows.slice(split))}</div>
       ${chosen && current?.uid!==chosen.uid?`<button class="rg-confirm" data-is-run-equip="${esc(chosen.uid)}">${gearName(game,chosen)}に付け替える</button>`:''}</div>`;
   }
   P.isRenderEquipment=function(panel){
     const run=this.isRun(), slots=D().equipmentSlots;
     const active=slots.find(slot=>slot.id===this.isRunEquipSlot);
-    const slotRows=slots.map(slot=>{
-      const gear=this.isBagEntry(run.equipment[slot.id]);
-      return `<button class="rg-slot${gear?.rarity==='infinity'?' owg-infinity':''}" data-is-run-slot="${esc(slot.id)}" aria-expanded="${slot===active}" style="--accent:${rarityColor(this,gear)}">
-        ${gearIcon(slot.id,gear)}<span class="rg-slot-name">${esc(slot.name)}<small>${esc(slot.enName)}</small></span>
-        <span class="rg-lines">${gearLines(this,gear)}</span><span aria-hidden="true">›</span></button>`;
-    }).join('');
-    let picker='';
+    panel.dataset.panel='infinite-score-equipment';
     if(active){
+      const listTop=panel.querySelector('.rg-list')?.scrollTop || 0;
       const list=run.lootBag.filter(x=>x.kind==='equipment' && D().items[x.itemId]?.slot===active.id);
       const current=list.find(x=>x.uid===run.equipment[active.id]);
       const chosen=list.find(x=>x.uid===this.isEquipPreviewUid) || current || list[0];
       const status=this.isEquipShowStatus===true;
       const cards=list.map(x=>`<button class="rg-card${x.rarity==='infinity'?' owg-infinity':''}" data-rg-preview="${esc(x.uid)}" aria-pressed="${x===chosen}" style="--accent:${rarityColor(this,x)}">
         ${gearIcon(active.id,x)}<span class="rg-lines">${gearLines(this,x)}${x===current?'<small>装備中</small>':''}</span></button>`).join('');
-      picker=`<section class="rg-picker"><header><h3>${esc(active.name)}の装備</h3><button data-is-run-slot-close aria-label="候補を閉じる">×</button>
-        <button data-rg-mode="compare" aria-pressed="${!status}">装備比較</button><button data-rg-mode="status" aria-pressed="${status}">ステータス</button></header>
+      panel.innerHTML=`<main class="rg-screen rg-picker"><header><h3>${esc(active.name)}の装備</h3><button data-is-run-slot-close>部位一覧へ</button></header><nav aria-label="能力の表示">
+        <button data-rg-mode="compare" aria-pressed="${!status}">装備比較</button><button data-rg-mode="status" aria-pressed="${status}">ステータス</button></nav>
         <div class="rg-columns"><div class="rg-list">${cards || '<p>この部位の戦利品はありません。</p>'}
         ${current?`<button data-is-run-unequip="${esc(active.id)}">${esc(active.name)}を外す</button>`:''}</div>
-        ${gearComparison(this,active.id,chosen,current,status || !chosen)}</div></section>`;
+        ${gearComparison(this,active.id,chosen,current,status || !chosen)}</div></main>`;
+      panel.scrollTop=0;
+      panel.querySelector('.rg-list').scrollTop=listTop;
+      return;
     }
-    panel.dataset.panel='infinite-score-equipment';
+    const slotRows=slots.map(slot=>{
+      const gear=this.isBagEntry(run.equipment[slot.id]);
+      return `<button class="rg-slot${gear?.rarity==='infinity'?' owg-infinity':''}" data-is-run-slot="${esc(slot.id)}" style="--accent:${rarityColor(this,gear)}">
+        ${gearIcon(slot.id,gear)}<span class="rg-slot-name">${esc(slot.name)}<small>${esc(slot.enName)}</small></span>
+        <span class="rg-lines">${gearLines(this,gear)}</span><span aria-hidden="true">›</span></button>`;
+    }).join('');
     panel.innerHTML=`<main class="rg-screen"><header class="rg-head"><h2>装備</h2><button class="panel-home" data-is-action="explore">探索画面へ</button></header>
-      <div class="rg-slots">${slotRows}</div>${picker || '<p class="rg-hint">付け替えたい部位を選んでください。</p>'}</main>`;
+      <div class="rg-slots">${slotRows}</div><p class="rg-hint">付け替えたい部位を選んでください。</p></main>`;
   };
   document.addEventListener('click',event=>{
     const button=event.target.closest('.rg-screen button'), game=window.arseneGame;
