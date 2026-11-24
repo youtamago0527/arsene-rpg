@@ -48,6 +48,11 @@
   }
 
   function rollOption(op,rarity,floor,random) {
+    if (op.uncappedGrowth) {
+      const base = rarity.values ? op.values[Math.floor(sample(random)*op.values.length)]
+        : floor*cfg.infinity.opMinimumPerFloor;
+      return {key:op.key,grade:cfg.grades[op.grade],value:base+tail(random,cfg.infinity.opTail)};
+    }
     const value = op.values ? op.values[Math.floor(sample(random)*op.values.length)]
       : rarity.values ? between(rarity.values,random)
         : clampInteger(floor*cfg.infinity.opMinimumPerFloor + tail(random,cfg.infinity.opTail),cfg.limits.optionPercent);
@@ -125,6 +130,11 @@
       for (const op of gear.ops || []) {
         const definition = byOp.get(op.key);
         if (!definition || !allowedOn(definition,byItem.get(gear.itemId))) continue;
+        if (definition.uncappedGrowth) {
+          const value = Number(op.value);
+          if (Number.isFinite(value) && value>0) out[op.key] = rate(out,op.key)+Math.floor(value)/100;
+          continue;
+        }
         const cap = definition.totalCapPercent;
         out[op.key] = cap === undefined
           ? rate(out,op.key) + clampInteger(op.value,cfg.limits.optionPercent)/100
