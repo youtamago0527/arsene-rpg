@@ -1,53 +1,24 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const path = require('node:path');
+const forge = fs.readFileSync('js/infinite_gear_forge.js', 'utf8');
+const infinite = fs.readFileSync('js/infinite_score.js', 'utf8');
+const start = fs.readFileSync('js/start-flow.js', 'utf8');
+const css = fs.readFileSync('css/infinite-gear-v2.css', 'utf8');
+const html = fs.readFileSync('index.html', 'utf8');
 
-const root = path.resolve(__dirname, '..');
-const infinite = fs.readFileSync(path.join(root, 'js', 'infinite_score.js'), 'utf8');
-const startFlow = fs.readFileSync(path.join(root, 'js', 'start-flow.js'), 'utf8');
-const infiniteData = fs.readFileSync(path.join(root, 'js', 'infinite_score_data.js'), 'utf8');
-const css = fs.readFileSync(path.join(root, 'css', 'infinite-forge.css'), 'utf8');
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-
-assert.match(infinite, /\['enhance','強化'\],\['merge','同型合成'\],\['transfer','OP移植'\],\['delete','OP削除'\]/, '工房の4機能をタブ表示する');
-assert.match(css, /PROCESS PREVIEW \/\/ 加工内容/, '選択装備に対する処理結果を事前表示する');
-assert.match(infinite, /バッグ \$\{used\} \/ \$\{limit\}/, '30枠バッグの使用数を表示する');
-assert.match(infinite, /帰還時消滅/, '奏貨が帰還時に消えることを明示する');
-assert.match(infinite, /EQUIPPED/, '装備中の装備をカードで識別する');
-assert.match(infinite, /残り奏貨/, '操作後の奏貨残額を事前表示する');
-assert.match(infinite, /isForgeMerge=async function\(uid,materialUid=null\)/, '選択した同型素材を非同期モーダル経由で既存合成処理へ渡す');
-assert.match(infinite, /isForgeTransfer=async function\(sourceUid,targetUid=null,opIndex=0\)/, '選択した移植元・移植先・OPをゲーム内確認後に既存処理へ渡す');
-assert.match(infinite, /isForgeDelete=async function\(uid,index=0\)/, '選択した削除OPをゲーム内確認後に既存処理へ渡す');
-assert.match(startFlow, /infinite-forge-ready/, '工房単体のローカル確認導線を用意する');
-assert.match(infinite, /flags\.infiniteScoreWarningSeen = true/, '工房単体確認ではセリペス警告会話をスキップする');
-assert.match(infinite, /previous=panel\?\.querySelector\('\.is-forge-picker>div'\)\?\.scrollLeft/, '装備選択一覧の横スクロール位置を再描画前に保存する');
-assert.match(infinite, /picker\.scrollLeft=previous;requestAnimationFrame/, '再描画後も装備選択一覧の横スクロール位置を復元する');
-assert.match(infinite, /isForgeCombinedOp=function\(targetOp,sourceOp\)/, '同一OP移植時の合成結果を計算する');
-assert.match(infinite, /value:\(Number\(targetOp\.value\)\|\|0\)\+\(Number\(sourceOp\.value\)\|\|0\)/, '同一OPは対象と素材の効果値を加算する');
-assert.match(infinite, /target\.ops\[same\]=combined/, '同一OPを素材OPで上書きせず強化結果へ置き換える');
-assert.match(infinite, /同一OP合成後：\$\{this\.isForgeOpText\(result\)\}/, '移植前のプレビューにも同一OPの強化結果を表示する');
-assert.match(infinite, /return `\$\{label\} \+\$\{value\}`/, '工房のOP表示ではR表記を出さない');
-for (const label of ['獲得経験値UP', '素材ドロップ率UP', '魔法与ダメージ', '被ダメージ軽減', '帰還札出現率UP', 'バッグ枠追加']) {
-  assert.match(infiniteData, new RegExp(label), `異世界OP「${label}」を日本語表示する`);
+assert.match(forge, /\['merge','装備合成・強化'\],\['transfer','OP移植'\]/);
+assert.doesNotMatch(forge, /OP削除|調律する|製作する/);
+for (const label of ['移植元', '移すOP', '移植先', '上書きするOP', '強化後', '完全に消滅', 'ロック中', '装備中']) {
+  assert(forge.includes(label), label + ' is missing');
 }
-assert.match(css, /\.is-forge-detail-layout\{grid-template-columns:minmax\(132px,36%\) minmax\(0,64%\);align-items:stretch\}/, '参考コード同様に装備と加工予測を横並びにする');
-assert.match(css, /overflow-x:auto/, '装備カードを横スクロール可能にする');
-assert.match(css, /\.is-forge-gear-icon,\.is-forge-gear-card\.selected \.is-forge-gear-icon,\.is-forge-gear-card>b\+small\{display:none!important\}/, '選択・装備状態を問わず仮アイコンと内部スロット名を表示しない');
-assert.match(css, /\.is-forge-gear-card\.selected \.is-forge-card-stats\{display:flex!important\}/, '選択中カードの能力欄も通常カードと同じ並びにする');
-assert.match(css, /\.is-forge-gear-card\.selected \.is-forge-card-op\{display:block!important\}/, '選択中カードのOP欄も通常カードと同じ並びにする');
-assert.match(css, /\.is-forge-gear-card\.selected\{gap:0!important\}/, '選択状態の共通gapがカード内部へ混入しない');
-assert.match(css, /\.is-forge-gear-card\.equipped\{display:flex!important;gap:0!important;margin-bottom:0!important\}/, '装備中の共通レイアウトが工房カードへ混入しない');
-assert.match(css, /\.is-forge-gear-card\.equipped \.is-forge-card-stats b\{font-size:inherit!important\}/, '装備中カードの能力数値を通常カードと同じ大きさにする');
-assert.match(css, /\.is-forge-gear-card\{flex-basis:112px;height:92px;/, '装備カード下部の空白を削り詳細パネルを上へ詰める');
-assert.match(css, /\.is-forge-tabs button\{min-height:28px;padding:2px\}/, '参考コード同様に工房タブをコンパクトにする');
-assert.match(css, /\.is-forge-gear-card\.equipped \.is-forge-card-stats\{display:flex!important;flex:0 0 auto!important;[^}]+border:0!important/, '装備中カードの能力欄も通常カードと同じ表示にする');
-assert.match(css, /\.is-forge-gear-card\.selected>b\{[^}]+height:auto!important[^}]+line-height:normal!important/, '選択中カードでも装備名の高さを消さない');
-assert.match(css, /\.is-forge-gear-card\.selected \.is-forge-card-stats\{flex:0 0 auto!important;height:auto!important;min-height:0!important;[^}]+border:0!important/, '選択中カードの能力欄に大きな囲み枠を付けない');
-assert.match(css, /\.is-forge-detail-layout\{grid-template-columns:[^}]+;align-items:stretch\}/, '左右の詳細パネルを同じ高さに揃える');
-assert.match(css, /\.is-forge-selected\{box-sizing:border-box;height:calc\(100% - 10\.4px\);[^}]+margin-top:10\.4px/, '選択装備パネルの枠上端を右の加工パネル本体へ揃える');
-assert.match(css, /\.is-forge-selected>b:nth-of-type\(2\)\{position:absolute;right:11px;top:47px/, '強化値を装備名と同じ行へ配置する');
-assert.match(css, /\.is-forge-selected>p\{[^}]+font-size:10px/, '選択装備のOPを読みやすく表示する');
-assert.match(css, /env\(safe-area-inset-bottom/, 'iPhoneのセーフエリアを確保する');
-assert.match(html, /css\/infinite-forge\.css/, '工房専用スタイルを読み込む');
-
-console.log('infinite forge UI regression: ok');
+assert.match(forge, /owgMetaHtml\(item\)/);
+assert.match(forge, /owgBaseText\(item\)/);
+assert.match(forge, /G\.opText\(op\)/);
+assert.match(forge, /root\.scrollTop=scroll/);
+assert.match(css, /\.is-forge-v2-grid/);
+assert.match(css, /\.owg-infinity-badge/);
+assert.match(html, /css\/infinite-gear-v2\.css/);
+assert.match(html, /js\/infinite_gear_forge\.js/);
+assert.match(start, /infinite-forge-ready/);
+assert.match(infinite, /flags\.infiniteScoreWarningSeen = true/);
+console.log('infinite forge V2 UI regression: ok');

@@ -72,7 +72,7 @@
     otherworldCore: { id: 'otherworldCore', name: '異界の核', nameEn: 'RIFT CORE', category: 'material', rarity: 'legendary',
       description: '異世界の中心で脈打っていた核。極めて稀にしか手に入らない。' },
     protectionArcana: { id: 'protectionArcana', name: '保護のアルカナ', nameEn: 'ARCANA OF PROTECTION', category: 'special', rarity: 'legendary', noSell: true,
-      description: '異世界工房の調律前に使用すると、失敗時の装備消滅を防ぐ。通常所持品から直接使用できる。' }
+      description: '対応する強化で、失敗による装備の消滅を防ぐ。異世界工房の合成・移植では消費しない。' }
   });
 
   // ── 異世界モンスター ────────────────────────────────────────

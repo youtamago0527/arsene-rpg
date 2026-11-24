@@ -5,7 +5,7 @@ const vm = require('vm');
 const context = { window: {}, document: { addEventListener() {} } };
 context.window.BattleGame = function BattleGame() {};
 vm.createContext(context);
-for (const file of ['js/data.js', 'js/future_data.js', 'js/release_content.js', 'js/d4_extra_enemies.js', 'js/equipment_progression.js', 'js/infinite_score_data.js', 'js/otherworld_gear.js'])
+for (const file of ['js/data.js', 'js/future_data.js', 'js/release_content.js', 'js/d4_extra_enemies.js', 'js/equipment_progression.js', 'js/infinite_score_data.js', 'js/infinite_gear_v2_data.js', 'js/infinite_gear_v2.js', 'js/otherworld_gear.js'])
   vm.runInContext(fs.readFileSync(file, 'utf8'), context, { filename: file });
 
 const D = context.window.ARSENE_DATA;
