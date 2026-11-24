@@ -8,7 +8,7 @@
   const modes = { list: '一覧', effects: '効果別', rarity: 'レアリティ', catalog: '図鑑' };
   const symbols = { list: '▦', effects: '☆', rarity: '◇', catalog: '▤' };
   const sorts = { catalog: '掲載順', rarity: 'レアリティ順', name: '名前順' };
-  const pageSize = 20;
+  const pageSize = 24;
 
   // Art samples for the UI. They represent a catalog, independent of the player's save.
   const samples = [
@@ -35,22 +35,39 @@
     ['globe', '群青の天球儀', 'rare', '群青の球を囲む金の環に、星座の軌跡が刻まれている。'],
     ['scales', '星衡の天秤', 'legendary', '星をかたどった飾りの下で、二つの皿が釣り合う天秤。'],
     ['crown', '落陽の王冠', 'mythic', '夕日の色を思わせる赤い石が連なる金の王冠。'],
-    ['key', '紫苑の古鍵', 'epic', '紫の宝石が付いた古鍵。どの扉に合うのかは分かっていない。']
+    ['key', '紫苑の古鍵', 'epic', '紫の宝石が付いた古鍵。どの扉に合うのかは分かっていない。'],
+    ['bell', '紫宵の鐘', 'epic', '紫水晶を鐘の形に削り、金の枠にはめ込んだ飾り。'],
+    ['ember', '檻の残り火', 'mythic', '細い金格子の奥で、小さな赤い炎が揺らめいている。'],
+    ['quill', '蒼鳴の筆', 'rare', '蒼い羽軸に金の細工を巻き付けた筆。'],
+    ['raven', '夜烏のカメオ', 'common', '黒い鳥の横顔を浮き彫りにした小さな留め具。'],
+    ['lute', '星紡ぎのリュート', 'legendary', '星の意匠をちりばめた金色の弦楽器。'],
+    ['hairpin', '真珠薔薇の簪', 'common', '真珠を一輪の薔薇に見立てた細身の簪。'],
+    ['obsidian', '黒曜の円盤', 'epic', '黒曜石の鏡面を、一筋の金の縁が囲っている。'],
+    ['shell', '潮騒の巻貝', 'rare', '青い光が螺旋の殻を照らす巻貝。'],
+    ['claw', '金竜の爪飾り', 'legendary', '鉤爪をかたどった金細工。青い石が台座にはまっている。'],
+    ['telescope', '遠星の望遠鏡', 'common', '真鍮を磨き込んだ、小さな折りたたみ望遠鏡。'],
+    ['crest', '雷紋の徽章', 'rare', '丸い七宝の中心に稲妻を象った徽章。'],
+    ['diadem', '霜月の冠', 'epic', '霜をまとった三日月型の冠。']
   ].map(([id, name, rank, description], index) => ({ id, name, rank, description, index }));
+  const compass = samples.find(item => item.id === 'compass');
 
   const pressed = value => ` aria-pressed="${value}"`;
   const badge = rank => `<span class="ir-badge" data-rank="${rank}">${rarity[rank]}</span>`;
   function art({ index }) {
     const tile = index % 12;
-    return `<span class="ir-art" data-atlas="${index < 12 ? 1 : 2}" style="--tile-x:${tile % 4 * 100 / 3}%;--tile-y:${Math.floor(tile / 4) * 50}%" aria-hidden="true"></span>`;
+    return `<span class="ir-art" data-atlas="${1 + Math.floor(index / 12)}" style="--tile-x:${tile % 4 * 100 / 3}%;--tile-y:${Math.floor(tile / 4) * 50}%" aria-hidden="true"></span>`;
+  }
+  function gems(rank) {
+    return `<span class="ir-gems" data-rank="${rank}" aria-hidden="true">${'◆'.repeat(ranks.indexOf(rank) + 1)}</span>`;
   }
   function detail(item) {
     return `<header><h3>${item.name}</h3>${badge(item.rank)}</header>
       <div class="ir-portrait" data-rank="${item.rank}">${art(item)}</div>
+      <div class="ir-detail-rank">${gems(item.rank)}</div>
       <p class="ir-description">${item.description}</p>
       <dl class="ir-properties">
-        <div><dt>遺物効果</dt><dd>未設定</dd></div>
-        <div><dt>強化段階</dt><dd>未設定</dd></div>
+        <div class="ir-effect"><dt>遺物効果</dt><dd>未設定</dd></div>
+        <div class="ir-enhance"><dt>強化段階</dt><dd>未設定</dd></div>
       </dl>`;
   }
 
@@ -88,7 +105,7 @@
           <section class="ir-collection" aria-label="仮遺物一覧">
             <div class="ir-grid ${state.mode === 'catalog' ? 'ir-catalog' : ''}">${visible.map(item =>
               `<button type="button" data-ir-item="${item.id}" data-rank="${item.rank}" aria-label="${item.name}、${rarity[item.rank]}"${pressed(item === current)}>
-                ${art(item)}${state.mode === 'catalog' ? `<small>${item.name}</small>` : '<span class="ir-gem" aria-hidden="true">◆</span>'}</button>`).join('')}</div>
+                ${art(item)}${state.mode === 'catalog' ? `<small>${item.name}</small>` : gems(item.rank)}</button>`).join('')}</div>
             ${pages > 1 ? `<nav class="ir-pages" aria-label="遺物リストのページ">
               <button type="button" data-ir-page="-1" aria-label="前のページ" ${state.page === 0 ? 'disabled' : ''}>‹</button>
               <span>${state.page + 1} / ${pages}</span>
@@ -98,8 +115,8 @@
           <article class="ir-detail" aria-label="遺物の詳細" aria-live="polite">${detail(current)}</article>
         </div>
         <aside class="ir-upcoming" aria-label="準備中の機能">
-          <div><span aria-hidden="true">✧</span><b>時空の羅針盤</b><small>準備中</small></div>
-          <div><span aria-hidden="true">▱</span><b>遺物抽選設定</b><small>準備中</small></div>
+          <div><span class="ir-upcoming-icon" aria-hidden="true">${art(compass)}</span><b>時空の羅針盤</b><small>準備中</small></div>
+          <div><span class="ir-upcoming-icon ir-stair-mark" aria-hidden="true"></span><b>遺物抽選設定</b><small>準備中</small></div>
         </aside>
       </div>
     </main>`;
