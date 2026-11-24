@@ -12,6 +12,7 @@
     }
   ],
   "vars": {
+    "SKIP_DEPENDENCY_INSTALL": "1",
     "STRIPE_CURRENCY": "jpy",
     "STRIPE_LIVEMODE": "true",
     "STORE_ALLOWED_ORIGINS": "https://arsene-rpg.pages.dev"
