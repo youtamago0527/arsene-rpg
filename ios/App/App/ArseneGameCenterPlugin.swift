@@ -5,7 +5,7 @@ import GameKit
 public class ArseneGameCenterPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "ArseneGameCenterPlugin"
     public let jsName = "ArseneGameCenter"
-    public let pluginMethods = [
+    public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "currentPlayer", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "authenticate", returnType: CAPPluginReturnPromise)
     ]
