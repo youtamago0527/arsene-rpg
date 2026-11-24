@@ -1,0 +1,65 @@
+.hideout-resources > button > .app-update-badge:not([hidden]) {
+  position: absolute;
+  inset: 5% 5% auto auto;
+  display: grid;
+  place-items: center;
+  inline-size: clamp(12px, 3vw, 18px);
+  aspect-ratio: 1;
+  border: 1px solid #ff9caa;
+  border-radius: 50%;
+  background: #951b3b;
+  color: #fff;
+  font: bold clamp(9px, 2vw, 13px)/1 system-ui, sans-serif;
+  z-index: 1;
+}
+
+.app-update-dialog {
+  box-sizing: border-box;
+  inline-size: min(91vw, 420px);
+  max-block-size: min(80dvh, 600px);
+  padding: clamp(16px, 4vw, 28px);
+  overflow: auto;
+  border: 1px solid #a38053;
+  border-radius: 8px;
+  background: #141019;
+  box-shadow: 0 14px 40px #000b;
+  color: #f0dfbb;
+  overflow-wrap: anywhere;
+}
+
+.app-update-dialog::backdrop { background: #050307c9; }
+
+.app-update-dialog h2 { margin: 0 0 1rem; font-size: 1.25rem; }
+.app-update-dialog h3 { margin: .5rem 0; font-size: 1rem; }
+.app-update-dialog [data-update-version] { color: #d0aa78; }
+.app-update-dialog ul { padding-inline-start: 1.25rem; line-height: 1.55; }
+.app-update-dialog [data-update-status]:empty { display: none; }
+
+.app-update-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 1rem;
+}
+
+.app-update-actions a:not([hidden]),
+.app-update-actions button,
+button.app-update-entry:not([hidden]) {
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: .45rem .8rem;
+  border: 1px solid #927950;
+  border-radius: 4px;
+  background: #291b32;
+  color: #f0dfbb;
+  font: inherit;
+  text-decoration: none;
+}
+
+button.app-update-entry:not([hidden]) { margin: 5px auto; }
+.app-update-actions a:not([hidden]) { background: #62213c; }
+.app-update-badge[hidden], .app-update-entry[hidden], .app-update-actions [hidden] { display: none !important; }
