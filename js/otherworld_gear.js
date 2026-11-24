@@ -169,14 +169,38 @@
     }
     return out;
   };
-  P.owgAdjustDamage=function(value,skill,enemy,critical,weak){
+  P.owgAdjustDamage=function(value,skill,enemy,critical){
     const equipped=this.owgEquipped();
-    if (!equipped.some(gearV2.isV2)) return value;
-    return gearV2.damage(value,gearV2.optionRates(equipped),{
-      basic:skill.id===this.basicAttackSkill().id, skill,enemy,critical,weak,
+    if (!equipped.some(gearV2.isV2)) return null;
+    const rates=gearV2.optionRates(equipped);
+    const base=Math.max(1,Math.round(gearV2.damage(value,rates,{
+      basic:skill.id===this.basicAttackSkill().id, skill,enemy,critical,
       turn:this.turn,hp:this.player.hp,maxHp:this.player.stats.maxHp,
       alive:this.enemies?.filter(target=>target.hp>0).length||0
-    });
+    })));
+    const additionalDamage=gearV2.extraDamage(base,rates);
+    return {value:base+additionalDamage, additionalDamage};
+  };
+  P.owgRestoreFromDamage=function(vital,amount){
+    const player=this.player;
+    if (amount<=0 || !player?.hp) return 0;
+    const hp=vital==='hp';
+    const max=player.stats[hp?'maxHp':'maxMp'];
+    if (player[vital]>=max) return 0;
+    const rate=gearV2.optionRates(this.owgEquipped())[hp?'lifeStealRate':'hitMpRecoveryRate'];
+    if (!rate) return 0;
+    // Small hits accumulate fractional recovery within the current battle.
+    const carry=player.owgRecoveryCarry ||= {};
+    const total=(carry[vital]||0)+amount*rate;
+    const whole=Math.floor(total+1e-9);
+    carry[vital]=Math.max(0,total-whole);
+    const gained=Math.min(whole,max-player[vital]);
+    if (gained>0) {
+      player[vital]+=gained;
+      this.floating(document.querySelector('#ren'),`${hp?'HP':'MP'} +${gained}`,'heal');
+      this.setLog(`《${hp?'HP吸収':'被ダメージ時MP回復'}》${hp?'HP':'MP'}が${gained}回復！`);
+    }
+    return gained;
   };
   const oldWeapon=P.equippedWeapon; P.equippedWeapon=function(){const run=this.isRun?.(),uid=run?.equipment?.rightHand||this.profile.otherWorldEquipment?.rightHand,x=this.owgEntry(uid);if(x)return D.weapons[x.itemId]||oldWeapon.call(this);return oldWeapon.call(this);};
   const oldSkills=P.availableSkills; P.availableSkills=function(){const list=oldSkills.call(this),skills=this.owgEquipped().map(x=>D.skills[x.uniqueSkillId]).filter(Boolean);return [...new Map([...list,...skills].map(x=>[x.id,x])).values()];};

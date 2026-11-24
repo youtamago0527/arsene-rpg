@@ -21,7 +21,7 @@ class BattleGame {
   basicAttackSkill() { return { id:'attack' }; }
 }
 const data = { items:{}, weapons:{}, armors:{}, enemies:{}, skills:{} };
-const context = { window:{ ARSENE_DATA:data, BattleGame },document:{addEventListener(){}},console:{error(){}} };
+const context = { window:{ ARSENE_DATA:data, BattleGame },document:{addEventListener(){},querySelector(){return null;}},console:{error(){}} };
 for (const file of ['infinite_score_data','infinite_gear_v2_data','infinite_gear_v2','otherworld_gear','infinite_gear_forge']) {
   runInNewContext(readFileSync('js/'+file+'.js','utf8'),context,{filename:file+'.js'});
 }
@@ -63,7 +63,9 @@ test('base stats, independent option counts and values, and grade pools', () => 
       assert(gear.ops.length>=rank.count[0]&&gear.ops.length<=rank.count[1]);
       assert.equal(new Set(gear.ops.map(x=>x.key)).size,gear.ops.length);
       for (const op of gear.ops) {
-        assert(op.value>=rank.values[0]&&op.value<=rank.values[1]);
+        const special = cfg.ops.find(definition=>definition.key===op.key && definition.chance);
+        if (special) assert(special.values.includes(op.value));
+        else assert(op.value>=rank.values[0]&&op.value<=rank.values[1]);
         assert(rank.weights[cfg.grades.indexOf(op.grade)]>0);
       }
     }
@@ -77,9 +79,9 @@ test('base stats, independent option counts and values, and grade pools', () => 
 
 test('INFINITY guarantees, tail behavior, and format/stat safety', () => {
   for (const floor of [1,50,100,200,500,1000]) {
-    const item=roll(6,'sword',floor,()=>0);
+    const item=roll(6,'accessory',floor,()=>0);
     assert.equal(item.ops.length,6);
-    assert.equal(item.baseStats.attackPower,1+(floor-1)*20);
+    assert.equal(roll(6,'sword',floor,()=>0).baseStats.attackPower,1+(floor-1)*20);
     assert(item.ops.every(op=>op.value===floor));
     assert.equal(new Set(item.ops.map(op=>op.key)).size,6);
   }
@@ -90,6 +92,48 @@ test('INFINITY guarantees, tail behavior, and format/stat safety', () => {
   assert(statModel.strengthened(enhanced).attackPower<=cfg.limits.stat);
   assert(!/Infinity|NaN/.test(statModel.opText(high.ops[0])));
   assert.equal(statModel.damage(1e99,{}, {skill:{},enemy:{},basic:true}),cfg.limits.stat);
+});
+
+test('recovery OPs roll once on eligible gear and use fractional values even on INFINITY', () => {
+  const draws = threshold => [0, 0, threshold, .99];
+  const draw = values => () => values.shift() ?? .5;
+  const hpKey = 'lifeStealRate', mpKey = 'hitMpRecoveryRate';
+  const weapon = roll(6,'sword',500,draw(draws(.009999)));
+  const armor = roll(6,'body',500,()=>0);
+  const get = (item,key) => item.ops.find(option=>option.key===key)?.value;
+  assert.equal(get(weapon,hpKey),3);
+  assert.equal(get(armor,mpKey),.25);
+  assert.equal(get(roll(6,'sword',500,draw(draws(.01))),hpKey),undefined);
+  assert.equal(get(roll(6,'body',500,draw([0,0,0,.0075])),mpKey),undefined);
+  assert.equal(get(weapon,mpKey),undefined);
+  assert.equal(get(armor,hpKey),undefined);
+  assert.equal(get(roll(6,'shield',500,()=>0),mpKey),.25);
+  assert.equal(get(roll(3,'sword',500,()=>0),hpKey),undefined);
+  assert.equal(get(roll(6,'accessory',500,()=>0),mpKey),undefined);
+  assert.equal(statModel.optionRates([armor])[mpKey],.0025);
+  assert.equal(statModel.optionRates([{...armor,ops:[{key:hpKey,value:3}]}])[hpKey],undefined);
+  assert.equal(statModel.optionRates([armor,armor,{...armor,ops:[{key:mpKey,value:100}]}])[mpKey],.02);
+  assert(!cfg.ops.some(op=>op.key==='weakDamageRate'));
+  assert.match(statModel.opText({key:'weakDamageRate',grade:'LEGEND',value:60}),/工房で上書き可/);
+});
+
+test('additional damage can exceed the final base hit, and recovery carries over fractions', () => {
+  const sword = {...roll(6,'sword'),ops:[{key:'echoDamageRate',value:125},{key:'lifeStealRate',value:3},{key:'weakDamageRate',value:500}]};
+  const armor = {...roll(6,'body',1,()=>.5,'armor'),ops:[{key:'hitMpRecoveryRate',value:.25}]};
+  const game = gameWithGear(sword,armor);
+  game.isRun().equipment={rightHand:sword.uid,body:armor.uid};
+  game.player={hp:50,mp:20,stats:{maxHp:100,maxMp:40}};
+  game.floating=()=>{};
+  game.setLog=()=>{};
+  const hit=game.owgAdjustDamage(200,{id:'attack'},{hp:500,stats:{maxHp:500}},false);
+  assert.deepEqual(plain(hit),{value:450,additionalDamage:250});
+  assert.equal(statModel.extraDamage(cfg.limits.stat-3,{echoDamageRate:20}),3);
+  assert.equal(game.owgRestoreFromDamage('hp',30),0);
+  assert.equal(game.owgRestoreFromDamage('hp',4),1);
+  assert.equal(game.owgRestoreFromDamage('mp',200),0);
+  assert.equal(game.owgRestoreFromDamage('mp',200),1);
+  game.player.hp=0;
+  assert.equal(game.owgRestoreFromDamage('mp',1_000),0);
 });
 
 function gameWithGear(...items) {
@@ -174,6 +218,5 @@ test('V2 affects only equipped bonuses; legacy individuals remain usable and ord
   game.profile.infiniteScore.active=false;
   assert.equal(game.equipmentCombatStats().attackPower,200);
   assert.equal(game.totalStats().maxHp,100);
-  const ordinary=game.owgAdjustDamage(200,{id:'skill'},{kind:'boss'},true,false);
-  assert.equal(ordinary,200);
+  assert.equal(game.owgAdjustDamage(200,{id:'skill'},{kind:'boss'},true),null);
 });
