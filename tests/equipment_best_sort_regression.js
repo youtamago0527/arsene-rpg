@@ -28,6 +28,9 @@ const { BattleGame, ARSENE_DATA: data } = window;
 BattleGame.prototype.renderMenuPanel = function () {};
 BattleGame.prototype.showMenu = function () { return this.equippedWeapon(); };
 require('../js/infinite_score.js');
+require('../js/infinite_score_data.js');
+require('../js/infinite_gear_v2_data.js');
+require('../js/infinite_gear_v2.js');
 require('../js/otherworld_gear.js');
 
 const player = Object.create(BattleGame.prototype);

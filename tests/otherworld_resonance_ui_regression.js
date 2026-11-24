@@ -6,6 +6,7 @@ const infinite = fs.readFileSync('js/infinite_score.js', 'utf8');
 const support = fs.readFileSync('js/infinite_support.js', 'utf8');
 
 class BattleGame {
+  isRunForEquipment() { return this.isRun(); }
   isRun() { return this.profile.infiniteScore.active ? this.profile.infiniteScore : null; }
   activeSetEffects() { return this.isRun() ? {} : { vitPercent: 8, damageReductionPercent: 10 }; }
   equipmentEffectRate() { return 0; }

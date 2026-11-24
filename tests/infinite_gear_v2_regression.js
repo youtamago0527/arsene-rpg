@@ -4,6 +4,7 @@ const { runInNewContext } = require('node:vm');
 const { test } = require('node:test');
 
 class BattleGame {
+  isRunForEquipment() { return this.isRun(); }
   isRun() { return this.profile.infiniteScore?.active ? this.profile.infiniteScore : null; }
   isBagEntry(uid) { return this.isRun()?.lootBag.find(x => x.uid === uid); }
   isRand() { return .42; }

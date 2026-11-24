@@ -130,8 +130,8 @@
     }
     return out;
   };
-  P.owgBaseEquipment=function(source=this.profile.equipment){if(this.isRun?.())return {};const equipment={...(source||{})};for(const x of this.owgEquipped()){const slot=D.items[x.itemId]?.slot;if(slot)delete equipment[slot];}return equipment;};
-  const useBaseEquipment=(game,args)=>game.isRun?.()||!args.length||args[0]===game.profile.equipment
+  P.owgBaseEquipment=function(source=this.profile.equipment){if(this.isRunForEquipment?.())return {};const equipment={...(source||{})};for(const x of this.owgEquipped()){const slot=D.items[x.itemId]?.slot;if(slot)delete equipment[slot];}return equipment;};
+  const useBaseEquipment=(game,args)=>game.isRunForEquipment?.()||!args.length||args[0]===game.profile.equipment
     ? [game.owgBaseEquipment(args[0])] : args;
   const oldTotal=P.totalStats;
   P.totalStats=function(...args){
@@ -252,7 +252,13 @@
     target.owgBreachRate=effects.weaponDefBreakRate;
     this.setLog(`《護り崩し》${target.name}の物理・魔法防御 -${gearV2.number(effects.weaponDefBreakRate*100)}%`);
   };
-  const oldWeapon=P.equippedWeapon; P.equippedWeapon=function(){const run=this.isRun?.(),uid=run?.equipment?.rightHand||this.profile.otherWorldEquipment?.rightHand,x=this.owgEntry(uid);if(x)return D.weapons[x.itemId]||oldWeapon.call(this);return oldWeapon.call(this);};
+  const oldWeapon=P.equippedWeapon;
+  P.equippedWeapon=function(){
+    const run=this.isRunForEquipment?.();
+    const uid=run ? run.equipment?.rightHand : this.profile.otherWorldEquipment?.rightHand;
+    const item=run ? this.isBagEntry(uid) : (this.profile.otherWorldGear||[]).find(x=>x.uid===uid);
+    return (item && D.weapons[item.itemId]) || oldWeapon.call(this);
+  };
   const oldSkills=P.availableSkills; P.availableSkills=function(){const list=oldSkills.call(this),skills=this.owgEquipped().map(x=>D.skills[x.uniqueSkillId]).filter(Boolean);return [...new Map([...list,...skills].map(x=>[x.id,x])).values()];};
   // Combat reads these two individual OPs through the existing boss-set effect API.
   const oldSet=P.activeSetEffects;
