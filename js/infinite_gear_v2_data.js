@@ -6,7 +6,13 @@
   // Fixed ranges for action and recovery effects, including on INFINITY equipment.
   const tactical = (key,label,grade,table,values,totalCapPercent) =>
     ({key,label,grade,table,values,totalCapPercent});
+  const pairValues = [9,12,15,18];
+  const combination = (key,label,grade,stats,values=pairValues,details={}) =>
+    ({key,label,grade,stats,values,...details});
+  const baseAttributes = ['str','vit','mag','mnd','agi','dex','luk'];
+  const equipmentPower = ['attackPower','magicAttackPower','defensePower','magicDefensePower'];
   D.infiniteGearV2 = {
+    baseAttributes, equipmentPower,
     tiers: [
       {id:'common', name:'COMMON', prefix:'異界の', color:'#c3c8d1', count:[1,1], values:[3,10], weights:[100,0,0,0,0]},
       {id:'rare', name:'RARE', prefix:'深淵の', color:'#50aaff', count:[1,2], values:[15,25], weights:[35,65,0,0,0]},
@@ -52,6 +58,7 @@
     infinityTableScale: {weapon:1,armor:.45,accessoryHp:.25,accessoryMp:.10},
     transfer: {sameFamily:true, allowCrossRarity:true, infinityOnlyWithInfinity:true},
     grades: ['COMMON','RARE','EPIC','LEGEND','MYTHIC'],
+    combinationShare: [0,0,.30,.20,.04],
     ops: [
       op('attackPowerRate','物理攻撃力',0),op('magicAttackPowerRate','魔法攻撃力',0),
       op('defensePowerRate','物理防御力',0),op('magicDefensePowerRate','魔法防御力',0),
@@ -75,7 +82,26 @@
       tactical('victoryHealRate','戦後手当',2,'accessoryHp',[2,3,4],4),
       tactical('potionBoostRate','薬効増幅',2,'accessoryHp',[10,15,20,25],25),
       tactical('weaponDefBreakRate','護り崩し',3,'weapon',[6,8,10,12],12),
-      tactical('basicToSkillRate','連携強化',4,'weapon',[12,16,20,25],25)
+      tactical('basicToSkillRate','連携強化',4,'weapon',[12,16,20,25],25),
+      combination('physAttackDefense','攻守の律',2,['attackPower','defensePower']),
+      combination('physAttackSpeed','疾攻の律',2,['attackPower','agi']),
+      combination('physDefenseSpeed','疾守の律',2,['defensePower','agi']),
+      combination('magicAttackDefense','魔攻守の律',2,['magicAttackPower','magicDefensePower']),
+      combination('magicAttackSpeed','疾術の律',2,['magicAttackPower','agi']),
+      combination('magicDefenseSpeed','疾護の律',2,['magicDefensePower','agi']),
+      combination('dualAttack','双撃の律',2,['attackPower','magicAttackPower']),
+      combination('dualDefense','双壁の律',2,['defensePower','magicDefensePower']),
+      combination('hpMp','活力の律',2,['maxHp','maxMp']),
+      combination('strengthVitality','剛健の律',2,['str','vit']),
+      combination('magicSpirit','魔心の律',2,['mag','mnd']),
+      combination('speedDexterity','軽業の律',2,['agi','dex']),
+      combination('dexterityLuck','星運の律',2,['dex','luk']),
+      combination('hpAttack','血気の律',3,['maxHp','attackPower'],[12,16,20,24],{table:'weapon'}),
+      combination('mpMagicDefense','静護の律',3,['maxMp','magicDefensePower'],[12,16,20,24],{table:'armor'}),
+      combination('allEquipmentPower','武威の律',3,equipmentPower,[6,8,10,12],{summary:'物理・魔法の攻防4種'}),
+      combination('allBaseAttributes','才覚の律',3,baseAttributes,[5,7,9,11],{summary:'力〜運の7能力'}),
+      combination('allAbilities','全能の律',4,['maxHp','maxMp',...baseAttributes,...equipmentPower],[3,4,6,8],
+        {summary:'最大HP・MP／力〜運／物理・魔法の攻防'})
     ]
   };
 })();

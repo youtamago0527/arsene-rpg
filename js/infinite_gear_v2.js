@@ -6,13 +6,15 @@
   const byItem = new Map(cfg.parts.map(part => ['owg_v2_'+part.id,part]));
   const byOp = new Map(cfg.ops.map(op => [op.key,op]));
   const rareOptions = cfg.ops.filter(op => op.chance);
-  const combatKeys = ['attackPower','defensePower','magicAttackPower','magicDefensePower'];
-  const vitalKeys = ['maxHp','maxMp','str','vit','mag','mnd','agi','dex','luk'];
+  const statCombinations = cfg.ops.filter(op => op.stats);
+  const combatKeys = cfg.equipmentPower;
+  const vitalKeys = ['maxHp','maxMp',...cfg.baseAttributes];
   const floorNumber = value => Math.max(1, clampInteger(value,Number.MAX_SAFE_INTEGER));
   const sample = random => Math.min(1-Number.EPSILON, Math.max(0, Number(random()) || 0));
   const between = ([min,max],random) => min + Math.floor(sample(random)*(max-min+1));
   const clampInteger = (value,max) => Math.floor(Math.max(0,Math.min(max,Number(value)||0)));
   const stat = value => clampInteger(value,cfg.limits.stat);
+  const applyStatRate = (value,rate) => stat(value*(100+Math.round((rate||0)*100))/100);
   const format = new Intl.NumberFormat('ja-JP');
   const isV2 = gear => gear?.gearVersion === 2;
   const tier = gear => cfg.tiers[gear?.tier-1];
@@ -52,6 +54,14 @@
     return {key:op.key,grade:cfg.grades[op.grade],value};
   }
 
+  function pickOption(pool,grade,random) {
+    const combinations = pool.filter(op=>op.stats).length;
+    if (!combinations || combinations===pool.length) return pool[Math.floor(sample(random)*pool.length)];
+    const share = cfg.combinationShare[grade];
+    const weights = pool.map(op=>op.stats ? share/combinations : (1-share)/(pool.length-combinations));
+    return pool[weighted(weights,random)];
+  }
+
   function rollOptions(rarity,part,floor,random) {
     const count = between(rarity.count,random), ops = [];
     // These odds apply once per eligible item, including when the ordinary grade pool runs out.
@@ -63,7 +73,7 @@
       const grade = weighted(weights,random);
       const pool = available.filter(op=>op.grade===grade);
       if (!pool.length) throw new Error('Not enough unique OPs in Infinite gear grade tables');
-      const pick = pool[Math.floor(sample(random)*pool.length)];
+      const pick = pickOption(pool,grade,random);
       available.splice(available.indexOf(pick),1);
       ops.push(rollOption(pick,rarity,floor,random));
     }
@@ -119,6 +129,14 @@
         out[op.key] = cap === undefined
           ? rate(out,op.key) + clampInteger(op.value,cfg.limits.optionPercent)/100
           : Math.min(cap/100,rate(out,op.key) + Math.max(0,Number(op.value)||0)/100);
+      }
+    }
+    for (const {key,stats} of statCombinations) {
+      const bonus = out[key];
+      if (!bonus) continue;
+      for (const statKey of stats) {
+        const rateKey=statKey+'Rate';
+        out[rateKey] = rate(out,rateKey)+bonus;
       }
     }
     return out;
@@ -179,10 +197,14 @@
   for (const row of cfg.tiers) D.infiniteScore.rarity[row.id] = {
     ...D.infiniteScore.rarity[row.id], name:row.name, color:row.color
   };
-  D.infiniteGear = {isV2,tier,level,ratesAt,generate,strengthened,optionRates,stat,damage,extraDamage,
+  function opText(op) {
+    if (op.key==='weakDamageRate') return '廃止OP（工房で上書き可）';
+    const definition = byOp.get(op.key);
+    const stats = definition?.summary || definition?.stats?.map(key=>byOp.get(key+'Rate').label).join('・');
+    return `${definition?.label||op.key} +${format.format(op.value)}%［${op.grade}］${stats?`（${stats}）`:''}`;
+  }
+  D.infiniteGear = {isV2,tier,level,ratesAt,generate,strengthened,optionRates,stat,applyStatRate,damage,extraDamage,
     canMerge,canTransfer,canReplace,combatKeys,vitalKeys,
-    number:value=>format.format(value),
-    opText:op=>op.key==='weakDamageRate' ? '廃止OP（工房で上書き可）'
-      : `${byOp.get(op.key)?.label||op.key} +${format.format(op.value)}%［${op.grade}］`
+    number:value=>format.format(value),opText
   };
 })();

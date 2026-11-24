@@ -151,7 +151,7 @@
       }
     }
     if (equipped.some(gearV2.isV2)) {
-      for (const key of gearV2.vitalKeys) total[key]=gearV2.stat((total[key]||0)*(1+(rates[key+'Rate']||0)));
+      for (const key of gearV2.vitalKeys) total[key]=gearV2.applyStatRate(total[key]||0,rates[key+'Rate']);
     }
     total.def=total.vit;
     return total;
@@ -165,7 +165,7 @@
       for (const key of gearV2.combatKeys) out[key]=(out[key]||0)+(values[key]?.total||0);
     }
     if (equipped.some(gearV2.isV2)) {
-      for (const key of gearV2.combatKeys) out[key]=gearV2.stat(out[key]*(1+(rates[key+'Rate']||0)));
+      for (const key of gearV2.combatKeys) out[key]=gearV2.applyStatRate(out[key],rates[key+'Rate']);
     }
     return out;
   };

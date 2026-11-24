@@ -141,7 +141,7 @@ test('additional damage can exceed the final base hit, and recovery carries over
 });
 
 test('tactical OPs appear only on their equipment families and keep the listed values', () => {
-  const tactical = cfg.ops.filter(op=>op.values && !op.chance);
+  const tactical = cfg.ops.filter(op=>op.values && !op.chance && !op.stats);
   assert.equal(tactical.length,10);
   let seed=57823;
   const random=()=>((seed=(Math.imul(1664525,seed)+1013904223)>>>0)/2**32);
@@ -159,6 +159,52 @@ test('tactical OPs appear only on their equipment families and keep the listed v
     }
   }
   assert.equal(rolled.size,tactical.length);
+});
+
+test('paired and all-stat options roll on their assigned grades and eligible equipment', () => {
+  const definitions=cfg.ops.filter(op=>op.stats);
+  assert.equal(definitions.length,18);
+  let seed=67924;
+  const random=()=>((seed=(Math.imul(1664525,seed)+1013904223)>>>0)/2**32);
+  const rolled=new Set();
+  for (const part of cfg.parts) for (let i=0;i<120;i++) {
+    const gear=roll(i%6+1,part.id,500,random);
+    for (const option of gear.ops) {
+      const definition=definitions.find(op=>op.key===option.key);
+      if (!definition) continue;
+      assert.equal(option.grade,cfg.grades[definition.grade]);
+      assert(cfg.tiers[gear.tier-1].weights[definition.grade]>0);
+      assert(definition.values.includes(option.value));
+      if (definition.table) assert(Object.values(part.base).some(([table])=>definition.table===table));
+      rolled.add(option.key);
+    }
+  }
+  assert.equal(rolled.size,definitions.length);
+});
+
+test('all-stat and paired options stack additively and transfer as one OP', () => {
+  const source=roll(5,'sword',80,()=>.5,'source');
+  const target=roll(5,'sword',80,()=>.5,'target');
+  const armor=roll(5,'body',80,()=>.5,'armor');
+  const all={key:'allAbilities',grade:'MYTHIC',value:8};
+  source.ops=[all,{key:'physAttackSpeed',grade:'EPIC',value:18},{key:'attackPowerRate',grade:'COMMON',value:20}];
+  target.ops=[{key:'hpAttack',grade:'LEGEND',value:24}];
+  const rates=statModel.optionRates([source]);
+  for (const stat of [...statModel.vitalKeys,...statModel.combatKeys]) {
+    const expected=stat==='attackPower'?.46:stat==='agi'?.26:.08;
+    assert(Math.abs(rates[stat+'Rate']-expected)<1e-10);
+  }
+  assert.equal(statModel.applyStatRate(100,.16+.13),129);
+  assert(statModel.canReplace(source,target,0,0));
+  assert(!statModel.canReplace(source,armor,0,0));
+  target.ops.push(all);
+  assert(!statModel.canReplace(source,target,0,0));
+  const game=gameWithGear(source,target);
+  game.isRun().equipment.rightHand=source.uid;
+  assert.equal(game.equipmentCombatStats().attackPower,statModel.applyStatRate(source.baseStats.attackPower,.46));
+  assert.equal(game.totalStats().maxHp,108);
+  assert.match(statModel.opText(all),/全能の律.*8%.*最大HP・MP/);
+  assert.match(statModel.opText(source.ops[1]),/物理攻撃力・素早さ/);
 });
 
 test('turn, guard, first-hit and three-hit procs stay scoped to their trigger', async () => {
