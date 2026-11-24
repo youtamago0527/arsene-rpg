@@ -30,3 +30,22 @@
 .rg-screen .rg-card .rg-icon{width:100%}
 .rg-card[aria-pressed=true]{outline:1px solid #cef2ff;outline-offset:-2px}
 .rg-ops:empty,.rg-base:empty{display:none}
+
+/* Keep the choices and comparison visible together inside the safe-area panel. */
+.rg-screen.rg-picker{height:100%;min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr);gap:8px;margin:0 auto;padding:0;border:0}
+.rg-picker header{margin:0}
+.rg-picker h3{font-size:1.45em}
+.rg-picker nav{display:flex;gap:5px}
+.rg-picker nav button{flex:1}
+.rg-picker nav button[aria-pressed=true]{border-color:#81d6ff;background:#123653}
+.rg-picker .rg-columns{min-height:0;align-items:stretch}
+.rg-picker .rg-list,.rg-stat-scroll{overflow-y:auto;overscroll-behavior:contain;min-height:0}
+.rg-picker .rg-comparison{display:flex;flex-direction:column;min-height:0}
+.rg-picker .rg-stat-scroll{flex:1}
+.rg-picker .rg-confirm{flex:none;margin-top:6px;min-height:44px}
+.rg-picker .rg-card{grid-template-columns:38px minmax(0,1fr)}
+.rg-picker .rg-card .rg-ops{display:flex}
+@media(max-width:600px) and (orientation:portrait){
+  .rg-picker .rg-columns{grid-template-columns:1fr;grid-template-rows:minmax(0,2fr) minmax(0,3fr)}
+  .rg-picker .rg-comparison table{font-size:1em}
+}
