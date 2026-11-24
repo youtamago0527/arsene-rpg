@@ -101,7 +101,11 @@
       combination('allEquipmentPower','武威の律',3,equipmentPower,[6,8,10,12],{summary:'物理・魔法の攻防4種'}),
       combination('allBaseAttributes','才覚の律',3,baseAttributes,[5,7,9,11],{summary:'力〜運の7能力'}),
       combination('allAbilities','全能の律',4,['maxHp','maxMp',...baseAttributes,...equipmentPower],[3,4,6,8],
-        {summary:'最大HP・MP／力〜運／物理・魔法の攻防'})
+        {summary:'最大HP・MP／力〜運／物理・魔法の攻防'}),
+      { ...op('normalDungeonExpRate','経験値UP',3), values:[5,10,15,20], totalCapPercent:40,
+        summary:'持ち帰って装備／通常DのEXP・JOB EXP' },
+      { ...op('normalDungeonGoldRate','GOLD UP',2), values:[10,15,20,25], totalCapPercent:60,
+        summary:'持ち帰って装備／通常Dの撃破GOLD' }
     ]
   };
 })();

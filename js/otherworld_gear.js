@@ -284,7 +284,34 @@
   P.owgRenderVault=function(panel){normalize(this.profile);const rows=this.profile.otherWorldGear.map(x=>{const eq=Object.values(this.profile.otherWorldEquipment).includes(x.uid);return `<article class="owg-card stars-${x.stars||x.tier} ${x.rarity==='infinity'?'owg-infinity':''}${eq?' equipped':''}"><header><div class="owg-meta">${this.owgMetaHtml(x)}</div><b>${esc(this.owgName(x))}</b></header><p>${esc(this.owgBaseText(x))}</p><p>${(x.ops||[]).map(o=>`${esc(this.owgOpText(x,o))}`).join(' / ')||'OPなし'}</p>${x.uniqueSkillId?`<strong>固有奏技《${esc(D.skills[x.uniqueSkillId]?.name)}》</strong>`:''}<footer><button data-owg-equip="${esc(x.uid)}">${eq?'装備中':'装備'}</button></footer></article>`;}).join('');panel.dataset.panel='otherworld-gear';panel.innerHTML=`<button class="panel-home" data-lenny="otherworld">異世界へ戻る</button><small>OTHER WORLD ARSENAL</small><h2>異世界装備庫</h2><div class="owg-res"><b>異界の欠片 ${(this.profile.inventory.otherworldShard||0)}</b><b>異界の核 ${(this.profile.inventory.otherworldCore||0)}</b></div><p class="ow-rule">持ち帰った異世界装備の閲覧・装備変更専用。加工は無限奏廊で遭遇する《異世界工房》だけで行えます。</p><div class="owg-list">${rows||'<p class="item-empty">持ち帰った異世界装備はありません。</p>'}</div>`;};
   const oldPanel=P.renderMenuPanel;P.renderMenuPanel=function(name){if(name==='otherworld-gear'){this.owgRenderVault(document.querySelector('#menu-panel'));return;}return oldPanel.call(this,name);};
   const oldOw=P.renderOtherWorldPanel;P.renderOtherWorldPanel=function(panel){oldOw.call(this,panel);panel.querySelector('.ow-mode-guide')?.insertAdjacentHTML('beforebegin','<button class="ow-ability-link owg-vault-link" data-menu="otherworld-gear"><b>異世界装備庫</b><span>個体装備の閲覧・装備変更</span></button>');};
-  const oldApplyRewards=P.applyRewards;P.applyRewards=function(reward){const fx=this.owgEffects(),next={...reward,drops:{...(reward?.drops||{})}};if(next.exp)next.exp=Math.round(next.exp*(1+(fx.expUp||0)));if(next.gold)next.gold=Math.round(next.gold*(1+(fx.goldUp||0)));const bonus=Math.max(0,fx.materialDropUp||0);for(const [id,n] of Object.entries(next.drops))if(D.items[id]?.category==='material'){let extra=0;for(let i=0;i<n;i++)if(Math.random()<bonus)extra++;next.drops[id]+=extra;}return oldApplyRewards.call(this,next);};
+  function carriedRewardMultiplier(game,key) {
+    const mode=String(game.battleMode||'');
+    if (!mode || mode==='infiniteScore' || mode.startsWith('ow') || mode==='debugOverpower' || game.isRun?.()) return 1;
+    return 1+(gearV2.optionRates(game.owgEquipped())[key]||0);
+  }
+  const oldRewardExpMultiplier=P.rewardExpMultiplier;
+  P.rewardExpMultiplier=function(){
+    return oldRewardExpMultiplier.call(this)*carriedRewardMultiplier(this,'normalDungeonExpRate');
+  };
+  const oldRewardGoldMultiplier=P.rewardGoldMultiplier;
+  P.rewardGoldMultiplier=function(){
+    return oldRewardGoldMultiplier.call(this)*carriedRewardMultiplier(this,'normalDungeonGoldRate');
+  };
+  const oldApplyRewards=P.applyRewards;
+  P.applyRewards=function(reward,awarded){
+    const fx=this.owgEffects(), next={...reward,drops:{...(reward?.drops||{})}};
+    if(next.exp)next.exp=Math.round(next.exp*(1+(fx.expUp||0)));
+    if(next.gold)next.gold=Math.round(next.gold*(1+(fx.goldUp||0)));
+    const bonus=Math.max(0,fx.materialDropUp||0);
+    for(const [id,n] of Object.entries(next.drops))if(D.items[id]?.category==='material'){
+      let extra=0;
+      for(let i=0;i<n;i++)if(Math.random()<bonus)extra++;
+      next.drops[id]+=extra;
+    }
+    const levels=oldApplyRewards.call(this,next);
+    if (awarded) Object.assign(awarded,{exp:next.exp,gold:next.gold});
+    return levels;
+  };
   const oldJobExp=P.grantJobExp;P.grantJobExp=function(exp,...args){return oldJobExp.call(this,Math.round(exp*(1+(this.owgEffects().jobExpUp||0))),...args);};
   const oldWeaponExp=P.grantWeaponExp;P.grantWeaponExp=function(exp,...args){return oldWeaponExp.call(this,Math.round(exp*(1+(this.owgEffects().masteryExpUp||0))),...args);};
   const oldVictory=P.victory;
