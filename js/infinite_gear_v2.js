@@ -72,9 +72,9 @@
       const weights = rarity.weights.map((weight,grade)=>available.some(op=>op.grade===grade) ? weight : 0);
       const grade = weighted(weights,random);
       const pool = available.filter(op=>op.grade===grade);
-      if (!pool.length) throw new Error('Not enough unique OPs in Infinite gear grade tables');
+      if (!pool.length) throw new Error('Not enough eligible OPs in Infinite gear grade tables');
       const pick = pickOption(pool,grade,random);
-      available.splice(available.indexOf(pick),1);
+      if (!pick.repeatable) available.splice(available.indexOf(pick),1);
       ops.push(rollOption(pick,rarity,floor,random));
     }
     return ops;
@@ -165,7 +165,7 @@
     return Number.isInteger(sourceIndex) && Number.isInteger(targetIndex) && sourceIndex>=0 && targetIndex>=0 &&
       canTransfer(source,target) && definition && allowedOn(definition,byItem.get(source.itemId)) &&
       allowedOn(definition,byItem.get(target.itemId)) && !!target.ops[targetIndex] &&
-      !target.ops.some((existing,index)=>existing.key===op.key && index!==targetIndex);
+      (definition.repeatable || !target.ops.some((existing,index)=>existing.key===op.key && index!==targetIndex));
   }
 
   function damage(value, rates, {basic,skill,enemy,critical,turn,hp,maxHp,alive,previousBasicHit,previousGuardHit}) {

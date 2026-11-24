@@ -49,6 +49,7 @@
       {id:'staff', name:'魔杖', slot:'rightHand', family:'staff', weaponType:'staff', base:{magicAttackPower:['weapon',1.04]}},
       {id:'instrument', name:'奏琴', slot:'rightHand', family:'instrument', weaponType:'instrument', base:{magicAttackPower:['weapon',.94]}},
       {id:'shield', name:'魔盾', slot:'rightHand', family:'shield', weaponType:'shield', base:{defensePower:['armor',1.30],magicDefensePower:['armor',.94]}},
+      {id:'buckler', name:'小盾', slot:'leftHand', family:'buckler', base:{defensePower:['armor',.75],magicDefensePower:['armor',.65]}},
       {id:'head', name:'仮面', slot:'head', family:'head', base:{defensePower:['armor',.72],magicDefensePower:['armor',.64]}},
       {id:'body', name:'外套', slot:'body', family:'body', base:{defensePower:['armor',1],magicDefensePower:['armor',.82]}},
       {id:'arms', name:'手甲', slot:'arms', family:'arms', base:{defensePower:['armor',.66],magicDefensePower:['armor',.57]}},
@@ -102,9 +103,9 @@
       combination('allBaseAttributes','才覚の律',3,baseAttributes,[5,7,9,11],{summary:'力〜運の7能力'}),
       combination('allAbilities','全能の律',4,['maxHp','maxMp',...baseAttributes,...equipmentPower],[3,4,6,8],
         {summary:'最大HP・MP／力〜運／物理・魔法の攻防'}),
-      { ...op('normalDungeonExpRate','経験値UP',3), values:[5,10,15,20], totalCapPercent:40,
+      { ...op('normalDungeonExpRate','経験値UP',3), values:[5,10,15,20], repeatable:true,
         summary:'持ち帰って装備／通常DのEXP・JOB EXP' },
-      { ...op('normalDungeonGoldRate','GOLD UP',2), values:[10,15,20,25], totalCapPercent:60,
+      { ...op('normalDungeonGoldRate','GOLD UP',2), values:[10,15,20,25], repeatable:true,
         summary:'持ち帰って装備／通常Dの撃破GOLD' }
     ]
   };

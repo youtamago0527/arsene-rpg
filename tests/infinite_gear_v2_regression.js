@@ -32,6 +32,7 @@ for (const file of ['infinite_score_data','infinite_gear_v2_data','infinite_gear
 const statModel = data.infiniteGear;
 const cfg = data.infiniteGearV2;
 const plain = value => JSON.parse(JSON.stringify(value));
+const nonRepeatableOps = gear => gear.ops.filter(option=>!cfg.ops.find(op=>op.key===option.key)?.repeatable);
 const roll = (rarity, part='sword', floor=1, random=()=>.42, uid='item') =>
   statModel.generate({ uid,floor,part,random,rarity });
 
@@ -65,7 +66,8 @@ test('base stats, independent option counts and values, and grade pools', () => 
       assert.equal(gear.obtainedFloor,100);
       assert.equal(gear.name,rank.prefix+'魔剣');
       assert(gear.ops.length>=rank.count[0]&&gear.ops.length<=rank.count[1]);
-      assert.equal(new Set(gear.ops.map(x=>x.key)).size,gear.ops.length);
+      const unique=nonRepeatableOps(gear);
+      assert.equal(new Set(unique.map(x=>x.key)).size,unique.length);
       for (const op of gear.ops) {
         const special = cfg.ops.find(definition=>definition.key===op.key && definition.values);
         if (special) assert(special.values.includes(op.value));
@@ -90,7 +92,8 @@ test('INFINITY guarantees, tail behavior, and format/stat safety', () => {
       const fixed = cfg.ops.find(definition=>definition.key===op.key)?.values;
       assert.equal(op.value,fixed?.[0] ?? floor);
     }
-    assert.equal(new Set(item.ops.map(op=>op.key)).size,6);
+    const unique=nonRepeatableOps(item);
+    assert.equal(new Set(unique.map(op=>op.key)).size,unique.length);
   }
   const low=roll(6,'sword',1,()=>.5),high=roll(6,'sword',1,()=>.9999999);
   assert(high.baseStats.attackPower>low.baseStats.attackPower);
@@ -210,7 +213,7 @@ test('all-stat and paired options stack additively and transfer as one OP', () =
   assert.match(statModel.opText(source.ops[1]),/物理攻撃力・素早さ/);
 });
 
-test('returned reward OPs require equipped gear and a normal battle; combined bonuses are capped', () => {
+test('returned reward OPs require equipped gear and a normal battle, and add together', () => {
   const expKey='normalDungeonExpRate', goldKey='normalDungeonGoldRate';
   const make=(part,uid)=>({...roll(5,part,20,()=>.5,uid),ops:[{key:expKey,value:20,grade:'LEGEND'},{key:goldKey,value:25,grade:'EPIC'}]});
   const sword=make('sword','sword'), head=make('head','head'), ring=make('accessory','ring');
@@ -221,20 +224,46 @@ test('returned reward OPs require equipped gear and a normal battle; combined bo
   assert.equal(game.rewardExpMultiplier(),1.5);
   assert.equal(game.rewardGoldMultiplier(),2);
   game.profile.otherWorldEquipment={rightHand:'sword',head:'head',accessory:'ring'};
-  assert(Math.abs(game.rewardExpMultiplier()-2.1)<1e-12);
-  assert.equal(game.rewardGoldMultiplier(),3.2);
+  assert(Math.abs(game.rewardExpMultiplier()-2.4)<1e-12);
+  assert.equal(game.rewardGoldMultiplier(),3.5);
   for (const mode of ['infiniteScore','ow','owBoss','debugOverpower']) {
     game.battleMode=mode;
     assert.equal(game.rewardExpMultiplier(),1.5);
     assert.equal(game.rewardGoldMultiplier(),2);
   }
   game.battleMode='myrthi';
-  assert.equal(game.rewardGoldMultiplier(),3.2);
+  assert.equal(game.rewardGoldMultiplier(),3.5);
   game.profile.infiniteScore.active=true;
   game.isRun().equipment={rightHand:sword.uid};
   assert.equal(game.rewardExpMultiplier(),1.5);
   assert.equal(game.rewardGoldMultiplier(),2);
   assert.match(statModel.opText(sword.ops[0]),/通常D.*JOB EXP/);
+});
+
+test('reward options can roll six times, be transplanted twice, and fill all seven equipment slots', () => {
+  const expKey='normalDungeonExpRate', goldKey='normalDungeonGoldRate';
+  const parts=['sword','buckler','head','body','arms','feet','accessory'];
+  const near=(actual,expected)=>assert(Math.abs(actual-expected)<1e-12);
+  for (const [key,gradeDraw,value,rate] of [[expKey,.20,20,8.4],[goldKey,.025,25,10.5]]) {
+    const draws=[0,0,0,...Array.from({length:6},()=>[gradeDraw,.99999,.99999]).flat()];
+    const source=roll(6,'accessory',1,()=>draws.shift()??.999,'source');
+    assert.equal(source.ops.length,6);
+    assert(source.ops.every(op=>op.key===key && op.value===value));
+    const target=roll(6,'accessory',1,()=>.5,'target');
+    target.ops[0]={...source.ops[0]};
+    assert(statModel.canReplace(source,target,0,1),'repeatable OP may fill another slot');
+
+    const equipment=parts.map(part=>({...roll(6,part,20,()=>.5,part),ops:source.ops}));
+    assert.equal(new Set(equipment.map(gear=>gear.slot)).size,7);
+    const game=gameWithGear(...equipment);
+    game.profile.infiniteScore.active=false;
+    game.profile.otherWorldGear=equipment;
+    game.profile.otherWorldEquipment=Object.fromEntries(equipment.map(gear=>[gear.slot,gear.uid]));
+    game.battleMode='slime';
+    near(statModel.optionRates(equipment)[key],rate);
+    if (key===expKey) near(game.rewardExpMultiplier(),1.5*9.4);
+    else near(game.rewardGoldMultiplier(),2*11.5);
+  }
 });
 
 test('awarded battle totals can include legacy OP bonuses without applying them twice', () => {
