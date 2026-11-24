@@ -465,9 +465,11 @@
     const rows=[...combatKeys,...baseKeys].map(k=>{
       const a=before[k]||0,b=after[k]||0,delta=Number((b-a).toFixed(2));
       return `<tr><th>${esc(labels[k]||k)}</th><td>${a}</td>${status?'':`<td>${b}</td><td class="${delta>0?'rg-up':delta<0?'rg-down':''}">${delta>0?'+':''}${delta}</td>`}</tr>`;
-    }).join('');
+    });
+    const table = entries => `<table><thead><tr><th>能力</th><th>現在</th>${status?'':'<th>候補</th><th>差</th>'}</tr></thead><tbody>${entries.join('')}</tbody></table>`;
+    const split = Math.ceil(rows.length / 2);
     return `<div class="rg-comparison"><p>${status?'現在のステータス':gearName(game,current)+' → '+gearName(game,chosen)}</p>
-      <div class="rg-stat-scroll" tabindex="0" aria-label="能力一覧"><table><thead><tr><th>能力</th><th>現在</th>${status?'':'<th>候補</th><th>差</th>'}</tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="rg-stat-tables" role="group" aria-label="能力一覧">${table(rows.slice(0,split))}${table(rows.slice(split))}</div>
       ${chosen && current?.uid!==chosen.uid?`<button class="rg-confirm" data-is-run-equip="${esc(chosen.uid)}">${gearName(game,chosen)}に付け替える</button>`:''}</div>`;
   }
   P.isRenderEquipment=function(panel){
