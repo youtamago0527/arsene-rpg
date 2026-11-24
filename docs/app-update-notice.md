@@ -4,8 +4,8 @@ iOSアプリの拠点「お知らせ」から開く。ログインボーナス�
 
 ## 配信の準備
 
-- 公式サイト `arsene-rpg.pages.dev` の `/game/data/app-update-notice.json` に、最初は `data/app-update-notice.json` を無効のまま配置する。サイトのデプロイでは既存ページ・アセットを含めて維持する。
-- URLがHTTP 200でJSONを返し、Capacitorの `Origin: https://localhost` のリクエストを許可することを確認する。未配置時はサイトのHTMLが返るため、アプリは告知を表示しない。
+- 公式サイト `arsene-rpg.pages.dev` の `/game/data/app-update-notice.json` に、最初は `{"enabled": false}` を配置する。サイトのデプロイでは既存ページ・アセットを含めて維持する。
+- URLがHTTP 200でJSONを返し、Capacitorの `Origin: https://localhost` のリクエストを許可することを確認する。配信サーバーに接続できない場合は、アプリに同梱した `data/app-update-notice.json` の変更点を表示する。
 - 承認に加え、対象バージョンがApp Storeで実際に公開されたことを確認してから `enabled` を `true` にする。告知を差し替えるときは未読用の `id` を変える。告知停止は `enabled: false` で行える。
 
 例（バージョンと変更内容は実際に公開した版に合わせる）。
