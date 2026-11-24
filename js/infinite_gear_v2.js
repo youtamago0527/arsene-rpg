@@ -3,7 +3,9 @@
   const D = window.ARSENE_DATA;
   const cfg = D.infiniteGearV2;
   const byPart = new Map(cfg.parts.map(part => [part.id,part]));
+  const byItem = new Map(cfg.parts.map(part => ['owg_v2_'+part.id,part]));
   const byOp = new Map(cfg.ops.map(op => [op.key,op]));
+  const rareOptions = cfg.ops.filter(op => op.chance);
   const combatKeys = ['attackPower','defensePower','magicAttackPower','magicDefensePower'];
   const vitalKeys = ['maxHp','maxMp','str','vit','mag','mnd','agi','dex','luk'];
   const floorNumber = value => Math.max(1, clampInteger(value,Number.MAX_SAFE_INTEGER));
@@ -16,6 +18,7 @@
   const tier = gear => cfg.tiers[gear?.tier-1];
   const level = gear => clampInteger(gear?.plus,Number.MAX_SAFE_INTEGER);
   const rate = (rateTotal,key) => rateTotal[key] || 0;
+  const allowedOn = (op,part) => !op.table || !!part && Object.values(part.base).some(([table])=>table===op.table);
 
   function ratesAt(value) {
     const floor = floorNumber(value);
@@ -42,10 +45,16 @@
     return Math.floor(scale * Math.expm1(-Math.log1p(-sample(random))/shape));
   }
 
-  function rollOptions(rarity,floor,random) {
+  function rollOptions(rarity,part,floor,random) {
     const count = between(rarity.count,random), ops = [];
-    const available = [...cfg.ops];
-    for (let i=0;i<count;i++) {
+    // These odds apply once per eligible item, including when the ordinary grade pool runs out.
+    const special = rareOptions.find(op=>rarity.weights[op.grade] && allowedOn(op,part) && sample(random)<op.chance);
+    if (special) ops.push({
+      key:special.key, grade:cfg.grades[special.grade],
+      value:special.values[Math.floor(sample(random)*special.values.length)]
+    });
+    const available = cfg.ops.filter(op=>!op.chance);
+    for (let i=ops.length;i<count;i++) {
       const weights = rarity.weights.map((weight,grade)=>available.some(op=>op.grade===grade) ? weight : 0);
       const grade = weighted(weights,random);
       const pool = available.filter(op=>op.grade===grade);
@@ -85,7 +94,7 @@
     return {
       gearVersion:2, uid, itemId:'owg_v2_'+part.id, name:rarity.prefix+part.name, slot:part.slot,
       kind:'equipment', count:1, generated:true, otherWorldGear:true, rarity:rarity.id, tier:index+1,
-      obtainedFloor:floor, baseStats:rollBase(part,index,floor,random), ops:rollOptions(rarity,floor,random),
+      obtainedFloor:floor, baseStats:rollBase(part,index,floor,random), ops:rollOptions(rarity,part,floor,random),
       plus:0, locked:false
     };
   }
@@ -102,8 +111,12 @@
     const out = {};
     for (const gear of equipment) if (isV2(gear)) {
       for (const op of gear.ops || []) {
-        if (!byOp.has(op.key)) continue;
-        out[op.key] = rate(out,op.key) + clampInteger(op.value,cfg.limits.optionPercent)/100;
+        const definition = byOp.get(op.key);
+        if (!definition || !allowedOn(definition,byItem.get(gear.itemId))) continue;
+        const cap = definition.totalCapPercent;
+        out[op.key] = cap === undefined
+          ? rate(out,op.key) + clampInteger(op.value,cfg.limits.optionPercent)/100
+          : Math.min(cap/100,rate(out,op.key) + Math.max(0,Number(op.value)||0)/100);
       }
     }
     return out;
@@ -128,21 +141,27 @@
 
   function canReplace(source,target,sourceIndex,targetIndex) {
     const op=source?.ops?.[sourceIndex];
+    const definition=byOp.get(op?.key);
     return Number.isInteger(sourceIndex) && Number.isInteger(targetIndex) && sourceIndex>=0 && targetIndex>=0 &&
-      canTransfer(source,target) && byOp.has(op?.key) && !!target.ops[targetIndex] &&
+      canTransfer(source,target) && definition && allowedOn(definition,byItem.get(source.itemId)) &&
+      allowedOn(definition,byItem.get(target.itemId)) && !!target.ops[targetIndex] &&
       !target.ops.some((existing,index)=>existing.key===op.key && index!==targetIndex);
   }
 
-  function damage(value, rates, {basic,skill,enemy,critical,weak,turn,hp,maxHp,alive}) {
-    const multiplier = rate(rates,'echoDamageRate') +
+  function damage(value, rates, {basic,skill,enemy,critical,turn,hp,maxHp,alive}) {
+    const multiplier =
       (!basic ? rate(rates,'skillDamageRate') : 0) +
       (skill.element ? rate(rates,'elementDamageRate') : 0) +
       (enemy.kind==='boss' ? rate(rates,'bossDamageRate') : 0) +
-      (critical ? rate(rates,'criticalDamageRate') : 0) + (weak ? rate(rates,'weakDamageRate') : 0) +
+      (critical ? rate(rates,'criticalDamageRate') : 0) +
       (turn===1 ? rate(rates,'openingDamageRate') : 0) +
       (enemy.hp>0 && enemy.hp<=enemy.stats?.maxHp*.3 ? rate(rates,'executeDamageRate') : 0) +
       (hp>=maxHp*.9 ? rate(rates,'healthyDamageRate') : 0) + (alive>=2 ? rate(rates,'groupDamageRate') : 0);
     return Math.min(cfg.limits.stat,value*(1+multiplier));
+  }
+
+  function extraDamage(base,rates) {
+    return Math.min(cfg.limits.stat-base,Math.floor(base*rate(rates,'echoDamageRate')+1e-8));
   }
 
   for (const part of cfg.parts) {
@@ -156,9 +175,10 @@
   for (const row of cfg.tiers) D.infiniteScore.rarity[row.id] = {
     ...D.infiniteScore.rarity[row.id], name:row.name, color:row.color
   };
-  D.infiniteGear = {isV2,tier,level,ratesAt,generate,strengthened,optionRates,stat,damage,
+  D.infiniteGear = {isV2,tier,level,ratesAt,generate,strengthened,optionRates,stat,damage,extraDamage,
     canMerge,canTransfer,canReplace,combatKeys,vitalKeys,
     number:value=>format.format(value),
-    opText:op=>`${byOp.get(op.key)?.label||op.key} +${format.format(op.value)}%［${op.grade}］`
+    opText:op=>op.key==='weakDamageRate' ? '廃止OP（工房で上書き可）'
+      : `${byOp.get(op.key)?.label||op.key} +${format.format(op.value)}%［${op.grade}］`
   };
 })();

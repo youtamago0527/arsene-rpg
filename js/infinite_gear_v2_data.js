@@ -57,8 +57,10 @@
       op('agiRate','素早さ',1),op('dexRate','器用さ',1),op('lukRate','運',1),
       op('skillDamageRate','スキルダメージ',2),op('elementDamageRate','属性ダメージ',2),
       op('healingPowerPercent','回復量',2),op('physicalDamagePercent','物理与ダメージ',2),op('magicDamagePercent','魔法与ダメージ',2),
-      op('bossDamageRate','ボスダメージ',3),op('criticalDamageRate','会心ダメージ',3),op('weakDamageRate','弱点ダメージ',3),
-      op('echoDamageRate','追奏ダメージ',4),op('openingDamageRate','初手ダメージ',4),
+      op('bossDamageRate','ボスダメージ',3),op('criticalDamageRate','会心ダメージ',3),
+      { ...op('lifeStealRate','HP吸収',3), table:'weapon', chance:.01, values:[1,2,3], totalCapPercent:3 },
+      { ...op('hitMpRecoveryRate','被ダメージ時MP回復',3), table:'armor', chance:.0075, values:[.25,.5,.75,1], totalCapPercent:2 },
+      op('echoDamageRate','追加ダメージ',4),op('openingDamageRate','初手ダメージ',4),
       op('executeDamageRate','敵HP30%以下ダメージ',4),op('healthyDamageRate','自身HP90%以上ダメージ',4),
       op('groupDamageRate','敵複数時ダメージ',4),op('mpEfficiencyRate','消費MP効率',4)
     ]

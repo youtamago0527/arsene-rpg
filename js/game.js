@@ -2917,8 +2917,18 @@
       if (critical) value *= balance.critical.multiplier;
       // 武器学は基礎能力へ混ぜず、対応武器で与える最終ダメージだけを伸ばす。
       value *= this.weaponMasteryMultiplier(wType);
-      if (this.owgAdjustDamage) value = this.owgAdjustDamage(value, skill, enemy, critical, weak);
-      return { value: Math.max(1, Math.round(value)), critical, weak };
+      const adjusted = this.owgAdjustDamage?.(value, skill, enemy, critical);
+      return { ...(adjusted || { value: Math.max(1, Math.round(value)) }), critical, weak };
+    }
+    applyPlayerHit(target, hit) {
+      if (target.infiniteHp) target.debugDamageTaken = (target.debugDamageTaken || 0) + hit.value;
+      const previousHp = target.hp;
+      target.hp = target.infiniteHp ? target.stats.maxHp : Math.max(target.cannotDefeat ? 1 : 0, target.hp - hit.value);
+      if (this.owgRestoreFromDamage?.('hp', previousHp - target.hp) > 0) this.persistVitals();
+    }
+    showPlayerHit(element, hit, type = 'damage') {
+      const label = hit.additionalDamage ? `${hit.value - hit.additionalDamage} (+${hit.additionalDamage})` : hit.value;
+      this.floating(element, label, hit.critical ? 'critical' : type);
     }
     // 閃き演出：画面フラッシュ＋効果音＋カットインを見せてから技を発動する
     async sparkPresentation(skill) {
@@ -2985,12 +2995,11 @@
         const d = this.damageFor(hitSkill, target, outcome); total += d.value; if (d.critical) criticals++;
         this.refundMpFromSpell(d.value, skill); // 魔導士《魔力還流》
         perHit[target.uid] = (perHit[target.uid] || 0) + d.value;
-        if (target.infiniteHp) target.debugDamageTaken = (target.debugDamageTaken || 0) + d.value;
-        target.hp = target.infiniteHp ? target.stats.maxHp : target.cannotDefeat ? Math.max(1, target.hp - d.value) : Math.max(0, target.hp - d.value);
+        this.applyPlayerHit(target, d);
         this.recordSeripesHit(target, skill, d.value);
         // 撃破した瞬間に見た目も倒す。ここで付けないと「HP0なのに敵が残る」状態になる。
         if (target.hp <= 0) { target.alive = false; tEl.classList.add('defeated'); }
-        this.floating(tEl, d.value, d.critical ? 'critical' : d.weak ? 'weak' : 'damage'); if (d.weak && !d.critical) this.floating(tEl, 'WEAK!', 'weak-label'); this.attackImpactFx ? this.attackImpactFx(skill, tEl, d.critical) : this.audio.sfx(d.critical ? 'critical' : 'enemyHit'); this.updateHUD();
+        this.showPlayerHit(tEl, d, d.weak ? 'weak' : 'damage'); if (d.weak && !d.critical) this.floating(tEl, 'WEAK!', 'weak-label'); this.attackImpactFx ? this.attackImpactFx(skill, tEl, d.critical) : this.audio.sfx(d.critical ? 'critical' : 'enemyHit'); this.updateHUD();
         await this.battleSleep(hits > 1 ? 190 : 420); tEl.classList.remove('hit');
       } if (misses && !total) { this.setLog(`${target.name}${target.label}に攻撃を外した！`); ren.classList.remove('attacking','casting'); if (extremeDance) this.player.comboDance = 0; return { anyHit: false }; }
       const hitNames = Object.keys(perHit).map(uid => { const e = this.enemies.find(x => x.uid === uid); return e ? `${e.name}${e.label}` : ''; }).filter(Boolean); const targetLabel = skill.randomTarget && hitNames.length > 1 ? hitNames.join('・') : `${target.name}${target.label}`; this.setLog(`${criticals ? `CRITICAL ×${criticals}! ` : ''}${targetLabel}に${total}ダメージ！${hits > 1 ? `（${hits}HIT）` : ''}`); if (skill.kind === 'physical' || skill.kind === 'weapon') { delete this.player.buffs.atkCharge; delete this.player.buffs.magicCharge; } if (skill.kind === 'magical' || skill.damageType === 'magical') delete this.player.buffs.magFocus; ren.classList.remove('attacking', 'casting');
@@ -3071,10 +3080,9 @@
       const pursuitPassive = this.activePassiveByType('offHandCritical'), pursuitExtra = outcome.critical ? this.passiveValue(pursuitPassive, 'comboBonusOnCritical') : 0;
       this.comboDanceHit(pursuitExtra);
       const d = this.damageFor(strike, enemy, outcome);
-      if (enemy.infiniteHp) enemy.debugDamageTaken = (enemy.debugDamageTaken || 0) + d.value;
-      enemy.hp = enemy.infiniteHp ? enemy.stats.maxHp : enemy.cannotDefeat ? Math.max(1, enemy.hp - d.value) : Math.max(0, enemy.hp - d.value);
+      this.applyPlayerHit(enemy, d);
       el.classList.add('hit');
-      this.floating(el, d.value, d.critical ? 'critical' : 'damage');
+      this.showPlayerHit(el, d);
       this.audio.playWeaponAttack(lw.weaponType); if (d.critical) this.audio.sfx('criticalHit');
       this.setLog(`左手の${lw.name}で追撃！ ${enemy.name}${enemy.label}に${d.value}ダメージ！`);
       this.updateHUD();
@@ -3131,10 +3139,9 @@
       const outcome = this.rollPlayerAttackOutcome(skill, enemy);
       if (!outcome.hit) { this.triggerEvade('player', enemy, skill, { source: 'counter' }); this.floating(el, 'EVADE', 'miss'); this.setLog(`${enemy.name}${enemy.label}は反撃をかわした！`); await this.battleSleep(260); ren.classList.remove('attacking'); return; }
       const d = this.damageFor(skill, enemy, outcome);
-      if (enemy.infiniteHp) enemy.debugDamageTaken = (enemy.debugDamageTaken || 0) + d.value;
-      enemy.hp = enemy.infiniteHp ? enemy.stats.maxHp : enemy.cannotDefeat ? Math.max(1, enemy.hp - d.value) : Math.max(0, enemy.hp - d.value);
+      this.applyPlayerHit(enemy, d);
       el.classList.add('hit');
-      this.floating(el, d.value, d.critical ? 'critical' : 'damage');
+      this.showPlayerHit(el, d);
       this.audio.playWeaponAttack(skill.weaponType || this.equippedWeaponType()); if (d.critical) this.audio.sfx('criticalHit');
       this.setLog(`${enemy.name}${enemy.label}に${d.value}ダメージ！`);
       this.updateHUD();
@@ -3283,10 +3290,10 @@
         if (!outcome.hit) { this.comboDanceMiss(); this.triggerEvade('player', target, skill, { source: 'playerAttackAll' }); this.floating(el, 'EVADE', 'miss'); await this.battleSleep(180); continue; }
         this.comboDanceHit();
         el.classList.add('hit');
-        const d = this.damageFor(skill, target, outcome); if (target.infiniteHp) target.debugDamageTaken = (target.debugDamageTaken || 0) + d.value; target.hp = target.infiniteHp ? target.stats.maxHp : target.cannotDefeat ? Math.max(1, target.hp - d.value) : Math.max(0, target.hp - d.value);
+        const d = this.damageFor(skill, target, outcome); this.applyPlayerHit(target, d);
         this.refundMpFromSpell(d.value, skill); // 魔導士《魔力還流》
         this.recordSeripesHit(target, skill, d.value);
-        this.floating(el, d.value, d.critical ? 'critical' : 'damage'); if (d.weak && !d.critical) this.floating(el, 'WEAK!', 'weak-label'); this.attackImpactFx ? this.attackImpactFx(skill, el, d.critical) : this.audio.sfx(d.critical ? 'critical' : 'enemyHit'); this.updateHUD();
+        this.showPlayerHit(el, d); if (d.weak && !d.critical) this.floating(el, 'WEAK!', 'weak-label'); this.attackImpactFx ? this.attackImpactFx(skill, el, d.critical) : this.audio.sfx(d.critical ? 'critical' : 'enemyHit'); this.updateHUD();
         await this.battleSleep(220); el.classList.remove('hit');
         // 全体攻撃でも状態異常・弱体は個別に判定する（単体攻撃と同じ規則）
         if (target.hp > 0) this.applySkillDebuff(skill, target);
@@ -3359,6 +3366,7 @@
           }
         }
       }
+      this.owgRestoreFromDamage?.('mp', actual);
       this.persistVitals(); return actual;
     }
     async enemySupportAction(enemy, chosen) {
