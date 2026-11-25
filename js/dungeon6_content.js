@@ -17,8 +17,8 @@
     stats: tenfold(D.enemies.repeatedHunter.stats), statRoundingUnit: D.enemies.repeatedHunter.statRoundingUnit * 10,
     ai: [{ id: 'soulBolt', name: '星環照射', kind: 'magic', weight: .55 }, { id: 'attack', name: '振子撃', kind: 'physical', weight: .45 }] };
   const chromatia = Object.assign(D.futureBosses.chromatia, {
-    kind: 'boss', bossRank: 'dungeonBoss', music: bossMusic, ignoreFloorStatScale: true, stats: tenfold(D.enemies.ostina.stats),
-    ai: [{ id: 'soulBolt', name: '五光の変奏', kind: 'magic', weight: .6 }, { id: 'attack', name: '彩律の矢', kind: 'physical', weight: .4 }]
+    sprite: art('chromatia'), kind: 'boss', bossRank: 'dungeonBoss', music: bossMusic, ignoreFloorStatScale: true, stats: tenfold(D.enemies.ostina.stats),
+    ai: [{ id: 'soulBolt', name: '五光の変奏', kind: 'magic', weight: .6 }, { id: 'attack', name: '彩律の槍', kind: 'physical', weight: .4 }]
   });
   const enemies = [moth, hound, surveyor, chromatia];
   for (const enemy of enemies) Object.assign(enemy, { dungeonId: 'dungeon6', devOnly: true, futureOnly: true, exp: 0, gold: 0, dropTable: [] });
