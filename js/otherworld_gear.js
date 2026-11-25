@@ -72,7 +72,21 @@
   P.owgEquipped=function(){const run=this.profile?.infiniteScore?.active?this.isRun?.():null;if(run)return Object.values(run.equipment||{}).map(uid=>this.owgEntry(uid)).filter(x=>x?.otherWorldGear);return Object.values(this.profile.otherWorldEquipment||{}).map(uid=>(this.profile.otherWorldGear||[]).find(x=>x.uid===uid)).filter(Boolean);};
   P.owgDefinition=function(x){return this.equipmentDefinition?.(x?.itemId)||{};};
   P.owgName=function(x){const base=D.items[x.itemId]?.name||x.itemId, rare=(x.ops||[]).slice().sort((a,b)=>b.rank-a.rank)[0];return `${rare&&rare.rank>=5?`《${D.otherWorldGearOps.find(o=>o.key===rare.key)?.label||'異能'}の》`:''}${base}${x.uniqueSkillId?' — 奏技':''}`;};
-  P.owgRollStar=function(floor){const bands=floor>=150?[0,10,60,30]:floor>=100?[5,25,55,15]:floor>=50?[15,40,38,7]:floor>=25?[35,45,18,2]:floor>=10?[60,32,7.5,.5]:[82,16,2,0],r=this.isRand()*100;let n=r;for(let i=0;i<4;i++){n-=bands[i];if(n<=0)return i+3;}return 3;};
+  P.owgRollStar = function (floor) {
+    const bands = floor >= 150 ? [0,10,60,30] : floor >= 100 ? [5,25,55,15] :
+      floor >= 50 ? [15,40,38,7] : floor >= 25 ? [35,45,18,2] : floor >= 10 ? [60,32,7.5,.5] : [82,16,2,0];
+    const top = bands[3];
+    const bonus = this.isRun?.() ? this.isSupportRelicRate('astrolabe') : 0;
+    const enhanced = top * (1 + bonus / 100);
+    let roll = this.isRand() * 100;
+    if (roll >= 100 - enhanced) return 6;
+    roll *= (100 - top) / (100 - enhanced);
+    for (let i = 0; i < 3; i++) {
+      if (roll < bands[i]) return i + 3;
+      roll -= bands[i];
+    }
+    return 5;
+  };
   P.owgQuality=function(floor){const range=floor>=150?[100,120]:floor>=100?[97,118]:floor>=50?[94,115]:floor>=25?[90,110]:[87,105];return range[0]+Math.floor(this.isRand()*(range[1]-range[0]+1));};
   P.owgRollOp=function(maxRank,used=[]){const pool=D.otherWorldGearOps.filter(x=>!used.includes(x.key)),sum=pool.reduce((n,x)=>n+x.weight,0);let r=this.isRand()*sum,pick=pool[0];for(const x of pool){r-=x.weight;if(r<=0){pick=x;break;}}const rank=1+Math.floor(this.isRand()*maxRank),base=pick.values[rank-1],value=typeof base==='number'&&base<1?+(base*(.9+this.isRand()*.2)).toFixed(4):Math.max(1,Math.round(base*(.9+this.isRand()*.2)));return {key:pick.key,rank,value};};
   P.owgGenerate=function(force={}){normalize(this.profile);const floor=force.floor||this.isRun?.()?.floor||1,stars=force.stars||this.owgRollStar(floor),s=series[stars-3],parts=slots,part=force.part||parts[Math.floor(this.isRand()*parts.length)],itemId=`owg_${s.id}_${part.id}`,quality=this.owgQuality(floor),maxRank=stars===6&&floor>=150&&this.isRand()<.01?6:Math.min(5,stars-1),count=stars===3?Math.floor(this.isRand()*2):stars===4?1+Math.floor(this.isRand()*2):stars===5?2+Math.floor(this.isRand()*2):3+Math.floor(this.isRand()*2),ops=[];while(ops.length<count)ops.push(this.owgRollOp(maxRank,ops.map(x=>x.key)));const skillRate={3:0,4:.005,5:.03,6:.08}[stars],uniqueSkillId=part.weaponType&&this.isRand()<skillRate?D.otherWorldGearUniqueSkills[part.id]?.id:null,rarity=stars===6?'mythic':stars===5?'legendary':stars===4?'epic':'rare';return {uid:`owg-${Date.now()}-${++this.profile.otherWorldGearUid}`,kind:'equipment',itemId,count:1,generated:true,otherWorldGear:true,stars,rarity,quality,multiplier:quality/100,plus:0,tuneLevel:0,ops,uniqueSkillId,obtainedFloor:floor,locked:false};};
