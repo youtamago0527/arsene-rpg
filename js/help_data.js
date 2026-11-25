@@ -190,7 +190,7 @@ window.ARSENE_HELP = [
   {
     id: 'levelCap', title: 'JOBレベル上限', titleEn: 'LEVEL CAP', lockedBy: 'levelCap',
     body: [
-      '全JOBのレベル上限がLv20からLv40へ上昇しています。',
+      '現在のJOBレベル上限はLv.{jobLevelCap}です。',
       'Lv21以降は成長量が2倍です。転生はLv20以上でいつでも選べます。'
     ]
   }

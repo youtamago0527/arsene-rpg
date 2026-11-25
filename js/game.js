@@ -1217,7 +1217,12 @@
     // セリペス撃破で解放される限界突破帯（Lv20〜40）。転生の可否は従来通り
     // jobLevelCap(20)基準のcanRebirthが見るため、ここを変えても転生条件には影響しない。
     jobLevelCapUnlocked() { return !!this.profile.flags.jobLevelCapUnlocked; }
-    effectiveJobLevelCap() { return this.jobLevelCapUnlocked() ? (D.jobLevelCapExtended || 40) : (D.jobLevelCap || 20); }
+    effectiveJobLevelCap(profile = this.profile) {
+      const { flags = {}, bossDefeated = {} } = profile;
+      const milestone = D.jobCapMilestones.find(({ flag, boss }) => flags[flag] || bossDefeated[boss]);
+      if (milestone) return milestone.cap;
+      return flags.jobLevelCapUnlocked || flags.dungeon3Clear || bossDefeated.seripes ? D.jobLevelCapExtended : D.jobLevelCap;
+    }
     canRebirth(jobId) {
       const lv = this.profile.jobs?.[jobId]?.level || 1, cap = D.jobLevelCap || 20;
       if (!this.rebirthUnlocked()) return { ok: false, reason: '転生はまだ解放されていません。' };
@@ -1329,7 +1334,7 @@
       if (key === 'dualBlade') return this.isJobUnlocked('dualBlade');
       if (key === 'guardian') return this.isJobUnlocked('guardian');
       if (key === 'enhance') return (f.dungeon2BattleWins || 0) >= 15;
-      if (key === 'levelCap') return !!f.jobLevelCapUnlocked;
+      if (key === 'levelCap') return this.effectiveJobLevelCap() > D.jobLevelCap;
       if (key === 'rebirth') return this.rebirthUnlocked();
       if (key === 'phantomThief') return this.isJobUnlocked('phantomThief');
       if (key === 'otherWorld') return !!f.otherWorldUnlocked;
@@ -1347,7 +1352,7 @@
         (e.body || []).forEach(line => {
           if (line.startsWith('- ')) { bullets.push(`<li>${line.slice(2)}</li>`); return; }
           if (bullets.length) { parts.push(`<ul>${bullets.join('')}</ul>`); bullets = []; }
-          parts.push(`<p>${line}</p>`);
+          parts.push(`<p>${line.replace('{jobLevelCap}', () => this.effectiveJobLevelCap())}</p>`);
         });
         if (bullets.length) parts.push(`<ul>${bullets.join('')}</ul>`);
         const body = parts.join('');
@@ -1627,9 +1632,15 @@
       [learnedCharacter, learnedJob].forEach(set => set.forEach(id => { if (!D.skills[id]) set.delete(id); })); learnedJob.forEach(id => { if (D.skills[id]?.source === 'weapon') learnedJob.delete(id); }); this.profile.learnedCharacterSkills = [...learnedCharacter]; this.profile.learnedJobSkills = [...learnedJob]; const learnedWeapon = new Set(this.profile.learnedWeaponSkills || []); Object.values(D.skills).filter(skill => skill?.source === 'weapon' && skill.sparkRate == null && skill.requiredWeaponLevel).forEach(skill => { if ((this.profile.weaponMastery?.[skill.weaponType]?.level || 0) >= skill.requiredWeaponLevel) learnedWeapon.add(skill.id); }); this.profile.learnedWeaponSkills = [...learnedWeapon].filter(id => D.skills[id]?.source === 'weapon'); const allowed = new Set(['quickSlash', ...learnedCharacter, ...learnedJob]); this.profile.activeSkills = (this.profile.activeSkills || []).filter(id => allowed.has(id) && D.skills[id]?.type !== 'PASSIVE').slice(0, 4); Object.entries(this.profile.jobs || {}).forEach(([jobId, progress]) => this.reinforceJobPassives(jobId, progress?.level || 1)); }
     learnedActiveSkillIds() { return [...new Set(['quickSlash', ...(this.profile.learnedCharacterSkills || []), ...(this.profile.learnedJobSkills || [])])].filter(id => D.skills[id]?.type !== 'PASSIVE'); }
     characterHasSkill(id) { return (this.profile.learnedCharacterSkills || []).includes(id) || (D.characterSkillProgression || []).some(entry => entry.skillId === id && this.profile.level >= entry.level); }
-    jobExpNeeded(level) { return D.jobExpTable[level] || null; }
+    jobExpNeeded(level) {
+      if (level >= this.effectiveJobLevelCap()) return null;
+      const table = D.jobExpTable;
+      if (table[level]) return table[level];
+      // Beyond the original curve, keep the final absolute JEXP increment per level.
+      return table[69] + (level - 69) * (table[69] - table[68]);
+    }
     // 旧growthテーブル方式のJOB(双刃士など)は元々Lv1〜20分しか値を持たない。
-    // Lv21〜40（限界突破帯）は個別に値を足さず、対応するLv1〜20の値を2倍にして自動延長する。
+    // Lv21以降（限界突破帯）は個別に値を足さず、対応するLv1〜20の値を2倍にして自動延長する。
     //
     // あわせて転生成長ボーナスもここで掛ける。この倍率は applyJobLevelGrowth() 側に
     // しか入っておらず、テーブル方式のJOBだけ何度転生しても成長量が増えていなかった。
@@ -1638,7 +1649,7 @@
       const job = D.jobs[jobId], level = this.profile.jobs?.[jobId]?.level || 1, bonuses = {};
       for (let lv = 1; lv <= level; lv++) {
         const direct = job?.growth?.[lv];
-        const entry = direct || (lv > 20 ? job?.growth?.[lv - 20] : null);
+        const entry = direct || (lv > 20 ? job?.growth?.[((lv - 1) % 20) + 1] : null);
         const scale = direct ? 1 : 2;
         Object.entries(entry || {}).forEach(([key, value]) => bonuses[key] = (bonuses[key] || 0) + value * scale);
       }
@@ -3677,15 +3688,17 @@
       const raw = Math.max(0, amount) / 4 + (progress.expCarry || 0), gained = Math.floor(raw);
       progress.expCarry = raw - gained; progress.exp += gained;
       while (progress.level < cap) { const need = this.jobExpNeeded(progress.level); if (!need || progress.exp < need) break; progress.exp -= need; progress.level++; }
-      if (progress.level >= cap) { progress.exp = 0; progress.expCarry = 0; this.markJobMastered(jobId); }
+      if (progress.level >= cap) { progress.exp = 0; progress.expCarry = 0; }
+      const masteryLevel = Math.min(cap, D.jobLevelCapExtended);
+      if (progress.level >= masteryLevel) this.markJobMastered(jobId);
       const gainedLevels = progress.level - from;
-      // Lv21〜40（限界突破帯）で得た分だけ成長量を2倍にする。1回のEXP付与で20を跨いだ場合も
+      // Lv21以降（限界突破帯）で得た分だけ成長量を2倍にする。1回のEXP付与で20を跨いだ場合も
       // 跨いだ範囲だけ正しく2倍になるよう、通常帯と突破帯の到達レベル数を分けて数える。
       const normalLevels = Math.max(0, Math.min(progress.level, 20) - from);
       const overLevels = Math.max(0, progress.level - Math.max(from, 20));
       const weightedLevels = normalLevels + overLevels * 2;
       const statGain = gainedLevels > 0 ? this.applyJobLevelGrowth(jobId, weightedLevels) : null;
-      if (progress.level >= cap) this.recordPhantomGrowth(jobId);
+      if ((from < masteryLevel && progress.level >= masteryLevel) || progress.level >= cap) this.recordPhantomGrowth(jobId);
       const newPassives = gainedLevels > 0 ? this.grantJobPassives(jobId, progress.level) : [];
       const reinforcedPassives = gainedLevels > 0 ? this.reinforceJobPassives(jobId, progress.level) : [];
       this.syncSkillUnlocks();
@@ -3897,7 +3910,7 @@
         this.offerRepeatBossMaterialDrop(e, firstClear); return;
       }
       if ((D.dungeons || []).some(dungeon => dungeon.midBossId === this.battleMode)) { const e = D.enemies[this.battleMode], firstClear = !this.isBossDefeated(this.battleMode); this.markBossDefeated(this.battleMode); this.noteBossRematchSnapshot(this.battleMode); this.saveProfile(); const note = firstClear ? `<div class="boss-recipe-unlock"><small>MID BOSS CLEARED</small><b>ROUTE OPEN</b><strong>${e.name} 撃破</strong><span>封鎖された後半ルートが解放された。</span></div>` : ''; this.showResult('VICTORY', `${e.name}を撃破した！`, 'MID BOSS // COMPLETE', `${rewardBlock}${note}`); this.offerRepeatBossMaterialDrop(e, firstClear); return; }
-      if (['astact', 'ostina'].includes(this.battleMode)) { const bossId = this.battleMode, isD4 = bossId === 'astact', dungeonId = isD4 ? 'dungeon4' : 'dungeon5', jobId = isD4 ? 'ronin' : 'hunter', proofId = isD4 ? 'roninProof' : 'hunterProof', scoreId = isD4 ? 'staccato' : 'ostinato', firstClear = !this.isBossDefeated(bossId), firstScore = !this.profile.musicScores?.[scoreId]; this.markBossDefeated(bossId); this.profile.flags[`${dungeonId}Clear`] = true; this.profile.musicScores ||= {}; if (firstScore) this.profile.musicScores[scoreId] = true; if (firstClear) { this.profile.inventory[proofId] = Math.max(1, this.profile.inventory[proofId] || 0); this.profile.unlockedJobs = [...new Set([...(this.profile.unlockedJobs || []), jobId])]; this.profile.jobs[jobId] ||= { level: 1, exp: 0 }; if (!isD4) { this.profile.weaponMastery.bow ||= { level: 1, exp: 0 }; this.profile.inventory.d5HunterBow = Math.max(1, this.profile.inventory.d5HunterBow || 0); } } this.noteBossRematchSnapshot(bossId); this.saveProfile(); const e = D.enemies[bossId], keyItems = firstClear ? [D.items[proofId], !isD4 && D.items.d5HunterBow].filter(Boolean) : [], unlocks = firstClear ? [`NEW JOB　${D.jobs[jobId]?.name || jobId}`, !isD4 ? 'NEW WEAPON MASTERY　弓学' : '刀技は剣武器学を共有'] : []; this.showBossRewardSequence({ title: 'VICTORY', copy: `${e.title || ''}${e.name}を打ち倒した。`, kicker: isD4 ? 'FOURTH MAESTRI DEFEATED' : 'FIFTH MAESTRI DEFEATED', html: rewardBlock }, [firstScore && { title: 'SCORE GET', copy: '盗んだ旋律は、プライベートモードで演奏できる。', kicker: 'PHANTOM SCORE', html: this.scoreGetHTML(scoreId) }, firstClear && { title: 'KEY ITEM GET', copy: '新たなJOBへ至る証を盗み出した。', kicker: 'STOLEN REWARDS', html: this.bossKeyRewardHTML(keyItems, unlocks) }, firstClear && { title: 'JOB TUTORIAL', copy: '解放されたJOBの戦い方を確認する。', kicker: (D.jobs[jobId]?.nameEn || jobId).toUpperCase(), html: this.jobUnlockTutorialHTML(jobId) }]); this.offerRepeatBossMaterialDrop(e, firstClear); return; }
+      if (['astact', 'ostina'].includes(this.battleMode)) { const bossId = this.battleMode, isD4 = bossId === 'astact', dungeonId = isD4 ? 'dungeon4' : 'dungeon5', jobId = isD4 ? 'ronin' : 'hunter', proofId = isD4 ? 'roninProof' : 'hunterProof', scoreId = isD4 ? 'staccato' : 'ostinato', firstClear = !this.isBossDefeated(bossId), firstScore = !this.profile.musicScores?.[scoreId]; this.markBossDefeated(bossId); this.profile.flags[`${dungeonId}Clear`] = true; this.profile.musicScores ||= {}; if (firstScore) this.profile.musicScores[scoreId] = true; if (firstClear) { this.profile.inventory[proofId] = Math.max(1, this.profile.inventory[proofId] || 0); this.profile.unlockedJobs = [...new Set([...(this.profile.unlockedJobs || []), jobId])]; this.profile.jobs[jobId] ||= { level: 1, exp: 0 }; if (!isD4) { this.profile.weaponMastery.bow ||= { level: 1, exp: 0 }; this.profile.inventory.d5HunterBow = Math.max(1, this.profile.inventory.d5HunterBow || 0); } } this.noteBossRematchSnapshot(bossId); this.saveProfile(); const e = D.enemies[bossId], keyItems = firstClear ? [D.items[proofId], !isD4 && D.items.d5HunterBow].filter(Boolean) : [], unlocks = firstClear ? [`NEW JOB　${D.jobs[jobId]?.name || jobId}`, !isD4 ? 'NEW WEAPON MASTERY　弓学' : '刀技は剣武器学を共有', `JOBレベル上限解放　Lv.${this.effectiveJobLevelCap()}`] : []; this.showBossRewardSequence({ title: 'VICTORY', copy: `${e.title || ''}${e.name}を打ち倒した。`, kicker: isD4 ? 'FOURTH MAESTRI DEFEATED' : 'FIFTH MAESTRI DEFEATED', html: rewardBlock }, [firstScore && { title: 'SCORE GET', copy: '盗んだ旋律は、プライベートモードで演奏できる。', kicker: 'PHANTOM SCORE', html: this.scoreGetHTML(scoreId) }, firstClear && { title: 'KEY ITEM GET', copy: '新たなJOBへ至る証を盗み出した。', kicker: 'STOLEN REWARDS', html: this.bossKeyRewardHTML(keyItems, unlocks) }, firstClear && { title: 'JOB TUTORIAL', copy: '解放されたJOBの戦い方を確認する。', kicker: (D.jobs[jobId]?.nameEn || jobId).toUpperCase(), html: this.jobUnlockTutorialHTML(jobId) }]); this.offerRepeatBossMaterialDrop(e, firstClear); return; }
       if (milestone) this.showStagedMilestone(rewardBlock, milestone);
       else await this.showBattleClear(reward, levels, jobResult, { mastery: masteryResult, vitals: vitalResult, sparks });
     }
