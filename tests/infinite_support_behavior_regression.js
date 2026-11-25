@@ -25,7 +25,14 @@ function game(){const g=new BattleGame();g.profile={inventory:{},otherWorldGear:
 
 const bag=game();bag.isEnsureRunShape();assert.deepEqual(bag.isRun().support,{insuranceUsed:false,bagExpansionUsed:false,shopCounter:0});assert.equal(bag.isBagLimit(),30);bag.isRun().support.bagExpansionUsed=true;assert.equal(bag.isBagLimit(),33);bag._baseLimit=35;assert.equal(bag.isBagLimit(),35,'既存装備効果の35枠を縮小しない');
 
-const shop=game();const first=shop.isStartShopEncounter(false);assert.equal(first.id,'7-1');assert.equal(first.rerollUsed,false);assert.equal(shop.isGrantShopReroll(),true);const after=shop.generated;assert.equal(shop.isGrantShopReroll(),false);assert.equal(shop.generated,after,'同じショップで2回目を抽選しない');shop.isStartShopEncounter(true);assert.equal(shop.isRun().shopSupport.id,'7-2');assert.equal(shop.isRun().shopSupport.rerollUsed,false);
+const shop=game();
+const first=shop.isStartShopEncounter(false);
+assert.equal(first.id,'7-1');
+assert.equal(first.gearPurchased,false);
+assert.equal(shop.generated,0,'在庫を表示するだけでは装備を抽選しない');
+first.gearPurchased=true;
+assert.equal(shop.isEnsureShopEncounter(false).gearPurchased,true,'タブを戻しても購入済みを維持する');
+assert.equal(shop.isStartShopEncounter(true).gearPurchased,false,'次の来店で1回分の在庫を用意する');
 
 (async()=>{
   const insured=game();insured.battleMode='infiniteScore';insured.isRun().lootBag=[{uid:'keep',kind:'equipment',itemId:'gear',otherWorldGear:true,quality:108,plus:4,ops:[]}];await insured.defeat();assert.equal(insured.isRun().phase,'defeatPending','全滅直後もロスト候補を保存する');assert.equal(insured.profile.infiniteScore.active,true);assert.equal(insured.isGrantInsurance(),true);assert.equal(insured.isGrantInsurance(),false,'保険権を二重付与しない');insured.isFinishDefeat('keep');assert.equal(insured.profile.infiniteScore.active,false);assert.equal(insured.profile.otherWorldGear.length,1);insured.isFinishDefeat('keep');assert.equal(insured.profile.otherWorldGear.length,1,'再実行で装備を複製しない');

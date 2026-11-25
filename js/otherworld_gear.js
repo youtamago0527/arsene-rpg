@@ -78,10 +78,10 @@
     const base=D.items[x.itemId]?.name||x.itemId, rare=(x.ops||[]).slice().sort((a,b)=>b.rank-a.rank)[0];
     return `${rare&&rare.rank>=5?`《${D.otherWorldGearOps.find(o=>o.key===rare.key)?.label||'異能'}の》`:''}${base}${x.uniqueSkillId?' — 奏技':''}`;
   };
-  P.owgGenerate=function({floor=this.isRun()?.floor||1,rarity,part}={}){
+  P.owgGenerate=function({floor=this.isRun()?.floor||1,rarity,part,source}={}){
     normalize(this.profile);
     const uid=`owg-v2-${Date.now()}-${++this.profile.otherWorldGearUid}`;
-    return gearV2.generate({uid,floor,rarity,part,random:()=>this.isRand()});
+    return gearV2.generate({uid,floor,rarity,part,source,random:()=>this.isRand()});
   };
   P.owgOpText=function(item,op){
     if (gearV2.isV2(item)) return gearV2.opText(op);

@@ -33,6 +33,13 @@
     return a.map((value,i) => value + (b[i]-value)*(floor-low)/(high-low));
   }
 
+  function rewardRates(floor,source) {
+    const rates = ratesAt(floor);
+    if (source === 'treasure') return rates.slice(0,5).map((weight,index)=>weight * .75 ** index);
+    if (source === 'gacha') return rates.slice(0,3).map((weight,index)=>weight * .5 ** index);
+    return rates;
+  }
+
   function weighted(weights,random) {
     let roll = sample(random) * weights.reduce((sum,value)=>sum+value,0);
     for (let i=0;i<weights.length;i++) {
@@ -100,9 +107,9 @@
     }));
   }
 
-  function generate({uid,floor:rawFloor=1,random,rarity:forced,part:requested}) {
+  function generate({uid,floor:rawFloor=1,random,rarity:forced,part:requested,source='enemy'}) {
     const floor = floorNumber(rawFloor);
-    const index = forced === undefined ? weighted(ratesAt(floor),random)
+    const index = forced === undefined ? weighted(rewardRates(floor,source),random)
       : typeof forced === 'string' ? cfg.tiers.findIndex(row=>row.id===forced) : forced-1;
     const rarity = cfg.tiers[index];
     const part = requested ? byPart.get(typeof requested==='string' ? requested : requested.id)

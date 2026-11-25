@@ -18,7 +18,6 @@
     protect: { title: '保護のアルカナ', copy: '破壊された装備を、強化値+0で復元する。', key: 'restoreUses', label: '破壊装備の復元' },
     bossDrop: { title: 'ドロップ・ダブルアップ', copy: '素材・装備をドロップ率2倍で追加抽選する。', key: 'bossDrop', label: 'ドロップ追加抽選' },
     overdrive: { title: 'BOSS OVERDRIVE', copy: '広告を見て、限界を超えた強敵との戦闘を解放する。', label: 'オーバードライブ挑戦' },
-    infiniteReroll: { title: '異世界ショップ再抽選', copy: '現在の装備候補を通常テーブルでもう一度だけ抽選する。', label: 'ショップ再抽選' },
     infiniteInsurance: { title: '怪盗の保険', copy: '全滅で失われる装備から、選んだ1個だけを奪還する。', label: '装備1個奪還' },
     infiniteBag: { title: 'バッグ緊急拡張', copy: 'このRUNに限り、バッグ上限を最大33枠へ拡張する。', label: 'バッグ最大33枠' }
   };
