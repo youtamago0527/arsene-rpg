@@ -2,6 +2,7 @@
 
 /* ── NOISE演出 ── */
 .ow-noise{position:fixed;inset:0;z-index:9000;display:grid;place-items:center;background:#02030a;cursor:pointer;overflow:hidden}
+.ow-noise.ow-noise--foreground{z-index:11020}
 .ow-noise-bars{position:absolute;inset:-20%;opacity:.22;pointer-events:none;
   background:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 3px);
   animation:ow-scan 5s linear infinite}

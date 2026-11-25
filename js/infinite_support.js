@@ -49,7 +49,24 @@
 
   const oldShowBagFull=P.isShowBagFull;
   P.isShowBagFull=function(){oldShowBagFull.call(this);if(!this.isCanExpandBag())return;const modal=document.getElementById('is-modal'),actions=modal?.querySelector('.is-actions');if(!actions||actions.querySelector('[data-is-support="bag"]'))return;actions.insertAdjacentHTML('afterbegin',`<button class="is-support-button" data-is-support="bag">${this.isSupportLabel('+3枠')}<small>このRUNのみ／最大33枠</small></button>`);};
-  P.isGrantBagExpansion=function(){const run=this.isRun?.(),support=this.isEnsureSupportState(run);if(!run||!support||support.bagExpansionUsed||this.isBagLimit()>=33)return false;support.bagExpansionUsed=true;this.isLog?.('怪盗支援：バッグを33枠へ緊急拡張');this.isSave?.();document.getElementById('is-modal')?.remove();const pending=run.pendingLoot;run.pendingLoot=null;if(pending)this.isAddLoot(pending);this.isRenderBag?.(document.querySelector('#menu-panel'));return true;};
+  P.isGrantBagExpansion=function(run=this.isRun?.(),pending=run?.pendingLoot){
+    if(!pending||run!==this.isRun?.()||run.pendingLoot!==pending)return false;
+    const support=this.isEnsureSupportState(run);
+    if(support.bagExpansionUsed||this.isBagLimit()>=33||this.isBagUsed()>=33)return false;
+    support.bagExpansionUsed=true;
+    run.pendingLoot=null;
+    document.getElementById('is-modal')?.remove();
+    this.isAddLoot(pending);
+    this.isLog?.('怪盗支援：バッグを33枠へ緊急拡張');
+    this.isSave?.();
+    const panel=document.querySelector('#menu-panel');
+    if(panel?.dataset?.panel==='infinite-score-bag')this.isRenderBag(panel);
+    if(panel?.dataset?.panel==='infinite-score'&&this.isRoomResult?.remapOnClose){
+      const name=this.isLootName?.(pending)||this.owgName?.(pending)||D().items[pending.itemId]?.name||pending.itemId;
+      this.isRenderRoomResult(`${name}を拾いました`,'LOOT BAGへ収めた。','item',{remapOnClose:true});
+    }
+    return true;
+  };
 
   P.isStartShopEncounter=function(merchant=false){const run=this.isRun?.(),support=this.isEnsureSupportState(run);if(!run||!support)return null;support.shopCounter++;run.shopSupport={id:`${run.seed}-${support.shopCounter}`,merchant:!!merchant,rerollUsed:false};this.isSave?.();return run.shopSupport;};
   P.isEnsureShopEncounter=function(merchant=false){const run=this.isRun?.();return run?.shopSupport||this.isStartShopEncounter(merchant);};
@@ -100,5 +117,5 @@
   const oldDefeat=P.defeat;
   P.defeat=async function(...args){if(this.battleMode!=='infiniteScore'||!this.isRun?.())return oldDefeat.apply(this,args);if(this.finished&&this.isRun().phase==='defeatPending')return;this.finished=true;this.endAutoBattle?.();const run=this.isRun(),support=this.isEnsureSupportState(run),candidates=this.isInsuranceCandidates(run);run.phase='defeatPending';run.defeatPendingAt=Date.now();this.saveProfile();this.audio.stopMusic?.(400);this.audio.sfx?.('defeat');if(!this.isSupportAvailable()||support.insuranceUsed||!candidates.length){this.isFinishDefeat();return;}this.isShowInsuranceResult();};
 
-  document.addEventListener('click',async event=>{const game=window.arseneGame;if(!game)return;const support=event.target.closest('[data-is-support]'),skip=event.target.closest('[data-is-insurance-skip]'),gear=event.target.closest('[data-is-insurance-gear]');if(!support&&!skip&&!gear)return;event.preventDefault();event.stopImmediatePropagation();if(support){if(support.disabled)return;const type=support.dataset.isSupport;if(type==='bag')game.isRequestSupport('infiniteBag',()=>game.isGrantBagExpansion());else if(type==='reroll'){const state=game.isRun()?.shopSupport;if(!game.isCanClaimShopGacha(state))return;game.isRequestSupport('infiniteReroll',()=>game.isGrantShopReroll(state));}else game.isRequestSupport('infiniteInsurance',()=>game.isGrantInsurance());return;}if(skip){if(await game.isConfirm('怪盗の保険を使わず確定しますか？','失われる装備は元に戻せません。',{kicker:'PHANTOM INSURANCE',confirmLabel:'確定する',danger:true}))game.isFinishDefeat();return;}if(gear){const x=game.isInsuranceCandidates().find(v=>v.uid===gear.dataset.isInsuranceGear);if(x&&await game.isConfirm('この装備を奪還しますか？',`${game.owgName?.(x)||D().items[x.itemId]?.name||x.itemId} +${x.plus||0}\nQUALITY ${x.quality||100}`,{kicker:'PHANTOM INSURANCE',confirmLabel:'奪還する'}))game.isFinishDefeat(x.uid);}},true);
+  document.addEventListener('click',async event=>{const game=window.arseneGame;if(!game)return;const support=event.target.closest('[data-is-support]'),skip=event.target.closest('[data-is-insurance-skip]'),gear=event.target.closest('[data-is-insurance-gear]');if(!support&&!skip&&!gear)return;event.preventDefault();event.stopImmediatePropagation();if(support){if(support.disabled)return;const type=support.dataset.isSupport;if(type==='bag'){const run=game.isRun(),pending=run?.pendingLoot;if(pending)game.isRequestSupport('infiniteBag',()=>game.isGrantBagExpansion(run,pending));}else if(type==='reroll'){const state=game.isRun()?.shopSupport;if(!game.isCanClaimShopGacha(state))return;game.isRequestSupport('infiniteReroll',()=>game.isGrantShopReroll(state));}else game.isRequestSupport('infiniteInsurance',()=>game.isGrantInsurance());return;}if(skip){if(await game.isConfirm('怪盗の保険を使わず確定しますか？','失われる装備は元に戻せません。',{kicker:'PHANTOM INSURANCE',confirmLabel:'確定する',danger:true}))game.isFinishDefeat();return;}if(gear){const x=game.isInsuranceCandidates().find(v=>v.uid===gear.dataset.isInsuranceGear);if(x&&await game.isConfirm('この装備を奪還しますか？',`${game.owgName?.(x)||D().items[x.itemId]?.name||x.itemId} +${x.plus||0}\nQUALITY ${x.quality||100}`,{kicker:'PHANTOM INSURANCE',confirmLabel:'奪還する'}))game.isFinishDefeat(x.uid);}},true);
 })();

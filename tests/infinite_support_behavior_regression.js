@@ -25,6 +25,18 @@ function game(){const g=new BattleGame();g.profile={inventory:{},otherWorldGear:
 
 const bag=game();bag.isEnsureRunShape();assert.deepEqual(bag.isRun().support,{insuranceUsed:false,bagExpansionUsed:false,shopCounter:0});assert.equal(bag.isBagLimit(),30);bag.isRun().support.bagExpansionUsed=true;assert.equal(bag.isBagLimit(),33);bag._baseLimit=35;assert.equal(bag.isBagLimit(),35,'既存装備効果の35枠を縮小しない');
 
+const fullBag=game(), fullRun=fullBag.isRun(), pending={uid:'held-loot',kind:'item',itemId:'infiniteReturn',count:1};
+fullRun.lootBag=Array.from({length:30},(_,i)=>({uid:'existing-'+i}));
+fullRun.pendingLoot=pending;
+fullBag.isAddLoot=entry=>fullRun.lootBag.push(entry);
+assert.equal(fullBag.isGrantBagExpansion(fullRun,{...pending}),false,'別の戦利品に広告報酬を使わない');
+assert.equal(fullBag.isGrantBagExpansion(fullRun,pending),true);
+assert.equal(fullBag.isBagLimit(),33);
+assert.equal(fullBag.isBagUsed(),31);
+assert.equal(fullRun.lootBag.at(-1),pending);
+assert.equal(fullRun.pendingLoot,null);
+assert.equal(fullBag.isGrantBagExpansion(fullRun,pending),false,'同じ広告でアイテムを二重取得しない');
+
 const shop=game();const first=shop.isStartShopEncounter(false);assert.equal(first.id,'7-1');assert.equal(first.rerollUsed,false);assert.equal(shop.isGrantShopReroll(),true);assert.equal(shop.isRun().lootBag.length,5);assert.equal(new Set(shop.isRun().lootBag.map(gear=>gear.uid)).size,5);assert.equal(first.rewardNames.length,5);assert.equal(shop.isRun().dungeonGold,0);const after=shop.generated;assert.equal(shop.isGrantShopReroll(),false);assert.equal(shop.generated,after,'同じショップで2回目を抽選しない');shop.isStartShopEncounter(true);assert.equal(shop.isRun().shopSupport.id,'7-2');assert.equal(shop.isRun().shopSupport.rerollUsed,false);assert.equal(shop.isGrantShopReroll(first),false,'前の店で開始した広告は新しい店に付与しない');const next=shop.isRun().shopSupport;shop._baseLimit=9;assert.equal(shop.isGrantShopReroll(next),false,'装備5個の空き枠がなければ支援を消費しない');assert.equal(next.rerollUsed,false);
 
 (async()=>{
