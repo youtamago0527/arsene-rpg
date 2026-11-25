@@ -64,3 +64,30 @@
 .rg-picker .rg-list{grid-auto-rows:max-content}
 .rg-stat-tables table{table-layout:fixed}
 .rg-stat-tables th:first-child{width:40%}
+
+/* The hideout uses the same gear tiles and stays in the normal menu scroll area. */
+#menu-panel[data-panel="equipment"] .rg-home,
+#menu-panel[data-panel="equipment"] .rg-carried {
+  padding: 10px;
+  border: 1px solid #54728e;
+  border-radius: 8px;
+  background: #050b16 url('../assets/ui/run-gear-background.webp') center / cover;
+}
+#menu-panel[data-panel="equipment"] .rg-home .rg-slots {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
+}
+.rg-home .rg-slot { min-height: 50px; }
+.rg-home .rg-slot .rg-lines small { display: block; }
+.rg-home-candidates .rg-card .rg-icon { grid-row: 1 / span 4; }
+.rg-home-candidates .rg-card > :not(.rg-icon) { grid-column: 2; }
+#menu-panel[data-panel="equipment"] .rg-carried.rg-picker {
+  height: auto;
+  grid-template-rows: auto auto auto;
+}
+.rg-carried.rg-picker .rg-list { max-height: min(36svh, 320px); }
+.rg-carried .rg-hint { margin: 0 0 8px; }
+@media (max-width: 600px) and (orientation: portrait) {
+  .rg-carried.rg-picker .rg-columns { grid-template-rows: auto auto; }
+}

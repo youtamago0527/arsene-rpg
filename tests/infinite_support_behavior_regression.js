@@ -19,11 +19,12 @@ global.window={
 };
 const fakePanel={querySelector(){return null;}};
 global.document={addEventListener(){},getElementById(){return null;},querySelector(selector){return selector==='#menu-panel'?fakePanel:null;}};
+require('../js/infinite_score.js');
 require('../js/infinite_support.js');
 
 function game(){const g=new BattleGame();g.profile={inventory:{},otherWorldGear:[],equipment:{rightHand:'gear'},currentVitals:{hp:10,mp:5},flags:{},infiniteScore:{active:true,seed:7,lootBag:[],equipment:{},importedItems:[],homeEquipment:{rightHand:'gear'},homeVitals:{hp:10,mp:5},support:{}}};g.saveProfile=()=>{g.saves=(g.saves||0)+1;};g.isSave=g.saveProfile;g.isLog=()=>{};g.isGenerateGear=()=>({uid:`g${++g.generated}`,kind:'equipment',itemId:'gear',otherWorldGear:true,quality:100,plus:0,ops:[]});g.generated=0;g.isBagUsed=()=>g.isRun()?.lootBag.length||0;g.audio={stopMusic(){},sfx(){}};g.showResult=()=>{};g.isHideDefaultResultMenu=()=>{};g.activeSetEffects=()=>({});g.player={};g.endAutoBattle=()=>{};return g;}
 
-const bag=game();bag.isEnsureRunShape();assert.deepEqual(bag.isRun().support,{insuranceUsed:false,bagExpansionUsed:false,shopCounter:0});assert.equal(bag.isBagLimit(),30);bag.isRun().support.bagExpansionUsed=true;assert.equal(bag.isBagLimit(),33);bag._baseLimit=35;assert.equal(bag.isBagLimit(),35,'既存装備効果の35枠を縮小しない');
+const bag=game();bag.isEnsureRunShape();assert.deepEqual(bag.isRun().support,{bagExpansionUsed:false,shopCounter:0});assert.equal(bag.isBagLimit(),30);bag.isRun().support.bagExpansionUsed=true;assert.equal(bag.isBagLimit(),33);bag.profile.infiniteScoreDebug={bagLimit:35};assert.equal(bag.isBagLimit(),35,'既存装備効果の35枠を縮小しない');
 
 const shop=game();
 const first=shop.isStartShopEncounter(false);
@@ -35,8 +36,25 @@ assert.equal(shop.isEnsureShopEncounter(false).gearPurchased,true,'タブを戻�
 assert.equal(shop.isStartShopEncounter(true).gearPurchased,false,'次の来店で1回分の在庫を用意する');
 
 (async()=>{
-  const insured=game();insured.battleMode='infiniteScore';insured.isRun().lootBag=[{uid:'keep',kind:'equipment',itemId:'gear',otherWorldGear:true,quality:108,plus:4,ops:[]}];await insured.defeat();assert.equal(insured.isRun().phase,'defeatPending','全滅直後もロスト候補を保存する');assert.equal(insured.profile.infiniteScore.active,true);assert.equal(insured.isGrantInsurance(),true);assert.equal(insured.isGrantInsurance(),false,'保険権を二重付与しない');insured.isFinishDefeat('keep');assert.equal(insured.profile.infiniteScore.active,false);assert.equal(insured.profile.otherWorldGear.length,1);insured.isFinishDefeat('keep');assert.equal(insured.profile.otherWorldGear.length,1,'再実行で装備を複製しない');
-
-  window.arseneAdMob.isNativeIOS=()=>false;const web=game();web.battleMode='infiniteScore';web.isRun().lootBag=[{uid:'lost',kind:'equipment',itemId:'gear'}];assert.equal(web.isSupportAvailable(),false);assert.equal(web.isRequestSupport('infiniteBag',()=>{}),false);await web.defeat();assert.equal(web.profile.infiniteScore.active,false,'Web版は保険入口を出さず通常ロストを確定する');
+  for (const phase of ['explore','defeatPending']) {
+    const defeated=game();
+    defeated.battleMode='infiniteScore';
+    const run=defeated.isRun();
+    run.phase=phase;
+    run.support.insuranceAuthorized=true;
+    run.lootBag=[{uid:'lost',kind:'equipment',itemId:'gear',otherWorldGear:true}];
+    defeated.profile.otherWorldGear=[{uid:'already-home',kind:'equipment',itemId:'gear'}];
+    defeated.showResult=(...args)=>{defeated.result=args;};
+    if (phase==='defeatPending') await defeated.isChooseActiveRun();
+    else await defeated.defeat();
+    assert.equal(defeated.profile.infiniteScore.active,false);
+    assert.equal(defeated.profile.infiniteScore.lostCount,1);
+    assert.deepEqual(defeated.profile.otherWorldGear.map(item=>item.uid),['already-home']);
+    assert.doesNotMatch(defeated.result.join(' '), /広告|奪還/);
+  }
+  window.arseneAdMob.isNativeIOS=()=>false;
+  const web=game();
+  assert.equal(web.isSupportAvailable(),false);
+  assert.equal(web.isRequestSupport('infiniteBag',()=>{}),false);
   console.log('infinite support behavior regression: ok');
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -130,7 +130,7 @@
     }
     return out;
   };
-  P.owgBaseEquipment=function(source=this.profile.equipment){if(this.isRunForEquipment?.())return {};const equipment={...(source||{})};for(const x of this.owgEquipped()){const slot=D.items[x.itemId]?.slot;if(slot)delete equipment[slot];}return equipment;};
+  P.owgBaseEquipment=function(source=this.profile.equipment){if(this.isRunForEquipment?.())return {};const equipment={...(source||{})};for(const x of this.owgEquipped()){const slot=D.items[x.itemId]?.slot;if(slot)delete equipment[slot];if(slot==='rightHand'&&this.isTwoHandedWeapon?.(x.itemId))delete equipment.leftHand;}return equipment;};
   const useBaseEquipment=(game,args)=>game.isRunForEquipment?.()||!args.length||args[0]===game.profile.equipment
     ? [game.owgBaseEquipment(args[0])] : args;
   const oldTotal=P.totalStats;
@@ -287,10 +287,50 @@
   const oldCfg=P.isEffectiveCfg;P.isEffectiveCfg=function(){const c=oldCfg.call(this),fx=this.owgEffects();return {...c,gearDropRate:Math.min(.95,(c.gearDropRate||0)+(fx.gearDropUp||0)),rareEnemyRate:(c.rareEnemyRate||0)+(fx.rareEnemyUp||0),returnItemRate:Math.min(.15,(c.returnItemRate||0)+(fx.returnUp||0)),treasureRate:(c.treasureRate||0)+(fx.treasureUp||0),stairBaseRate:Math.min(95,(c.stairBaseRate||0)+(fx.stairUp||0)*100)};};
   const oldBagLimit=P.isBagLimit;P.isBagLimit=function(){return oldBagLimit.call(this)+(this.owgEffects().bagPlus||0);};
 
-  P.owgEquip=function(uid){const x=this.owgEntry(uid),item=D.items[x?.itemId];if(!x||!item)return;this.profile.otherWorldEquipment[item.slot]=uid;this.saveProfile();this.owgRenderVault(document.querySelector('#menu-panel'));};
-  P.owgRenderVault=function(panel){normalize(this.profile);const rows=this.profile.otherWorldGear.map(x=>{const eq=Object.values(this.profile.otherWorldEquipment).includes(x.uid);return `<article class="owg-card stars-${x.stars||x.tier} ${x.rarity==='infinity'?'owg-infinity':''}${eq?' equipped':''}"><header><div class="owg-meta">${this.owgMetaHtml(x)}</div><b>${esc(this.owgName(x))}</b></header><p>${esc(this.owgBaseText(x))}</p><p>${(x.ops||[]).map(o=>`${esc(this.owgOpText(x,o))}`).join(' / ')||'OPなし'}</p>${x.uniqueSkillId?`<strong>固有奏技《${esc(D.skills[x.uniqueSkillId]?.name)}》</strong>`:''}<footer><button data-owg-equip="${esc(x.uid)}">${eq?'装備中':'装備'}</button></footer></article>`;}).join('');panel.dataset.panel='otherworld-gear';panel.innerHTML=`<button class="panel-home" data-lenny="otherworld">異世界へ戻る</button><small>OTHER WORLD ARSENAL</small><h2>異世界装備庫</h2><div class="owg-res"><b>異界の欠片 ${(this.profile.inventory.otherworldShard||0)}</b><b>異界の核 ${(this.profile.inventory.otherworldCore||0)}</b></div><p class="ow-rule">持ち帰った異世界装備の閲覧・装備変更専用。加工は無限奏廊で遭遇する《異世界工房》だけで行えます。</p><div class="owg-list">${rows||'<p class="item-empty">持ち帰った異世界装備はありません。</p>'}</div>`;};
-  const oldPanel=P.renderMenuPanel;P.renderMenuPanel=function(name){if(name==='otherworld-gear'){this.owgRenderVault(document.querySelector('#menu-panel'));return;}return oldPanel.call(this,name);};
-  const oldOw=P.renderOtherWorldPanel;P.renderOtherWorldPanel=function(panel){oldOw.call(this,panel);panel.querySelector('.ow-mode-guide')?.insertAdjacentHTML('beforebegin','<button class="ow-ability-link owg-vault-link" data-menu="otherworld-gear"><b>異世界装備庫</b><span>個体装備の閲覧・装備変更</span></button>');};
+  P.owgHomeGear=function(slot){
+    if(this.isRunForEquipment?.())return;
+    const uid=this.profile.otherWorldEquipment?.[slot];
+    return (this.profile.otherWorldGear||[]).find(gear=>gear.uid===uid);
+  };
+  P.owgTabAvailable=function(){return !!(this.isInfiniteScoreUnlocked?.()||this.profile.otherWorldGear?.length);};
+  P.owgLoadoutFor=function(uid){
+    const gear=(this.profile.otherWorldGear||[]).find(item=>item.uid===uid);
+    const slot=D.items[gear?.itemId]?.slot;
+    if(!slot)return this.profile.otherWorldEquipment;
+    const rightHand=this.owgHomeGear('rightHand')?.itemId || this.profile.equipment?.rightHand;
+    if(slot==='leftHand' && this.isTwoHandedWeapon(rightHand))return this.profile.otherWorldEquipment;
+    const next={...this.profile.otherWorldEquipment,[slot]:uid};
+    if(slot==='rightHand' && this.isTwoHandedWeapon(gear.itemId)) delete next.leftHand;
+    return next;
+  };
+  P.owgEquip=function(uid){
+    if(this.isRun?.())return;
+    const next=this.owgLoadoutFor(uid);
+    if(next===this.profile.otherWorldEquipment)return;
+    this.profile.otherWorldEquipment=next;
+    this.saveProfile();
+    this.renderMenuSummary();
+    this.renderMenuPanel('equipment');
+  };
+  P.owgRenderVault=function(panel){
+    this.equipTab='infinite';
+    this.isRenderEquipment(panel,true);
+  };
+  const oldPanel=P.renderMenuPanel;
+  P.renderMenuPanel=function(name){
+    if(name==='otherworld-gear'&&!this.isRun?.()){
+      this.owgViewSlot=null;
+      this.equipTab='infinite';
+      return oldPanel.call(this,'equipment');
+    }
+    return oldPanel.call(this,name);
+  };
+  const oldOw=P.renderOtherWorldPanel;
+  P.renderOtherWorldPanel=function(panel){
+    oldOw.call(this,panel);
+    if(this.owgTabAvailable())panel.querySelector('.ow-mode-guide')?.insertAdjacentHTML('beforebegin',
+      '<button class="ow-ability-link owg-vault-link" data-menu="otherworld-gear"><b>無限奏廊の装備</b><span>持ち帰った装備を確認・変更</span></button>');
+  };
   function carriedRewardMultiplier(game,key) {
     const mode=String(game.battleMode||'');
     if (!mode || mode==='infiniteScore' || mode.startsWith('ow') || mode==='debugOverpower' || game.isRun?.()) return 1;
@@ -332,8 +372,26 @@
     }
     return oldVictory.apply(this,args);
   };
-  document.addEventListener('click',e=>{
-    const equip=e.target.closest('[data-owg-equip]'),g=window.arseneGame;
-    if(equip&&g)g.owgEquip(equip.dataset.owgEquip);
+  document.addEventListener('click',event=>{
+    const selector='[data-owg-slot],[data-owg-slot-close],[data-owg-equip],[data-owg-unequip],[data-rg-preview],[data-rg-mode]';
+    const button=event.target.closest(selector),game=window.arseneGame;
+    if(!button?.closest('.rg-carried')||!game||game.isRun?.())return;
+    const data=button.dataset;
+    if(data.owgEquip)return game.owgEquip(data.owgEquip);
+    if(data.owgUnequip){
+      delete game.profile.otherWorldEquipment[data.owgUnequip];
+      game.saveProfile();
+      game.renderMenuSummary();
+    } else if(data.rgPreview){
+      game.owgViewUid=data.rgPreview;
+      game.owgViewStatus=false;
+    } else if(data.rgMode){
+      game.owgViewStatus=data.rgMode==='status';
+    } else {
+      game.owgViewSlot=data.owgSlot||null;
+      game.owgViewUid=null;
+      game.owgViewStatus=false;
+    }
+    game.owgRenderVault(document.querySelector('#menu-panel'));
   },true);
 })();

@@ -562,6 +562,7 @@
     const tile = weaponTiles[weapon] ?? slotTiles[slot] ?? 0;
     return `<i aria-hidden="true" class="rg-icon ${tile===9?'lyre':''}" style="background-position:${(tile%3)*50}% ${Math.floor(tile/3)*50}%"></i>`;
   }
+  P.isEquipmentIcon=gearIcon;
   function gearName(game, gear) {
     if (!gear) return 'なし';
     const name = gear.otherWorldGear ? game.owgName(gear) : D().items[gear.itemId]?.name || gear.itemId;
@@ -597,12 +598,18 @@
       magicDefensePower:Math.round(game.defensePowerFor('magical',stats))
     };
   }
-  function gearComparison(game,slot,chosen,current,status) {
+  function gearComparison(game,slot,chosen,current,status,carried) {
     const before=runStats(game);
     let after=before;
-    if (chosen && chosen.uid!==current?.uid && !status) {
-      const preview=Object.create(game), run=game.isRun();
-      preview.profile={...game.profile,infiniteScore:{...run,equipment:{...run.equipment,[slot]:chosen.uid}}};
+    const next=carried && chosen ? game.owgLoadoutFor(chosen.uid) : null;
+    const canEquip=!carried || next!==game.profile.otherWorldEquipment;
+    if (chosen && chosen.uid!==current?.uid && !status && canEquip) {
+      const preview=Object.create(game);
+      if(carried)preview.profile={...game.profile,otherWorldEquipment:next};
+      else {
+        const run=game.isRun();
+        preview.profile={...game.profile,infiniteScore:{...run,equipment:{...run.equipment,[slot]:chosen.uid}}};
+      }
       after=runStats(preview);
     }
     const labels=game.isCfg().opLabels;
@@ -612,44 +619,51 @@
     });
     const table = entries => `<table><thead><tr><th>能力</th><th>現在</th>${status?'':'<th>候補</th><th>差</th>'}</tr></thead><tbody>${entries.join('')}</tbody></table>`;
     const split = Math.ceil(rows.length / 2);
-    return `<div class="rg-comparison"><p>${status?'現在のステータス':gearName(game,current)+' → '+gearName(game,chosen)}</p>
+    return `<div class="rg-comparison"><p>${status?'現在のステータス':(carried&&!current?esc(D().items[game.profile.equipment?.[slot]]?.name||'なし'):gearName(game,current))+' → '+gearName(game,chosen)}</p>
       <p>攻撃力は武器種ごとの基礎能力と装備補正を反映します。</p>
       <div class="rg-stat-tables" role="group" aria-label="能力一覧">${table(rows.slice(0,split))}${table(rows.slice(split))}</div>
-      ${chosen && current?.uid!==chosen.uid?`<button class="rg-confirm" data-is-run-equip="${esc(chosen.uid)}">${gearName(game,chosen)}に付け替える</button>`:''}</div>`;
+      ${chosen&&!canEquip?'<p>両手武器の装備中は左手に装備できません。</p>':''}
+      ${chosen && canEquip && current?.uid!==chosen.uid?`<button class="rg-confirm" ${carried?'data-owg-equip':'data-is-run-equip'}="${esc(chosen.uid)}">${gearName(game,chosen)}に付け替える</button>`:''}</div>`;
   }
-  P.isRenderEquipment=function(panel){
+  P.isRenderEquipment=function(panel,carried=false){
     const run=this.isRun(), slots=D().equipmentSlots;
-    const active=slots.find(slot=>slot.id===this.isRunEquipSlot);
-    panel.dataset.panel='infinite-score-equipment';
+    const items=carried ? (this.profile.otherWorldGear||[]) : run.lootBag;
+    const equipment=carried ? (this.profile.otherWorldEquipment||{}) : run.equipment;
+    const active=slots.find(slot=>slot.id===(carried?this.owgViewSlot:this.isRunEquipSlot));
+    const tabs=carried ? this.equipTabsHtml() : '';
+    const layout=carried ? ' rg-carried' : '';
+    if(!carried)panel.dataset.panel='infinite-score-equipment';
     if(active){
       const listTop=panel.querySelector('.rg-list')?.scrollTop || 0;
-      const list=run.lootBag.filter(x=>x.kind==='equipment' && D().items[x.itemId]?.slot===active.id);
-      const current=list.find(x=>x.uid===run.equipment[active.id]);
-      const chosen=list.find(x=>x.uid===this.isEquipPreviewUid) || current || list[0];
-      const status=this.isEquipShowStatus===true;
+      const list=items.filter(x=>x.kind==='equipment' && D().items[x.itemId]?.slot===active.id);
+      const current=list.find(x=>x.uid===equipment[active.id]);
+      const chosen=list.find(x=>x.uid===(carried?this.owgViewUid:this.isEquipPreviewUid)) || current || list[0];
+      const status=(carried?this.owgViewStatus:this.isEquipShowStatus)===true;
       const cards=list.map(x=>`<button class="rg-card${x.rarity==='infinity'?' owg-infinity':''}" data-rg-preview="${esc(x.uid)}" aria-pressed="${x===chosen}" style="--accent:${rarityColor(this,x)}">
         ${gearIcon(active.id,x)}<span class="rg-lines">${gearLines(this,x)}${x===current?'<small>装備中</small>':''}</span></button>`).join('');
-      panel.innerHTML=`<main class="rg-screen rg-picker"><header><h3>${esc(active.name)}の装備</h3><button data-is-run-slot-close>部位一覧へ</button></header><nav aria-label="能力の表示">
+      panel.innerHTML=`${tabs}<main class="rg-screen rg-picker${layout}"><header><h3>${esc(active.name)}の装備</h3><button ${carried?'data-owg-slot-close':'data-is-run-slot-close'}>部位一覧へ</button></header><nav aria-label="能力の表示">
         <button data-rg-mode="compare" aria-pressed="${!status}">装備比較</button><button data-rg-mode="status" aria-pressed="${status}">ステータス</button></nav>
         <div class="rg-columns"><div class="rg-list">${cards || '<p>この部位の戦利品はありません。</p>'}
-        ${current?`<button data-is-run-unequip="${esc(active.id)}">${esc(active.name)}を外す</button>`:''}</div>
-        ${gearComparison(this,active.id,chosen,current,status || !chosen)}</div></main>`;
+        ${current?`<button ${carried?'data-owg-unequip':'data-is-run-unequip'}="${esc(active.id)}">${esc(active.name)}を外す</button>`:''}</div>
+        ${gearComparison(this,active.id,chosen,current,status || !chosen,carried)}</div></main>`;
       panel.scrollTop=0;
       panel.querySelector('.rg-list').scrollTop=listTop;
       return;
     }
     const slotRows=slots.map(slot=>{
-      const gear=this.isBagEntry(run.equipment[slot.id]);
-      return `<button class="rg-slot${gear?.rarity==='infinity'?' owg-infinity':''}" data-is-run-slot="${esc(slot.id)}" style="--accent:${rarityColor(this,gear)}">
+      const gear=items.find(x=>x.uid===equipment[slot.id]);
+      return `<button class="rg-slot${gear?.rarity==='infinity'?' owg-infinity':''}" ${carried?'data-owg-slot':'data-is-run-slot'}="${esc(slot.id)}" style="--accent:${rarityColor(this,gear)}">
         ${gearIcon(slot.id,gear)}<span class="rg-slot-name">${esc(slot.name)}<small>${esc(slot.enName)}</small></span>
         <span class="rg-lines">${gearLines(this,gear)}</span><span aria-hidden="true">›</span></button>`;
     }).join('');
-    panel.innerHTML=`<main class="rg-screen"><header class="rg-head"><h2>装備</h2><button class="panel-home" data-is-action="explore">探索画面へ</button></header>
-      <div class="rg-slots">${slotRows}</div><p class="rg-hint">付け替えたい部位を選んでください。</p></main>`;
+    panel.innerHTML=`${tabs}<main class="rg-screen${layout}"><header class="rg-head"><h2>${carried?'無限奏廊の装備':'装備'}</h2>
+      ${carried?'':'<button class="panel-home" data-is-action="explore">探索画面へ</button>'}</header>
+      ${carried?`<p class="rg-hint">${items.length?'持ち帰った装備を通常ダンジョンで使えます。':'持ち帰った装備はまだありません。'}</p>`:''}
+      <div class="rg-slots">${slotRows}</div></main>`;
   };
   document.addEventListener('click',event=>{
     const button=event.target.closest('.rg-screen button'), game=window.arseneGame;
-    if(!button || !game)return;
+    if(!button || !game || button.closest('.rg-carried'))return;
     if(button.hasAttribute('data-is-run-slot')){
       game.isEquipPreviewUid=null;
       game.isEquipShowStatus=false;
@@ -745,7 +759,30 @@
   const isVictoryKeepingAuto=P.victory;
   P.victory=function(...args){const keep=this.battleMode==='infiniteScore'&&!!this.autoBattle,index=this.autoBattleSpeedIndex,result=isVictoryKeepingAuto.apply(this,args);if(keep){this.autoBattle=true;this.autoBattleSpeedIndex=index;}return result;};
   const origDefeat=P.defeat;
-  P.defeat=async function(){if(this.battleMode!=='infiniteScore'||!this.isRun())return origDefeat.call(this);this.finished=true;this.endAutoBattle?.();const run=this.isRun(),lost=this.isBagUsed(),lostIds=new Set((run.importedItems||[]).map(x=>x.itemId)),home=copy(run.homeEquipmentInProfile ? this.profile.equipment : (run.homeEquipment||this.profile.equipment));for(const slot of Object.keys(home))if(lostIds.has(home[slot]))home[slot]=null;this.profile.equipment=home;this.profile.currentVitals=copy(run.homeVitals||this.profile.currentVitals);this.profile.infiniteScore={active:false,lastResult:'defeat',lostCount:lost,endedAt:Date.now()};this.profile.flags.owRestoreJobPending=true;this.saveProfile();this.audio.stopMusic?.(400);this.audio.sfx('defeat');this.showResult('GAME OVER','探索中に拾った戦利品は、すべて無限奏廊へ消えた。','ALL LOOT LOST',`<div class="is-warning"><strong>LOST</strong><p>${lost}枠の戦利品を失いました。</p><p>基礎能力・JOB・転生・武器学・習得技・RE:MIXは失われません。</p></div>`);};
+  P.defeat=async function(){
+    if(this.battleMode!=='infiniteScore'||!this.isRun())return origDefeat.call(this);
+    return this.isFinishDefeat();
+  };
+  P.isFinishDefeat=function(){
+    const run=this.isRun();
+    if(!run)return;
+    this.finished=true;
+    this.endAutoBattle?.();
+    const lost=this.isBagUsed();
+    const lostIds=new Set((run.importedItems||[]).map(item=>item.itemId));
+    const home=copy(run.homeEquipmentInProfile ? this.profile.equipment : (run.homeEquipment||this.profile.equipment));
+    for(const slot of Object.keys(home))if(lostIds.has(home[slot]))home[slot]=null;
+    this.profile.equipment=home;
+    this.profile.currentVitals=copy(run.homeVitals||this.profile.currentVitals);
+    this.profile.infiniteScore={active:false,lastResult:'defeat',lostCount:lost,endedAt:Date.now()};
+    this.isSetEquipmentContext(false);
+    this.profile.flags.owRestoreJobPending=true;
+    this.saveProfile();
+    this.audio.stopMusic?.(400);
+    this.audio.sfx('defeat');
+    this.showResult('GAME OVER','探索中に拾った戦利品は、すべて無限奏廊へ消えた。','ALL LOOT LOST',
+      `<div class="is-warning"><strong>LOST</strong><p>${lost}枠の戦利品を失いました。</p><p>基礎能力・JOB・転生・武器学・習得技・RE:MIXは失われません。</p></div>`);
+  };
 
   P.isAfterBattle=function(){
     const result=$('#result'),game=$('#game'),menu=$('#menu-screen');
@@ -894,6 +931,7 @@
     if (this.isRunChoiceOpen) return;
     const run = this.isEnsureRunShape();
     if (!run) return;
+    if (run.phase === 'defeatPending') return this.isFinishDefeat();
     this.isRunChoiceOpen = true;
     try {
       while (this.isRun() === run) {
@@ -937,6 +975,7 @@
 
   const origRenderPanel=P.renderMenuPanel,infinitePanel=$('#menu-panel'),infinitePanelHome=infinitePanel?.parentNode,infinitePanelNext=infinitePanel?.nextSibling;
   P.renderMenuPanel=function(name){
+    if(this.isRun()?.phase==='defeatPending')return this.isFinishDefeat();
     name=String(name||'');
     const panel=$('#menu-panel');
     const isScorePanel = name.startsWith('infinite-score') && name !== 'infinite-score-warning' && name !== 'infinite-score-import';

@@ -761,7 +761,8 @@
         const b = D.guardianBalance || {};
         return this.defensePowerFor('physical', s, equipment) * (b.shieldDefRate ?? .5) + this.defensePowerFor('magical', s, equipment) * (b.shieldMdefRate ?? .5);
       }
-      const weapon = D.weapons[equipment?.rightHand], baseRule = (D.weaponScaling || {})[weaponType] || (D.weaponScaling || {}).sword || { scaling: { str: 1 }, powerKey: 'attackPower' };
+      const carried = equipment===this.profile.equipment && !this.isRunForEquipment?.() && this.owgHomeGear?.('rightHand');
+      const weapon = D.weapons[carried?.itemId || equipment?.rightHand], baseRule = (D.weaponScaling || {})[weaponType] || (D.weaponScaling || {}).sword || { scaling: { str: 1 }, powerKey: 'attackPower' };
       const rule = weapon?.scaling ? { ...baseRule, scaling: weapon.scaling, powerKey: weapon.powerKey || baseRule.powerKey, damageType: weapon.damageType || baseRule.damageType } : baseRule;
       let v = 0;
       for (const [stat, rate] of Object.entries(rule.scaling || {})) v += (s[stat] || 0) * rate;
@@ -1728,7 +1729,10 @@
     isDungeonUnlocked(id) { const d = this.getDungeon(id); if (!d) return false; if (!d.unlockCondition) return true; const previousBoss = { dungeon1Clear: 'zenacad', dungeon2Clear: 'myrthi', dungeon3Clear: 'seripes', dungeon4Clear: 'astact', dungeon5Clear: 'ostina' }[d.unlockCondition]; return previousBoss ? this.isBossDefeated(previousBoss) : false; }
     applyDungeonBackground() { const dungeon = this.getDungeon(), floor = this.activeFloor(this.currentDungeonId); const bg = floor?.background || dungeon?.background || 'assets/bg/dungeon-battle-01.png'; const bf = $('#battlefield'); bf.dataset.dungeon = this.currentDungeonId; bf.dataset.floor = floor?.id || ''; bf.style.backgroundImage = `linear-gradient(#0207134a,#0208171f 58%,#02040b5c),url("${bg}")`; bf.style.backgroundSize = 'auto,cover'; bf.style.backgroundPosition = 'center,center bottom'; bf.style.backgroundRepeat = 'no-repeat,no-repeat'; }
     // 武道家が素手のときは拳を握る（JOB特性《無手の型》）。他JOBは従来どおり杖にフォールバック。
-    isBareHanded(hand = 'rightHand') { return !D.weapons[this.profile.equipment?.[hand]]; }
+    isBareHanded(hand = 'rightHand') {
+      const carried = !this.isRunForEquipment?.() && this.owgHomeGear?.(hand);
+      return !D.weapons[carried?.itemId || this.profile.equipment?.[hand]];
+    }
     canUseBareFists(jobId = this.profile.currentJob, equipment = this.profile?.equipment) {
       if (this.jobHasTrait('bareFists', jobId)) return true;
       return jobId === 'phantomThief' && (this.profile?.preferredWeaponType === 'martial' || D.weapons?.[equipment?.rightHand]?.weaponType === 'martial');
@@ -5273,11 +5277,11 @@
     }
     equipmentCombatComparison(equipment = this.profile.equipment) {
       const stats = this.totalStats(equipment);
-      const weaponType = D.weapons[equipment?.rightHand]?.weaponType || this.equippedWeaponType();
+      const weaponType = (equipment === this.profile.equipment ? this.equippedWeaponType() : D.weapons[equipment?.rightHand]?.weaponType) || this.equippedWeaponType();
       return { attack: Math.round(this.attackPowerFor(weaponType, stats, equipment)), defense: Math.round(this.defensePowerFor('physical', stats, equipment)), magicDefense: Math.round(this.defensePowerFor('magical', stats, equipment)) };
     }
-    combatComparisonHTML(nextEquipment, compact = false) {
-      const before = this.equipmentCombatComparison(), after = this.equipmentCombatComparison(nextEquipment);
+    combatComparisonHTML(nextEquipment, compact = false, preview = this) {
+      const before = this.equipmentCombatComparison(), after = preview.equipmentCombatComparison(nextEquipment);
       const rows = [['攻撃力', 'ATK', 'attack'], ['防御力', 'DEF', 'defense'], ['魔法防御', 'MDEF', 'magicDefense']];
       return `<div class="combat-compare-strip${compact ? ' compact' : ''}">${rows.map(([label, short, key]) => { const delta = after[key] - before[key], state = delta > 0 ? 'up' : delta < 0 ? 'down' : 'same'; return `<div class="${state}"><span>${compact ? short : label}</span>${compact ? '' : `<b>${before[key]}<i>→</i>${after[key]}</b>`}<em>${delta ? `${delta > 0 ? '+' : ''}${delta}` : '±0'}</em></div>`; }).join('')}</div>`;
     }
@@ -5286,11 +5290,25 @@
       const slot = item.slot || (D.weapons[id] ? 'rightHand' : null); if (!slot) return '';
       return this.combatComparisonHTML({ ...this.profile.equipment, [slot]: id }, true);
     }
+    regularEquipmentPreview(slot, id) {
+      const preview = Object.create(this);
+      const otherWorldEquipment = { ...this.profile.otherWorldEquipment };
+      delete otherWorldEquipment[slot];
+      if (slot === 'rightHand' && this.isTwoHandedWeapon(id)) delete otherWorldEquipment.leftHand;
+      preview.profile = { ...this.profile, otherWorldEquipment, equipment: { ...this.profile.equipment, [slot]: id } };
+      if (slot === 'rightHand') preview.sanitizeLeftHandEquipment();
+      return preview;
+    }
+    setRegularEquipment(slot, id) {
+      const preview = this.regularEquipmentPreview(slot,id);
+      this.profile.equipment = preview.profile.equipment;
+      this.profile.otherWorldEquipment = preview.profile.otherWorldEquipment;
+    }
     equipmentPreviewHTML(id) {
       if (!id) return `<div class="equipment-empty-preview"><b>装備候補を選択</b><span>候補をタップすると、現在装備との能力差を確認できます。</span></div>`;
-      const item = D.items[id], targetSlot = this.equipSlot || item.slot, currentId = this.profile.equipment[targetSlot], currentItem = D.items[currentId], nextEquipment = { ...this.profile.equipment, [targetSlot]: id }, before = this.totalStats(), after = this.totalStats(nextEquipment), active = currentId === id;
+      const item = D.items[id], targetSlot = this.equipSlot || item.slot, carried = this.owgHomeGear?.(targetSlot), currentId = carried?.itemId || this.profile.equipment[targetSlot], currentItem = D.items[currentId], preview = this.regularEquipmentPreview(targetSlot,id), before = this.totalStats(), after = preview.totalStats(), active = !carried && currentId === id;
       const rows = statusStatKeys.map(key => { const delta = after[key] - before[key], state = delta > 0 ? 'up' : delta < 0 ? 'down' : 'same', change = delta ? `${delta > 0 ? '+' : ''}${delta} ${delta > 0 ? '↑' : '↓'}` : '－'; return `<div class="compare-row ${state}"><span>${statLabels[key]}</span><b>${before[key]}</b><i>→</i><strong>${after[key]}</strong><em>${change}</em></div>`; }).join('');
-      return `<div class="equipment-swap"><div><small>現在装備</small><b>${currentItem?.name || 'なし'}</b><span>${currentId ? this.bonusText(currentId) : '補正なし'}</span></div><i>→</i><div><small>変更後</small><b>${item.name}</b><span>${this.bonusText(id)}</span></div></div><div class="equipment-description">${item.description}</div>${this.combatComparisonHTML(nextEquipment)}<div class="compare-table"><div class="compare-head"><span>基礎能力</span><b>現在</b><i></i><strong>装備後</strong><em>変化</em></div>${rows}</div><button class="equip-confirm" data-equip-confirm="${id}" ${active ? 'disabled' : ''}>${active ? '装備中' : 'この装備に変更'}<span>${active ? 'EQUIPPED' : 'EQUIP'}</span></button>`;
+      return `<div class="equipment-swap"><div><small>現在装備</small><b>${carried ? this.owgName(carried) : currentItem?.name || 'なし'}</b><span>${carried ? this.owgBaseText(carried) : currentId ? this.bonusText(currentId) : '補正なし'}</span></div><i>→</i><div><small>変更後</small><b>${item.name}</b><span>${this.bonusText(id)}</span></div></div><div class="equipment-description">${item.description}</div>${this.combatComparisonHTML(preview.profile.equipment,false,preview)}<div class="compare-table"><div class="compare-head"><span>基礎能力</span><b>現在</b><i></i><strong>装備後</strong><em>変化</em></div>${rows}</div><button class="equip-confirm" data-equip-confirm="${id}" ${active ? 'disabled' : ''}>${active ? '装備中' : 'この装備に変更'}<span>${active ? 'EQUIPPED' : 'EQUIP'}</span></button>`;
     }
     musicScoreSectionHTML() { const scores = Object.values(D.musicScores || {}).filter(score => this.isPlayerContentVisible(score)); return `<section class="music-score-section"><h3>楽曲 <span>MUSIC SCORE // PRIVATE MODE</span></h3><div>${scores.map(score => { const owned = !!this.profile.musicScores?.[score.id]; return `<article class="music-score-card ${owned ? 'owned' : 'locked'}"><i>♪</i><div><small>${owned ? 'PLAYABLE SCORE' : 'LOCKED SCORE'}</small><b>${owned ? score.title : '？？？'}</b><strong>${owned ? `（${score.subtitle}）` : '未入手の楽曲'}</strong><span>${owned ? score.description : '入手すると楽曲名と詳細が開示されます。'}</span></div><em>${owned ? 'PRIVATE MODE ITEM' : 'LOCKED'}</em></article>`; }).join('')}</div></section>`; }
     bossSetBonusSectionHTML() {
@@ -5302,6 +5320,7 @@
       const t = this.equipTab || 'equip';
       // 1行に収まる短いラベルにして、内容を階層で分ける（長い1枚ページをやめる）
       const tabs = [['equip', '装備'], ['status', '能力値'], ['mastery', '武器学'], ['arts', '武器技'], ['score', '楽曲']];
+      if (this.owgTabAvailable?.()) tabs.splice(1, 0, ['infinite', '無限奏廊']);
       if (this.profile.titleSystem?.unlocked) tabs.push(['title', '称号']);
       return `<div class="eq-tabs2">${tabs.map(([id, name]) => `<button data-equip-tab="${id}" class="${t === id ? 'active' : ''}">${name}</button>`).join('')}</div>`;
     }
@@ -5355,6 +5374,7 @@
         <div class="wa-list">${rows || '<p class="item-empty">この武器種の技はまだありません。</p>'}</div>`;
     }
     renderEquipmentPanel(panel) {
+      if (this.equipTab === 'infinite' && this.owgTabAvailable?.()) { this.owgRenderVault(panel); return; }
       if (this.equipTab === 'status') { this.renderStatusPanel(panel, true); return; }
       if (this.equipTab === 'mastery') { this.renderMasteryPanel(panel); return; }
       if (this.equipTab === 'arts') { this.renderWeaponArtsPanel(panel); return; }
@@ -5362,10 +5382,10 @@
       if (this.equipTab === 'title' && this.titlePanelHtml) { this.titlePanelSource = 'equipment'; panel.innerHTML = `<small>BOSS TITLE</small><h2>称号装備</h2>${this.equipTabsHtml()}${this.titlePanelHtml()}`; return; }
       const slots = D.equipmentSlots || [], owned = Object.entries(this.profile.inventory).filter(([id, n]) => n > 0 && this.isPlayerContentVisible(D.items[id]) && D.items[id]?.category === 'equipment');
       if (this.selectedEquipmentId && !(this.profile.inventory[this.selectedEquipmentId] > 0)) this.selectedEquipmentId = null;
-      const isDualBlade = this.dualWieldEnabled(), canUseLeft = !this.isTwoHandedWeapon(this.profile.equipment.rightHand); // 盾は全JOB可。両手武器のときだけ塞ぐ
+      const isDualBlade = this.dualWieldEnabled(), canUseLeft = !this.isTwoHandedWeapon(this.owgHomeGear?.('rightHand')?.itemId || this.profile.equipment.rightHand); // 盾は全JOB可。両手武器のときだけ塞ぐ
       const activeSlot = this.equipSlot && slots.some(s => s.id === this.equipSlot) ? this.equipSlot : null;
       const fists = this.usesBareFists(); // 武道家が素手なら両手を「拳」と表示する
-      const slotHtml = slots.map(slot => { const id = this.profile.equipment[slot.id], item = D.items[id]; const rate = isDualBlade && slot.id === 'leftHand' && D.weapons[id] ? ` ×${Math.round(this.offHandRate() * 100)}%` : ''; const disabled = slot.id === 'leftHand' && !canUseLeft; const count = this.candidatesForSlot(slot.id).length; const leftRule = slot.id === 'leftHand' ? (this.isTwoHandedWeapon(this.profile.equipment.rightHand) ? '<small>両手武器で使用不可</small>' : this.hasPassiveType('dualWield') ? '<small>盾／双刃</small>' : '<small>盾</small>') : ''; return `<button type="button" data-equip-slot-pick="${slot.id}" class="equipment-slot ${id ? 'filled' : 'empty'} ${disabled ? 'slot-disabled' : ''} ${activeSlot === slot.id ? 'slot-active' : ''}" ${disabled ? 'disabled' : ''}><span>${slot.name}<small>${slot.enName}</small>${leftRule}</span><b>${item?.name || (fists && (slot.id === 'rightHand' || slot.id === 'leftHand') ? '拳' : 'なし')}${id ? this.enchantSuffix(id) : ''}${rate}</b>${count && !disabled ? `<i class="slot-count">${count}</i>` : ''}</button>`; }).join('');
+      const slotHtml = slots.map(slot => { const carried = this.owgHomeGear?.(slot.id), id = carried?.itemId || this.profile.equipment[slot.id], item = D.items[id]; const rate = isDualBlade && slot.id === 'leftHand' && D.weapons[id] ? ` ×${Math.round(this.offHandRate() * 100)}%` : ''; const disabled = slot.id === 'leftHand' && !canUseLeft; const count = this.candidatesForSlot(slot.id).length; const leftRule = slot.id === 'leftHand' ? (this.isTwoHandedWeapon(this.profile.equipment.rightHand) ? '<small>両手武器で使用不可</small>' : this.hasPassiveType('dualWield') ? '<small>盾／双刃</small>' : '<small>盾</small>') : ''; return `<button type="button" data-equip-slot-pick="${slot.id}" class="equipment-slot rg-slot ${id ? 'filled' : 'empty'} ${disabled ? 'slot-disabled' : ''} ${activeSlot === slot.id ? 'slot-active' : ''}" ${disabled ? 'disabled' : ''}>${this.isEquipmentIcon?.(slot.id,{itemId:id})||''}<span class="rg-slot-name">${slot.name}<small>${slot.enName}</small>${leftRule}</span><span class="rg-lines"><b>${carried ? this.owgName(carried) : item?.name || (fists && (slot.id === 'rightHand' || slot.id === 'leftHand') ? '拳' : 'なし')}${carried ? (carried.plus ? ' +' + carried.plus : '') : id ? this.enchantSuffix(id) : ''}${rate}</b>${carried ? '<small>無限奏廊</small>' : ''}</span>${count && !disabled ? `<i class="slot-count">${count}</i>` : ''}</button>`; }).join('');
       let workbench;
       if (!activeSlot) {
         workbench = `<div class="equip-hint"><b>装備部位を選んでください</b><span>上の部位をタップすると、そこに装備できるアイテムだけが表示されます。</span></div>`;
@@ -5383,17 +5403,17 @@
         const sortOpts = [{ id: 'default', name: '標準' }, { id: 'attackPower', name: '攻撃力' }, { id: 'defensePower', name: '防御力' }, { id: 'magicDefensePower', name: '魔法防御力' }, ...statusStatKeys.map(k => ({ id: k, name: statLabels[k] }))];
         const sortHtml = `<div class="equip-sort"><span>並べ替え</span><div class="equip-sort-btns">${sortOpts.map(o => `<button data-equip-sort="${o.id}" class="${sortKey === o.id ? 'active' : ''}">${o.name}</button>`).join('')}</div></div>`;
         const weaponTabs = weaponTypes.length ? `<div class="equip-weapon-tabs" role="tablist" aria-label="武器学で絞り込み">${weaponTypes.map(type => { const mastery = this.masteryOf(type.id); return `<button type="button" role="tab" data-equip-weapon-tab="${type.id}" class="${this.equipWeaponType === type.id ? 'active' : ''}"><b>${type.name}</b><small>武器学 Lv.${mastery.level}</small></button>`; }).join('')}</div>` : '';
-        const curId = this.profile.equipment[activeSlot];
+        const curId = this.owgHomeGear?.(activeSlot)?.itemId || this.profile.equipment[activeSlot];
         const unequipBtn = curId ? `<button class="equip-unequip" data-unequip-slot="${activeSlot}">${slotDef?.name}を外す<span>UNEQUIP</span></button>` : '';
-        const cards = list.map(id => { const item = D.items[id], active = this.profile.equipment[activeSlot] === id, selected = this.selectedEquipmentId === id; const delta = this.equipDeltaSummary(id, activeSlot); return `<button data-equip-preview="${id}" aria-pressed="${selected}" class="equipment-candidate rarity-${item.rarity} ${active ? 'equipped-now' : ''} ${selected ? 'selected' : ''}"><span class="candidate-title"><b>${item.name}${this.enchantSuffix(id)}${item.stars ? `<small>${'★'.repeat(item.stars)}</small>` : ''}</b>${active ? '<em>EQUIPPED</em>' : ''}</span><strong>${this.bonusText(id)}</strong>${delta ? `<span class="cand-delta">${delta}</span>` : ''}<small>${item.description}</small></button>`; }).join('');
+        const cards = list.map(id => { const item = D.items[id], active = !this.owgHomeGear?.(activeSlot) && this.profile.equipment[activeSlot] === id, selected = this.selectedEquipmentId === id; const delta = this.equipDeltaSummary(id, activeSlot); return `<button data-equip-preview="${id}" aria-pressed="${selected}" class="equipment-candidate rg-card rarity-${item.rarity} ${active ? 'equipped-now' : ''} ${selected ? 'selected' : ''}">${this.isEquipmentIcon?.(activeSlot,{itemId:id})||''}<span class="candidate-title"><b>${item.name}${this.enchantSuffix(id)}${item.stars ? `<small>${'★'.repeat(item.stars)}</small>` : ''}</b>${active ? '<em>EQUIPPED</em>' : ''}</span><strong>${this.bonusText(id)}</strong>${delta ? `<span class="cand-delta">${delta}</span>` : ''}<small>${item.description}</small></button>`; }).join('');
         const preview = this.selectedEquipmentId ? `<section class="equipment-preview-overlay" role="dialog" aria-modal="true" aria-label="装備比較"><header><div><small>STATUS COMPARISON</small><b>能力比較</b></div><button type="button" data-equip-preview-close aria-label="候補一覧へ戻る">×</button></header>${this.equipmentPreviewHTML(this.selectedEquipmentId)}</section>` : '';
-        workbench = `<section class="equipment-selector-overlay" role="dialog" aria-modal="true" aria-label="${slotDef?.name || '装備'}を選択"><header><div><small>SELECT EQUIPMENT</small><b>${slotDef?.name}の装備 <span>${slotDef?.enName}</span></b></div><button type="button" data-equip-slot-close aria-label="装備部位一覧へ戻る">×</button></header>${weaponTabs}${sortHtml}${unequipBtn}<div class="equipment-candidate-list">${cards || '<p class="item-empty">この部位に装備できるアイテムがありません。</p>'}</div>${preview}</section>`;
+        workbench = `<section class="equipment-selector-overlay rg-screen rg-home-candidates" role="dialog" aria-modal="true" aria-label="${slotDef?.name || '装備'}を選択"><header><div><small>SELECT EQUIPMENT</small><b>${slotDef?.name}の装備 <span>${slotDef?.enName}</span></b></div><button type="button" data-equip-slot-close aria-label="装備部位一覧へ戻る">×</button></header>${weaponTabs}${sortHtml}${unequipBtn}<div class="equipment-candidate-list">${cards || '<p class="item-empty">この部位に装備できるアイテムがありません。</p>'}</div>${preview}</section>`;
       }
-      panel.innerHTML = `<small>EQUIPMENT</small><h2>装備・ステータス</h2>${this.equipTabsHtml()}<div class="equipment-screen"><section class="equipment-slots-wrap"><h3>装備中 <span>CURRENT LOADOUT</span><button type="button" class="equipment-best" data-equip-best>最強<small>BEST</small></button></h3><div class="equipment-slots">${slotHtml}</div></section>${!activeSlot ? `<section class="equipment-workbench">${workbench}</section>` : ''}${this.bossSetBonusSectionHTML()}</div>${activeSlot ? workbench : ''}`;
+      panel.innerHTML = `<small>EQUIPMENT</small><h2>装備・ステータス</h2>${this.equipTabsHtml()}<div class="equipment-screen rg-screen rg-home"><section class="equipment-slots-wrap"><h3>装備中 <span>CURRENT LOADOUT</span><button type="button" class="equipment-best" data-equip-best>最強<small>BEST</small></button></h3><div class="equipment-slots rg-slots">${slotHtml}</div></section>${!activeSlot ? `<section class="equipment-workbench">${workbench}</section>` : ''}${this.bossSetBonusSectionHTML()}</div>${activeSlot ? workbench : ''}`;
     }
     candidatesForSlot(slotId) {
       return Object.entries(this.profile.inventory).filter(([id, n]) => {
-        if (!(n > 0)) return false; const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment') return false;
+        if (!(n > 0)) return false; const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || item.otherWorldGear) return false;
         if (slotId === 'leftHand') return this.isLeftHandItemAllowed(id);
         if (slotId === 'rightHand') return !this.isOffHandOnlyWeapon(id) && this.canEquipRightHand(id);
         return item.slot === slotId;
@@ -5442,11 +5462,12 @@
     }
     isLeftHandItemAllowed(id, jobId = this.profile.currentJob) {
       if (!id) return true;
-      if (this.isTwoHandedWeapon(this.profile?.equipment?.rightHand)) return false;
+      const rightHand = this.owgHomeGear?.('rightHand')?.itemId || this.profile?.equipment?.rightHand;
+      if (this.isTwoHandedWeapon(rightHand)) return false;
       if (this.isShield(id)) return true;
       // 双刃は左右を区別しない。右手が双刃なら、左手にも双刃を持てる。
       // 同じIDを両手に持つことも許すが、その場合は在庫が2本必要（下の needsSpareCopy）。
-      if (this.hasPassiveType('dualWield')) return this.isDualBladeWeapon(this.profile.equipment?.rightHand) && this.isDualBladeWeapon(id);
+      if (this.hasPassiveType('dualWield')) return this.isDualBladeWeapon(rightHand) && this.isDualBladeWeapon(id);
       return false;
     }
     // 盾は防御を得る代わりに素早さを落とす。低下率はデータ側で管理し、
@@ -5476,6 +5497,7 @@
     equipBestLoadout() {
       const slots=(D.equipmentSlots||[]).map(s=>s.id),ordered=['rightHand','leftHand',...slots.filter(s=>s!=='rightHand'&&s!=='leftHand')];
       for(let pass=0;pass<2;pass++)for(const slot of ordered){
+        if(this.owgHomeGear?.(slot))continue;
         if(slot==='leftHand'&&this.isTwoHandedWeapon(this.profile.equipment.rightHand)){this.profile.equipment.leftHand=null;continue;}
         const current=this.profile.equipment[slot],pool=[...new Set([current,...this.candidatesForSlot(slot)].filter(Boolean))].filter(id=>D.items[id]&&(this.profile.inventory[id]||0)>0&&!this.needsSpareCopy(id,slot));
         if(!pool.length)continue;
@@ -5485,15 +5507,15 @@
       this.sanitizeRightHandEquipment();this.sanitizeLeftHandEquipment();this.equipSlot=null;this.equipWeaponType=null;this.selectedEquipmentId=null;this.saveProfile();this.audio.sfx('confirm');this.renderMenuSummary();this.renderMenuPanel('equipment');window.arseneStartFlow?.toast('総合力が最も高い装備へ変更しました');
     }
     equipDeltaSummary(id, slotId) {
-      const before = this.totalStats(), after = this.totalStats({ ...this.profile.equipment, [slotId]: id });
+      const before = this.totalStats(), after = this.regularEquipmentPreview(slotId,id).totalStats();
       const parts = statusStatKeys.map(k => { const d = after[k] - before[k]; return d ? `<i class="${d > 0 ? 'up' : 'down'}">${statLabels[k]} ${d > 0 ? '+' : ''}${d}</i>` : ''; }).filter(Boolean);
       return parts.length ? parts.join('') : '<i class="same">変化なし</i>';
     }
     previewEquipment(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; this.selectedEquipmentId = id; this.renderMenuPanel('equipment'); }
-    equipItem(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; const slot = (this.equipSlot && this.candidatesForSlot(this.equipSlot).includes(id)) ? this.equipSlot : item.slot; if (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) return; if (slot === 'rightHand' && (this.isOffHandOnlyWeapon(id) || !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
-    unequipSlot(slotId) { if (!slotId || !(slotId in this.profile.equipment)) return; const currentWeaponType = D.weapons?.[this.profile.equipment.rightHand]?.weaponType, bareRightHand = slotId === 'rightHand' && this.canUseBareFists(); if (bareRightHand && currentWeaponType === 'martial') this.profile.preferredWeaponType = 'martial'; this.profile.equipment[slotId] = slotId === 'rightHand' && !bareRightHand ? this.defaultWeaponId() : null; if (bareRightHand) this.profile.equipment.leftHand = null; this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('ui'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
-    equipFromInventory(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || !(this.profile.inventory[id] > 0)) return; const slot = this.isOffHandOnlyWeapon(id) ? 'leftHand' : D.weapons[id] ? 'rightHand' : item.slot; if (!slot || (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) || (slot === 'rightHand' && !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('items'); }
-    equipLeftHandWeapon(id) { if (!(this.profile.inventory[id] > 0) || !this.isLeftHandItemAllowed(id)) return; this.profile.equipment.leftHand = id; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
+    equipItem(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; const slot = (this.equipSlot && this.candidatesForSlot(this.equipSlot).includes(id)) ? this.equipSlot : item.slot; if (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) return; if (slot === 'rightHand' && (this.isOffHandOnlyWeapon(id) || !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } this.setRegularEquipment(slot,id); this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
+    unequipSlot(slotId) { if (!slotId || (!(slotId in this.profile.equipment) && !this.owgHomeGear?.(slotId))) return; const currentWeaponType = D.weapons?.[this.profile.equipment.rightHand]?.weaponType, bareRightHand = slotId === 'rightHand' && this.canUseBareFists(); if (bareRightHand && currentWeaponType === 'martial') this.profile.preferredWeaponType = 'martial'; this.setRegularEquipment(slotId,slotId === 'rightHand' && !bareRightHand ? this.defaultWeaponId() : null); if (bareRightHand) this.setRegularEquipment('leftHand',null); this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('ui'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
+    equipFromInventory(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || !(this.profile.inventory[id] > 0)) return; const slot = this.isOffHandOnlyWeapon(id) ? 'leftHand' : D.weapons[id] ? 'rightHand' : item.slot; if (!slot || (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) || (slot === 'rightHand' && !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } this.setRegularEquipment(slot,id); this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('items'); }
+    equipLeftHandWeapon(id) { if (!(this.profile.inventory[id] > 0) || !this.isLeftHandItemAllowed(id)) return; this.setRegularEquipment('leftHand',id); this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
 
     kazuDialogueCondition(key) {
       const f = this.profile.flags, workshopUnlocked = !!f.noelFirstEncounterCleared;
