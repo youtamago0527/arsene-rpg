@@ -30,6 +30,16 @@ for (const moduleName of ['data', 'future_data', 'release_content', 'd4_extra_en
 }
 const { dungeons, enemies } = window.ARSENE_DATA;
 const [d4, d5] = ['dungeon4', 'dungeon5'].map(id => dungeons.find(d => d.id === id));
+const nestua = enemies.d5MidBoss;
+for (const form of [nestua, nestua.form2, nestua.form3]) {
+  if (form.name !== 'ネストゥア') throw new Error('Nestua must have a Japanese display name in every phase');
+}
+if (!d5.music || d5.music === d4.music || nestua.music !== d5.music || !nestua.form3.music || nestua.form3.music === d5.music) {
+  throw new Error('D5 requires its own battle theme and a distinct final-form theme');
+}
+for (const track of [d5.music, nestua.form3.music]) {
+  if (!fs.existsSync(path.join(root, track))) throw new Error('Missing D5 music: ' + track);
+}
 function averageHp(floor) {
   const pool = floor.encounterProgression[0].pool;
   const sum = pool.reduce((n, entry) => n + entry.weight * Math.round(enemies[entry.id].stats.maxHp * floor.enemyScale.hp), 0);

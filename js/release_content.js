@@ -32,7 +32,7 @@
     roninProof: { id: 'roninProof', name: '刀術士の証', nameEn: 'PROOF OF THE RONIN', category: 'key', rarity: 'epic', description: '一瞬を見切り、返す者の証。' },
     hunterProof: { id: 'hunterProof', name: '狩人の証', nameEn: 'PROOF OF THE HUNTER', category: 'key', rarity: 'epic', description: '弱りを見逃さず、仕留める者の証。' },
     splurgeGuitar: { id: 'splurgeGuitar', name: '《奮発して買ったギター》', nameEn: 'THE GUITAR I SPLURGED ON', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, dungeonId: 'dungeon4', catalogDungeon: 'dungeon4', source: 'secretGuitar', guitarSkillTree: 'versicrellGuitar', archiveHint: '入手経路不明。値札の気配だけが、断月のどこかに微かに残っている。', description: 'フェゴリアが惜しみなく金を注ぎ込んだ特注ギター。銀環の系譜を継ぐ音を、さらに強烈な出力で叩きつける。' },
-    memberGiftGuitar: { id: 'memberGiftGuitar', name: '《メンバーからもらったギター》', nameEn: 'A GUITAR FROM THE BAND', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, dungeonId: 'dungeon5', catalogDungeon: 'dungeon5', source: 'secretGuitar', guitarSkillTree: 'versicrellGuitar', archiveHint: '入手経路不明。反復の狩庭に残された、誰かの大切な一本。', description: 'NESTUAが仲間から受け取ったギター。共に重ねた音が、今も弦の奥に残っている。' },
+    memberGiftGuitar: { id: 'memberGiftGuitar', name: '《メンバーからもらったギター》', nameEn: 'A GUITAR FROM THE BAND', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, dungeonId: 'dungeon5', catalogDungeon: 'dungeon5', source: 'secretGuitar', guitarSkillTree: 'versicrellGuitar', archiveHint: '入手経路不明。反復の狩庭に残された、誰かの大切な一本。', description: 'ネストゥアが仲間から受け取ったギター。共に重ねた音が、今も弦の奥に残っている。' },
     d4MoonKatana: { id: 'd4MoonKatana', name: '月鋼の刀', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 2, catalogDungeon: 'dungeon4', description: '月刃鉱を打った、扱いやすい工房刀。' },
     d4FlashCoat: { id: 'd4FlashCoat', name: '瞬歩の外套', category: 'equipment', slot: 'body', rarity: 'rare', stars: 2, catalogDungeon: 'dungeon4', description: '短い踏み込みを妨げない軽装。' },
     d4SightCharm: { id: 'd4SightCharm', name: '見切りの緒', category: 'equipment', slot: 'accessory', rarity: 'rare', stars: 2, catalogDungeon: 'dungeon4', description: '敵の初動を読むための組紐。' },
@@ -85,17 +85,20 @@
 
   D.enemies.d4MidBoss.music = '音楽系/戦闘用/D4中ボス第一形態.mp3';
   D.enemies.d4MidBoss.form2.music = '音楽系/戦闘用/D4中ボス第二形態.mp3';
+  const d5BattleMusic = '音楽系/戦闘用/D5通常戦闘-毒糸の追奏.mp3';
   Object.assign(D.enemies.d5MidBoss, {
-    name: 'NESTUA', nameEn: 'NESTUA', title: '《ネストゥア》', role: 'MID BOSS / THREE FORMS',
+    music: d5BattleMusic,
+    name: 'ネストゥア', nameEn: 'ネストゥア', title: '', role: 'MID BOSS / THREE FORMS',
     sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form1.png',
     phaseCount: 3,
     battleScale: 1.12,
     form2: {
-      name: 'NESTUA', title: '《ネストゥア》', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form2.png', battleScale: 1.16,
+      name: 'ネストゥア', title: '', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form2.png', battleScale: 1.16,
       stats: { maxHp: 109824, atk: 728, def: 650, mag: 754, mnd: 676, dex: 546, agi: 135, spd: 135 }
     },
     form3: {
-      name: 'NESTUA', title: '《ネストゥア》', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form3.png', battleScale: 1.2,
+      music: '音楽系/戦闘用/刹那第三形態.mp3',
+      name: 'ネストゥア', title: '', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form3.png', battleScale: 1.2,
       stats: { maxHp: 164736, atk: 1092, def: 975, mag: 1131, mnd: 1014, dex: 819, agi: 203, spd: 203 }
     }
   });
@@ -129,6 +132,7 @@
   if (!D.guitarSeries.entries.some(entry => entry.itemId === 'memberGiftGuitar')) D.guitarSeries.entries.push({ dungeonId: 'dungeon5', itemId: 'memberGiftGuitar', dropEnemyId: 'd5MidBoss', skillTreeId: 'versicrellGuitar' });
   D.dungeons.push({
     id: 'dungeon5', name: '反復の狩庭', nameEn: 'OSTINATO HUNTING GROUND', background: d3bg[1], thumbnail: d3bg[1], recommendedLevel: 34,
+    music: d5BattleMusic,
     description: '毒と追撃が繰り返される狩庭。敵のHPは断月の楼閣の約10倍。長期戦に備えて火力と回復手段を整えよう。', unlockCondition: 'dungeon4Clear', bossId: 'ostina', midBossId: 'd5MidBoss', midBossAfterFloor: 2,
     floors: [
       floor('d5f1', '毒糸の林廊', '1F VENOM THREAD', 6, d3bg[0], ['hunterThread'], { hp: 1, atk: 1, mag: 1, def: 1, mnd: 1, spd: 1, rewards: 1 }, [{ id: 'venomWeaver', weight: 5 }, { id: 'repeatedHunter', weight: 3 }]),
