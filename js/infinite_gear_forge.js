@@ -16,7 +16,7 @@
   P.isForgeState=function(){
     const run=this.isRun();
     if (this.isForgeUI?.run!==run) {
-      this.isForgeUI={run,mode:'merge',base:'',material:'',source:'',op:'',target:'',replace:'',busy:false};
+      this.isForgeUI={run,mode:'merge',base:'',material:'',source:'',op:'',target:'',slot:'',busy:false};
     }
     return this.isForgeUI;
   };
@@ -59,14 +59,17 @@
 
   P.isForgeTransfer=async function(sourceUid,targetUid,sourceIndex,targetIndex) {
     const run=this.isRun(), source=this.isBagEntry(sourceUid), target=this.isBagEntry(targetUid);
-    if (!run||!G.canReplace(source,target,sourceIndex,targetIndex)) return false;
+    if (!run||!G.canTransplant(source,target,sourceIndex,targetIndex)) return false;
     const moved=source.ops[sourceIndex], replaced=target.ops[targetIndex];
     const warning=materialWarning(run,source);
-    const message=`${this.owgName(source)}は素材として完全に消滅します。\n${G.opText(replaced)} → ${G.opText(moved)}\n${warning}`;
-    if (!await this.isConfirm('OPを上書き移植しますか？',message,{kicker:'OPTION TRANSPLANT',confirmLabel:'移植する',danger:true})) return false;
-    if (warning!==materialWarning(run,source)||!G.canReplace(source,target,sourceIndex,targetIndex)||
+    const before=replaced?G.opText(replaced):'空き枠';
+    const message=`${this.owgName(source)}は素材として完全に消滅します。\n${before} → ${G.opText(moved)}\n${warning}`;
+    const title=replaced?'OPを上書き移植しますか？':'空き枠にOPを移植しますか？';
+    if (!await this.isConfirm(title,message,{kicker:'OPTION TRANSPLANT',confirmLabel:'移植する',danger:true})) return false;
+    if (warning!==materialWarning(run,source)||!G.canTransplant(source,target,sourceIndex,targetIndex)||
         source.ops[sourceIndex]!==moved||target.ops[targetIndex]!==replaced) return false;
-    const ops=target.ops.map((op,index)=>index===targetIndex?{...moved}:op);
+    const ops=target.ops.slice();
+    ops[targetIndex]={...moved};
     return commit(this,run,target,source,{ops},`異世界工房：${this.owgName(target)}へ ${G.opText(moved)} を移植`);
   };
 
@@ -108,21 +111,29 @@
     };
   }
 
+  function transferSlots(source,target,sourceIndex) {
+    if (!G.canTransfer(source,target)) return [];
+    const choices=target.ops.map((entry,i)=>[i,`上書き：${G.opText(entry)}`]);
+    choices.unshift([target.ops.length,'空き枠に追加']);
+    return choices.filter(([index])=>G.canTransplant(source,target,sourceIndex,index));
+  }
+
   function transferPanel(game,state,items) {
     const source=items.find(item=>item.uid===state.source);
     const opIndex=state.op===''?-1:Number(state.op);
     const op=source?.ops[opIndex];
-    const candidates=op?items.filter(item=>G.canTransfer(source,item)&&item.ops.some((_,i)=>G.canReplace(source,item,opIndex,i))):[];
+    const candidates=op?items.filter(item=>transferSlots(source,item,opIndex).length):[];
     const target=candidates.find(item=>item.uid===state.target);
-    const replacements=target?.ops.map((entry,i)=>[i,G.opText(entry)]).filter(([i])=>G.canReplace(source,target,opIndex,i))||[];
-    const ready=!!target && state.replace!=='' && G.canReplace(source,target,opIndex,Number(state.replace));
+    const slots=target?transferSlots(source,target,opIndex):[];
+    const label=target?`4. 移植する枠（${target.ops.length} / ${G.opCapacity(target)}）`:'4. 移植する枠';
+    const ready=slots.some(([index])=>String(index)===state.slot);
     return {
       ready,
       html:`${select('1. 移植元','source',state.source,itemChoices(game,items.filter(item=>item.ops.length)),state.busy)}
         ${select('2. 移すOP','op',state.op,source?.ops.map((entry,i)=>[i,G.opText(entry)])||[],state.busy)}
         ${select('3. 同系統の移植先','target',state.target,itemChoices(game,candidates),state.busy)}
-        ${select('4. 上書きするOP','replace',state.replace,replacements,state.busy)}
-        <p>成功率100%。種類・数値・グレードを維持し、選んだ1枠を上書きします。</p>
+        ${select(label,'slot',state.slot,slots,state.busy)}
+        <p>成功率100%。空き枠に追加するか、既存のOPを上書きできます。種類・数値・グレードはそのままです。</p>
         <div class="is-forge-v2-grid">${itemDetail(game,source,'消滅する移植元',state.busy)}${itemDetail(game,target,'移植先',state.busy)}</div>`
     };
   }
@@ -145,7 +156,7 @@
     root.scrollTop=scroll;
   };
 
-  const clears={base:['material'],source:['op','target','replace'],op:['target','replace'],target:['replace'],material:[],replace:[]};
+  const clears={base:['material'],source:['op','target','slot'],op:['target','slot'],target:['slot'],material:[],slot:[]};
   document.addEventListener('change',event=>{
     const field=event.target.closest('.is-forge-v2 [data-is-forge-field]'), game=window.arseneGame;
     if (!field||!game?.isRun()) return;
@@ -176,9 +187,9 @@
       game.isRenderWorkshop(panel());
       try {
         const success=state.mode==='merge' ? await game.isForgeMerge(state.base,state.material)
-          : await game.isForgeTransfer(state.source,state.target,Number(state.op),Number(state.replace));
+          : await game.isForgeTransfer(state.source,state.target,Number(state.op),Number(state.slot));
         if (success) {
-          state.material=state.source=state.op=state.target=state.replace='';
+          state.material=state.source=state.op=state.target=state.slot='';
           game.audio?.sfx?.('confirm');
         } else if (state.saveError) await game.isNotify('保存できませんでした','装備は加工前の状態に戻しました。');
       } finally {

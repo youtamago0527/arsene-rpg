@@ -203,10 +203,10 @@ test('all-stat and paired options stack additively and transfer as one OP', () =
     assert(Math.abs(rates[stat+'Rate']-expected)<1e-10);
   }
   assert.equal(statModel.applyStatRate(100,.16+.13),129);
-  assert(statModel.canReplace(source,target,0,0));
-  assert(!statModel.canReplace(source,armor,0,0));
+  assert(statModel.canTransplant(source,target,0,0));
+  assert(!statModel.canTransplant(source,armor,0,0));
   target.ops.push(all);
-  assert(!statModel.canReplace(source,target,0,0));
+  assert(!statModel.canTransplant(source,target,0,0));
   const game=gameWithGear(source,target);
   game.isRun().equipment.rightHand=source.uid;
   assert.equal(game.equipmentCombatStats().attackPower,statModel.applyStatRate(source.baseStats.attackPower,.46));
@@ -262,7 +262,7 @@ test('reward OPs roll past their base ranges and can stack a 1,000% roll into al
     assert(normal.value>cfg.limits.optionPercent);
     const target=roll(6,'accessory',1,()=>.5,'target');
     target.ops[0]={...source.ops[0]};
-    assert(statModel.canReplace(source,target,0,1),'repeatable OP may fill another slot');
+    assert(statModel.canTransplant(source,target,0,1),'repeatable OP may fill another slot');
 
     const equipment=parts.map(part=>({...roll(6,part,20,()=>.5,part),ops:source.ops}));
     assert.equal(new Set(equipment.map(gear=>gear.slot)).size,7);
@@ -373,8 +373,8 @@ test('transplant preserves grade and value and rolls back if saving fails', asyn
   b.ops=[{key:'maxHpRate',grade:'COMMON',value:18},{...op,value:20}];
   assert(!statModel.canTransfer(a,c));
   assert(!statModel.canTransfer(d,b));
-  assert(!statModel.canReplace(a,b,0,0),'an OP cannot be duplicated in another slot');
-  assert(statModel.canReplace(a,b,0,1));
+  assert(!statModel.canTransplant(a,b,0,0),'an OP cannot be duplicated in another slot');
+  assert(statModel.canTransplant(a,b,0,1));
   const game=gameWithGear(a,b,c,d);
   game.isConfirm=async ()=>true;
   const save=game.saveProfile;
@@ -388,6 +388,41 @@ test('transplant preserves grade and value and rolls back if saving fails', asyn
   assert.equal(game.isBagEntry(a.uid),undefined);
   assert.equal(game.isBagEntry(b.uid).ops.length,2);
   assert.deepEqual(plain(game.isBagEntry(b.uid).ops[1]),op);
+});
+
+test('transplant adds to an empty slot without overwriting or exceeding the rarity limit', async () => {
+  const source=roll(5,'sword',1,()=>.42,'donor');
+  const target=roll(2,'sword',1,()=>.42,'recipient');
+  const moved={key:'skillDamageRate',grade:'EPIC',value:79};
+  const original={key:'maxHpRate',grade:'COMMON',value:18};
+  source.ops=[moved];
+  target.ops=[original];
+  assert(statModel.canTransplant(source,target,0,1));
+  assert(!statModel.canTransplant(source,target,0,2),'cannot skip the next empty slot');
+  assert(statModel.canTransplant(source,{...target,ops:[]},0,0),'an item with zero OPs is eligible');
+  assert(!statModel.canTransplant(source,{...target,ops:[moved]},0,1),'unique OPs cannot be duplicated into an empty slot');
+  assert(!statModel.canTransplant(source,{...target,ops:[original,{key:'maxMpRate',grade:'COMMON',value:9}]},0,2),'a full item cannot gain an extra OP');
+  const reward={key:'normalDungeonGoldRate',grade:'MYTHIC',value:1000};
+  assert(statModel.canTransplant({...source,ops:[reward]},{...target,ops:[reward]},0,1),'repeatable OPs can use a free slot');
+
+  const game=gameWithGear(source,target);
+  game.isConfirm=async (title,message)=>{
+    assert.match(title,/空き枠/);
+    assert.match(message,/完全に消滅/);
+    assert.match(message,/空き枠 → /);
+    return false;
+  };
+  assert(!await game.isForgeTransfer(source.uid,target.uid,0,1));
+  assert(game.isBagEntry(source.uid));
+  assert.deepEqual(game.isBagEntry(target.uid).ops,[original]);
+
+  game.isConfirm=async ()=>true;
+  assert(await game.isForgeTransfer(source.uid,target.uid,0,1));
+  assert.equal(game.saves,1);
+  assert.equal(game.isBagEntry(source.uid),undefined);
+  assert.deepEqual(plain(game.isBagEntry(target.uid).ops),[original,moved]);
+  game.profile=JSON.parse(game.saved);
+  assert.deepEqual(game.isBagEntry(target.uid).ops,[original,moved]);
 });
 
 test('V2 affects only equipped bonuses; legacy individuals remain usable and ordinary gear is untouched', () => {
