@@ -1,6 +1,10 @@
 // 或世盗 -ARSÈNE- HELP / 遊び方
 // lockedBy 付きの項目は、対応システムの解放後だけ表示する。
 window.ARSENE_HELP = [
+  { id: 'gladiator', lockedBy: 'gladiator', title: '剣闘士', titleEn: 'GLADIATOR',
+    body: ['戦士と武道家がそれぞれ一度Lv40に到達すると解放されます。転生後も到達記録は残ります。',
+      '戦闘の「スキル」で両職の習得済みの技を使えます。ABILITY SETで両職のパッシブから好きな2つを選びます。同じ職から2つでも装備できます。',
+      '固有特性《剛速一体》で素早さの30％が物理攻撃力に加わります。'] },
   {
     id: 'basics', title: '基本操作', titleEn: 'BASICS',
     body: [

@@ -203,6 +203,7 @@ window.ARSENE_DATA = {
     // ── ジョブLvアップ時の基礎ステータス成長（1Lvごと）───────
     // 初期4職は合計6/Lv（Lv1→20で114ポイント）で統一。偏りでジョブ個性を作る。
     jobGrowthPerLevel: {
+      gladiator: { str: 2, vit: 2, agi: 2 },
       // どのJOBも合計6/Lvで揃える（Lv1→20で114ポイント）。
       // 器用さを伸ばすのは魔奏士だけ。楽器のダメージと命中に直結する。
       //
@@ -357,6 +358,13 @@ window.ARSENE_DATA = {
     { level: 5, skillId: 'meditation' }
   ],
   jobs: {
+    gladiator: {
+      id: 'gladiator', name: '剣闘士', nameEn: 'GLADIATOR',
+      description: '戦士と武道家をそれぞれLv40まで育てると解放。両職の技を使い、習得したパッシブを2つ選べる。',
+      parentJobs: ['warrior', 'martialArtist'], unlockCondition: { jobLevels: { warrior: 40, martialArtist: 40 } },
+      growthStats: ['str', 'vit', 'agi'], skillUnlocks: {}, passiveUnlocks: {},
+      traits: { swiftPower: { name: '剛速一体', text: '素早さの30%を物理攻撃力に加算', rate: .3, rebirthStep: 0 } }
+    },
     warrior: {
       id: 'warrior', name: '戦士', nameEn: 'WARRIOR', description: '力と耐久力で正面から怪異を打ち破る。', signatureSkillId: 'powerCharge', passiveUnlocks: { 1: 'p_adept', 5: 'p_might', 10: 'p_tough', 15: 'p_instinct' }, traits: { counterRate: { name: '反攻の構え', nameEn: 'RIPOSTE', rate: .30, rebirthStep: .05, max: .60, text: '被弾時30%で反撃', description: '受けた一撃をそのまま返す構え。攻撃を受けたとき、一定確率で自動的に反撃する。転生を重ねるほど発動率が上がる。' } }, growthStats: ['str', 'vit'], featureText: '力・体力を伸ばしやすいジョブ。物理攻撃・HP・耐久力などの脳筋系パッシブを習得できる。',
       growth: { 1: { str: 2 }, 2: { maxHp: 5 }, 3: { vit: 1 }, 4: { str: 2, vit: 1 }, 5: { maxHp: 8 }, 6: { str: 2 }, 7: { maxHp: 8, vit: 2 }, 8: { str: 3 }, 9: { vit: 2 }, 10: { str: 4, maxHp: 12 }, 11: { str: 2 }, 12: { maxHp: 10, vit: 2 }, 13: { str: 3 }, 14: { vit: 3, maxHp: 8 }, 15: { str: 4 }, 16: { maxHp: 12, vit: 3 }, 17: { str: 4 }, 18: { vit: 4 }, 19: { str: 5 }, 20: { str: 6, maxHp: 18, vit: 5 } },
