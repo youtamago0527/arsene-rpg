@@ -64,7 +64,8 @@
     ['lute', '勝利後の最大MP割合回復'],
     ['obsidian', '敵の最大HP・攻撃・防御'],
     ['gear', '獲得奏貨'],
-    ['astrolabe', 'インフィニティ装備の抽選率']
+    ['astrolabe', 'インフィニティ装備の抽選率'],
+    ['orb', 'アルカナの追加獲得']
   ];
   for (const [id, label] of supportRelics) {
     relics.push({ ...artwork.find(item => item.id === id), grade: 'support', label });
@@ -87,7 +88,30 @@
     }
     return Math.floor(value / 5) * 5;
   }
+  const arcanaTierInterval = 50;
+  function arcanaBonusChance(level, owned) {
+    const unlock = Math.max(1, (owned - 1) * arcanaTierInterval);
+    if (level < unlock) return 0;
+    const progress = level - unlock + 1;
+    return progress / (progress + 99);
+  }
+
+  P.isArcanaDropCount = function () {
+    const level = levelOf(this.profile.infiniteRelicLevels, 'orb');
+    let count = 1;
+    for (;;) {
+      const chance = arcanaBonusChance(level, count);
+      if (!chance || this.isRand() >= chance) return count;
+      count++;
+    }
+  };
+
   function effectText(item, level) {
+    if (item.id === 'orb') {
+      const chance = arcanaBonusChance(level, 1) * 100;
+      const display = chance >= 99.995 ? '99.99％超' : Number(chance.toFixed(2)) + '％';
+      return '2個目 ' + display + ' ／ 最大' + (2 + Math.floor(level / arcanaTierInterval)) + '個';
+    }
     if (item.grade === 'stairs') return level === 1 ? '1階降下' : '1〜' + level + '階から選択';
     return (item.id === 'obsidian' ? '−' : '＋') + percent(item, level) + '%';
   }
@@ -121,7 +145,8 @@
       for (const id of new Set(Array.isArray(list) ? list : [])) {
         const old = artwork.find(item => item.id === id);
         if (!old) continue;
-        const retained = relics.find(item => item.id === id);
+        // IDs-only saves predate the bonus-drop orb and used it for magic.
+        const retained = id !== 'orb' ? relics.find(item => item.id === id) : null;
         const target = retained?.id ?? tiers.normal[stats.indexOf(old.stat)];
         levels[target] = (levels[target] || 0) + 1;
       }
@@ -211,11 +236,12 @@
   function detail(item, level) {
     const tier = item.grade === 'upper' ? '上位版・40回降下から' : item.grade === 'stairs' ? '階段を' + requiredStairUses(level + 1) + '回使用で次のLvが抽選対象' : item.grade === 'support' ? '補助遺物' : '通常版';
     const next = '次のLvで ' + effectText(item, level + 1);
+    const nextTier = item.id === 'orb' ? '<br>Lv.' + ((Math.floor(level / arcanaTierInterval) + 1) * arcanaTierInterval) + 'で' + (3 + Math.floor(level / arcanaTierInterval)) + '個目の抽選を解放' : '';
     const effect = level ? 'Lv.' + level + ' ／ ' + item.label + ' ' + effectText(item, level) : '未入手 ／ ' + item.label;
     return `<header><h3>${item.name}</h3>${badge(item.rank)}</header>
       <div class="ir-portrait" data-rank="${item.rank}">${art(item)}</div>
       <div class="ir-detail-rank">${gems(item.rank)}</div>
-      <p class="ir-description">${item.description}</p><p class="ir-effect"><b>${effect}</b><br>${next}<br>${tier}</p>`;
+      <p class="ir-description">${item.description}</p><p class="ir-effect"><b>${effect}</b><br>${next}${nextTier}<br>${tier}</p>`;
   }
 
   P.isRenderRelics = function (panel) {

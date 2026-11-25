@@ -32,10 +32,10 @@ function totals() {
 }
 game.profile = {};
 for (let i = 0; i < 9; i++) {
-  assert.match(draw(i,20,15), /Lv.1/);
+  assert.match(draw(i,20,16), /Lv.1/);
   assert.equal(game.profile.infiniteRelicLevels[normals[i]],1);
   assert.equal(totals()[stats[i]],102);
-  assert.match(draw(i+9,40,24), /Lv.1/);
+  assert.match(draw(i+9,40,25), /Lv.1/);
   assert.equal(game.profile.infiniteRelicLevels[uppers[i]],1);
   assert.equal(totals()[stats[i]],132);
 }
@@ -77,18 +77,18 @@ const oldRelics = { infiniteRelicLevels:{'fox-mask':3,compass:5} };
 game.isMigrateRelicLevels(oldRelics);
 game.isMigrateRelicLevels(oldRelics);
 assert.deepEqual(oldRelics.infiniteRelicLevels,{compass:3,'fox-mask':5});
-const supports = ['shell','lute','obsidian','gear','astrolabe'];
+const supports = ['shell','lute','obsidian','gear','astrolabe','orb'];
 const allRelics = [...normals, ...uppers, ...supports, 'compass'];
 game.profile.infiniteRelicLevels = Object.fromEntries(allRelics.map(id => [id,50]));
 for (const [index,id] of [...normals,...supports].entries()) {
-  assert.match(draw(index,20,14), /Lv\.51/);
+  assert.match(draw(index,20,15), /Lv\.51/);
   assert.equal(game.profile.infiniteRelicLevels[id],51);
 }
 for (const [index,id] of uppers.entries()) {
-  assert.match(draw(9+index,40,23), /Lv\.51/);
+  assert.match(draw(9+index,40,24), /Lv\.51/);
   assert.equal(game.profile.infiniteRelicLevels[id],51);
 }
-assert.match(draw(23,1020,24), /時空の羅針盤 Lv\.51/);
+assert.match(draw(24,1020,25), /時空の羅針盤 Lv\.51/);
 assert.equal(game.isStairRelicDistance(),51);
 assert.equal(game.profile.deferredRelicDraws,undefined);
 game.profile.deferredRelicDraws = 2;
@@ -164,4 +164,4 @@ game.isDescend();
 assert.equal(run.floor,100);
 game.isDescend();
 assert.equal(run.relicDescents,6);
-console.log('24 relics: milestone rolls, growth, recovery, weakness, coins and permanent saves: OK');
+console.log('25 relics: milestone rolls, growth, recovery, weakness, coins and permanent saves: OK');
