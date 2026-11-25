@@ -438,7 +438,7 @@
     if (document.getElementById('ow-noise')) return Promise.resolve(false);
     return new Promise(resolve => {
     const el = document.createElement('div');
-    el.id = 'ow-noise'; el.className = 'ow-noise';
+    el.id = 'ow-noise'; el.className = options.foreground ? 'ow-noise ow-noise--foreground' : 'ow-noise';
     el.innerHTML = `<div class="ow-noise-bars"></div><div class="ow-noise-body"><p id="ow-noise-line"></p><button class="ow-noise-next" id="ow-noise-next">▼</button></div>`;
     document.body.appendChild(el);
     document.body.classList.add('ow-glitch');

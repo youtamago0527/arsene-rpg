@@ -98,10 +98,16 @@
     if (g.profile?.debugUnlocked) console.info(`Q Dialogue: category=${category.toUpperCase()} id=${picked.id}`);
     return { ...picked, category };
   }
-  function playIntervention(g, forcedCategory, onComplete) {
-    const picked = chooseDialogue(g, forcedCategory), done = () => onComplete?.(picked);
+  function playIntervention(g, forcedCategory, onComplete, foreground = false) {
+    const picked = chooseDialogue(g, forcedCategory);
+    let completed = false;
+    const done = () => { if (completed) return; completed = true; onComplete?.(picked); };
     if (typeof g.playNoiseSequence !== 'function') { done(); return; }
-    g.playNoiseSequence([{ sys: 'NOISE...' }, { who: 'Q', text: picked.text }], { onClose: done });
+    // An existing scene can decline to open another overlay.
+    try {
+      Promise.resolve(g.playNoiseSequence([{ sys: 'NOISE...' }, { who: 'Q', text: picked.text }], { onClose: done, foreground }))
+        .then(opened => { if (opened === false) done(); }, done);
+    } catch { done(); }
   }
   const api = {
     defs,
@@ -153,7 +159,7 @@
               finally { if (generation === offerGeneration) offerInFlight = false; }
             };
             if (type === 'infiniteReroll') grantReward();
-            else playIntervention(g, d.forceDialogueCategory, grantReward);
+            else playIntervention(g, d.forceDialogueCategory, grantReward, type === 'infiniteBag');
           }).catch(() => { if (generation === offerGeneration) { offerInFlight = false; window.arseneStartFlow?.toast?.('広告を読み込めませんでした。再度お試しください'); } });
         }
       });
