@@ -32,8 +32,8 @@ assert(!body('otherWorld').includes('土＝運'), 'obsolete Saturday LUK reward 
 assert(!body('otherWorld').includes('上級'), 'base other-world HELP must not spoil the advanced tier');
 assert(body('otherWorldAdvanced').includes('中級の4倍'), 'advanced other-world HELP must document its scale');
 assert(body('phantomThief').includes('ACTION 2個') && body('phantomThief').includes('PASSIVE 2個'), 'RE:MIX slot counts must be documented');
-assert(body('levelCap').includes('Lv40') && !body('levelCap').includes('Lv70'), 'D3 cap HELP must not spoil the D5 cap');
-assert(body('levelCapFinal').includes('Lv70'), 'D5 cap HELP must document the final cap');
+assert(body('levelCap').includes('{jobLevelCap}') && !body('levelCap').includes('Lv80'), 'D3 cap HELP must not spoil the D5 cap');
+assert(body('levelCapFinal').includes('Lv80'), 'D5 cap HELP must document the final cap');
 assert(body('enhance').includes('+3') && body('enhance').includes('+4'), 'enhancement safety and destruction thresholds must be documented');
 
 const gameSource = fs.readFileSync(path.join(root, 'js/game.js'), 'utf8');

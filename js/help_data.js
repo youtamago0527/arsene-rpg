@@ -206,16 +206,16 @@ window.ARSENE_HELP = [
   {
     id: 'levelCap', title: 'JOBレベル上限', titleEn: 'LEVEL CAP', lockedBy: 'levelCap',
     body: [
-      '全JOBのレベル上限がLv20からLv40へ上昇しています。',
-      '上限解放時は従来のMASTER表示が解除され、Lv40到達で再びMASTERになります。既に盗んだ固有ACTIONは失われません。',
+      '現在のJOBレベル上限はLv.{jobLevelCap}です。',
+      '上限解放時は従来のMASTER表示が解除され、現在の上限到達で再びMASTERになります。既に盗んだ固有ACTIONは失われません。',
       'Lv21以降は成長量が2倍です。転生はLv20以上でいつでも選べます。'
     ]
   },
   {
     id: 'levelCapFinal', title: 'JOBレベル上限Ⅱ', titleEn: 'LEVEL CAP II', lockedBy: 'levelCapFinal',
     body: [
-      '全JOBのレベル上限がLv40からLv70へ上昇しています。',
-      '上限解放時は従来のMASTER表示が解除され、Lv70到達で再びMASTERになります。既に盗んだ固有ACTIONは失われません。',
+      'D5クリアでJOBレベル上限がLv80に上昇します。',
+      '上限解放時は従来のMASTER表示が解除され、現在の上限到達で再びMASTERになります。既に盗んだ固有ACTIONは失われません。',
       '転生はLv20以上でいつでも選べます。'
     ]
   }
