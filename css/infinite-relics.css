@@ -291,3 +291,12 @@
   .ir-grid { gap: 3px; }
   .ir-grid .ir-gems { font-size: 6px; }
 }
+
+.ir-effect { margin: 10px 0; color: #d8ebf6; line-height: 1.6; font-size: clamp(12px, 3vw, 16px); }
+.ir-effect b { color: #a7efec; }
+.ir-grid button[data-held="active"], .ir-grid button[data-held="owned"] { position: relative; }
+.ir-grid button[data-held="active"]::after, .ir-grid button[data-held="owned"]::after {
+  position: absolute; top: 1px; right: 1px; content: "✓"; background: #182222; color: #fff0a9;
+  border-radius: 3px; padding: 0 3px; font: bold 12px/1.3 sans-serif;
+}
+.ir-grid button[data-held="active"]::after { content: "★"; color: #a6fff2; }
