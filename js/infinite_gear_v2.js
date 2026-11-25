@@ -68,20 +68,21 @@
     return pool[weighted(weights,random)];
   }
 
-  function rollOptions(rarity,part,floor,random) {
-    const count = between(rarity.count,random), ops = [];
+  function rollOptions(rarity,part,floor,random,rareDrop) {
+    const rollQuality = rareDrop ? () => Math.max(sample(random),sample(random)) : random;
+    const count = between(rarity.count,rollQuality), ops = [];
     // These odds apply once per eligible item, including when the ordinary grade pool runs out.
     const special = rareOptions.find(op=>rarity.weights[op.grade] && allowedOn(op,part) && sample(random)<op.chance);
-    if (special) ops.push(rollOption(special,rarity,floor,random));
+    if (special) ops.push(rollOption(special,rarity,floor,rollQuality));
     const available = cfg.ops.filter(op=>!op.chance && allowedOn(op,part));
     for (let i=ops.length;i<count;i++) {
       const weights = rarity.weights.map((weight,grade)=>available.some(op=>op.grade===grade) ? weight : 0);
-      const grade = weighted(weights,random);
+      const grade = weighted(weights,rollQuality);
       const pool = available.filter(op=>op.grade===grade);
       if (!pool.length) throw new Error('Not enough eligible OPs in Infinite gear grade tables');
       const pick = pickOption(pool,grade,random);
       if (!pick.repeatable) available.splice(available.indexOf(pick),1);
-      ops.push(rollOption(pick,rarity,floor,random));
+      ops.push(rollOption(pick,rarity,floor,rollQuality));
     }
     return ops;
   }
@@ -101,7 +102,7 @@
     }));
   }
 
-  function generate({uid,floor:rawFloor=1,random,rarity:forced,part:requested}) {
+  function generate({uid,floor:rawFloor=1,random,rarity:forced,part:requested,rareDrop=false}) {
     const floor = floorNumber(rawFloor);
     const index = forced === undefined ? weighted(ratesAt(floor),random)
       : typeof forced === 'string' ? cfg.tiers.findIndex(row=>row.id===forced) : forced-1;
@@ -112,7 +113,7 @@
     return {
       gearVersion:2, uid, itemId:'owg_v2_'+part.id, name:rarity.prefix+part.name, slot:part.slot,
       kind:'equipment', count:1, generated:true, otherWorldGear:true, rarity:rarity.id, tier:index+1,
-      obtainedFloor:floor, baseStats:rollBase(part,index,floor,random), ops:rollOptions(rarity,part,floor,random),
+      obtainedFloor:floor, baseStats:rollBase(part,index,floor,random), ops:rollOptions(rarity,part,floor,random,rareDrop),
       plus:0, locked:false
     };
   }
