@@ -14,7 +14,8 @@ assert.match(infinite, /if\(btn\.dataset\.isResolved\)return/, '同じ矢印のp
 assert.match(infinite, /this\.isShowRouteTransition\(direction,node\)/, '同じ背景へ移動しても進行が分かる演出を出す');
 const activeTreasure = infinite.slice(infinite.lastIndexOf('P.isTreasure = function'), infinite.indexOf('P.isRoomResultHtml=function()'));
 assert.match(infinite, /current\?\.chestPending[^\n]*action:'treasure-open',label:'宝箱を開ける'/, '未開封の宝箱に開封操作を提示する');
-assert.match(activeTreasure, /isRenderRoomResult\(name \+ 'を発見',[\s\S]*message, 'item', \{ remapOnClose: true \}/, '開封後に装備名と遺物の結果を表示する');
+assert.match(activeTreasure, /isRenderRoomResult\(name \+ 'を発見',[\s\S]*remapOnClose: true/, '開封後に装備名を表示する');
+assert.doesNotMatch(activeTreasure, /isRollStairRelic/, '宝箱から遺物を取得しない');
 assert.doesNotMatch(activeTreasure, /isRenderBag\(/, '最後に有効な宝箱処理がバッグ画面へ遷移している');
 assert.match(infinite, /if\(act==='treasure-open'\)g\.isOpenTreasure\(\)/, '宝箱を開ける操作が開封処理へ接続されていない');
 assert.match(infinite, /if\(remap\)g\.isRemapCurrentFloor\('宝箱部屋踏破'\)/, '取得POPを閉じた後に宝箱部屋を再マッピングしない');
