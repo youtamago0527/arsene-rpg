@@ -335,7 +335,15 @@
     if(!this.isAtStairs())return'';
     return '<div class="is-stair-object forced"><b>階段を発見</b><span>このフロアの探索は終了です</span><div><button data-is-action="descend">次の階へ降りる</button></div></div>';
   };
-  P.isExploreMenuHtml=function(){this.renderBattleMenu?.();const source=$('#battle-menu-popover')?.innerHTML||'';return `<div class="is-explore-menu" ${this.isExploreMenuOpen?'':'hidden'}>${source.replaceAll('data-battle-menu-close','data-is-explore-menu-close')}<button class="is-explore-ability" data-is-action="abilities"><b>アビリティ設定</b><span>PHANTOM THIEFのACTION / PASSIVEを変更</span></button></div>`;};
+  P.isExploreMenuHtml=function(){
+    this.renderBattleMenu?.();
+    const source=$('#battle-menu-popover')?.innerHTML||'';
+    return `<div class="is-explore-menu" ${this.isExploreMenuOpen?'':'hidden'}>
+      ${source.replaceAll('data-battle-menu-close','data-is-explore-menu-close')}
+      <button type="button" class="is-explore-ability" data-is-action="abilities"><b>アビリティ設定</b><span>PHANTOM THIEFのACTION / PASSIVEを変更</span></button>
+      <button type="button" class="is-explore-ability" data-is-relic-open><b>遺物リスト</b><span>仮アイコンと説明を見る</span></button>
+    </div>`;
+  };
   P.isExploreLogHtml=function(){
     const history=this.isRun()?.log||[],rows=(this.isExploreLogExpanded?history:history.slice(-3)).slice().reverse();
     return `<section class="battle-log is-explore-log${this.isExploreLogExpanded?' expanded':''}" data-is-action="explore-log" role="button" tabindex="0" aria-label="探索ログ。タップで履歴を表示"><small>EXPLORE LOG // ${this.isExploreLogExpanded?'TAP TO CLOSE':'TAP FOR HISTORY'}</small><div class="battle-log-lines">${rows.length?rows.map(x=>`<p>F${x.floor} // ${esc(x.message)}</p>`).join(''):'<p>無限奏廊に侵入した</p>'}</div></section>`;
@@ -838,6 +846,7 @@
   const origRenderPanel=P.renderMenuPanel,infinitePanel=$('#menu-panel'),infinitePanelHome=infinitePanel?.parentNode,infinitePanelNext=infinitePanel?.nextSibling;
   P.renderMenuPanel=function(name){
     name=String(name||'');
+    if(name==='infinite-score-relics'&&!this.isRun())name='infinite-score';
     const panel=$('#menu-panel');
     if(panel&&name.startsWith('infinite-score')){
       panel.dataset.panel=name;
@@ -850,6 +859,7 @@
       else if(name==='infinite-score-debug')this.isRenderDebug(panel);
       else if(name==='infinite-score-choices')this.isRenderChoices(panel);
       else if(name==='infinite-score-map')this.isRenderMap(panel);
+      else if(name==='infinite-score-relics')this.isRenderRelics(panel);
       else this.isRenderExplore(panel);
       return;
     }
