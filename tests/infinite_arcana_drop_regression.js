@@ -40,17 +40,21 @@ function rollSequence(values, action) {
 }
 for(const [level,max] of [[0,1],[1,2],[49,2],[50,3],[99,3],[100,4],[149,4],[150,5],[500,12]]) {
   game.profile.infiniteRelicLevels.orb=level;
-  assert.equal(rollSequence(Array(max-1).fill(0),()=>game.isArcanaDropCount()),max);
+  assert.equal(rollSequence(Array(Math.max(0,max-2)).fill(0),()=>game.isArcanaDropCount()),max);
 }
+game.profile.infiniteRelicLevels.orb=1;
+run={floor:1,lootBag:[]};
+rollSequence([0],()=>game.isCollectMonsterArcana([]));
+assert.equal(run.lootBag.length,2);
 game.profile.infiniteRelicLevels.orb=50;
-assert.equal(rollSequence([0,.01],()=>game.isArcanaDropCount()),2);
-assert.equal(rollSequence([.5],()=>game.isArcanaDropCount()),1);
+assert.equal(rollSequence([.01],()=>game.isArcanaDropCount()),2);
+assert.equal(rollSequence([.00999],()=>game.isArcanaDropCount()),3);
 game.profile.infiniteRelicLevels.orb=100;
 run={floor:999,lootBag:[]};
 const drops=[];
 rollSequence([.20],()=>game.isCollectMonsterArcana(drops));
 assert.deepEqual(drops,[]);
-rollSequence([.199,0,0,0],()=>game.isCollectMonsterArcana(drops));
+rollSequence([.199,0,0],()=>game.isCollectMonsterArcana(drops));
 assert.match(drops[0],/保護のアルカナ ×4/);
 assert.equal(run.lootBag.length,3);
 assert.equal(run.pendingLoot.count,1);
@@ -58,7 +62,7 @@ assert.ok(run.lootBag.every(x=>x.itemId===run.pendingLoot.itemId));
 run.lootBag=[];run.pendingLoot=null;
 game.profile.infiniteRelicLevels.orb=150;
 game.isBagLimit=()=>0;
-rollSequence([.1,0,0,0,0],()=>game.isCollectMonsterArcana(drops));
+rollSequence([.1,0,0,0],()=>game.isCollectMonsterArcana(drops));
 run=JSON.parse(JSON.stringify(run));
 assert.equal(run.pendingLoot.count,5);
 for(const limit of [2,4,5]){

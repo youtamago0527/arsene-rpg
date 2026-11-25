@@ -90,7 +90,7 @@
   }
   const arcanaTierInterval = 50;
   function arcanaBonusChance(level, owned) {
-    const unlock = Math.max(1, (owned - 1) * arcanaTierInterval);
+    const unlock = (owned - 1) * arcanaTierInterval;
     if (level < unlock) return 0;
     const progress = level - unlock + 1;
     return progress / (progress + 99);
@@ -98,7 +98,8 @@
 
   P.isArcanaDropCount = function () {
     const level = levelOf(this.profile.infiniteRelicLevels, 'orb');
-    let count = 1;
+    if (!level) return 1;
+    let count = 2;
     for (;;) {
       const chance = arcanaBonusChance(level, count);
       if (!chance || this.isRand() >= chance) return count;
@@ -108,9 +109,10 @@
 
   function effectText(item, level) {
     if (item.id === 'orb') {
-      const chance = arcanaBonusChance(level, 1) * 100;
+      if (level < arcanaTierInterval) return '2個確定';
+      const chance = arcanaBonusChance(level, 2) * 100;
       const display = chance >= 99.995 ? '99.99％超' : Number(chance.toFixed(2)) + '％';
-      return '2個目 ' + display + ' ／ 最大' + (2 + Math.floor(level / arcanaTierInterval)) + '個';
+      return '2個確定 ／ 3個目 ' + display + ' ／ 最大' + (2 + Math.floor(level / arcanaTierInterval)) + '個';
     }
     if (item.grade === 'stairs') return level === 1 ? '1階降下' : '1〜' + level + '階から選択';
     return (item.id === 'obsidian' ? '−' : '＋') + percent(item, level) + '%';
