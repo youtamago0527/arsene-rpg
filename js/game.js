@@ -5051,7 +5051,7 @@
         const it = D.items[id], w = D.weapons[id];
         // アルカナは恒久強化用なので拠点で使用可。HP/MP回復アイテムは戦闘内だけで使える。
         if (this.itemTab === 'consumable') { const recover = this.recoveryItemInfo(it); return `<div class="item-row rarity-${it.rarity}"><div><b>${it.name}</b><small>${it.description}</small></div><strong>×${n}</strong>${it.arcanaStat ? `<button data-use-arcana="${id}">使う</button>` : recover ? '<button disabled>戦闘中のみ</button>' : ''}</div>`; }
-        const equipped = Object.values(this.profile.equipment).includes(id), slot = w ? 'rightHand' : it.slot;
+        const equipped = Object.values(this.owgBaseEquipment?.() || this.profile.equipment).includes(id), slot = w ? 'rightHand' : it.slot;
         return `<div class="item-row rarity-${it.rarity}${equipped ? ' item-equipped' : ''}"><div><b>${it.name}${this.enchantSuffix(id)}${equipped ? '<mark class="eq-badge">装備中</mark>' : ''}</b><small>${this.bonusText(id)}</small></div><strong>×${n}</strong><button data-equip-item="${id}" data-equip-slot="${slot}" ${equipped ? 'disabled' : ''}>${equipped ? '装備中' : '装備'}</button></div>`;
       }).join('');
       const emptyMsg = this.itemTab === 'consumable' ? '消費アイテムなし' : this.itemTab === 'weapon' ? 'この種類の武器なし' : 'この部位の防具なし';
@@ -5201,36 +5201,35 @@
       if (this.equipTab === 'arts') { this.renderWeaponArtsPanel(panel); return; }
       if (this.equipTab === 'score') { panel.innerHTML = `<small>MUSIC SCORE</small><h2>楽曲</h2>${this.equipTabsHtml()}<div class="score-note"><b>今後プライベートモードで使用します</b><span>入手した楽曲は、実装予定のプライベートモードで演奏できるようになります。</span></div>${this.musicScoreSectionHTML()}`; return; }
       if (this.equipTab === 'title' && this.titlePanelHtml) { this.titlePanelSource = 'equipment'; panel.innerHTML = `<small>BOSS TITLE</small><h2>称号装備</h2>${this.equipTabsHtml()}${this.titlePanelHtml()}`; return; }
-      const slots = D.equipmentSlots || [], owned = Object.entries(this.profile.inventory).filter(([id, n]) => n > 0 && this.isPlayerContentVisible(D.items[id]) && D.items[id]?.category === 'equipment');
-      if (this.selectedEquipmentId && !(this.profile.inventory[this.selectedEquipmentId] > 0)) this.selectedEquipmentId = null;
-      const isDualBlade = this.dualWieldEnabled(), canUseLeft = !this.isTwoHandedWeapon(this.profile.equipment.rightHand); // 盾は全JOB可。両手武器のときだけ塞ぐ
-      const activeSlot = this.equipSlot && slots.some(s => s.id === this.equipSlot) ? this.equipSlot : null;
-      const fists = this.usesBareFists(); // 武道家が素手なら両手を「拳」と表示する
-      const slotHtml = slots.map(slot => { const id = this.profile.equipment[slot.id], item = D.items[id]; const rate = isDualBlade && slot.id === 'leftHand' && D.weapons[id] ? ` ×${Math.round(this.offHandRate() * 100)}%` : ''; const disabled = slot.id === 'leftHand' && !canUseLeft; const count = this.candidatesForSlot(slot.id).length; const leftRule = slot.id === 'leftHand' ? (this.isTwoHandedWeapon(this.profile.equipment.rightHand) ? '<small>両手武器で使用不可</small>' : this.hasPassiveType('dualWield') ? '<small>盾／双刃</small>' : '<small>盾</small>') : ''; return `<button type="button" data-equip-slot-pick="${slot.id}" class="equipment-slot ${id ? 'filled' : 'empty'} ${disabled ? 'slot-disabled' : ''} ${activeSlot === slot.id ? 'slot-active' : ''}" ${disabled ? 'disabled' : ''}><span>${slot.name}<small>${slot.enName}</small>${leftRule}</span><b>${item?.name || (fists && (slot.id === 'rightHand' || slot.id === 'leftHand') ? '拳' : 'なし')}${id ? this.enchantSuffix(id) : ''}${rate}</b>${count && !disabled ? `<i class="slot-count">${count}</i>` : ''}</button>`; }).join('');
-      let workbench;
-      if (!activeSlot) {
-        workbench = `<div class="equip-hint"><b>装備部位を選んでください</b><span>上の部位をタップすると、そこに装備できるアイテムだけが表示されます。</span></div>`;
-      } else {
-        const slotDef = slots.find(s => s.id === activeSlot);
-        let list = this.candidatesForSlot(activeSlot);
-        // 武器が増えても一覧が縦に伸びないよう、武器学（武器種）ごとに切り替える。
-        const weaponTypes = activeSlot === 'rightHand' ? this.unlockedWeaponTypes().filter(type => list.some(id => this.weaponTypeOf(id) === type.id)) : [];
+      const slots = D.equipmentSlots || [];
+      const active = slots.find(slot => slot.id === this.equipSlot);
+      if (active) {
+        let list = this.homeGearCandidates(active.id);
+        const weaponTypes = active.id === 'rightHand'
+          ? this.unlockedWeaponTypes().filter(type => list.some(x => x.normal && this.weaponTypeOf(x.itemId) === type.id))
+          : [];
         if (weaponTypes.length) {
           if (!weaponTypes.some(type => type.id === this.equipWeaponType)) this.equipWeaponType = weaponTypes[0].id;
-          list = list.filter(id => this.weaponTypeOf(id) === this.equipWeaponType);
-        } else this.equipWeaponType = null;
-        const sortKey = this.equipSort || 'default';
-        if (sortKey !== 'default') list = [...list].sort((a, b) => this.equipSortValue(b, sortKey) - this.equipSortValue(a, sortKey) || (D.items[a]?.name || '').localeCompare(D.items[b]?.name || ''));
-        const sortOpts = [{ id: 'default', name: '標準' }, { id: 'attackPower', name: '攻撃力' }, { id: 'defensePower', name: '防御力' }, { id: 'magicDefensePower', name: '魔法防御力' }, ...statusStatKeys.map(k => ({ id: k, name: statLabels[k] }))];
-        const sortHtml = `<div class="equip-sort"><span>並べ替え</span><div class="equip-sort-btns">${sortOpts.map(o => `<button data-equip-sort="${o.id}" class="${sortKey === o.id ? 'active' : ''}">${o.name}</button>`).join('')}</div></div>`;
-        const weaponTabs = weaponTypes.length ? `<div class="equip-weapon-tabs" role="tablist" aria-label="武器学で絞り込み">${weaponTypes.map(type => { const mastery = this.masteryOf(type.id); return `<button type="button" role="tab" data-equip-weapon-tab="${type.id}" class="${this.equipWeaponType === type.id ? 'active' : ''}"><b>${type.name}</b><small>武器学 Lv.${mastery.level}</small></button>`; }).join('')}</div>` : '';
-        const curId = this.profile.equipment[activeSlot];
-        const unequipBtn = curId ? `<button class="equip-unequip" data-unequip-slot="${activeSlot}">${slotDef?.name}を外す<span>UNEQUIP</span></button>` : '';
-        const cards = list.map(id => { const item = D.items[id], active = this.profile.equipment[activeSlot] === id, selected = this.selectedEquipmentId === id; const delta = this.equipDeltaSummary(id, activeSlot); return `<button data-equip-preview="${id}" aria-pressed="${selected}" class="equipment-candidate rarity-${item.rarity} ${active ? 'equipped-now' : ''} ${selected ? 'selected' : ''}"><span class="candidate-title"><b>${item.name}${this.enchantSuffix(id)}${item.stars ? `<small>${'★'.repeat(item.stars)}</small>` : ''}</b>${active ? '<em>EQUIPPED</em>' : ''}</span><strong>${this.bonusText(id)}</strong>${delta ? `<span class="cand-delta">${delta}</span>` : ''}<small>${item.description}</small></button>`; }).join('');
-        const preview = this.selectedEquipmentId ? `<section class="equipment-preview-overlay" role="dialog" aria-modal="true" aria-label="装備比較"><header><div><small>STATUS COMPARISON</small><b>能力比較</b></div><button type="button" data-equip-preview-close aria-label="候補一覧へ戻る">×</button></header>${this.equipmentPreviewHTML(this.selectedEquipmentId)}</section>` : '';
-        workbench = `<section class="equipment-selector-overlay" role="dialog" aria-modal="true" aria-label="${slotDef?.name || '装備'}を選択"><header><div><small>SELECT EQUIPMENT</small><b>${slotDef?.name}の装備 <span>${slotDef?.enName}</span></b></div><button type="button" data-equip-slot-close aria-label="装備部位一覧へ戻る">×</button></header>${weaponTabs}${sortHtml}${unequipBtn}<div class="equipment-candidate-list">${cards || '<p class="item-empty">この部位に装備できるアイテムがありません。</p>'}</div>${preview}</section>`;
+          list = list.filter(x => !x.normal || this.weaponTypeOf(x.itemId) === this.equipWeaponType);
+        }
+        const sort = this.equipSort || 'default';
+        if (sort !== 'default') {
+          const values = new Map(list.map(x => [x.uid, this.homeGearSortValue(active.id,x,sort)]));
+          list.sort((a,b) => values.get(b.uid) - values.get(a.uid));
+        }
+        const weaponTabs = weaponTypes.length ? `<div class="equip-weapon-tabs" aria-label="通常武器の武器種">${weaponTypes.map(type =>
+          `<button type="button" data-equip-weapon-tab="${type.id}" aria-pressed="${this.equipWeaponType===type.id}">${type.name}</button>`).join('')}</div>` : '';
+        const sortOptions = [['default','標準'],['attackPower','攻撃力'],['defensePower','防御力'],['magicDefensePower','魔法防御力'],...statusStatKeys.map(key=>[key,statLabels[key]])];
+        const sortSelect = `<label class="rg-sort">並べ替え <select data-home-gear-sort>${sortOptions.map(([key,label]) =>
+          `<option value="${key}" ${sort===key?'selected':''}>${label}</option>`).join('')}</select></label>`;
+        this.renderHomeGearPicker(panel,active,weaponTabs+sortSelect,list);
+        return;
       }
-      panel.innerHTML = `<small>EQUIPMENT</small><h2>装備・ステータス</h2>${this.equipTabsHtml()}<div class="equipment-screen"><section class="equipment-slots-wrap"><h3>装備中 <span>CURRENT LOADOUT</span><button type="button" class="equipment-best" data-equip-best>最強<small>BEST</small></button></h3><div class="equipment-slots">${slotHtml}</div></section>${!activeSlot ? `<section class="equipment-workbench">${workbench}</section>` : ''}${this.bossSetBonusSectionHTML()}</div>${activeSlot ? workbench : ''}`;
+      const slotRows = slots.map(slot => this.gearSlotHtml(slot,this.homeGearCurrent(slot.id),`data-equip-slot-pick="${slot.id}"`)).join('');
+      const vault = this.profile.otherWorldGear?.length ? '<button data-menu="otherworld-gear">異世界装備庫</button>' : '';
+      panel.innerHTML = `<main class="rg-screen"><header class="rg-head"><h2>装備・ステータス</h2></header>
+        ${this.equipTabsHtml()}<div class="rg-home-actions"><button data-equip-best>最強装備</button>${vault}</div>
+        <div class="rg-slots">${slotRows}</div>${this.bossSetBonusSectionHTML()}</main>`;
     }
     candidatesForSlot(slotId) {
       return Object.entries(this.profile.inventory).filter(([id, n]) => {
@@ -5317,6 +5316,7 @@
     equipBestLoadout() {
       const slots=(D.equipmentSlots||[]).map(s=>s.id),ordered=['rightHand','leftHand',...slots.filter(s=>s!=='rightHand'&&s!=='leftHand')];
       for(let pass=0;pass<2;pass++)for(const slot of ordered){
+        if(this.owgEquipped?.().some(gear=>D.items[gear.itemId]?.slot===slot))continue;
         if(slot==='leftHand'&&this.isTwoHandedWeapon(this.profile.equipment.rightHand)){this.profile.equipment.leftHand=null;continue;}
         const current=this.profile.equipment[slot],pool=[...new Set([current,...this.candidatesForSlot(slot)].filter(Boolean))].filter(id=>D.items[id]&&(this.profile.inventory[id]||0)>0&&!this.needsSpareCopy(id,slot));
         if(!pool.length)continue;
@@ -5331,9 +5331,9 @@
       return parts.length ? parts.join('') : '<i class="same">変化なし</i>';
     }
     previewEquipment(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; this.selectedEquipmentId = id; this.renderMenuPanel('equipment'); }
-    equipItem(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; const slot = (this.equipSlot && this.candidatesForSlot(this.equipSlot).includes(id)) ? this.equipSlot : item.slot; if (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) return; if (slot === 'rightHand' && (this.isOffHandOnlyWeapon(id) || !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
+    equipItem(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; const slot = (this.equipSlot && this.candidatesForSlot(this.equipSlot).includes(id)) ? this.equipSlot : item.slot; if (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) return; if (slot === 'rightHand' && (this.isOffHandOnlyWeapon(id) || !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } if (this.profile.otherWorldEquipment) delete this.profile.otherWorldEquipment[slot]; this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
     unequipSlot(slotId) { if (!slotId || !(slotId in this.profile.equipment)) return; const currentWeaponType = D.weapons?.[this.profile.equipment.rightHand]?.weaponType, bareRightHand = slotId === 'rightHand' && this.canUseBareFists(); if (bareRightHand && currentWeaponType === 'martial') this.profile.preferredWeaponType = 'martial'; this.profile.equipment[slotId] = slotId === 'rightHand' && !bareRightHand ? this.defaultWeaponId() : null; if (bareRightHand) this.profile.equipment.leftHand = null; this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('ui'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
-    equipFromInventory(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || !(this.profile.inventory[id] > 0)) return; const slot = this.isOffHandOnlyWeapon(id) ? 'leftHand' : D.weapons[id] ? 'rightHand' : item.slot; if (!slot || (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) || (slot === 'rightHand' && !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('items'); }
+    equipFromInventory(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || !(this.profile.inventory[id] > 0)) return; const slot = this.isOffHandOnlyWeapon(id) ? 'leftHand' : D.weapons[id] ? 'rightHand' : item.slot; if (!slot || (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) || (slot === 'rightHand' && !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } if (this.profile.otherWorldEquipment) delete this.profile.otherWorldEquipment[slot]; this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('items'); }
     equipLeftHandWeapon(id) { if (!(this.profile.inventory[id] > 0) || !this.isLeftHandItemAllowed(id)) return; this.profile.equipment.leftHand = id; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
 
     kazuDialogueCondition(key) {
