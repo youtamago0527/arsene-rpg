@@ -32,7 +32,7 @@
     roninProof: { id: 'roninProof', name: '刀術士の証', nameEn: 'PROOF OF THE RONIN', category: 'key', rarity: 'epic', description: '一瞬を見切り、返す者の証。' },
     hunterProof: { id: 'hunterProof', name: '狩人の証', nameEn: 'PROOF OF THE HUNTER', category: 'key', rarity: 'epic', description: '弱りを見逃さず、仕留める者の証。' },
     splurgeGuitar: { id: 'splurgeGuitar', name: '《奮発して買ったギター》', nameEn: 'THE GUITAR I SPLURGED ON', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, dungeonId: 'dungeon4', catalogDungeon: 'dungeon4', source: 'secretGuitar', guitarSkillTree: 'versicrellGuitar', archiveHint: '入手経路不明。値札の気配だけが、断月のどこかに微かに残っている。', description: 'フェゴリアが惜しみなく金を注ぎ込んだ特注ギター。銀環の系譜を継ぐ音を、さらに強烈な出力で叩きつける。' },
-    memberGiftGuitar: { id: 'memberGiftGuitar', name: '《メンバーからもらったギター》', nameEn: 'A GUITAR FROM THE BAND', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, dungeonId: 'dungeon5', catalogDungeon: 'dungeon5', source: 'secretGuitar', guitarSkillTree: 'versicrellGuitar', archiveHint: '入手経路不明。反復の狩庭に残された、誰かの大切な一本。', description: 'NESTUAが仲間から受け取ったギター。共に重ねた音が、今も弦の奥に残っている。' },
+    memberGiftGuitar: { id: 'memberGiftGuitar', name: '《メンバーからもらったギター》', nameEn: 'A GUITAR FROM THE BAND', category: 'equipment', slot: 'rightHand', rarity: 'legendary', stars: 5, dungeonId: 'dungeon5', catalogDungeon: 'dungeon5', source: 'secretGuitar', guitarSkillTree: 'versicrellGuitar', archiveHint: '入手経路不明。反復の狩庭に残された、誰かの大切な一本。', description: 'ネストゥアが仲間から受け取ったギター。共に重ねた音が、今も弦の奥に残っている。' },
     d4MoonKatana: { id: 'd4MoonKatana', name: '月鋼の刀', category: 'equipment', slot: 'rightHand', rarity: 'rare', stars: 2, catalogDungeon: 'dungeon4', description: '月刃鉱を打った、扱いやすい工房刀。' },
     d4FlashCoat: { id: 'd4FlashCoat', name: '瞬歩の外套', category: 'equipment', slot: 'body', rarity: 'rare', stars: 2, catalogDungeon: 'dungeon4', description: '短い踏み込みを妨げない軽装。' },
     d4SightCharm: { id: 'd4SightCharm', name: '見切りの緒', category: 'equipment', slot: 'accessory', rarity: 'rare', stars: 2, catalogDungeon: 'dungeon4', description: '敵の初動を読むための組紐。' },
@@ -77,26 +77,39 @@
     // IDは既存セーブの中ボス撃破フラグと互換を保つため d4MidBoss のままにする。
     d4MidBoss: enemy('d4MidBoss', 'フェゴリア', 'dungeon4', 'assets/enemy-characters/dungeon4/fegoria.png', { maxHp: 16320, atk: 316, def: 284, mag: 220, mnd: 254, dex: 278, agi: 110, spd: 110 }, 760, { min: 420, max: 560 }, [{ itemId: 'flashSteel', chance: 1 }, { itemId: 'moonEdgeOre', chance: .8 }, { itemId: 'splurgeGuitar', chance: .002 }], [{ id: 'garakuta', name: 'ガラクタ', kind: 'physical', weight: .55 }, { id: 'sparkler', name: '線香花火', kind: 'physical', weight: .45 }], { kind: 'boss', bossRank: 'midBoss', title: '', role: 'MID BOSS / TWO FORMS', battleScale: 1.12, phaseCount: 2, secondFormSprite: 'assets/enemy-characters/dungeon4/fegoria-form2.png', secondFormArtReady: true, secondFormPending: false, form2: { name: 'フェゴリア', title: '', sprite: 'assets/enemy-characters/dungeon4/fegoria-form2.png', battleScale: 1.18, stats: { maxHp: 19584, atk: 348, def: 298, mag: 330, mnd: 290, dex: 310, agi: 150, spd: 150 } }, specialAttacks: { garakuta: { id: 'garakuta', name: 'ガラクタ', kind: 'physical', debuffRate: .20, debuffTurns: 3 }, sparkler: { id: 'sparkler', name: '線香花火', kind: 'physical' }, hideAndSeek: { id: 'hideAndSeek', name: 'かくれんぼ', kind: 'selfEvasion', evasionRate: .60, turns: 3 }, despairDays: { id: 'despairDays', name: '絶望Days', kind: 'setHp', threshold: .30, despairTurns: 3 } } }),
     astact: enemy('astact', 'アスタクト', 'dungeon4', 'assets/enemy-characters/dungeon4/astact.png', { maxHp: 31680, atk: 404, def: 316, mag: 250, mnd: 284, dex: 388, agi: 185, spd: 185 }, 1700, { min: 1150, max: 1450 }, [{ itemId: 'moonEdgeOre', chance: 1 }, { itemId: 'flashSteel', chance: 1 }], [{ id: 'attack', name: 'STACCATO', kind: 'physical', weight: .48 }, { id: 'ratBite', name: '瞬断連刃', kind: 'physical', weight: .32 }, { id: 'soulBolt', name: '残響断ち', kind: 'magic', weight: .20 }], { kind: 'boss', bossRank: 'dungeonBoss', title: '第四奏卿《瞬断の奏刃》', role: 'BOSS / SPEED & COUNTER', battleScale: 1.18, music: '音楽系/戦闘用/アスタクトのテーマ.mp3' }),
-    venomWeaver: enemy('venomWeaver', '毒糸の織り手', 'dungeon5', D.enemies.voidAlchemist.sprite, { maxHp: 760, atk: 92, def: 82, mag: 118, mnd: 92, dex: 112, agi: 92, spd: 92 }, 275, { min: 145, max: 205 }, [{ itemId: 'hunterThread', chance: .55 }], [{ id: 'soulBolt', name: '毒奏', kind: 'magic', weight: .65 }, { id: 'attack', name: '糸刃', kind: 'physical', weight: .35 }]),
-    repeatedHunter: enemy('repeatedHunter', '反復の狩影', 'dungeon5', D.enemies.chainReaper.sprite, { maxHp: 920, atk: 122, def: 88, mag: 88, mnd: 84, dex: 132, agi: 106, spd: 106 }, 310, { min: 165, max: 235 }, [{ itemId: 'venomCore', chance: .42 }, { itemId: 'hunterThread', chance: .28 }], [{ id: 'attack', name: '追い矢', kind: 'physical', weight: .55 }, { id: 'ratBite', name: '反復射', kind: 'physical', weight: .45 }]),
-    d5MidBoss: enemy('d5MidBoss', '毒律の追跡者', 'dungeon5', D.enemies.crimsonBehemoth.sprite, { maxHp: 33000, atk: 560, def: 500, mag: 580, mnd: 520, dex: 420, agi: 104, spd: 104 }, 1100, { min: 680, max: 880 }, [{ itemId: 'hunterThread', chance: 1 }, { itemId: 'venomCore', chance: .8 }], [{ id: 'attack', name: '追猟', kind: 'physical', weight: .5 }, { id: 'soulBolt', name: '毒律', kind: 'magic', weight: .5 }], { kind: 'boss', bossRank: 'midBoss', title: '《毒律の追跡者》', role: 'MID BOSS / ATTRITION' }),
-    ostina: enemy('ostina', 'オスティナ', 'dungeon5', D.enemies.shatteredDiva.sprite, { maxHp: 63360, atk: 700, def: 620, mag: 730, mnd: 640, dex: 500, agi: 126, spd: 126 }, 2400, { min: 1650, max: 2100 }, [{ itemId: 'venomCore', chance: 1 }, { itemId: 'hunterThread', chance: 1 }], [{ id: 'soulBolt', name: 'OSTINATO', kind: 'magic', weight: .48 }, { id: 'attack', name: '狩律射', kind: 'physical', weight: .32 }, { id: 'shadowBolt', name: '反復毒奏', kind: 'magic', weight: .20 }], { kind: 'boss', bossRank: 'dungeonBoss', title: '第五奏卿《反復の狩律》', role: 'BOSS / DOT & DEBUFF', battleScale: 1.2 })
+  });
+
+  // Scale corresponding D4 roles. The three Nestua forms share the existing encounter HP budget.
+  const d5Multiplier = 10;
+  const tenfoldStats = stats => Object.fromEntries(Object.entries(stats).map(([key, value]) => [key, value * d5Multiplier]));
+  const fegoria = D.enemies.d4MidBoss;
+  const midpointStats = Object.fromEntries(Object.entries(fegoria.stats).map(([key, value]) =>
+    [key, (value + fegoria.form2.stats[key]) / 2]
+  ));
+  Object.assign(D.enemies, {
+    venomWeaver: enemy('venomWeaver', '毒糸の織り手', 'dungeon5', D.enemies.voidAlchemist.sprite, tenfoldStats(D.enemies.lanternMask.stats), 275, { min: 145, max: 205 }, [{ itemId: 'hunterThread', chance: .55 }], [{ id: 'soulBolt', name: '毒奏', kind: 'magic', weight: .65 }, { id: 'attack', name: '糸刃', kind: 'physical', weight: .35 }], { statRoundingUnit: d5Multiplier }),
+    repeatedHunter: enemy('repeatedHunter', '反復の狩影', 'dungeon5', D.enemies.chainReaper.sprite, tenfoldStats(D.enemies.moonEdgeKnight.stats), 310, { min: 165, max: 235 }, [{ itemId: 'venomCore', chance: .42 }, { itemId: 'hunterThread', chance: .28 }], [{ id: 'attack', name: '追い矢', kind: 'physical', weight: .55 }, { id: 'ratBite', name: '反復射', kind: 'physical', weight: .45 }], { statRoundingUnit: d5Multiplier }),
+    d5MidBoss: enemy('d5MidBoss', '毒律の追跡者', 'dungeon5', D.enemies.crimsonBehemoth.sprite, { ...tenfoldStats(fegoria.stats), maxHp: 84480 }, 1100, { min: 680, max: 880 }, [{ itemId: 'hunterThread', chance: 1 }, { itemId: 'venomCore', chance: .8 }], [{ id: 'attack', name: '追猟', kind: 'physical', weight: .5 }, { id: 'soulBolt', name: '毒律', kind: 'magic', weight: .5 }], { kind: 'boss', bossRank: 'midBoss', title: '《毒律の追跡者》', role: 'MID BOSS / ATTRITION' }),
+    ostina: enemy('ostina', 'オスティナ', 'dungeon5', D.enemies.shatteredDiva.sprite, tenfoldStats(D.enemies.astact.stats), 2400, { min: 1650, max: 2100 }, [{ itemId: 'venomCore', chance: 1 }, { itemId: 'hunterThread', chance: 1 }], [{ id: 'soulBolt', name: 'OSTINATO', kind: 'magic', weight: .48 }, { id: 'attack', name: '狩律射', kind: 'physical', weight: .32 }, { id: 'shadowBolt', name: '反復毒奏', kind: 'magic', weight: .20 }], { kind: 'boss', bossRank: 'dungeonBoss', title: '第五奏卿《反復の狩律》', role: 'BOSS / DOT & DEBUFF', battleScale: 1.2 })
   });
 
   D.enemies.d4MidBoss.music = '音楽系/戦闘用/D4中ボス第一形態.mp3';
   D.enemies.d4MidBoss.form2.music = '音楽系/戦闘用/D4中ボス第二形態.mp3';
+  const d5BattleMusic = '音楽系/戦闘用/D5通常戦闘-毒糸の追奏.mp3';
   Object.assign(D.enemies.d5MidBoss, {
-    name: 'NESTUA', nameEn: 'NESTUA', title: '《ネストゥア》', role: 'MID BOSS / THREE FORMS',
+    music: d5BattleMusic,
+    name: 'ネストゥア', nameEn: 'ネストゥア', title: '', role: 'MID BOSS / THREE FORMS',
     sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form1.png',
     phaseCount: 3,
     battleScale: 1.12,
     form2: {
-      name: 'NESTUA', title: '《ネストゥア》', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form2.png', battleScale: 1.16,
-      stats: { maxHp: 42900, atk: 728, def: 650, mag: 754, mnd: 676, dex: 546, agi: 135, spd: 135 }
+      name: 'ネストゥア', title: '', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form2.png', battleScale: 1.16,
+      stats: { ...tenfoldStats(midpointStats), maxHp: 109824 }
     },
     form3: {
-      name: 'NESTUA', title: '《ネストゥア》', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form3.png', battleScale: 1.2,
-      stats: { maxHp: 64350, atk: 1092, def: 975, mag: 1131, mnd: 1014, dex: 819, agi: 203, spd: 203 }
+      music: '音楽系/戦闘用/刹那第三形態.mp3',
+      name: 'ネストゥア', title: '', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form3.png', battleScale: 1.2,
+      stats: { ...tenfoldStats(fegoria.form2.stats), maxHp: 164736 }
     }
   });
   if (!D.enemies.d5MidBoss.dropTable.some(drop => drop.itemId === 'memberGiftGuitar'))
@@ -127,13 +140,16 @@
   D.guitarSeries.entries ||= [];
   if (!D.guitarSeries.entries.some(entry => entry.itemId === 'splurgeGuitar')) D.guitarSeries.entries.push({ dungeonId: 'dungeon4', itemId: 'splurgeGuitar', dropEnemyId: 'd4MidBoss', skillTreeId: 'versicrellGuitar' });
   if (!D.guitarSeries.entries.some(entry => entry.itemId === 'memberGiftGuitar')) D.guitarSeries.entries.push({ dungeonId: 'dungeon5', itemId: 'memberGiftGuitar', dropEnemyId: 'd5MidBoss', skillTreeId: 'versicrellGuitar' });
+  const d4Floors = D.dungeons.find(dungeon => dungeon.id === 'dungeon4').floors;
+  const d5FloorScale = (index, rewards) => ({ ...d4Floors[index].enemyScale, rewards });
   D.dungeons.push({
     id: 'dungeon5', name: '反復の狩庭', nameEn: 'OSTINATO HUNTING GROUND', background: d3bg[1], thumbnail: d3bg[1], recommendedLevel: 34,
-    description: '毒と追撃が繰り返される狩庭。防御・回復と短期決着の両方が必要になる。', unlockCondition: 'dungeon4Clear', bossId: 'ostina', midBossId: 'd5MidBoss', midBossAfterFloor: 2,
+    music: d5BattleMusic,
+    description: '毒と追撃が繰り返される狩庭。敵の戦闘能力は断月の楼閣の同格の敵の10倍。長期戦に備えて火力と回復手段を整えよう。', unlockCondition: 'dungeon4Clear', bossId: 'ostina', midBossId: 'd5MidBoss', midBossAfterFloor: 2,
     floors: [
-      floor('d5f1', '毒糸の林廊', '1F VENOM THREAD', 6, d3bg[0], ['hunterThread'], { hp: 1, atk: 1, mag: 1, def: 1, mnd: 1, spd: 1, rewards: 1 }, [{ id: 'venomWeaver', weight: 5 }, { id: 'repeatedHunter', weight: 3 }]),
-      floor('d5f2', '追跡の広間', '2F TRACKING HALL', 7, d3bg[1], ['hunterThread', 'venomCore'], { hp: 1.14, atk: 1.10, mag: 1.10, def: 1.10, mnd: 1.10, spd: 1.06, rewards: 1.15 }, [{ id: 'venomWeaver', weight: 4 }, { id: 'repeatedHunter', weight: 5 }]),
-      floor('d5f3', '終わらぬ狩場', '3F ENDLESS HUNT', 8, d3bg[1], ['hunterThread', 'venomCore'], { hp: 1.28, atk: 1.16, mag: 1.16, def: 1.16, mnd: 1.16, spd: 1.10, rewards: 1.30 }, [{ id: 'venomWeaver', weight: 3 }, { id: 'repeatedHunter', weight: 6 }])
+      floor('d5f1', '毒糸の林廊', '1F VENOM THREAD', 6, d3bg[0], ['hunterThread'], d5FloorScale(0, 1), [{ id: 'venomWeaver', weight: 5 }, { id: 'repeatedHunter', weight: 3 }]),
+      floor('d5f2', '追跡の広間', '2F TRACKING HALL', 7, d3bg[1], ['hunterThread', 'venomCore'], d5FloorScale(1, 1.15), [{ id: 'venomWeaver', weight: 4 }, { id: 'repeatedHunter', weight: 5 }]),
+      floor('d5f3', '終わらぬ狩場', '3F ENDLESS HUNT', 8, d3bg[1], ['hunterThread', 'venomCore'], d5FloorScale(2, 1.30), [{ id: 'venomWeaver', weight: 3 }, { id: 'repeatedHunter', weight: 6 }])
     ]
   });
 })();
