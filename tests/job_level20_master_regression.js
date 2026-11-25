@@ -21,8 +21,13 @@ assert.match(game, /const currentMasterLevel = d5Cleared \? \(D\.jobLevelCapFina
   'save migration must restore MASTER only at 20/40/70 for the current story tier');
 assert.match(otherworld, /for \(const jobId of p\.jobMastered \|\| \[\]\)[\s\S]*p\.ptStealDone\[jobId\] = true;/,
   'recovered MASTER jobs must also recover PHANTOM STEAL state');
-assert.match(index, /js\/data\.js\?v=3\.12\.10/);
-assert.match(index, /js\/game\.js\?v=4\.13\.15/);
-assert.match(index, /js\/otherworld\.js\?v=0\.3\.8/);
+// Later cache revisions also include the 20/40/70 cap migration.
+for (const [script, minor, minPatch] of [['data', '3.12', 10], ['game', '4.13', 15], ['otherworld', '0.3', 8]]) {
+  const src = index.match(new RegExp('js/' + script + '\\.js\\?v=([\\d.]+)'));
+  assert(src, script + ' cache key missing');
+  const [major, sub, patch] = src[1].split('.').map(Number);
+  const [minMajor, minSub] = minor.split('.').map(Number);
+  assert(major > minMajor || (major === minMajor && (sub > minSub || (sub === minSub && patch >= minPatch))), script + ' cache version predates the cap migration');
+}
 
 console.log('job_level20_master_regression: ok');

@@ -265,7 +265,7 @@
     }
 
     freshProfile() {
-      const p = D.player; return { version: 19, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), shopPurchases: {}, premium: { adSkipLicense: false, adSkipTickets: 0, auto3License: false, sweepLicense: false, otherworldTickets: 0 }, musicScores: {}, bossDefeated: { zenacad: false, myrthi: false, versicrell: false, seripes: false }, currentJob: 'mage', lastNormalJob: 'mage', otherWorldReturnJob: null, jobs: { warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, guardian: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, unlockedJobs: ['mage'], initialJob: 'mage', jobGrowthGained: {}, phantomGrowthRecords: {}, jobRebirths: {}, jobMastered: [], growthFraction: {}, learnedPassives: [], passiveEnhancements: {}, passiveEnhancedAtRebirth: {}, equippedPassives: [null], ptActionSlots: [null, null], ptPassiveSlots: [null, null], weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 }, shield: { level: 1, exp: 0 } }, learnedWeaponSkills: [], seenEnemies: [], equipmentArchive: [], lockedEquipment: [], collectionRewards: {}, playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0, instrument: 0, shield: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0 }, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, taiwanMazesobaUnlocked: false, taiwanMazesobaNew: false, foodSecretMenuUnlocked: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, floorWins: {}, dungeon3BattleWins: 0, dungeon3NewSeen: false, guardianUnlocked: false, shieldUnlocked: false, lastBattleResult: null, consecutiveDefeats: 0, owRestoreJobPending: false }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
+      const p = D.player; return { version: 19, selectedCharacter: null, playerCharacter: null, prologueCompleted: false, openingWatched: false, level: p.level, exp: p.exp, gold: p.gold, baseStats: clone(p.baseStats), currentVitals: { hp: p.baseStats.maxHp, mp: p.baseStats.maxMp }, equipment: clone(p.equipment), inventory: clone(p.inventory), shopPurchases: {}, premium: { adSkipLicense: false, adSkipTickets: 0, auto3License: false, sweepLicense: false, otherworldTickets: 0 }, musicScores: {}, bossDefeated: { zenacad: false, myrthi: false, versicrell: false, seripes: false }, currentJob: 'mage', lastNormalJob: 'mage', otherWorldReturnJob: null, jobs: { gladiator: { level: 1, exp: 0 }, warrior: { level: 1, exp: 0 }, mage: { level: 1, exp: 0 }, martialArtist: { level: 1, exp: 0 }, priest: { level: 1, exp: 0 }, guardian: { level: 1, exp: 0 }, arcaneMaestro: { level: 1, exp: 0 }, dualBlade: { level: 1, exp: 0 } }, learnedJobSkills: [], learnedCharacterSkills: ['blueNote'], activeSkills: ['blueNote', 'quickSlash'], passiveSlots: [null, null], weaponEnchants: {}, armorEnchants: {}, bossRematchAt: {}, preferredWeaponType: null, unlockedJobs: ['mage'], initialJob: 'mage', jobGrowthGained: {}, phantomGrowthRecords: {}, jobRebirths: {}, jobMastered: [], growthFraction: {}, learnedPassives: [], passiveEnhancements: {}, passiveEnhancedAtRebirth: {}, equippedPassives: [null], ptActionSlots: [null, null], ptPassiveSlots: [null, null], weaponMastery: { sword: { level: 1, exp: 0 }, staff: { level: 1, exp: 0 }, martial: { level: 1, exp: 0 }, shield: { level: 1, exp: 0 } }, learnedWeaponSkills: [], seenEnemies: [], equipmentArchive: [], lockedEquipment: [], collectionRewards: {}, playtest: { startedAt: Date.now(), playMs: 0, battles: 0, weaponUse: { sword: 0, staff: 0, martial: 0, instrument: 0, shield: 0 }, sparkLog: [], hpGrowthCount: 0, hpGrowthTotal: 0, mpGrowthCount: 0, mpGrowthTotal: 0 }, kazuSeenOnce: [], flags: { noelFirstEncounterCleared: false, preNoelBattleWins: 0, postNoelBattleWins: 0, zenakadoDefeated: false, zenakadoScoreClaimed: false, ramenBuffActive: false, taiwanMazesobaUnlocked: false, taiwanMazesobaNew: false, foodSecretMenuUnlocked: false, normalBattleWins: 0, temporaryBossCompleted: false, openingWatched: false, prologueCompleted: false, dungeon2BattleWins: 0, dungeon2NewSeen: false, floorWins: {}, dungeon3BattleWins: 0, dungeon3NewSeen: false, guardianUnlocked: false, shieldUnlocked: false, lastBattleResult: null, consecutiveDefeats: 0, owRestoreJobPending: false }, discoveredMaterials: [], unlockedRecipes: [], newlyUnlockedRecipes: [] };
     }
     loadProfile() {
       try {
@@ -528,6 +528,7 @@
         // v16：武器学を行動EXP＋無制限Lv、閃きをRank/敵Spark Lv方式へ移行。
         // 旧Lv/EXP/習得技はそのまま保持し、破壊的な再計算は行わない。
         profile.version = 19;
+        this.checkGladiatorUnlock(profile);
         return profile;
       } catch { return this.freshProfile(); }
     }
@@ -676,6 +677,17 @@
     setCharacterList(list) { this.characterList = Array.isArray(list) ? list : []; this.applyCharacterPresentation(); }
     // ══ ジョブ解放 / パッシブ ══════════════════════════════════
     isPlayerContentVisible(def) { return !!def && !def.devOnly && !def.futureOnly; }
+    checkGladiatorUnlock(profile = this.profile) {
+      const requirements = D.jobs.gladiator.unlockCondition.jobLevels;
+      const reached = profile.gladiatorRequirements ||= {};
+      for (const [id, level] of Object.entries(requirements)) {
+        if (profile.jobs[id]?.level >= level) reached[id] = true;
+      }
+      if (profile.unlockedJobs.includes('gladiator') || !Object.keys(requirements).every(id => reached[id])) return false;
+      profile.unlockedJobs.push('gladiator');
+      profile.jobs.gladiator ||= { level: 1, exp: 0 };
+      return true;
+    }
     unlockedJobIds() { return this.profile.unlockedJobs ||= [this.profile.currentJob || 'mage']; }
     isJobUnlocked(id) { return this.unlockedJobIds().includes(id); }
     unlockJob(id) { if (!D.jobs[id] || this.isJobUnlocked(id)) return false; this.unlockedJobIds().push(id); this.profile.jobs ||= {}; this.profile.jobs[id] ||= { level: 1, exp: 0 }; return true; }
@@ -742,7 +754,11 @@
       return `<div class="pt-progress"><div class="pt-progress-head"><span>STEAL PROGRESS</span><strong>${p.percent.toFixed(2)}%</strong></div><div class="jexp-bar"><i style="width:${p.percent}%"></i></div>${row('JOB育成', p.jobLevels, `　MASTER ${p.mastered}/${p.jobCount}`)}${row('盗得パッシブ', p.passives)}${row('武器学', p.weaponMastery)}<p>転生回数は含みません。MASTER済みJOBはLv.20として集計し、MASTER数を重複加点しません。</p></div>`;
     }
     // 通常ジョブ=他職パッシブ1枠 / PHANTOM THIEF=2枠
-    passiveSlotCount() { const c = this.gb().passiveSlotCount || {}; return this.isPhantomThief() ? (c.phantomThief ?? 2) : (c.normal ?? 1); }
+    equippedPassiveKey() {
+      if (this.isPhantomThief()) return 'ptPassiveSlots';
+      return this.profile.currentJob === 'gladiator' ? 'gladiatorPassiveSlots' : 'equippedPassives';
+    }
+    passiveSlotCount() { if (this.profile.currentJob === 'gladiator') return 2; const c = this.gb().passiveSlotCount || {}; return this.isPhantomThief() ? (c.phantomThief ?? 2) : (c.normal ?? 1); }
     actionSlotCount() { const c = this.gb().actionSlotCount || {}; return this.isPhantomThief() ? (c.phantomThief ?? 2) : (c.normal ?? 0); }
     learnedPassiveIds() { return this.profile.learnedPassives ||= []; }
     // ══ 装備の戦闘能力（攻撃力/防御力/魔法攻撃力/魔法防御力）════
@@ -768,12 +784,13 @@
       const s = stats || this.player?.stats || this.totalStats(equipment);
       if (weaponType === 'shield') {
         const b = D.guardianBalance || {};
-        return this.defensePowerFor('physical', s, equipment) * (b.shieldDefRate ?? .5) + this.defensePowerFor('magical', s, equipment) * (b.shieldMdefRate ?? .5);
+        return this.defensePowerFor('physical', s, equipment) * (b.shieldDefRate ?? .5) + this.defensePowerFor('magical', s, equipment) * (b.shieldMdefRate ?? .5) + (s.agi || 0) * this.jobTraitRate('swiftPower');
       }
       const weapon = D.weapons[equipment?.rightHand], baseRule = (D.weaponScaling || {})[weaponType] || (D.weaponScaling || {}).sword || { scaling: { str: 1 }, powerKey: 'attackPower' };
       const rule = weapon?.scaling ? { ...baseRule, scaling: weapon.scaling, powerKey: weapon.powerKey || baseRule.powerKey, damageType: weapon.damageType || baseRule.damageType } : baseRule;
       let v = 0;
       for (const [stat, rate] of Object.entries(rule.scaling || {})) v += (s[stat] || 0) * rate;
+      if (rule.powerKey === 'attackPower') v += (s.agi || 0) * this.jobTraitRate('swiftPower');
       return v + (this.equipmentCombatStats(equipment)[rule.powerKey] || 0);
     }
     weaponDamageType(weaponType = this.equippedWeaponType()) { const w = this.equippedWeapon(); return w?.damageType || ((D.weaponScaling || {})[weaponType] || {}).damageType || 'physical'; }
@@ -933,6 +950,12 @@
     }
     // 装備候補：習得済みパッシブのうち、現在ジョブが常時持っているものは除く
     selectablePassives() {
+      const parents = D.jobs[this.profile.currentJob]?.parentJobs;
+      if (parents) {
+        return parents.flatMap(id => Object.entries(D.jobs[id].passiveUnlocks || {})
+          .filter(([level, skill]) => this.jobAbilityLearned(id, skill, level))
+          .map(([, skill]) => D.skills[skill]).filter(skill => this.isPlayerContentVisible(skill)));
+      }
       const own = new Set(this.currentJobPassives().map(s => s.id));
       const learned = this.learnedPassiveIds().map(id => D.skills[id]).filter(s => s?.type === 'PASSIVE' && !own.has(s.id));
       const legacy = this.allLearnedPassives().filter(s => !own.has(s.id));
@@ -1013,7 +1036,7 @@
     // 現在ジョブで永久習得済みのパッシブ（転生後もそのジョブの能力として常時有効）
     currentJobPassives() { const jobId = this.profile.currentJob, job = D.jobs[jobId]; if (!job) return []; return Object.entries(job.passiveUnlocks || {}).filter(([l, id]) => this.jobAbilityLearned(jobId, id, l)).map(([, id]) => D.skills[id]).filter(Boolean); }
     // 他ジョブから持ち込んで装備中のパッシブ
-    equippedPassiveList() { const slots = this.isPhantomThief() ? (this.profile.ptPassiveSlots || []) : (this.profile.equippedPassives || []); return slots.slice(0, this.passiveSlotCount()).map(id => D.skills[id]).filter(s => s?.type === 'PASSIVE'); }
+    equippedPassiveList() { const slots = this.profile[this.equippedPassiveKey()] || []; return slots.slice(0, this.passiveSlotCount()).map(id => D.skills[id]).filter(s => s?.type === 'PASSIVE'); }
     // 実際に効果を発揮する全パッシブ（現在ジョブ習得分＋装備分、重複除去）
     activePassives() { return [...new Map([...this.currentJobPassives(), ...this.equippedPassiveList()].map(s => [s.id, s])).values()]; }
     activePassiveByType(type) { return this.activePassives().find(p => p.passiveEffect?.type === type) || null; }
@@ -1091,8 +1114,10 @@
     }
     passiveEffectRate(type) { return this.activePassives().reduce((sum, p) => p.passiveEffect?.type === type ? sum + this.passiveRate(p) : sum, 0) + this.jobTraitRate(type); }
     setEquippedPassive(idx, skillId) {
-      const key = this.isPhantomThief() ? 'ptPassiveSlots' : 'equippedPassives';
+      const key = this.equippedPassiveKey();
       const max = this.passiveSlotCount();
+      if (!Number.isInteger(idx) || idx < 0 || idx >= max) return;
+      if (key === 'gladiatorPassiveSlots' && skillId && !this.selectablePassives().some(skill => skill.id === skillId)) return;
       this.profile[key] ||= new Array(max).fill(null);
       while (this.profile[key].length < max) this.profile[key].push(null);
       if (skillId) this.profile[key] = this.profile[key].map(v => v === skillId ? null : v);
@@ -1239,6 +1264,7 @@
     // 習得済みスキル・パッシブ・武器学・MASTER履歴は保持する。
     doRebirth(jobId) {
       const check = this.canRebirth(jobId); if (!check.ok) return check;
+      this.checkGladiatorUnlock();
       this.profile.inventory.rebirthArcana = Math.max(0, this.arcanaCount() - 1);
       this.markJobMastered(jobId);
       // 転生で通常JOBの保持能力を20%へ圧縮する前に、PHANTOM THIEFが盗んだ最高値を保存する。
@@ -1334,6 +1360,7 @@
     // ══ HELP / 遊び方 ══════════════════════════════════════════
     // 文章は js/help_data.js（window.ARSENE_HELP）側で管理する。
     helpUnlocked(key) {
+      if (key === 'gladiator') return this.isJobUnlocked('gladiator');
       const f = this.profile.flags || {};
       if (key === 'workshop') return !!f.noelFirstEncounterCleared;
       if (key === 'magicKnight') return this.isJobUnlocked('magicKnight');
@@ -1527,7 +1554,7 @@
       const scaleText = Object.entries(rule.scaling || {}).map(([k, v]) => `${statLabels[k] || k}×${Math.round(v * 100)}%`).join('＋');
       const magicWeapon = rule.powerKey === 'magicAttackPower';
       const rows = [
-        ['攻撃力', Math.round(this.attackPowerFor(wType, total)), `${scaleText}＋装備の${magicWeapon ? '魔法攻撃力' : '攻撃力'}`],
+        ['攻撃力', Math.round(this.attackPowerFor(wType, total)), `${scaleText}＋装備の${magicWeapon ? '魔法攻撃力' : '攻撃力'}${!magicWeapon && this.profile.currentJob === 'gladiator' ? '＋剛速一体（素早さ×30%）' : ''}`],
         ['防御力', Math.round(this.defensePowerFor('physical', total)), '体力＋装備の防御力'],
         ['魔法防御力', Math.round(this.defensePowerFor('magical', total)), '精神＋装備の魔法防御力']
       ].map(([label, v, note]) => `<div class="cbt3-cell"><span>${label}</span><b>${v}</b><small>${note}</small></div>`).join('');
@@ -1631,7 +1658,10 @@
       const passive = this.activePassives().find(p => p.passiveEffect?.type === 'guardStance');
       return passive ? this.passiveRate(passive) : 0;
     }    resonanceMultiplier(value = this.player?.resonance || 0) { return (D.guardianBalance?.resonanceTiers || []).find(t => value >= t.min)?.multiplier || 0; }
-    jobLearnedActiveSkills(jobId) { const job = D.jobs[jobId]; if (!this.isPlayerContentVisible(job)) return []; const list = Object.entries(job.skillUnlocks || {}).filter(([lv, id]) => this.jobAbilityLearned(jobId, id, lv)).map(([, id]) => D.skills[id]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE'); const sig = D.skills[job.signatureSkillId]; if (this.isPlayerContentVisible(sig) && sig.type !== 'PASSIVE' && this.jobAbilityLearned(jobId, sig.id, sig.unlockJobLevel || 1) && !list.some(s => s.id === sig.id)) list.unshift(sig); return list; }
+    jobLearnedActiveSkills(jobId) {
+      const sources = D.jobs[jobId]?.parentJobs;
+      if (sources) return [...new Map(sources.flatMap(id => this.jobLearnedActiveSkills(id)).map(skill => [skill.id, skill])).values()];
+      const job = D.jobs[jobId]; if (!this.isPlayerContentVisible(job)) return []; const list = Object.entries(job.skillUnlocks || {}).filter(([lv, id]) => this.jobAbilityLearned(jobId, id, lv)).map(([, id]) => D.skills[id]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE'); const sig = D.skills[job.signatureSkillId]; if (this.isPlayerContentVisible(sig) && sig.type !== 'PASSIVE' && this.jobAbilityLearned(jobId, sig.id, sig.unlockJobLevel || 1) && !list.some(s => s.id === sig.id)) list.unshift(sig); return list; }
     masteredActions() { return (this.profile.jobMastered || []).map(id => D.skills[D.jobs[id]?.signatureSkillId]).filter(s => this.isPlayerContentVisible(s) && s.type !== 'PASSIVE'); }
     setPhantomAction(idx, skillId) { const max = this.actionSlotCount(); this.profile.ptActionSlots ||= new Array(max).fill(null); while (this.profile.ptActionSlots.length < max) this.profile.ptActionSlots.push(null); if (skillId) this.profile.ptActionSlots = this.profile.ptActionSlots.map(v => v === skillId ? null : v); this.profile.ptActionSlots[idx] = skillId || null; this.saveProfile(); this.audio.sfx('confirm'); if (this.jobUI) this.jobUI.modal = null; this.renderMenuPanel('job'); }
     skillEquipmentReady(skill) { if (skill?.weaponIndependent) return true; if (skill?.requiresBareFists && !this.usesBareFists()) return false; const required = skill?.requiresWeaponSubtype; return !required || this.equippedWeapon()?.weaponSubtype === required; }
@@ -1710,6 +1740,7 @@
     // 武道家が素手のときは拳を握る（JOB特性《無手の型》）。他JOBは従来どおり杖にフォールバック。
     isBareHanded(hand = 'rightHand') { return !D.weapons[this.profile.equipment?.[hand]]; }
     canUseBareFists(jobId = this.profile.currentJob, equipment = this.profile?.equipment) {
+      if (jobId === 'gladiator') return true;
       if (this.jobHasTrait('bareFists', jobId)) return true;
       return jobId === 'phantomThief' && (this.profile?.preferredWeaponType === 'martial' || D.weapons?.[equipment?.rightHand]?.weaponType === 'martial');
     }
@@ -3690,6 +3721,7 @@
       if (progress.level >= masterLevel) this.markJobMastered(jobId);
       if (progress.level >= cap) { progress.exp = 0; progress.expCarry = 0; }
       const gainedLevels = progress.level - from;
+      const gladiatorUnlocked = gainedLevels > 0 && this.checkGladiatorUnlock();
       // Lv21〜40（限界突破帯）で得た分だけ成長量を2倍にする。1回のEXP付与で20を跨いだ場合も
       // 跨いだ範囲だけ正しく2倍になるよう、通常帯と突破帯の到達レベル数を分けて数える。
       const normalLevels = Math.max(0, Math.min(progress.level, 20) - from);
@@ -3702,9 +3734,9 @@
       this.syncSkillUnlocks();
       const learned = (this.profile.learnedJobSkills || []).filter(id => !learnedBefore.has(id));
       this.saveProfile();
-      return { jobId, jobName: job.name, jobNameEn: job.nameEn, exp: gained, from, to: progress.level, learned, statGain, newPassives, reinforcedPassives };
+      return { jobId, jobName: job.name, jobNameEn: job.nameEn, exp: gained, from, to: progress.level, gladiatorUnlocked, learned, statGain, newPassives, reinforcedPassives };
     }
-    jobResultHTML(result) { if (!result) return ''; return `<div class="job-result"><small>JOB EXPERIENCE</small><strong>${result.jobName}</strong><span>JEXP <b>+${result.exp}</b></span>${result.to > result.from ? `<h3>JOB LEVEL UP!　Lv.${result.from} → Lv.${result.to}</h3>` : ''}${result.learned.length ? `<div>${result.learned.map(id => `<b>NEW SKILL　${D.skills[id].name}</b>`).join('')}</div>` : ''}${result.reinforcedPassives?.length ? `<div>${result.reinforcedPassives.map(row => `<b>PASSIVE UP　${row.skill.name}　段階${row.rank}</b>`).join('')}</div>` : ''}</div>`; }
+    jobResultHTML(result) { if (!result) return ''; return `${result.gladiatorUnlocked ? '<div class="job-result"><small>NEW JOB</small><b>剣闘士 解放</b></div>' : ''}<div class="job-result"><small>JOB EXPERIENCE</small><strong>${result.jobName}</strong><span>JEXP <b>+${result.exp}</b></span>${result.to > result.from ? `<h3>JOB LEVEL UP!　Lv.${result.from} → Lv.${result.to}</h3>` : ''}${result.learned.length ? `<div>${result.learned.map(id => `<b>NEW SKILL　${D.skills[id].name}</b>`).join('')}</div>` : ''}${result.reinforcedPassives?.length ? `<div>${result.reinforcedPassives.map(row => `<b>PASSIVE UP　${row.skill.name}　段階${row.rank}</b>`).join('')}</div>` : ''}</div>`; }
     rewardHTML(reward, levels) {
       const drops = Object.entries(reward.drops); let html = `<div class="reward-summary"><span>EXP <b>+${reward.exp}</b></span><span>GOLD <b>+${reward.gold}</b></span></div>`;
       html += `<div class="drop-list"><h3>DROPS</h3>${drops.length ? drops.map(([id,n]) => { const i=D.items[id]; return `<p class="rarity-${i.rarity}">${i.name}<b>×${n}</b></p>`; }).join('') : '<p>ドロップなし</p>'}</div>`;
@@ -4090,7 +4122,7 @@
       const d1Name = this.getDungeon('dungeon1')?.name || 'ダンジョン1';
       const notice = this.isJobUnlocked('magicKnight') ? '' : `<p class="job-lock-notice">《${d1Name}》をクリアして《魔奏士の証》を入手すると、残りの基本JOBと魔奏士が解放されます。</p>`;
       const specialSec = special.length ? `<section class="jsec"><h4>特殊JOB</h4><div class="jgrid">${special.map(card).join('')}</div></section>` : '';
-      return `${notice}<section class="jsec"><h4>基本JOB</h4><div class="jgrid">${base.map(card).join('')}</div></section>${specialSec}`;
+      return `${notice}<section class="jsec"><h4>基本JOB</h4><div class="jgrid">${base.map(card).join('')}</div></section>${this.isJobUnlocked('gladiator') ? '<section class="jsec"><h4>上級JOB</h4><div class="jgrid">' + card('gladiator') + '</div></section>' : ''}${specialSec}`;
     }
     jobDetailHtml(jobId, unlocked, currentId) {
       const j = D.jobs[jobId], p = this.profile.jobs[jobId] || { level: 1, exp: 0 }, avail = this.isJobUnlocked(jobId), isCur = jobId === currentId, need = this.jobExpNeeded(p.level), bar = need ? Math.round(100 * p.exp / need) : 100;
@@ -4105,7 +4137,7 @@
       // パッシブ発動中だけ開く専用技（魔奏士のスフォルツァンド等）。
       // 技自体はどのテーブルにも載っていないので、バフ元パッシブの習得Lvに紐づけて並べる。
       this.conditionalSkillsForJob(jobId).forEach(({ skill, level }) => abilityEntries.push([level, skill.id]));
-      const skillRows = abilityEntries.sort((a, b) => a[0] - b[0]).map(([lv, id]) => { const s = D.skills[id], learned = this.jobAbilityLearned(jobId, id, lv), cond = s?.requiresBuff ? this.buffSourceName(jobId, s.requiresBuff) : '', rank = s?.type === 'PASSIVE' ? this.passiveEnhancementRank(id) : 0; return `<button class="jar${learned ? ' learned' : ' locked'}${cond ? ' jar-cond' : ''}"${learned ? ` data-job-skill-detail="${id}"` : ''}><span class="jar-lv">Lv.${lv}</span><span class="jar-nm">${s?.name || id}</span><em class="jar-type">${s?.type === 'PASSIVE' ? 'P' : 'A'}</em><small class="jar-st">${learned ? (rank ? `強化 Lv.${rank}` : cond ? `《${cond}》中` : '習得済') : 'LOCK'}</small></button>`; }).join('');
+      const skillRows = j.parentJobs ? this.inheritedSkillRows(jobId) : abilityEntries.sort((a, b) => a[0] - b[0]).map(([lv, id]) => { const s = D.skills[id], learned = this.jobAbilityLearned(jobId, id, lv), cond = s?.requiresBuff ? this.buffSourceName(jobId, s.requiresBuff) : '', rank = s?.type === 'PASSIVE' ? this.passiveEnhancementRank(id) : 0; return `<button class="jar${learned ? ' learned' : ' locked'}${cond ? ' jar-cond' : ''}"${learned ? ` data-job-skill-detail="${id}"` : ''}><span class="jar-lv">Lv.${lv}</span><span class="jar-nm">${s?.name || id}</span><em class="jar-type">${s?.type === 'PASSIVE' ? 'P' : 'A'}</em><small class="jar-st">${learned ? (rank ? `強化 Lv.${rank}` : cond ? `《${cond}》中` : '習得済') : 'LOCK'}</small></button>`; }).join('');
       let condHtml = '';
       if (!avail && j.unlockCondition) { const c = j.unlockCondition, bOk = c.bossDefeated ? this.isBossDefeated(c.bossDefeated) : true, bName = c.bossDefeated ? (D.enemies[c.bossDefeated]?.name || c.bossDefeated) : ''; const jcs = Object.entries(c.jobLevels || {}).map(([rid, rlv]) => { const cur = this.profile.jobs[rid]?.level || 0, ok = cur >= rlv; return `<div class="cond-row${ok ? ' ok' : ' ng'}"><b>${ok ? '✓' : '✕'} ${D.jobs[rid]?.name || rid} Lv${rlv}</b><small>現在 Lv.${cur}</small></div>`; }).join(''); condHtml = `<div class="jconds"><h4>解放条件</h4>${bName ? `<div class="cond-row${bOk ? ' ok' : ' ng'}"><b>${bOk ? '✓' : '✕'} ${bName}を撃破</b></div>` : ''}${jcs}</div>`; }
       // ファントムシーフは自分では育たないので、代わりに「他JOBから盗んだ能力」を出す。
@@ -4142,6 +4174,9 @@
       const traitHtml = traits.length ? `<div class="jbonus jtraits"><h4>JOB特性</h4><div class="jtrait-list">${traits.map(t => `<button type="button" class="jtrait-row" data-job-trait-detail="${jobId}:${t.key}"><b>${t.name}</b><span>${t.label}${t.gain > 0 ? `（転生 +${t.gain}%）` : ''}</span><em>▶</em></button>`).join('')}</div><p class="jbn-note">このJOBに就いている間だけ有効。他JOBへは持ち出せません。</p></div>` : '';
       return `<div class="jdetail"><button class="jback-btn" data-job-back>← JOB一覧</button><div class="jdetail-hdr"><div><b>${j.name}</b></div><em class="jdetail-badge">${isCur ? '現在' : !avail ? 'LOCKED' : noGrow ? 'SPECIAL' : `Lv.${p.level}`}</em></div>${avail ? `<div class="jexp-wrap"><div class="jlv-row"><b>JOB Lv.${p.level}</b><span>JEXP ${need ? `${p.exp} / ${need}` : 'MASTER'}</span></div><div class="jexp-bar"><i style="width:${bar}%"></i></div></div>${noGrow ? `<p class="jfeature">${j.featureText || j.description || ''}</p>${stealHtml}` : `<div class="jbonus"><h4>このJOBで育てた能力</h4><div class="jbn-grid">${bonusGrid}</div><p class="jbn-note">この成長は、このJOBに就いている間だけ乗ります。</p></div>`}${traitHtml}${isCur ? '<div class="jcur-badge">現在のJOB</div>' : `<button class="jchange-btn" data-job-change="${jobId}">このJOBに変更</button>`}${this.rebirthSectionHTML(jobId)}${skillRows ? `<div class="jskills"><h4>アビリティ</h4><div class="jar-list">${skillRows}</div></div>` : ''}` : `<p class="jlocked-note">${j.description}</p>${condHtml}`}</div>`;
     }
+    inheritedSkillRows(jobId) {
+      return this.jobLearnedActiveSkills(jobId).map(s => `<button class="per-row learned" data-job-skill-detail="${s.id}"><b>${s.name}</b><small>${D.jobs[s.jobId]?.name || ''}</small></button>`).join('');
+    }
     abilitySetHtml(currentId) {
       const ps = this.profile.passiveSlots || [null, null], p0 = ps[0] ? D.skills[ps[0]] : null, p1 = ps[1] ? D.skills[ps[1]] : null;
       const personal = (D.characterSkillProgression || []).map(e => { const s = D.skills[e.skillId], ok = this.profile.level >= e.level; return `<div class="per-row${ok ? ' learned' : ' locked'}"${ok ? ` data-job-skill-detail="${e.skillId}"` : ''}><span>Lv.${e.level}</span><b>${s?.name || e.skillId}</b><em>${s?.type === 'PASSIVE' ? 'PASSIVE' : 'ACTIVE'}</em><small>${ok ? '習得済' : 'LOCK'}</small></div>`; }).join('');
@@ -4155,15 +4190,19 @@
       const jobPassiveRows = Object.entries(job?.passiveUnlocks || {}).map(([lv, id]) => { const s = D.skills[id], ok = this.jobAbilityLearned(currentId, id, lv), rank = this.passiveEnhancementRank(id); return `<div class="per-row${ok ? ' learned' : ' locked'}"${ok ? ` data-job-skill-detail="${id}"` : ''}><span>Lv.${lv}</span><b>${s?.name || id}</b><em>PASSIVE</em><small>${ok ? (rank ? `強化 Lv.${rank}` : '習得済') : `Lv.${lv}で習得`}</small></div>`; }).join('') || '<p class="modal-empty">このJOBにパッシブはありません</p>';
       // EQUIP PASSIVE：他ジョブで習得したパッシブを装備する枠（通常1／PT2）
       const slotCount = this.passiveSlotCount();
-      const slots = isPT ? (this.profile.ptPassiveSlots || []) : (this.profile.equippedPassives || []);
+      const slots = this.profile[this.equippedPassiveKey()] || [];
       const equipRows = Array.from({ length: slotCount }, (_, i) => { const s = slots[i] ? D.skills[slots[i]] : null; return `<button class="ab-row ab-btn" data-open-modal="passive${i}"><div class="ab-lbl"><small>EQUIP PASSIVE ${slotCount > 1 ? i + 1 : ''}</small><span>他JOBで習得したパッシブ</span></div><div class="ab-val${s ? ' filled' : ''}"><div>${s ? `<b>${s.name}</b><small>${this.passiveCurrentText(s)}</small>` : '<b>────</b><small>未設定</small>'}</div><em>▶</em></div></button>`; }).join('');
       // ACTION ABILITY：PHANTOM THIEF専用。通常ジョブでは非表示だがロジックは保持。
       const actionCount = this.actionSlotCount();
+      if (currentId === 'gladiator') {
+        const skills = this.inheritedSkillRows(currentId);
+        return `<div class="abset"><div class="abset-block"><h4 class="abset-h">戦士・武道家の習得技</h4>${skills}</div><div class="abset-block"><h4 class="abset-h">装備パッシブ <span>2枠</span></h4>${equipRows}</div></div>`;
+      }
       const actionHtml = actionCount ? `<div class="abset-block"><h4 class="abset-h">ACTION ABILITY <span>PHANTOM THIEF</span></h4>${Array.from({ length: actionCount }, (_, i) => { const id = (this.profile.ptActionSlots || [])[i], s = id ? D.skills[id] : null; return `<button class="ab-row ab-btn" data-open-modal="ptAction${i}"><div class="ab-lbl"><small>ACTION ${i + 1}</small><span>MASTERしたJOBの固有スキル</span></div><div class="ab-val${s ? ' filled' : ''}"><div>${s ? `<b>${s.name}</b><small>${s.effectText || ''}</small>` : '<b>────</b><small>未設定</small>'}</div><em>▶</em></div></button>`; }).join('')}</div>` : '';
       return `<div class="abset">${sigHtml}<div class="abset-block"><h4 class="abset-h">JOB PASSIVE <span>Lv.${levels.join(' / Lv.')} で習得</span></h4><div class="per-list">${jobPassiveRows}</div></div>${actionHtml}<div class="abset-block"><h4 class="abset-h">EQUIP PASSIVE <span>${slotCount}枠</span></h4>${equipRows}</div></div>`;
     }
     passiveModalHtml(slotIdx) {
-      const isPT = this.isPhantomThief(); const slots = isPT ? (this.profile.ptPassiveSlots || []) : (this.profile.equippedPassives || []); const passives = this.selectablePassives(), cur = slots[slotIdx], filter = this.jobUI?.passiveFilter || 'all', other = slotIdx === 0 ? 1 : 0;
+      const slots = this.profile[this.equippedPassiveKey()] || []; const passives = this.selectablePassives(), cur = slots[slotIdx], filter = this.jobUI?.passiveFilter || 'all', other = slotIdx === 0 ? 1 : 0;
       const srcs = ['all', ...new Set(passives.map(p => p.source === 'character' ? 'character' : p.jobId).filter(Boolean))];
       const filterHtml = srcs.map(f => { const lbl = f === 'all' ? 'ALL' : f === 'character' ? '蓮' : D.jobs[f]?.name || f; return `<button class="pf-btn${filter === f ? ' active' : ''}" data-passive-filter="${f}">${lbl}</button>`; }).join('');
       const filtered = passives.filter(p => filter === 'all' || (filter === 'character' && p.source === 'character') || p.jobId === filter);
