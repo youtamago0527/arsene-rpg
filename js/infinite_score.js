@@ -159,6 +159,7 @@
       for (const [k, v] of Object.entries(base?.bonuses || {})) total[k] = (total[k] || 0) + Math.round(v * mult);
       for (const op of gear.ops || []) if (['str','vit','mag','mnd','agi','dex','luk','maxHp','maxMp','critBonus'].includes(op.key)) total[op.key] = (total[op.key] || 0) + op.value;
     }
+    if (run) this.isApplyRelics(total, run);
     total.def = total.vit;
     return total;
   };
@@ -206,7 +207,7 @@
     }
     const active = this.isEnsureRunShape(this.isRun());
     if (active) this.saveProfile();
-    slot.innerHTML = `<article class="ow-mode-card infinite"><div class="ow-mode-badges"><em>高危険度</em><span>INFINITE SCORE</span></div><h3>無限奏廊</h3><strong>${active ? `FLOOR ${active.floor}から再開` : '終わりなき探索へ'}</strong><p>持ち込みなしで進む連続探索。拾った装備・アイテムは死亡すると失い、RETURNで生還すると持ち帰れます。</p><div class="ow-mode-stats"><span><small>進行</small><b>${active ? `FLOOR ${active.floor}` : 'ENDLESS'}</b></span><span><small>帰還</small><b>RETURN</b></span><span><small>HP / MP</small><b>継続</b></span><span><small>死亡時</small><b>戦利品消失</b></span></div><button class="ow-mode-action danger" data-is-action="${active ? 'resume' : 'warning'}"><b>${active ? '探索を再開' : '無限奏廊へ'}</b><span>${active ? '前回の続きから侵入' : '危険事項を確認して侵入'}</span></button></article>`;
+    slot.innerHTML = `<article class="ow-mode-card infinite"><div class="ow-mode-badges"><em>高危険度</em><span>INFINITE SCORE</span></div><h3>無限奏廊</h3><strong>${active ? `FLOOR ${active.floor}から再開` : '終わりなき探索へ'}</strong><p>持ち込みなしで進む連続探索。拾った装備・アイテムは死亡すると失い、RETURNで生還すると持ち帰れます。</p><div class="ow-mode-stats"><span><small>進行</small><b>${active ? `FLOOR ${active.floor}` : 'ENDLESS'}</b></span><span><small>帰還</small><b>RETURN</b></span><span><small>HP / MP</small><b>継続</b></span><span><small>死亡時</small><b>戦利品消失</b></span></div><button class="ow-mode-action danger" data-is-action="${active ? 'resume' : 'warning'}"><b>${active ? '探索を再開' : '無限奏廊へ'}</b><span>${active ? '前回の続きから侵入' : '危険事項を確認して侵入'}</span></button><button class="ow-mode-action" data-is-relic-open><b>遺物リスト</b><span>持ち帰った遺物を確認</span></button></article>`;
   };
   P.isRenderWarning = function (panel) {
     panel.innerHTML = `<div class="is-entry-art">
@@ -351,7 +352,8 @@
   P.isExploreCharacterVisual=function(){const character=this.selectedCharacterData?.()||{},sprites=character.battleSpritesByWeaponType||{},fallback=sprites.default||character.battleSprite||character.image||'',weaponType=this.equippedWeaponType?.(),entry=character.useWeaponSpecificBattleSprites?(sprites[weaponType]||fallback):fallback,custom=this.profile.customBattlePortrait,config=custom?{src:custom,backgroundSize:'contain',backgroundPosition:'center bottom'}:(typeof entry==='string'?{src:entry}:entry||{});return{src:config.src||character.battleSprite||character.image||'',size:config.backgroundSize||'auto 174%',position:config.backgroundPosition||'52% 0%'};};
   P.isRenderExplore = function (panel) {
     const r=this.isRun(); if(!r){this.renderMenuPanel('otherworld');return;}
-    const map=this.isFloorMap(),current=this.isMapNode(map.currentId);if(current?.row===0&&!current.cleared)current.cleared=true;
+    const map=this.isFloorMap(),current=this.isMapNode(map.currentId);if(current?.chestPending) this.isRoomResult={title:'宝箱を発見',text:'装備と遺物が眠っている。',tone:'item',action:'treasure-open',label:'宝箱を開ける'};
+    if(current?.row===0&&!current.cleared)current.cleared=true;
     // 部屋のイベントを解決した時点で先がなければ、進むを押し直さず帰路を提示する。
     const atDeadEnd=!!(current?.visited&&current?.cleared&&!current?.stairs&&!this.isMapNextNodes().length&&this.isMapBackNode());
     if(atDeadEnd)this.isExploreOverlayMode='deadend';
@@ -744,7 +746,7 @@
   P.isSellPrice=function(x){if(x.kind!=='equipment')return 1;const ri=['common','rare','epic','legendary','mythic'].indexOf(x.rarity);return Math.max(2,Math.min(12,2+(ri<0?0:ri*2)+(x.plus||0)+(x.ops?.length||0)));};
   P.isBuy=async function(id,price){const r=this.isRun();if(r.dungeonGold<price)return;if(this.isBagUsed()>=this.isBagLimit()){await this.isNotify('LOOT BAGが満杯です','先にアイテムを使用・装備・破棄して空きを作ってください。',{kicker:'SHOP // BAG FULL'});return;}r.dungeonGold-=price;const x=id==='gear'?this.isGenerateGear():{uid:this.isUid('buy'),kind:'item',itemId:id,count:1};this.isAddLoot(x);this.isRenderShop($('#menu-panel'),!!this.isShopMerchantMode,false);};
   P.isSell=async function(uid){const r=this.isRun(),x=this.isBagEntry(uid);if(!x)return;const slots=Object.keys(r.equipment).filter(s=>r.equipment[s]===uid),name=D().items[x.itemId]?.name||x.itemId;if(slots.length&&!await this.isConfirm('装備中のアイテムです',`${name}を外して売却しますか？`,{kicker:'SHOP // SELL',confirmLabel:'外して売る',danger:true}))return;slots.forEach(s=>delete r.equipment[s]);r.dungeonGold+=this.isSellPrice(x);r.lootBag.splice(r.lootBag.indexOf(x),1);this.isLog(`売却：${name}`);this.isRenderShopSell($('#menu-panel'));};
-  P.isReturnRun=function(){const r=this.isRun();if(!r)return;for(const x of r.lootBag){if(x.kind==='equipment'&&x.generated)this.profile.infiniteScoreGear.push(copy(x));this.profile.inventory[x.itemId]=(this.profile.inventory[x.itemId]||0)+(x.count||1);}const count=r.lootBag.length,floor=r.floor;this.profile.equipment=copy(r.homeEquipment||this.profile.equipment);this.profile.currentVitals=copy(r.homeVitals||this.profile.currentVitals);this.profile.infiniteScore={active:false,lastResult:'return',returnedCount:count,lastFloor:floor,endedAt:Date.now()};this.profile.flags.owRestoreJobPending=true;this.saveProfile();document.getElementById('is-modal')?.remove();this.showResult('RETURN SUCCESS',`${count}枠の戦利品を通常所持品へ持ち帰った。`,'INFINITE SCORE // ESCAPED',`<div class="is-stairs"><b>FLOOR ${floor}から生還</b><p>生成装備のレアリティ・OP・強化値は専用インスタンス記録にも保存されています。</p></div>`);};
+  P.isReturnRun=function(){const r=this.isRun();if(!r)return;const newRelics=this.isBankRunRelics(r);for(const x of r.lootBag){if(x.kind==='equipment'&&x.generated)this.profile.infiniteScoreGear.push(copy(x));this.profile.inventory[x.itemId]=(this.profile.inventory[x.itemId]||0)+(x.count||1);}const count=r.lootBag.length,floor=r.floor;this.profile.equipment=copy(r.homeEquipment||this.profile.equipment);this.profile.currentVitals=copy(r.homeVitals||this.profile.currentVitals);this.profile.infiniteScore={active:false,lastResult:'return',returnedCount:count,lastFloor:floor,endedAt:Date.now()};this.profile.flags.owRestoreJobPending=true;this.saveProfile();document.getElementById('is-modal')?.remove();this.showResult('RETURN SUCCESS',`${count}枠の戦利品を通常所持品へ持ち帰った。新規登録の遺物 ${newRelics}種。`,'INFINITE SCORE // ESCAPED',`<div class="is-stairs"><b>FLOOR ${floor}から生還</b><p>生成装備のレアリティ・OP・強化値は専用インスタンス記録にも保存されています。</p></div>`);};
 
   // RETURNを奏廊専用アイテムとして登録（通常UIで未所持なら見えない）。
   D().items.infiniteReturn ||= {id:'infiniteReturn',name:'RETURN',nameEn:'RETURN',category:'consumable',rarity:'legendary',description:'無限奏廊から戦利品を持って即時帰還する。',infiniteScoreOnly:true,effect:{returnRun:true}};
@@ -765,7 +767,7 @@
       else if(name==='infinite-score-debug')this.isRenderDebug(panel);
       else if(name==='infinite-score-choices')this.isRenderChoices(panel);
       else if(name==='infinite-score-map')this.isRenderMap(panel);
-      else if(name==='infinite-score-relics' && this.isRun())this.isRenderRelics(panel);
+      else if(name==='infinite-score-relics' && (this.isRun() || this.isDebugAllowed()))this.isRenderRelics(panel);
       else this.isRenderExplore(panel);
       return;
     }
@@ -778,8 +780,32 @@
   P.isRollStairs=function(){const r=this.isRun(),map=this.isFloorMap?.(),current=this.isMapNode?.(map?.currentId),existing=map?.nodes?.find(node=>node.stairs);if(existing){if(r)r.stairsFound=existing.id===current?.id;return false;}return isRollStairsOriginal.call(this);};
   P.isRemapCurrentFloor=function(reason='行き止まり'){const r=this.isRun();if(!r)return;r.floorMap=null;r.pendingChoices=null;r.stairsFound=false;this.isExploreOverlayMode=null;this.isRoomResult=null;this.isCreateFloorMap();this.isLog(`${reason}：迷宮を再マッピング`);this.isSave();};
   P.isReturnToDiscoveredStairs=function(){const r=this.isRun(),map=this.isFloorMap?.(),stairs=map?.nodes?.find(node=>node.stairs);if(!r||!stairs)return;map.currentId=stairs.id;stairs.visited=true;r.stairsFound=true;r.pendingChoices=null;this.isExploreOverlayMode=null;this.isStairPromptDismissed=null;this.isRenderExplore($('#menu-panel'));};
-  P.isTreasure=function(){this.isRenderRoomResult('宝箱を発見','奏廊の奥で、封じられた宝箱が淡く輝いている。','item',{action:'treasure-open',label:'宝箱を開ける'});};
-  P.isOpenTreasure=function(){const cfg=this.isCfg(),r=this.isRun(),ch=this.isPickWeighted(Object.entries(cfg.chestRates).map(([id,weight])=>({id,weight}))).id,bonus=ch==='gold'?3:ch==='silver'?1:0,gear=this.isGenerateGear({opRank:bonus||undefined}),name=this.owgName?.(gear)||D().items[gear.itemId]?.name||gear.itemId;this.isAddLoot(gear);r.buffs.treasureBonus=0;this.isLog(`宝箱(${ch})`,{rarity:gear.rarity,item:gear.itemId,ops:gear.ops});this.isSave();this.isRenderRoomResult(`${name}を拾いました`,'LOOT BAGへ収めた。','item',{remapOnClose:true});};
+  P.isTreasure = function () {
+    const node = this.isMapNode(this.isFloorMap().currentId);
+    if (!node || node.chestOpened) return;
+    node.chestPending = true;
+    this.isSave();
+    this.isRenderExplore($('#menu-panel'));
+  };
+  P.isOpenTreasure = function () {
+    const run = this.isRun();
+    if (!run) return;
+    const node = this.isMapNode(this.isFloorMap().currentId);
+    if (!node?.chestPending || node.chestOpened) return;
+    node.chestOpened = true;
+    node.chestPending = false;
+    const rates = Object.entries(this.isCfg().chestRates).map(([id, weight]) => ({ id, weight }));
+    const chest = this.isPickWeighted(rates).id;
+    const opRank = chest === 'gold' ? 3 : chest === 'silver' ? 1 : undefined;
+    const gear = this.isGenerateGear({ opRank });
+    const name = this.owgName?.(gear) || D().items[gear.itemId]?.name || gear.itemId;
+    const relic = this.isAcquireChestRelic(run);
+    run.buffs.treasureBonus = 0;
+    const added = this.isAddLoot(gear);
+    const message = relic ? `遺物「${relic.name}」を入手。今回の探索中は${relic.effect}。` : '遺物は全種類発動中です。';
+    this.isLog(`宝箱(${chest})：${name} ／ ${message}`, { rarity: gear.rarity, item: gear.itemId, ops: gear.ops });
+    this.isRenderRoomResult(name + 'を発見', (added ? '装備をバッグへ収めた。' : '装備を持つにはバッグに空きが必要です。') + message, 'item', { remapOnClose: true });
+  };
   P.isRoomResultHtml=function(){const result=this.isRoomResult;if(!result)return'';return `<section class="is-room-result ${result.tone||'normal'}"><small>ROOM EVENT // FLOOR ${this.isRun()?.floor||1}</small><h2>${esc(result.title)}</h2><p>${esc(result.text)}</p><button class="is-primary" data-is-action="${esc(result.action||'room-result-close')}">${esc(result.label||'探索を続ける')}</button></section>`;};
   P.isRenderRoomResult=function(title,text,tone='normal',options={}){this.isRoomResult={title,text,tone,...options};this.isExploreOverlayMode=null;this.isRenderExplore($('#menu-panel'));};
   P.isResolveEvent=function(type){const r=this.isRun();this.isDismissRouteOverlay();if(type==='encounter'){this.isStartBattle(false);return;}if(type==='rare'){this.isStartBattle(true);return;}if(type==='treasure'){this.isTreasure();return;}if(type==='workshop'){this.isRenderWorkshop($('#menu-panel'));return;}if(type==='shop'){this.isRenderShop($('#menu-panel'),false);return;}if(type==='merchant'){this.isRenderShop($('#menu-panel'),true);return;}if(type==='card'||type==='returnCard'||type==='sublime'){this.isShowCards(type);return;}let title='何もない',message='周囲を調べたが、何も見つからなかった。',tone='empty';if(type==='item'){const id=this.isCfg().consumablePool[Math.floor(this.isRand()*this.isCfg().consumablePool.length)],name=D().items[id]?.name||id;this.isAddLoot({uid:this.isUid('item'),kind:'item',itemId:id,count:1});title=`${name}を発見`;message='バッグへ収めた。';tone='item';}else if(type==='gold'){const gold=Math.max(1,Math.round((1+Math.floor(this.isRand()*5))*(1+r.buffs.goldBonus)));r.dungeonGold+=gold;this.isLog(`奏貨 +${gold}`);title=`奏貨 ${gold}枚を発見`;message='奏廊内で使用できる奏貨を入手した。';tone='gold';}else if(type==='trap'){const stats=this.totalStats(),dmg=Math.max(1,Math.round(stats.maxHp*(.08+this.isRand()*.17)));r.hp=Math.max(1,r.hp-dmg);this.isLog(`罠：HP -${dmg}`);title='罠が作動';message=`仕掛けを受け、HPが${dmg}減少した。`;tone='trap';}this.isRollStairs();this.isSave();this.isRenderRoomResult(title,message,tone);};
