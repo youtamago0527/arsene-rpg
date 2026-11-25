@@ -69,7 +69,15 @@
   const oldFresh=P.freshProfile; P.freshProfile=function(){return normalize(oldFresh.call(this));};
   if (window.arseneGame?.profile) normalize(window.arseneGame.profile);
   P.owgEntry=function(uid){return (this.profile.otherWorldGear||[]).find(x=>x.uid===uid)||(this.isRun?.()?.lootBag||[]).find(x=>x.uid===uid);};
-  P.owgEquipped=function(){const run=this.profile?.infiniteScore?.active?this.isRun?.():null;if(run)return Object.values(run.equipment||{}).map(uid=>this.owgEntry(uid)).filter(x=>x?.otherWorldGear);return Object.values(this.profile.otherWorldEquipment||{}).map(uid=>(this.profile.otherWorldGear||[]).find(x=>x.uid===uid)).filter(Boolean);};
+  P.owgEquipped=function() {
+    const run=this.isRun?.();
+    const pool=run ? run.lootBag : this.profile.otherWorldGear;
+    const slots=run ? run.equipment : this.profile.otherWorldEquipment;
+    return Object.entries(slots||{}).flatMap(([slot,uid])=>{
+      const gear=(pool||[]).find(x=>x.uid===uid && x.otherWorldGear && D.items[x.itemId]?.slot===slot);
+      return gear ? [gear] : [];
+    });
+  };
   P.owgDefinition=function(x){return this.equipmentDefinition?.(x?.itemId)||{};};
   P.owgName=function(x){const base=D.items[x.itemId]?.name||x.itemId, rare=(x.ops||[]).slice().sort((a,b)=>b.rank-a.rank)[0];return `${rare&&rare.rank>=5?`《${D.otherWorldGearOps.find(o=>o.key===rare.key)?.label||'異能'}の》`:''}${base}${x.uniqueSkillId?' — 奏技':''}`;};
   P.owgRollStar=function(floor){const bands=floor>=150?[0,10,60,30]:floor>=100?[5,25,55,15]:floor>=50?[15,40,38,7]:floor>=25?[35,45,18,2]:floor>=10?[60,32,7.5,.5]:[82,16,2,0],r=this.isRand()*100;let n=r;for(let i=0;i<4;i++){n-=bands[i];if(n<=0)return i+3;}return 3;};
@@ -84,8 +92,14 @@
 
   P.owgEffects=function(){const out={};for(const x of this.owgEquipped())for(const o of x.ops||[])out[o.key]=(out[o.key]||0)+o.value;return out;};
   const oldEffect=P.equipmentEffectRate;
-  P.equipmentEffectRate=function(type,...args){
-    return oldEffect.call(this,type,...args)+(Number(this.owgEffects()[type])||0);
+  P.equipmentEffectRate=function(type,equipment=this.profile.equipment){
+    const base=equipment===this.profile.equipment ? this.owgBaseEquipment(equipment) : equipment;
+    return oldEffect.call(this,type,base)+(Number(this.owgEffects()[type])||0);
+  };
+  const oldSeriesCount=P.equippedSeriesCount;
+  P.equippedSeriesCount=function(seriesId,equipment=this.profile.equipment) {
+    const base=equipment===this.profile.equipment ? this.owgBaseEquipment(equipment) : equipment;
+    return oldSeriesCount.call(this,seriesId,base);
   };
   P.owgEffectiveStats=function(x,level=x?.tuneLevel||0){const d=this.owgDefinition(x),quality=(x?.quality||100)/100,tune=1+Math.max(0,Number(level)||0)*.08,out={};for(const k of ['attackPower','defensePower','magicAttackPower','magicDefensePower']){const base=Number(d[k])||0,op=(x?.ops||[]).filter(o=>o.key===k).reduce((n,o)=>n+(Number(o.value)||0),0);if(base||op)out[k]={base,quality:Math.round(base*quality),tune:Math.round(base*quality*tune),op,total:Math.round(base*quality*tune)+op};}return out;};
   P.owgBaseEquipment=function(source=this.profile.equipment){if(this.isRun?.())return {};const equipment={...(source||{})};for(const x of this.owgEquipped()){const slot=D.items[x.itemId]?.slot;if(slot)delete equipment[slot];}return equipment;};
@@ -116,10 +130,73 @@
   P.owgTuneCost=function(x){const lv=x.tuneLevel||0,base={3:3,4:5,5:8,6:12}[x.stars],step={3:2,4:3,5:4,6:5}[x.stars];return {shard:base+lv*step,core:lv<5?0:{3:1,4:1,5:2,6:3}[x.stars]};};
   P.owgTuneRate=function(next){return next<=3?1:({4:.85,5:.70,6:.55,7:.42,8:.32,9:.24,10:.18}[next]??Math.max(.05,.18-(next-10)*.02));};
   P.owgTune=function(uid){const x=this.owgEntry(uid);if(!x)return;const c=this.owgTuneCost(x),next=(x.tuneLevel||0)+1,rate=this.owgTuneRate(next),inv=this.profile.inventory;if((inv.otherworldShard||0)<c.shard||(inv.otherworldCore||0)<c.core){alert('異界素材が足りません。');return;}if(!confirm(`${this.owgName(x)} +${x.tuneLevel||0} → +${next}\n欠片 ${c.shard}${c.core?` / 核 ${c.core}`:''}\n成功率 ${Math.round(rate*100)}%${next>=4?'（失敗時ロスト）':''}`))return;inv.otherworldShard-=c.shard;inv.otherworldCore-=c.core;if(Math.random()<rate){x.tuneLevel=next;x.plus=next;this.saveProfile();this.audio?.sfx?.('confirm');this.owgRenderVault(document.querySelector('#menu-panel'));return;}const backup=copy(x),i=this.profile.otherWorldGear.indexOf(x);if(i>=0)this.profile.otherWorldGear.splice(i,1);for(const s of Object.keys(this.profile.otherWorldEquipment))if(this.profile.otherWorldEquipment[s]===uid)delete this.profile.otherWorldEquipment[s];this.saveProfile();const restore=()=>{this.profile.otherWorldGear.push(backup);this.saveProfile();this.owgRenderVault(document.querySelector('#menu-panel'));};const shown=window.arseneQOffer?.show?.('protect',{title:'保護のアルカナ',copy:`${this.owgName(backup)} +${backup.tuneLevel||0}をロストから保護する。`,onGrant:restore,onClose:()=>this.owgRenderVault(document.querySelector('#menu-panel'))});if(!shown){alert('調律失敗。装備は無限奏廊へ消えた……');this.owgRenderVault(document.querySelector('#menu-panel'));}};
-  P.owgEquip=function(uid){const x=this.owgEntry(uid),item=D.items[x?.itemId];if(!x||!item)return;this.profile.otherWorldEquipment[item.slot]=uid;this.saveProfile();this.owgRenderVault(document.querySelector('#menu-panel'));};
+  P.owgSetEquipped=function(uid) {
+    if (this.isRun?.()) return false;
+    normalize(this.profile);
+    const gear=this.profile.otherWorldGear.find(x=>x.uid===uid);
+    const slot=D.items[gear?.itemId]?.slot;
+    if (!slot) return false;
+    this.profile.otherWorldEquipment[slot]=uid;
+    this.saveProfile();
+    this.renderMenuSummary();
+    return true;
+  };
+  P.owgEquip=function(uid) {
+    if (this.owgSetEquipped(uid)) this.owgRenderVault(document.querySelector('#menu-panel'));
+  };
   P.owgTransfer=function(sourceUid){const src=this.owgEntry(sourceUid);if(!src?.ops?.length)return;const weapon=!!D.weapons[src.itemId],targets=this.profile.otherWorldGear.filter(x=>x.uid!==src.uid&&!!D.weapons[x.itemId]===weapon);if(!targets.length){alert('移植できる異世界装備がありません。');return;}const oi=Number(prompt(`移植するOP\n${src.ops.map((o,i)=>`${i+1}: ${D.otherWorldGearOps.find(d=>d.key===o.key)?.label||o.key} R${o.rank}`).join('\n')}`))-1,opv=src.ops[oi];if(!opv)return;const ti=Number(prompt(`移植先\n${targets.map((x,i)=>`${i+1}: ${this.owgName(x)} +${x.tuneLevel||0}`).join('\n')}`))-1,target=targets[ti];if(!target)return;const cost={shard:20+opv.rank*10,core:Math.max(1,opv.rank-2)},inv=this.profile.inventory;if((inv.otherworldShard||0)<cost.shard||(inv.otherworldCore||0)<cost.core){alert('移植素材が足りません。');return;}if(!confirm(`${this.owgName(src)}を消滅させ、OPを${this.owgName(target)}へ移植しますか？\n欠片 ${cost.shard} / 核 ${cost.core}`))return;inv.otherworldShard-=cost.shard;inv.otherworldCore-=cost.core;const same=target.ops.findIndex(o=>o.key===opv.key);if(same>=0)target.ops[same]=copy(opv);else if(target.ops.length<4)target.ops.push(copy(opv));else{const replace=clamp((Number(prompt(`上書きするOP 1～${target.ops.length}`))||1)-1,0,target.ops.length-1);target.ops[replace]=copy(opv);}this.profile.otherWorldGear.splice(this.profile.otherWorldGear.indexOf(src),1);for(const s of Object.keys(this.profile.otherWorldEquipment))if(this.profile.otherWorldEquipment[s]===src.uid)delete this.profile.otherWorldEquipment[s];this.saveProfile();this.owgRenderVault(document.querySelector('#menu-panel'));};
-  P.owgRenderVault=function(panel){normalize(this.profile);const rows=this.profile.otherWorldGear.map(x=>{const eq=Object.values(this.profile.otherWorldEquipment).includes(x.uid);return `<article class="owg-card stars-${x.stars}${eq?' equipped':''}"><header><small>${'★'.repeat(x.stars)} / 品質 ${x.quality}</small><b>${esc(this.owgName(x))}</b><em>+${x.tuneLevel||0}</em></header><p>${(x.ops||[]).map(o=>`${esc(D.otherWorldGearOps.find(d=>d.key===o.key)?.label||o.key)} +${o.value} R${o.rank}`).join(' / ')||'OPなし'}</p>${x.uniqueSkillId?`<strong>固有奏技《${esc(D.skills[x.uniqueSkillId]?.name)}》</strong>`:''}<footer><button data-owg-equip="${x.uid}">${eq?'装備中':'装備'}</button></footer></article>`;}).join('');panel.dataset.panel='otherworld-gear';panel.innerHTML=`<button class="panel-home" data-lenny="otherworld">異世界へ戻る</button><small>OTHER WORLD ARSENAL</small><h2>異世界装備庫</h2><div class="owg-res"><b>異界の欠片 ${(this.profile.inventory.otherworldShard||0)}</b><b>異界の核 ${(this.profile.inventory.otherworldCore||0)}</b></div><p class="ow-rule">持ち帰った異世界装備の閲覧・装備変更専用。加工は無限奏廊で遭遇する《異世界工房》だけで行えます。</p><div class="owg-list">${rows||'<p class="item-empty">持ち帰った異世界装備はありません。</p>'}</div>`;};
-  const oldPanel=P.renderMenuPanel;P.renderMenuPanel=function(name){if(name==='otherworld-gear'){this.owgRenderVault(document.querySelector('#menu-panel'));return;}return oldPanel.call(this,name);};
+  P.owgRenderVault=function(panel) {
+    normalize(this.profile);
+    const slots=D.equipmentSlots;
+    const gear=this.profile.otherWorldGear.filter(x=>slots.some(slot=>slot.id===D.items[x.itemId]?.slot));
+    const active=this.owgVaultSlot || 'all';
+    const visible=gear.filter(x=>active==='all' || D.items[x.itemId]?.slot===active);
+    const selected=visible.find(x=>x.uid===this.owgVaultUid) || visible[0];
+    const equipped=x=>this.profile.otherWorldEquipment[D.items[x.itemId].slot]===x.uid;
+    const scrollTop=panel.querySelector('.rg-vault-list')?.scrollTop || 0;
+    const rows=visible.map(x=>this.gearCardHtml(D.items[x.itemId].slot,x,`data-owg-preview="${esc(x.uid)}"`,x===selected,equipped(x))).join('');
+    const tabs=[{id:'all',name:'全部'},...slots].map(slot=>
+      `<button class="is-bag-control" data-owg-filter="${esc(slot.id)}" aria-pressed="${active===slot.id}">${esc(slot.name)}</button>`).join('');
+    const skill=selected && D.skills[selected.uniqueSkillId]?.name;
+    const detail=selected ? `<section class="is-bag-frame rg-vault-detail" aria-label="選択した装備">
+      <h3>${esc(this.owgName(selected))}${selected.tuneLevel?` +${esc(selected.tuneLevel)}`:''}</h3>
+      ${skill?`<p>固有奏技《${esc(skill)}》</p>`:''}
+      <button class="is-bag-control is-bag-primary" data-owg-equip="${esc(selected.uid)}" ${equipped(selected)?'disabled':''}>${equipped(selected)?'装備中':'装備する'}</button>
+    </section>` : '';
+    panel.dataset.panel='otherworld-gear';
+    panel.innerHTML=`<main class="is-bag-screen rg-screen rg-vault">
+      <header class="is-bag-brand"><b>異世界装備庫</b></header>
+      <div class="rg-home-actions"><button class="is-bag-control" data-menu="equipment">装備画面</button><button class="is-bag-control" data-lenny="otherworld">異世界へ戻る</button></div>
+      <div class="owg-res"><b>異界の欠片 ${this.profile.inventory.otherworldShard||0}</b><b>異界の核 ${this.profile.inventory.otherworldCore||0}</b></div>
+      <section class="is-bag-frame rg-vault-stock">
+        <header class="is-bag-title"><h2>持ち帰った装備</h2><b>${visible.length} / ${gear.length} 件</b></header>
+        <nav class="rg-vault-filters" aria-label="装備部位">${tabs}</nav>
+        <div class="rg-vault-list rg-list">${rows || '<p>この部位の装備はありません。</p>'}</div>
+      </section>${detail}
+    </main>`;
+    panel.querySelector('.rg-vault-list').scrollTop=scrollTop;
+  };
+  const oldPanel=P.renderMenuPanel;
+  P.renderMenuPanel=function(name) {
+    if (name!=='otherworld-gear') return oldPanel.call(this,name);
+    const panel=document.querySelector('#menu-panel');
+    panel.hidden=false;
+    panel.classList.add('panel-tall');
+    this.owgRenderVault(panel);
+    panel.scrollTop=0;
+  };
+  document.addEventListener('click',event=>{
+    const game=window.arseneGame;
+    const button=event.target.closest('.rg-vault button');
+    if (!game || !button) return;
+    if (button.dataset.owgFilter) {
+      game.owgVaultSlot=button.dataset.owgFilter;
+      game.owgVaultUid=null;
+      document.querySelector('.rg-vault-list').scrollTop=0;
+    } else if (button.dataset.owgPreview) game.owgVaultUid=button.dataset.owgPreview;
+    else return;
+    game.owgRenderVault(document.querySelector('#menu-panel'));
+  });
   const oldOw=P.renderOtherWorldPanel;P.renderOtherWorldPanel=function(panel){oldOw.call(this,panel);panel.querySelector('.ow-mode-guide')?.insertAdjacentHTML('beforebegin','<button class="ow-ability-link owg-vault-link" data-menu="otherworld-gear"><b>異世界装備庫</b><span>個体装備の閲覧・装備変更</span></button>');};
   const oldApplyRewards=P.applyRewards;P.applyRewards=function(reward){const fx=this.owgEffects(),next={...reward,drops:{...(reward?.drops||{})}};if(next.exp)next.exp=Math.round(next.exp*(1+(fx.expUp||0)));if(next.gold)next.gold=Math.round(next.gold*(1+(fx.goldUp||0)));const bonus=Math.max(0,fx.materialDropUp||0);for(const [id,n] of Object.entries(next.drops))if(D.items[id]?.category==='material'){let extra=0;for(let i=0;i<n;i++)if(Math.random()<bonus)extra++;next.drops[id]+=extra;}return oldApplyRewards.call(this,next);};
   const oldJobExp=P.grantJobExp;P.grantJobExp=function(exp,...args){return oldJobExp.call(this,Math.round(exp*(1+(this.owgEffects().jobExpUp||0))),...args);};

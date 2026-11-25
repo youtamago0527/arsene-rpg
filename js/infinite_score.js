@@ -542,17 +542,17 @@
   }
   function gearLines(game, gear) {
     if (!gear) return '<span class="rg-empty">なし</span>';
-    const item = D().items[gear.itemId], labels = game.isCfg().opLabels;
-    const rarity = gear.rarity || item.rarity;
+    const item = D().items[gear.itemId] || {}, labels = game.isCfg().opLabels;
+    const rarity = gear.rarity || item.rarity || 'common';
     const stats = gear.otherWorldGear
-      ? Object.entries(game.owgEffectiveStats(gear)).map(([k,s])=>[k,s.total]) : Object.entries(game.isGearValues(gear));
+      ? Object.entries(game.owgEffectiveStats(gear)).map(([k,s])=>[k,s.total]) : Object.entries(gear.normal ? game.equipmentDefinition(gear.itemId) || {} : game.isGearValues(gear)).filter(([key])=>combatKeys.includes(key));
     const ops = gear.ops || [];
-    return `<span class="rg-title"><b>${gearName(game,gear)}</b><em>${esc(rarityNames[rarity]||rarity)}</em><em>OP ${ops.length}</em></span>
+    return `<span class="rg-title"><b>${gearName(game,gear)}</b><em>${esc(rarityNames[rarity]||rarity)}</em>${gear.normal?'':`<em>OP ${ops.length}</em><em>品質 ${esc(gear.quality ?? 100)}%</em>`}</span>
       <span class="rg-base">${stats.filter(([,v])=>v).map(([k,v])=>esc(labels[k]||k)+' '+v).join(' ／ ')}</span>
       <span class="rg-ops">${ops.map(op=>{
         const value=Number(op.value);
         const amount=flatOps.has(op.key)?value:Number((value*100).toFixed(2))+'%';
-        return `<span>◆ ${esc(labels[op.key]||op.key)} ${value>=0?'+':''}${amount}</span>`;
+        return `<span>◆ ${esc(labels[op.key]||op.key)} ${value>=0?'+':''}${amount}${op.rank ? ` · R${esc(op.rank)}` : ''}</span>`;
       }).join('')}</span>`;
   }
   function rarityColor(game,gear) {
@@ -561,12 +561,30 @@
   function runStats(game) {
     return {...game.totalStats(),...game.equipmentCombatStats()};
   }
-  function gearComparison(game,slot,chosen,current,status) {
+  function homeGearPreview(game,slot,gear) {
+    const preview=Object.create(game);
+    const equipment={...game.profile.equipment};
+    const otherWorldEquipment={...game.profile.otherWorldEquipment};
+    if (gear.normal) {
+      equipment[slot]=gear.itemId;
+      delete otherWorldEquipment[slot];
+    } else otherWorldEquipment[slot]=gear.uid;
+    preview.profile={...game.profile,equipment,otherWorldEquipment};
+    if (gear.normal && slot==='rightHand') preview.sanitizeLeftHandEquipment();
+    return preview.profile;
+  }
+  P.homeGearSortValue=function(slot,gear,key) {
+    const preview=Object.create(this);
+    preview.profile=homeGearPreview(this,slot,gear);
+    return runStats(preview)[key] || 0;
+  };
+  function gearComparison(game,slot,chosen,current,status,normal=false) {
     const before=runStats(game);
     let after=before;
     if (chosen && chosen.uid!==current?.uid && !status) {
       const preview=Object.create(game), run=game.isRun();
-      preview.profile={...game.profile,infiniteScore:{...run,equipment:{...run.equipment,[slot]:chosen.uid}}};
+      if (normal) preview.profile=homeGearPreview(game,slot,chosen);
+      else preview.profile={...game.profile,infiniteScore:{...run,equipment:{...run.equipment,[slot]:chosen.uid}}};
       after=runStats(preview);
     }
     const labels=game.isCfg().opLabels;
@@ -578,8 +596,86 @@
     const split = Math.ceil(rows.length / 2);
     return `<div class="rg-comparison"><p>${status?'現在のステータス':gearName(game,current)+' → '+gearName(game,chosen)}</p>
       <div class="rg-stat-tables" role="group" aria-label="能力一覧">${table(rows.slice(0,split))}${table(rows.slice(split))}</div>
-      ${chosen && current?.uid!==chosen.uid?`<button class="rg-confirm" data-is-run-equip="${esc(chosen.uid)}">${gearName(game,chosen)}に付け替える</button>`:''}</div>`;
+      ${chosen && current?.uid!==chosen.uid?`<button class="rg-confirm" ${normal
+        ? `data-home-gear-equip="${esc(chosen.uid)}"`
+        : `data-is-run-equip="${esc(chosen.uid)}"`}>${gearName(game,chosen)}に付け替える</button>`:''}</div>`;
   }
+  P.gearCardHtml=function(slot,gear,attributes,selected=false,equipped=false) {
+    return `<button type="button" class="rg-card" ${attributes} aria-pressed="${selected}" style="--accent:${rarityColor(this,gear)}">
+      ${gearIcon(slot,gear)}<span class="rg-lines">${gearLines(this,gear)}${equipped?'<small>装備中</small>':''}</span></button>`;
+  };
+  P.gearSlotHtml=function(slot,gear,attributes) {
+    return `<button type="button" class="rg-slot" ${attributes} style="--accent:${rarityColor(this,gear)}">
+      ${gearIcon(slot.id,gear)}<span class="rg-slot-name">${esc(slot.name)}<small>${esc(slot.enName)}</small></span>
+      <span class="rg-lines">${gearLines(this,gear)}</span><span aria-hidden="true">›</span></button>`;
+  };
+  P.homeGearCandidates=function(slot) {
+    const normal=this.candidatesForSlot(slot).map(id=>({
+      uid:`normal:${id}`,itemId:id,normal:true,plus:this.enchantLevel?.(id)||0
+    }));
+    const returned=(this.profile.otherWorldGear||[]).filter(x=>D().items[x.itemId]?.slot===slot);
+    return normal.concat(returned);
+  };
+  P.homeGearCurrent=function(slot) {
+    const uid=this.profile.otherWorldEquipment?.[slot];
+    const returned=(this.profile.otherWorldGear||[]).find(x=>x.uid===uid);
+    const id=this.profile.equipment[slot];
+    return returned || (D().items[id] ? {uid:`normal:${id}`,itemId:id,normal:true,plus:this.enchantLevel?.(id)||0} : null);
+  };
+  P.renderHomeGearPicker=function(panel,slot,filters,list) {
+    const state=this.homeGearPicker || {};
+    const current=this.homeGearCurrent(slot.id);
+    const chosen=list.find(x=>x.uid===state.uid) || list.find(x=>x.uid===current?.uid) || list[0];
+    const status=state.status===true;
+    const oldPicker=panel.querySelector('.rg-home-picker');
+    const scrollTop=oldPicker?.dataset.slot===slot.id ? oldPicker.querySelector('.rg-list').scrollTop : 0;
+    const cards=list.map(x=>this.gearCardHtml(slot.id,x,`data-home-gear-preview="${esc(x.uid)}"`,x===chosen,x.uid===current?.uid)).join('');
+    panel.innerHTML=`<main class="rg-screen rg-picker rg-home-picker" data-slot="${esc(slot.id)}">
+      <header><h3>${esc(slot.name)}の装備</h3><button data-equip-slot-close>部位一覧へ</button></header>
+      <div><nav aria-label="能力の表示"><button data-home-gear-mode="compare" aria-pressed="${!status}">装備比較</button><button data-home-gear-mode="status" aria-pressed="${status}">ステータス</button></nav>${filters}</div>
+      <div class="rg-columns"><div class="rg-list">${cards || '<p>この部位の候補はありません。</p>'}
+        ${current?`<button data-home-gear-remove="${esc(slot.id)}">${esc(slot.name)}を外す</button>`:''}</div>
+        ${gearComparison(this,slot.id,chosen,current,status||!chosen||chosen.uid===current?.uid,true)}</div></main>`;
+    panel.querySelector('.rg-list').scrollTop=scrollTop;
+  };
+  document.addEventListener('change',event=>{
+    const game=window.arseneGame;
+    if (!game || !event.target.matches('[data-home-gear-sort]')) return;
+    game.equipSort=event.target.value;
+    game.renderMenuPanel('equipment');
+  });
+  document.addEventListener('click',event=>{
+    const game=window.arseneGame;
+    const button=event.target.closest('button');
+    if (!game || !button || button.disabled || game.isRun()) return;
+    if (button.matches('[data-equip-slot-pick],[data-equip-slot-close],[data-equip-weapon-tab]')) {
+      game.homeGearPicker=null;
+      return;
+    }
+    if (!button.closest('.rg-home-picker')) return;
+    const {homeGearPreview,homeGearMode,homeGearEquip,homeGearRemove}=button.dataset;
+    const slot=game.equipSlot;
+    if (homeGearPreview || homeGearMode) {
+      const state=game.homeGearPicker || {};
+      game.homeGearPicker={uid:homeGearPreview || state.uid,status:homeGearMode==='status'};
+      game.renderHomeGearPickerFromMenu();
+    } else if (homeGearEquip) {
+      const gear=game.homeGearCandidates(slot).find(x=>x.uid===homeGearEquip);
+      if (!gear) return;
+      if (gear.normal) game.equipItem(gear.itemId);
+      else if (game.owgSetEquipped(gear.uid)) game.renderHomeGearPickerFromMenu();
+    } else if (homeGearRemove===slot) {
+      if (game.profile.otherWorldEquipment?.[slot]) {
+        delete game.profile.otherWorldEquipment[slot];
+        game.saveProfile();
+        game.renderMenuSummary();
+        game.renderHomeGearPickerFromMenu();
+      } else game.unequipSlot(slot);
+    }
+  },true);
+  P.renderHomeGearPickerFromMenu=function() {
+    this.renderEquipmentPanel($('#menu-panel'));
+  };
   P.isRenderEquipment=function(panel){
     const run=this.isRun(), slots=D().equipmentSlots;
     const active=slots.find(slot=>slot.id===this.isRunEquipSlot);
@@ -590,8 +686,7 @@
       const current=list.find(x=>x.uid===run.equipment[active.id]);
       const chosen=list.find(x=>x.uid===this.isEquipPreviewUid) || current || list[0];
       const status=this.isEquipShowStatus===true;
-      const cards=list.map(x=>`<button class="rg-card" data-rg-preview="${esc(x.uid)}" aria-pressed="${x===chosen}" style="--accent:${rarityColor(this,x)}">
-        ${gearIcon(active.id,x)}<span class="rg-lines">${gearLines(this,x)}${x===current?'<small>装備中</small>':''}</span></button>`).join('');
+      const cards=list.map(x=>this.gearCardHtml(active.id,x,`data-rg-preview="${esc(x.uid)}"`,x===chosen,x===current)).join('');
       panel.innerHTML=`<main class="rg-screen rg-picker"><header><h3>${esc(active.name)}の装備</h3><button data-is-run-slot-close>部位一覧へ</button></header><nav aria-label="能力の表示">
         <button data-rg-mode="compare" aria-pressed="${!status}">装備比較</button><button data-rg-mode="status" aria-pressed="${status}">ステータス</button></nav>
         <div class="rg-columns"><div class="rg-list">${cards || '<p>この部位の戦利品はありません。</p>'}
@@ -603,9 +698,7 @@
     }
     const slotRows=slots.map(slot=>{
       const gear=this.isBagEntry(run.equipment[slot.id]);
-      return `<button class="rg-slot" data-is-run-slot="${esc(slot.id)}" style="--accent:${rarityColor(this,gear)}">
-        ${gearIcon(slot.id,gear)}<span class="rg-slot-name">${esc(slot.name)}<small>${esc(slot.enName)}</small></span>
-        <span class="rg-lines">${gearLines(this,gear)}</span><span aria-hidden="true">›</span></button>`;
+      return this.gearSlotHtml(slot,gear,`data-is-run-slot="${esc(slot.id)}"`);
     }).join('');
     panel.innerHTML=`<main class="rg-screen"><header class="rg-head"><h2>装備</h2><button class="panel-home" data-is-action="explore">探索画面へ</button></header>
       <div class="rg-slots">${slotRows}</div><p class="rg-hint">付け替えたい部位を選んでください。</p></main>`;
