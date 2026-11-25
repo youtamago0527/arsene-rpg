@@ -2,6 +2,7 @@
 /* Exploration HUD v1 — supplied art is used as a responsive command spritesheet. */
 #menu-panel[data-panel^="infinite-score"]{position:fixed!important;z-index:9000!important;inset:0!important;width:100vw!important;max-width:none!important;height:100svh!important;max-height:none!important;margin:0!important;border:0!important;clip-path:none!important;overflow-y:auto;background:#02040a!important}
 #result.result-overlay{z-index:10010}
+#is-modal.is-modal{z-index:10015}
 #menu-panel[data-panel="infinite-score"]{padding:0!important;overflow:hidden!important;display:grid;place-items:start center}
 .is-explore-screen{--is-bottom-safe:max(8px,env(safe-area-inset-bottom,0px));--is-command-height:clamp(110px,13.8svh,128px);--is-status-height:clamp(140px,16.5svh,154px);position:relative;width:min(100vw,430px);height:100dvh;max-height:100svh;min-height:0!important;aspect-ratio:auto;overflow:hidden;color:#f7f2ff;background:linear-gradient(180deg,#02081722,#01040abb),var(--is-explore-bg) center/cover no-repeat;font-family:"Cinzel","Noto Serif JP",serif}
 .is-explore-screen::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,#01030a77 0 10%,transparent 28% 64%,#01030acc 100%);z-index:1}

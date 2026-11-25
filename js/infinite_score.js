@@ -85,6 +85,21 @@
     const name = D().items[id]?.name || id;
     drops.push(name + (count > 1 ? ' ×' + count : '') + (pickedUp ? '' : '（空き枠待ち）'));
   };
+  P.isCollectRareMonsterArcana = function(drops){
+    const ids=[...(D().arcana?.weekly||[]).map(row=>row.id),'rebirthArcana','protectionArcana','blessedProtectionArcana'];
+    const pool=[...new Set(ids)].filter(id=>D().items[id]);
+    if(!pool.length)return;
+    const count=this.isCfg().rareEnemyArcanaCount||7, rolled=new Map();
+    for(let i=0;i<count;i++){
+      const id=pool[Math.floor(this.isRand()*pool.length)];
+      rolled.set(id,(rolled.get(id)||0)+1);
+    }
+    for(const [itemId,quantity] of rolled){
+      const added=this.isAddLoot({uid:this.isUid('arcana'),kind:'item',itemId,count:quantity});
+      drops.push(D().items[itemId].name+' ×'+quantity+(added?'':'（空き枠待ち）'));
+    }
+    if(this.isRun().pendingLoot)this.isShowBagFull();
+  };
   P.isRollMonsterArcana=function(){const r=this.isRun();if(!r||this.isRand()>=this.isArcanaDropRate(r.floor))return null;const kind=this.isPickWeighted([{id:'stat',weight:70},{id:'protectionArcana',weight:20},{id:'rebirthArcana',weight:10}])?.id;if(kind!=='stat')return kind;const pool=(D().arcana?.weekly||[]).map(x=>x.id).filter(id=>D().items[id]);return pool[Math.floor(this.isRand()*pool.length)]||'arcanaChaos';};
   P.isLog = function (message, details = null) {
     const run = this.isRun(); if (!run) return;
@@ -676,8 +691,33 @@
   // ── 装備生成 / バッグ処理 ─────────────────────────────────
   P.isGenerateGear=function(force={}){if(typeof this.owgGenerate!=='function')throw new Error('異世界装備生成器が読み込まれていません。');return this.owgGenerate({floor:this.isRun()?.floor||1,...force});};
   P.isGenerateDebugGear=async function(){const n=await this.isChoose('生成する装備の★',['★3','★4','★5','★6'],{kicker:'DEBUG // GEAR GENERATOR'});return n===null?null:this.isGenerateGear({stars:n+3});};
-  P.isAddLoot=function(entry){const r=this.isRun();if(!r)return false;const count=Math.max(1,Math.floor(Number(entry.count)||1)),isReturn=entry.itemId==='infiniteReturn',hadReturn=this.isHasReturn();let added=0;for(let i=0;i<count;i++){const one={...copy(entry),uid:i===0?entry.uid:this.isUid('loot'),count:1};if(this.isBagUsed()>=this.isBagLimit()){r.pendingLoot={...one,count:count-added};this.isSave();this.isShowBagFull();break;}r.lootBag.push(one);added++;}if(isReturn&&!hadReturn&&added)r.returnButtonNew=true;if(added){this.isLog(`入手：${D().items[entry.itemId]?.name||entry.itemId}${added>1?` ×${added}`:''}`);this.isShowLootPop(entry,added);}return added===count;};
-  P.isShowBagFull=function(){const r=this.isRun(),x=r?.pendingLoot;if(!x)return;document.getElementById('is-modal')?.remove();const el=document.createElement('div');el.id='is-modal';el.className='is-modal';el.innerHTML=`<div><small>LOOT BAG FULL</small><h2>${esc(D().items[x.itemId]?.name||x.itemId)}${x.count>1?' ×'+x.count:''}</h2><p>バッグ ${this.isBagUsed()} / ${this.isBagLimit()}。使用・装備・破棄で空きを作ってください。</p><div class="is-list">${r.lootBag.map(y=>this.isItemHtml(y)).join('')}</div><div class="is-actions"><button data-is-action="retry-loot">拾う</button><button data-is-action="discard-loot">拾わない</button></div></div>`;document.body.appendChild(el);};
+  P.isAddLoot=function(entry){const r=this.isRun();if(!r)return false;
+    if(r.pendingLoot){(r.pendingLootQueue||=[]).push(copy(entry));this.isSave();return false;}
+    const count=Math.max(1,Math.floor(Number(entry.count)||1)),isReturn=entry.itemId==='infiniteReturn',hadReturn=this.isHasReturn();let added=0;for(let i=0;i<count;i++){const one={...copy(entry),uid:i===0?entry.uid:this.isUid('loot'),count:1};if(this.isBagUsed()>=this.isBagLimit()){r.pendingLoot={...one,count:count-added};this.isSave();this.isShowBagFull();break;}r.lootBag.push(one);added++;}if(isReturn&&!hadReturn&&added)r.returnButtonNew=true;if(added){this.isLog(`入手：${D().items[entry.itemId]?.name||entry.itemId}${added>1?` ×${added}`:''}`);this.isShowLootPop(entry,added);}return added===count;};
+  P.isResolvePendingLoot=function(discard=false){
+    const run=this.isRun(),pending=run?.pendingLoot;
+    if(!pending||(!discard&&this.isBagUsed()>=this.isBagLimit()))return false;
+    if(discard)run.pendingLoot=run.pendingLootQueue?.shift()||null;
+    else {
+      do {
+        const loot=run.pendingLoot;
+        run.pendingLoot=null;
+        if(!this.isAddLoot(loot))break;
+        run.pendingLoot=run.pendingLootQueue?.shift()||null;
+      }while(run.pendingLoot&&this.isBagUsed()<this.isBagLimit());
+    }
+    const panel=$('#menu-panel');
+    if(run.pendingLoot)this.isShowBagFull();
+    else document.getElementById('is-modal')?.remove();
+    if(panel?.dataset.panel==='infinite-score-bag')this.isRenderBag(panel);
+    if(!discard&&panel?.dataset.panel==='infinite-score'&&this.isRoomResult?.remapOnClose&&this.isBagEntry(pending.uid)){
+      const name=this.isLootName?.(pending)||D().items[pending.itemId]?.name||pending.itemId;
+      this.isRenderRoomResult(`${name}を拾いました`,'LOOT BAGへ収めた。','item',{remapOnClose:true});
+    }
+    this.isSave();
+    return true;
+  };
+  P.isShowBagFull=function(){const r=this.isRun(),x=r?.pendingLoot;if(!x)return;document.getElementById('is-modal')?.remove();const el=document.createElement('div');el.id='is-modal';el.className='is-modal';el.innerHTML=`<div><small>LOOT BAG FULL</small><h2>${esc(D().items[x.itemId]?.name||x.itemId)}${x.count>1?' ×'+x.count:''}</h2><p>バッグ ${this.isBagUsed()} / ${this.isBagLimit()}。使用・装備・破棄で空きを作ってください。</p>${r.pendingLootQueue?.length?`<p>このほかに受け取り待ちの戦利品が${r.pendingLootQueue.reduce((count,entry)=>count+(entry.count||1),0)}個あります。</p>`: ''}<div class="is-list">${r.lootBag.map(y=>this.isItemHtml(y)).join('')}</div><div class="is-actions"><button data-is-action="retry-loot">拾う</button><button data-is-action="discard-loot">拾わない</button></div></div>`;document.body.appendChild(el);};
   P.isEquip=function(uid,stayInBag=false){const x=this.isBagEntry(uid),item=D().items[x?.itemId];if(!x||item?.category!=='equipment')return;this.isRun().equipment[item.slot||'accessory']=uid;this.isLog(`装備：${item.name}`);this.isSave();const panel=$('#menu-panel');if(stayInBag)this.isRenderBag(panel);else this.isRenderEquipment(panel);};
   P.isUseBagItem=function(uid){const x=this.isBagEntry(uid),item=D().items[x?.itemId],effect=item?.effect;if(!x||!effect)return;if(x.itemId==='infiniteReturn'){this.isReturnRun();return;}const r=this.isRun(),stats=this.totalStats(),recovery=this.recoveryItemInfo?.(item,stats);if(!recovery)return;const gain=Math.min(recovery.amount,stats[recovery.maxKey]-r[recovery.key]);if(gain<=0)return;r[recovery.key]+=gain;r.lootBag.splice(r.lootBag.indexOf(x),1);this.isLog(`使用：${item.name}（${recovery.key.toUpperCase()} +${gain}）`);this.isRenderBag($('#menu-panel'));};
   P.isDrop=function(uid){const r=this.isRun(),x=this.isBagEntry(uid);if(!x)return;Object.keys(r.equipment).forEach(s=>{if(r.equipment[s]===uid)delete r.equipment[s]});r.lootBag.splice(r.lootBag.indexOf(x),1);this.isLog(`破棄：${D().items[x.itemId]?.name||x.itemId}`);this.isSave();if(r.pendingLoot&&document.getElementById('is-modal'))this.isShowBagFull();else this.isRenderBag($('#menu-panel'));};
@@ -760,13 +800,62 @@
   P.enemyEncounterEscaped=async function(){if(this.battleMode!=='infiniteScore'||!this.isRun())return origEnemyEncounterEscaped.call(this);const r=this.isRun();r.hp=this.player.hp;r.mp=this.player.mp;this.isClearMapRoom();this.finished=true;this.endAutoBattle?.();this.isLog('希少怪異が逃走');this.showResult('RARE ESCAPED','希少怪異は戦利品を抱えて逃走した。','INFINITE SCORE',`<button class="is-primary" data-is-action="after-battle">探索へ戻る</button>`);this.isHideDefaultResultMenu();};
   P.isRollRecoveryItem=function(){const floor=this.isRun()?.floor||1,pool=(this.isCfg().recoveryItems||[]).filter(row=>floor>=(row.minFloor||1)&&D().items[row.itemId]);return pool.length?this.isPickWeighted(pool)?.itemId:null;};
   const origVictory=P.victory;
-  P.victory=async function(){if(this.battleMode!=='infiniteScore'||!this.isRun())return origVictory.call(this);this.finished=true;this.endAutoBattle?.();this.audio.sfx('victory');const r=this.isRun(),cfg=this.isEffectiveCfg(),returnFloor=Math.max(1,Number(cfg.returnMinFloor)||20);r.hp=this.player.hp;r.mp=this.player.mp;const recovery=this.isRecoverRelicVitals(r,this.player);r.encounterCountOnFloor++;this.isClearMapRoom();if(r.buffs.qualityBattles>0)r.buffs.qualityBattles--;const baseGold=10+Math.round(r.floor*2+this.isRand()*12),gold=this.isEarnRelicCoins(r,Math.round(baseGold*(1+(r.buffs.goldBonus||0))*Math.max(0,Number(cfg.currencyMultiplier)||0)));r.dungeonGold+=gold;const drops=[],pendingBeforeDrops=r.pendingLoot;if(recovery)this.isLog('遺物回復：'+recovery);if(r.floor>=returnFloor&&!this.isHasReturn()&&!r.returnMilestoneClaimed){if(this.isAddLoot({uid:this.isUid('return'),kind:'item',itemId:'infiniteReturn',count:1})){r.returnMilestoneClaimed=true;drops.push('RETURN');}}else if(this.isRand()<Math.min(.95,Math.max(0,Number(cfg.gearDropRate)||0)+r.floor*.004)){const gear=this.isGenerateGear();if(this.isAddLoot(gear))drops.push(D().items[gear.itemId]?.name||gear.itemId);}else if(r.floor>=returnFloor&&this.isRand()<cfg.returnItemRate){if(this.isAddLoot({uid:this.isUid('return'),kind:'item',itemId:'infiniteReturn',count:1}))drops.push('RETURN');}if(!r.pendingLoot&&this.isRand()<Math.max(0,Number(cfg.recoveryDropRate)||0)){const itemId=this.isRollRecoveryItem();if(itemId&&this.isAddLoot({uid:this.isUid('medicine'),kind:'item',itemId,count:1}))drops.push(D().items[itemId]?.name||itemId);}if(!r.pendingLoot)this.isCollectMonsterArcana(drops);
-    const rareEnemyDefeated=this.enemies.some(enemy=>enemy.rareRun&&!enemy.alive&&!enemy.escaped);
-    if(rareEnemyDefeated&&r.buffs.rareBonus>0&&(drops.length||r.pendingLoot!==pendingBeforeDrops)){
-      r.buffs.rareBonus=0;
-      this.isLog('狩猟：レア敵遭遇率の加算分をリセット');
+  P.victory=async function(){
+    const r=this.isRun();
+    if(this.battleMode!=='infiniteScore'||!r)return origVictory.call(this);
+    this.finished=true;
+    this.endAutoBattle?.();
+    this.audio.sfx('victory');
+
+    const cfg=this.isEffectiveCfg(),returnFloor=Math.max(1,Number(cfg.returnMinFloor)||20);
+    const rareDefeated=this.enemies.some(enemy=>enemy.rareRun&&!enemy.alive&&!enemy.escaped);
+    r.hp=this.player.hp;
+    r.mp=this.player.mp;
+    const recovery=this.isRecoverRelicVitals(r,this.player);
+    r.encounterCountOnFloor++;
+    this.isClearMapRoom();
+    if(r.buffs.qualityBattles>0)r.buffs.qualityBattles--;
+
+    const baseGold=10+Math.round(r.floor*2+this.isRand()*12);
+    const gold=this.isEarnRelicCoins(r,Math.round(baseGold*(1+(r.buffs.goldBonus||0))*Math.max(0,Number(cfg.currencyMultiplier)||0)));
+    r.dungeonGold+=gold;
+    if(recovery)this.isLog('遺物回復：'+recovery);
+
+    const drops=[];
+    const award=entry=>{
+      const added=this.isAddLoot(entry);
+      const name=this.isLootName?.(entry)||D().items[entry.itemId]?.name||entry.itemId;
+      drops.push(name+(added?'':'（空き枠待ち）'));
+      return added;
+    };
+    const milestone=r.floor>=returnFloor&&!this.isHasReturn()&&!r.returnMilestoneClaimed;
+    if(milestone&&award({uid:this.isUid('return'),kind:'item',itemId:'infiniteReturn',count:1}))r.returnMilestoneClaimed=true;
+    const gearRate=(Math.max(0,Number(cfg.gearDropRate)||0)+r.floor*.004)*(rareDefeated?cfg.rareGearDropMultiplier:1);
+    if((!milestone||rareDefeated)&&this.isRand()<Math.min(.95,gearRate)){
+      award(this.isGenerateGear(rareDefeated?{rareDrop:true}:undefined));
+    }else if(!milestone&&r.floor>=returnFloor&&this.isRand()<cfg.returnItemRate){
+      award({uid:this.isUid('return'),kind:'item',itemId:'infiniteReturn',count:1});
     }
-    this.isRollStairs();const showCards=this.isRand()<Math.max(0,Number(cfg.battleCardRate) || 0);this.saveProfile();await this.battleSleep(500);if(showCards){this.isShowCards();return;}this.showResult('VICTORY',`奏貨 +${gold}${recovery?' ／ '+recovery:''}${drops.length?` ／ ${drops.join('・')}を発見`:''}`,'INFINITE SCORE',`<div class="is-run-grid"><div><small>FLOOR</small><b>${r.floor}</b></div><div><small>HP</small><b>${r.hp}</b></div><div><small>BAG</small><b>${this.isBagUsed()}/${this.isBagLimit()}</b></div><div><small>階段</small><b>${r.stairsFound?'FOUND':'—'}</b></div></div><button class="is-primary" data-is-action="after-battle">探索へ戻る</button>`);this.isHideDefaultResultMenu();};
+    if(!r.pendingLoot&&this.isRand()<Math.max(0,Number(cfg.recoveryDropRate)||0)){
+      const itemId=this.isRollRecoveryItem();
+      if(itemId)award({uid:this.isUid('medicine'),kind:'item',itemId,count:1});
+    }
+    if(rareDefeated){
+      this.isCollectRareMonsterArcana(drops);
+      if(r.buffs.rareBonus>0){
+        r.buffs.rareBonus=0;
+        this.isLog('狩猟：レア敵遭遇率の加算分をリセット');
+      }
+    }else if(!r.pendingLoot)this.isCollectMonsterArcana(drops);
+
+    this.isRollStairs();
+    const showCards=this.isRand()<cfg.cardRate;
+    this.saveProfile();
+    await this.battleSleep(500);
+    if(showCards){this.isShowCards();return;}
+    this.showResult('VICTORY',`奏貨 +${gold}${recovery?' ／ '+recovery:''}${drops.length?` ／ ${drops.join('・')}を発見`:''}`,'INFINITE SCORE',`<div class="is-run-grid"><div><small>FLOOR</small><b>${r.floor}</b></div><div><small>HP</small><b>${r.hp}</b></div><div><small>MP</small><b>${r.mp}</b></div><div><small>BAG</small><b>${this.isBagUsed()}/${this.isBagLimit()}</b></div></div><button class="is-primary" data-is-action="after-battle">探索へ戻る</button>`);
+    this.isHideDefaultResultMenu();
+  };
   // 無限戦闘の勝利画面ではAUTO入力だけを止め、ON設定と倍率は次の戦闘へ保持する。
   const isVictoryKeepingAuto=P.victory;
   P.victory=function(...args){const keep=this.battleMode==='infiniteScore'&&!!this.autoBattle,index=this.autoBattleSpeedIndex,result=isVictoryKeepingAuto.apply(this,args);if(keep){this.autoBattle=true;this.autoBattleSpeedIndex=index;}return result;};
@@ -829,7 +918,10 @@
       else if(name==='infinite-score-choices')this.isRenderChoices(panel);
       else if(name==='infinite-score-map')this.isRenderMap(panel);
       else if(name==='infinite-score-relics' && (this.isRun() || this.isDebugAllowed()))this.isRenderRelics(panel);
-      else this.isRenderExplore(panel);
+      else {
+        this.isRenderExplore(panel);
+        if(this.isRun()?.pendingLoot&&!$('#is-modal'))this.isShowBagFull();
+      }
       return;
     }
     if(panel&&infinitePanelHome&&panel.parentNode===document.body)infinitePanelHome.insertBefore(panel,infinitePanelNext?.parentNode===infinitePanelHome?infinitePanelNext:null);
@@ -985,7 +1077,7 @@
   },true);
   document.addEventListener('click',e=>{const a=e.target.closest('[data-is-action]'),g=window.arseneGame;if(!a||!g)return;const act=a.dataset.isAction;if(!['stairs-continue','stairs-open'].includes(act))return;e.preventDefault();e.stopImmediatePropagation();if(act==='stairs-continue')g.isStairPromptDismissed=g.isFloorMap()?.currentId;else g.isStairPromptDismissed=null;g.isRenderExplore($('#menu-panel'));},true);
   document.addEventListener('click',async e=>{const g=window.arseneGame;if(!g)return;const action=e.target.closest('[data-is-action="return-check"]'),drop=e.target.closest('[data-is-drop]');if(!action&&!drop)return;e.preventDefault();e.stopImmediatePropagation();if(action){const item=g.isRun()?.lootBag.find(x=>x.itemId==='infiniteReturn');if(!item){await g.isNotify('RETURNを持っていません','探索中にRETURNを入手すると帰還できます。');return;}if(await g.isConfirm('無限奏廊から帰還しますか？','現在のLOOT BAGをすべて持ち帰ります。',{kicker:'RETURN CHECK',confirmLabel:'帰還する'}))g.isUseBagItem(item.uid);return;}const x=g.isBagEntry(drop.dataset.isDrop),name=D().items[x?.itemId]?.name||x?.itemId;if(x&&await g.isConfirm(`${name}を捨てますか？`,'捨てた戦利品は元に戻せません。',{kicker:'LOOT DISCARD',confirmLabel:'捨てる',danger:true}))g.isDrop(x.uid);},true);
-  document.addEventListener('click',e=>{const g=window.arseneGame;if(!g)return;const a=e.target.closest('[data-is-action]');if(a){e.preventDefault();const act=a.dataset.isAction,p=$('#menu-panel');if(act==='warning')g.renderMenuPanel('infinite-score-warning');else if(act==='import')g.renderMenuPanel('infinite-score-import');else if(act==='begin'||act==='begin-empty')g.isBegin();else if(act==='resume'||act==='explore'){g.isExploreOverlayMode=null;g.renderMenuPanel('infinite-score');}else if(act==='map')g.renderMenuPanel('infinite-score-map');else if(act==='route-advance'){g.isExploreOverlayMode='advance';g.isRun().pendingChoices=null;g.isRenderExplore(p);}else if(act==='route-examine'){g.isExploreOverlayMode='examine';g.isRun().pendingChoices=null;g.isRenderExplore(p);}else if(act==='route-close'){g.isExploreOverlayMode=null;g.isRenderExplore(p);}else if(act==='route-choice'){if(a.dataset.isResolved)return;a.dataset.isResolved='1';g.isResolveChoice(+a.dataset.isChoice);}else if(act==='explore-menu'){g.isExploreMenuOpen=!g.isExploreMenuOpen;g.isRenderExplore(p);}else if(act==='explore-menu-close'){g.isExploreMenuOpen=false;g.isRenderExplore(p);}else if(act==='return-notice-close'){g.isRenderExplore(p);}else if(act==='treasure-open')g.isOpenTreasure();else if(act==='room-result-close'){const remap=g.isRoomResult?.remapOnClose;g.isRoomResult=null;if(remap)g.isRemapCurrentFloor('宝箱部屋踏破');g.isRenderExplore(p);}else if(act==='return-locked'){window.arseneStartFlow?.toast('RETURNを入手すると帰還できます');}else if(act==='map-back')g.isMapBack();else if(act==='map-remap'){g.isRemapCurrentFloor();g.isRenderExplore(p);}else if(act==='bag')g.renderMenuPanel('infinite-score-bag');else if(act==='equipment')g.renderMenuPanel('infinite-score-equipment');else if(act==='abilities')g.isOpenAbilitySettings();else if(act==='debug')g.renderMenuPanel('infinite-score-debug');else if(act==='choices')g.renderMenuPanel('infinite-score-choices');else if(act==='battle')g.isStartBattle(false);else if(act==='descend'){const picker=a.closest('.is-stair-object')?.querySelector('[data-is-distance]');if(g.isAtStairs()&&(!picker||picker.reportValidity()))g.isDescend(picker?Number(picker.value):1);}else if(act==='after-battle')g.isAfterBattle();else if(act==='return-check'){if(confirm('現在のLOOT BAGを持って帰還しますか？（RETURNが必要）')){const x=g.isRun()?.lootBag.find(x=>x.itemId==='infiniteReturn');if(x)g.isUseBagItem(x.uid);else alert('RETURNを持っていません。');}}else if(act==='generate'){g.isAddLoot(g.isGenerateGear());g.isRenderDebug(p);}else if(act==='death-test'){if(confirm('死亡処理を実行し、RUN内の全アイテムをロストしますか？')){g.battleMode='infiniteScore';g.defeat();}}else if(act==='debug-reset'){g.profile.infiniteScoreDebug={};g.saveProfile();g.isRenderDebug(p);}else if(act==='retry-loot'){const r=g.isRun();if(g.isBagUsed()<g.isBagLimit()){const x=r.pendingLoot;if(!x)return;r.pendingLoot=null;document.getElementById('is-modal')?.remove();if(g.isAddLoot(x))g.isRenderBag(p);}}else if(act==='discard-loot'){g.isRun().pendingLoot=null;g.saveProfile();document.getElementById('is-modal')?.remove();}return;}
+  document.addEventListener('click',e=>{const g=window.arseneGame;if(!g)return;const a=e.target.closest('[data-is-action]');if(a){e.preventDefault();const act=a.dataset.isAction,p=$('#menu-panel');if(act==='warning')g.renderMenuPanel('infinite-score-warning');else if(act==='import')g.renderMenuPanel('infinite-score-import');else if(act==='begin'||act==='begin-empty')g.isBegin();else if(act==='resume'||act==='explore'){g.isExploreOverlayMode=null;g.renderMenuPanel('infinite-score');}else if(act==='map')g.renderMenuPanel('infinite-score-map');else if(act==='route-advance'){g.isExploreOverlayMode='advance';g.isRun().pendingChoices=null;g.isRenderExplore(p);}else if(act==='route-examine'){g.isExploreOverlayMode='examine';g.isRun().pendingChoices=null;g.isRenderExplore(p);}else if(act==='route-close'){g.isExploreOverlayMode=null;g.isRenderExplore(p);}else if(act==='route-choice'){if(a.dataset.isResolved)return;a.dataset.isResolved='1';g.isResolveChoice(+a.dataset.isChoice);}else if(act==='explore-menu'){g.isExploreMenuOpen=!g.isExploreMenuOpen;g.isRenderExplore(p);}else if(act==='explore-menu-close'){g.isExploreMenuOpen=false;g.isRenderExplore(p);}else if(act==='return-notice-close'){g.isRenderExplore(p);}else if(act==='treasure-open')g.isOpenTreasure();else if(act==='room-result-close'){const remap=g.isRoomResult?.remapOnClose;g.isRoomResult=null;if(remap)g.isRemapCurrentFloor('宝箱部屋踏破');g.isRenderExplore(p);}else if(act==='return-locked'){window.arseneStartFlow?.toast('RETURNを入手すると帰還できます');}else if(act==='map-back')g.isMapBack();else if(act==='map-remap'){g.isRemapCurrentFloor();g.isRenderExplore(p);}else if(act==='bag')g.renderMenuPanel('infinite-score-bag');else if(act==='equipment')g.renderMenuPanel('infinite-score-equipment');else if(act==='abilities')g.isOpenAbilitySettings();else if(act==='debug')g.renderMenuPanel('infinite-score-debug');else if(act==='choices')g.renderMenuPanel('infinite-score-choices');else if(act==='battle')g.isStartBattle(false);else if(act==='descend'){const picker=a.closest('.is-stair-object')?.querySelector('[data-is-distance]');if(g.isAtStairs()&&(!picker||picker.reportValidity()))g.isDescend(picker?Number(picker.value):1);}else if(act==='after-battle')g.isAfterBattle();else if(act==='return-check'){if(confirm('現在のLOOT BAGを持って帰還しますか？（RETURNが必要）')){const x=g.isRun()?.lootBag.find(x=>x.itemId==='infiniteReturn');if(x)g.isUseBagItem(x.uid);else alert('RETURNを持っていません。');}}else if(act==='generate'){g.isAddLoot(g.isGenerateGear());g.isRenderDebug(p);}else if(act==='death-test'){if(confirm('死亡処理を実行し、RUN内の全アイテムをロストしますか？')){g.battleMode='infiniteScore';g.defeat();}}else if(act==='debug-reset'){g.profile.infiniteScoreDebug={};g.saveProfile();g.isRenderDebug(p);}else if(act==='retry-loot'||act==='discard-loot'){if(!window.arseneQOffer?.isOpen?.())g.isResolvePendingLoot(act==='discard-loot');}return;}
     const menuClose=e.target.closest('[data-is-explore-menu-close]');if(menuClose){g.isExploreMenuOpen=false;g.isRenderExplore($('#menu-panel'));return;}const audioToggle=e.target.closest('.is-explore-menu [data-battle-audio-toggle]');if(audioToggle){const channel=audioToggle.dataset.battleAudioToggle,current=g.audio.levels[channel]||0;if(current>0){g.battleAudioRestore[channel]=current;g.audio.setVolume(channel,0);}else g.audio.setVolume(channel,Math.round(100*(g.battleAudioRestore[channel]||{bgm:.42,sfx:.72,voice:.70}[channel])));g.isRenderExplore($('#menu-panel'));return;}
     const runSlot=e.target.closest('[data-is-run-slot]');if(runSlot){g.isRunEquipSlot=runSlot.dataset.isRunSlot;g.isRenderEquipment($('#menu-panel'));return;}const runSlotClose=e.target.closest('[data-is-run-slot-close]');if(runSlotClose){g.isRunEquipSlot=null;g.isRenderEquipment($('#menu-panel'));return;}const runEquip=e.target.closest('[data-is-run-equip]');if(runEquip){g.isEquip(runEquip.dataset.isRunEquip);return;}const runUnequip=e.target.closest('[data-is-run-unequip]');if(runUnequip){delete g.isRun().equipment[runUnequip.dataset.isRunUnequip];g.isSave();g.isRenderEquipment($('#menu-panel'));return;}
     const choice=e.target.closest('[data-is-choice]');if(choice){if(choice.dataset.isResolved)return;choice.dataset.isResolved='1';g.isResolveChoice(+choice.dataset.isChoice);return;}const equip=e.target.closest('[data-is-equip]');if(equip){g.isEquip(equip.dataset.isEquip);return;}const unequip=e.target.closest('[data-is-unequip]');if(unequip){delete g.isRun().equipment[unequip.dataset.isUnequip];g.isSave();g.isRenderEquipment($('#menu-panel'));return;}const use=e.target.closest('[data-is-use]');if(use){g.isUseBagItem(use.dataset.isUse);return;}const drop=e.target.closest('[data-is-drop]');if(drop){if(confirm('このアイテムを捨てますか？'))g.isDrop(drop.dataset.isDrop);return;}const del=e.target.closest('[data-is-op-delete]');if(del){g.isDeleteOp(del.dataset.isOpDelete);return;}const merge=e.target.closest('[data-is-merge]');if(merge){g.isOpenMerge(merge.dataset.isMerge);return;}const force=e.target.closest('[data-is-debug-force]');if(force){g.isRun().forcedEvent=force.dataset.isDebugForce;g.isLog(`次回強制：${force.dataset.isDebugForce}`);g.isRenderDebug($('#menu-panel'));return;}const buy=e.target.closest('[data-is-buy]');if(buy){g.isBuy(buy.dataset.isBuy,+buy.dataset.price);return;}const sell=e.target.closest('[data-is-sell]');if(sell){g.isSell(sell.dataset.isSell);return;}},true);
