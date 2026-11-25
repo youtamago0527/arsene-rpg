@@ -33,11 +33,17 @@
 
   class ArseneAudio {
     constructor(bgmPath) {
-      this.ctx = null; this.master = null; this.musicSource = null; this.musicGain = null; this.muted = false; this.started = false; this.settingsKey = 'arsene-rpg-audio-v1'; this.levels = this.loadLevels(); this.musicMaxVolume = matchMedia('(max-width:760px)').matches ? .18 : .22; this.musicVolume = this.musicMaxVolume * this.levels.bgm; this.fadeToken = 0; this.userActivated = false;
+      this.ctx = null; this.master = null; this.musicSource = null; this.musicGain = null; this.started = false; this.settingsKey = 'arsene-rpg-audio-v1';
+      const settings = this.loadSettings();
+      this.muted = settings.muted;
+      this.levels = settings.levels; this.musicMaxVolume = matchMedia('(max-width:760px)').matches ? .18 : .22; this.musicVolume = this.musicMaxVolume * this.levels.bgm; this.fadeToken = 0; this.userActivated = false;
       this.nativeIos = !!(window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === 'ios');
+      if (this.nativeIos && window.navigator?.audioSession) {
+        try { window.navigator.audioSession.type = 'ambient'; } catch { /* Older WebKit uses the app's native category. */ }
+      }
       this.nativeSfxPlayers = new Set();
       this.nativeSfxByName = new Map(); this.nativeSfxPool = []; this.lastSfxAt = new Map(); this.maxNativeSfxPlayers = 10;
-      this.music = new Audio(audioAssetUrl(bgmPath)); this.music.loop = true; this.music.preload = 'auto'; this.music.volume = this.musicVolume;
+      this.music = new Audio(audioAssetUrl(bgmPath)); this.music.loop = true; this.music.preload = 'auto'; this.applyMusicVolume();
       this.audioId = `${Date.now()}-${Math.random()}`; this.audioFocus = typeof BroadcastChannel === 'function' ? new BroadcastChannel('arsene-rpg-audio-focus') : null;
       if (this.audioFocus) this.audioFocus.onmessage = e => { if (e.data?.type === 'claim' && e.data.id !== this.audioId) { this.music.pause(); this.started = false; } };
       const activate = () => { this.userActivated = true; this.unlock(); };
@@ -48,7 +54,7 @@
     async unlock() {
       if (!this.ctx) {
         const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
-        this.ctx = new AC(); this.master = this.ctx.createGain(); this.master.gain.value = .72 * this.levels.sfx; this.master.connect(this.ctx.destination);
+        this.ctx = new AC(); this.master = this.ctx.createGain(); this.master.gain.value = this.muted ? 0 : .72 * this.levels.sfx; this.master.connect(this.ctx.destination);
         // ユーザー操作の同期区間を音源fetch待ちで失わない。SEのdecodeは背後で進める。
         this.preloadSfxFiles();
         // iOS Safari ignores HTMLMediaElement.volume. Route BGM through a
@@ -67,7 +73,12 @@
     }
     // 武器種から直接鳴らす。読み込み前や未定義の武器種は false を返すので、呼び出し側で合成音へ落とせる。
     playWeaponAttack(weaponType) { return this.playSfxFile(WEAPON_SFX[weaponType]); }
-    setMusicOutput(value) { const level = Math.max(0, value); if (this.musicGain) this.musicGain.gain.value = level; else { try { this.music.volume = Math.min(1, level); } catch {} } }
+    setMusicOutput(value) {
+      const level = this.muted ? 0 : Math.max(0, Math.min(this.musicVolume, value));
+      this.music.muted = level === 0;
+      if (this.musicGain) this.musicGain.gain.value = level;
+      else { try { this.music.volume = level; } catch {} }
+    }
     getMusicOutput() { return this.musicGain ? this.musicGain.gain.value : this.music.volume; }
     applyMusicVolume() { this.setMusicOutput(this.muted ? 0 : this.musicVolume); }
     fadeMusicTo(target, duration = 180, token = this.fadeToken) {
@@ -102,12 +113,24 @@
     }
     toggle() {
       this.muted = !this.muted; if (this.master) this.master.gain.value = this.muted ? 0 : .72 * this.levels.sfx;
-      this.music.muted = this.muted; this.applyMusicVolume(); if (!this.muted) this.unlock(); return !this.muted;
+      if (this.muted) this.stopNativeSfx();
+      this.saveLevels(); this.applyMusicVolume(); if (!this.muted) this.unlock(); return !this.muted;
     }
-    loadLevels() { try { const saved = JSON.parse(localStorage.getItem(this.settingsKey) || '{}'); return { bgm: Number.isFinite(saved.bgm) ? Math.max(0,Math.min(1,saved.bgm)) : .42, sfx: Number.isFinite(saved.sfx) ? Math.max(0,Math.min(1,saved.sfx)) : .72, voice: Number.isFinite(saved.voice) ? Math.max(0,Math.min(1,saved.voice)) : .70 }; } catch { return { bgm:.42, sfx:.72, voice:.70 }; } }
-    saveLevels() { try { localStorage.setItem(this.settingsKey, JSON.stringify(this.levels)); } catch {} }
+    loadSettings() {
+      let saved = {};
+      try { saved = JSON.parse(localStorage.getItem(this.settingsKey)) || {}; } catch {}
+      const levels = { bgm: .42, sfx: .72, voice: .70 };
+      for (const key of Object.keys(levels)) {
+        if (Number.isFinite(saved[key])) levels[key] = Math.max(0, Math.min(1, saved[key]));
+      }
+      return { muted: saved.muted === true, levels };
+    }
+    stopNativeSfx() {
+      for (const voice of this.nativeSfxPlayers) voice.cleanup();
+    }
+    saveLevels() { try { localStorage.setItem(this.settingsKey, JSON.stringify({ ...this.levels, muted: this.muted })); } catch {} }
     getVolumes() { return Object.fromEntries(Object.entries(this.levels).map(([key,value]) => [key, Math.round(value * 100)])); }
-    setVolume(channel, percent) { if (!(channel in this.levels)) return; const value = Math.max(0, Math.min(100, Number(percent) || 0)) / 100; this.levels[channel] = value; this.saveLevels(); if (channel === 'bgm') { this.musicVolume = this.musicMaxVolume * value; this.applyMusicVolume(); } if (channel === 'sfx' && this.master) this.master.gain.value = this.muted ? 0 : .72 * value; }
+    setVolume(channel, percent) { if (!(channel in this.levels)) return; const value = Math.max(0, Math.min(100, Number(percent) || 0)) / 100; this.levels[channel] = value; this.saveLevels(); if (channel === 'bgm') { this.musicVolume = this.musicMaxVolume * value; this.applyMusicVolume(); } if (channel === 'sfx') { if (this.master) this.master.gain.value = this.muted ? 0 : .72 * value; if (value === 0) this.stopNativeSfx(); } }
     releaseSoundNodesWhenEnded(source, ...nodes) {
       source.onended = () => {
         source.disconnect();
@@ -249,8 +272,9 @@
     sfx(name) {
       // iOSでは復帰直後などにAudioContextが未生成・suspendedへ戻ることがある。
       // 呼び出し側の取りこぼしで無音にならないよう、SE側でも毎回復帰を試みる。
+      if (this.muted || this.levels.sfx <= 0) return;
       if (!this.ctx) this.unlock();
-      if (!this.ctx || this.muted) return;
+      if (!this.ctx) return;
       if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
       // 正式音源が使えない場合は無音にする。旧合成音へのフォールバックは禁止。
       if (Object.prototype.hasOwnProperty.call(SFX_FILES, name)) { this.playSfxFile(name); return; }

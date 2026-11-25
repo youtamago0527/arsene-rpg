@@ -98,6 +98,11 @@
         handles.push(await admob.addListener(events.dismissed, () => finish(false)));
         handles.push(await admob.addListener(events.failedToLoad, error => { logFailure('load failed', error); finish(false); }));
         handles.push(await admob.addListener(events.failedToShow, error => { logFailure('show failed', error); finish(false); }));
+        const audio = window.arseneGame?.audio;
+        if (audio) {
+          const muted = audio.muted || Object.values(audio.levels).every(level => level === 0);
+          await admob.setApplicationMuted({ muted });
+        }
         await admob.prepareRewardVideoAd({ adId: IOS_REWARDED_AD_ID });
         if (!settled) admob.showRewardVideoAd().catch(error => { logFailure('show rejected', error); finish(false); });
       } catch (error) {

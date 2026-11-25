@@ -51,6 +51,7 @@ const rewardedId = rewardedMatch[1];
 
   const listeners = new Map();
   let initializeCalls = 0;
+  const muteUpdates = [];
   const plugin = {
     async initialize() { initializeCalls++; },
     async requestConsentInfo() { return { status: 'NOT_REQUIRED', canRequestAds: true }; },
@@ -59,10 +60,12 @@ const rewardedId = rewardedMatch[1];
       listeners.set(name, callback);
       return { remove: async () => { if (listeners.get(name) === callback) listeners.delete(name); } };
     },
+    async setApplicationMuted({ muted }) { muteUpdates.push(muted); },
     async prepareRewardVideoAd(options) { assert.equal(options.adId, rewardedId); },
     async showRewardVideoAd() {}
   };
   const nativeWindow = {
+    arseneGame: { audio: { muted: true, levels: { bgm: 0, sfx: .5, voice: 0 } } },
     addEventListener() {},
     Capacitor: {
       isNativePlatform: () => true,
@@ -81,16 +84,21 @@ const rewardedId = rewardedMatch[1];
   rewardCallback?.({ amount: 1, type: 'reward' });
   assert.equal(await first, true, 'Rewardedイベントで一度だけ成功する');
   assert.equal(initializeCalls, 1, 'SDK初期化を再利用する');
+  assert.deepEqual(muteUpdates, [true]);
 
+  nativeWindow.arseneGame.audio.muted = false;
   const dismissed = nativeWindow.arseneAdMob.showRewarded();
   await new Promise(resolve => setImmediate(resolve));
   listeners.get('onRewardedVideoAdDismissed')?.();
   assert.equal(await dismissed, false, '途中dismissでは成功しない');
+  assert.deepEqual(muteUpdates, [true, false]);
 
+  nativeWindow.arseneGame.audio.levels.sfx = 0;
   const failedLoad = nativeWindow.arseneAdMob.showRewarded();
   await new Promise(resolve => setImmediate(resolve));
   listeners.get('onRewardedVideoAdFailedToLoad')?.({ code: 3, message: 'No fill' });
   assert.equal(await failedLoad, false, 'ロード失敗では成功しない');
+  assert.deepEqual(muteUpdates, [true, false, true]);
   assert(warnings.some(([message, detail]) => message.includes('load failed: No fill') && detail?.code === 3), 'ロード失敗のコードとメッセージを記録する');
 
   const failedShow = nativeWindow.arseneAdMob.showRewarded();

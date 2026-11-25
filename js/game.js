@@ -70,7 +70,14 @@
       });
       $('#battlefield').addEventListener('keydown', e => { const strip = e.target.closest('.status-strip[data-status-owner]'); if (strip && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopPropagation(); this.showStatusGroup(strip.dataset.statusOwner, strip); } if (e.key === 'Escape') this.hideStatusDetail(); });
       document.addEventListener('click', e => { const strip = e.target.closest?.('.enemy-statuses[data-status-owner]'); if (!strip) return; e.preventDefault(); e.stopPropagation(); this.showStatusGroup(strip.dataset.statusOwner, strip); }, true);
-      $('#audio-toggle').addEventListener('click', async () => { await this.audio.unlock(); const on = this.audio.toggle(); $('#audio-toggle').classList.toggle('muted', !on); $('#audio-toggle span').textContent = on ? 'SOUND ON' : 'SOUND OFF'; });
+      const audioToggle = $('#audio-toggle');
+      const showSoundSetting = () => {
+        audioToggle.classList.toggle('muted', this.audio.muted);
+        audioToggle.querySelector('span').textContent = this.audio.muted ? 'SOUND OFF' : 'SOUND ON';
+        audioToggle.setAttribute('aria-pressed', String(this.audio.muted));
+      };
+      showSoundSetting();
+      audioToggle.addEventListener('click', () => { this.audio.toggle(); showSoundSetting(); });
       $('#battle-menu-button')?.addEventListener('click', async () => { const pop = $('#battle-menu-popover'), open = !!pop?.hidden; if (!pop) return; await this.audio.unlock(); if (open) this.renderBattleMenu(); pop.hidden = !open; $('#battle-menu-button').setAttribute('aria-expanded', String(open)); });
       $('#battle-menu-popover')?.addEventListener('click', e => {
         const close = e.target.closest('[data-battle-menu-close]');

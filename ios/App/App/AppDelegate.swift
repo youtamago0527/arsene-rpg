@@ -1,4 +1,5 @@
 import UIKit
+import AVFAudio
 import Capacitor
 
 @UIApplicationMain
@@ -7,7 +8,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
+        } catch {
+            NSLog("Game audio session configuration failed: %@", error.localizedDescription)
+        }
         return true
     }
 

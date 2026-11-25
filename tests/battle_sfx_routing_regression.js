@@ -25,7 +25,7 @@ for (const legacy of ['会心の一撃1.mp3', '回避.mp3', '打撃6.mp3', 'crit
   if (fs.existsSync(path.join(root, '音楽系', '効果音', legacy))) throw new Error(`legacy SFX remains: ${legacy}`);
 }
 if (fs.existsSync(path.join(root, 'js', 'audio.js'))) throw new Error('legacy audio runtime remains');
-if (!index.includes('js/audio-runtime-20260904.js?v=1.0.9')) throw new Error('fresh audio runtime is not loaded');
+if (!index.includes('js/audio-runtime-20260904.js?v=1.0.10')) throw new Error('fresh audio runtime is not loaded');
 for (const name of ['slash', 'quick', 'enemyHit']) {
   if (new RegExp(`case '${name}':`).test(audio)) throw new Error(`obsolete default combat SFX branch remains: ${name}`);
 }
