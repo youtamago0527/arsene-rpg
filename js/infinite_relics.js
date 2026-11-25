@@ -59,12 +59,23 @@
     const art = artwork.find(item => item.id === id);
     return { ...art, grade, stat: stats[n], label: labels[n] };
   }));
+  const supportRelics = [
+    ['shell', '勝利後の最大HP割合回復'],
+    ['lute', '勝利後の最大MP割合回復'],
+    ['obsidian', '敵の最大HP・攻撃・防御'],
+    ['gear', '獲得奏貨'],
+    ['astrolabe', 'インフィニティ装備の抽選率']
+  ];
+  for (const [id, label] of supportRelics) {
+    relics.push({ ...artwork.find(item => item.id === id), grade: 'support', label });
+  }
   const availableRanks = ranks.filter(rank => relics.some(item => item.rank === rank));
 
   // Percentage curves from pie3636's Tower of Hero simulator (getPara).
   // Mithril Sword/Armour's magnitude is used for the normal tier; Claymore for the upper tier.
   const earlyClaymore = [0,30,65,100,140,185,230,280,330,385,460,535,610,690,770,850,935,1030,1130];
   function percent(item, level) {
+    if (item.grade === 'support') return Math.min(level, 50);
     if (item.grade === 'normal') return 2 * Math.min(level, 20) + Math.max(0, Math.min(level, 50) - 20);
     if (level < earlyClaymore.length) return earlyClaymore[level];
     let value = 20 * level + 2.5 * level * (level - 1);
@@ -99,13 +110,13 @@
     const pool = relics.filter(item => item.grade === 'upper' ? count >= 40 : levelOf(levels,item.id) < 50);
     if (!pool.length) {
       this.profile.deferredRelicDraws = (this.profile.deferredRelicDraws || 0) + 1;
-      return '通常版はすべて最大Lvです。抽選を保存しました。40回降下で受け取れます。';
+      return 'この深さの遺物はすべて最大Lvです。抽選を保存しました。40回降下で受け取れます。';
     }
     const draw = () => {
       const item = pool[Math.floor(this.isRand() * pool.length)];
       const level = levelOf(levels,item.id) + 1;
       levels[item.id] = level;
-      return `${item.name} Lv.${level}（${item.label} ＋${percent(item,level)}%）`;
+      return `${item.name} Lv.${level}（${item.label} ${item.id === 'obsidian' ? '−' : '＋'}${percent(item,level)}%）`;
     };
     const rewards = [draw()];
     if (count >= 40 && this.profile.deferredRelicDraws > 0) {
@@ -115,9 +126,44 @@
     return rewards.join(" ／ ");
   };
 
+  P.isSupportRelicRate = function (id) {
+    return Math.min(50, levelOf(this.profile.infiniteRelicLevels, id));
+  };
+
+  P.isWeakenRelicEnemy = function (stats) {
+    const rate = this.isSupportRelicRate('obsidian');
+    if (!rate) return;
+    for (const key of ['maxHp', 'atk', 'def']) {
+      if (stats[key] > 0) stats[key] = Math.max(1, Math.round(stats[key] * (100 - rate) / 100));
+    }
+  };
+
+  P.isRecoverRelicVitals = function (run, player) {
+    const gains = [];
+    for (const [id, key, maxKey] of [['shell', 'hp', 'maxHp'], ['lute', 'mp', 'maxMp']]) {
+      const rate = this.isSupportRelicRate(id);
+      if (!rate) continue;
+      const max = player.stats[maxKey];
+      const gain = Math.min(max - player[key], Math.ceil(max * rate / 100));
+      if (gain <= 0) continue;
+      run[key] = player[key] += gain;
+      gains.push(key.toUpperCase() + ' +' + gain);
+    }
+    return gains.join(' ／ ');
+  };
+
+  P.isEarnRelicCoins = function (run, base) {
+    const rate = this.isSupportRelicRate('gear');
+    if (!rate) return base;
+    const bonus = base * rate + (run.relicCoinRemainder || 0);
+    run.relicCoinRemainder = bonus % 100;
+    return base + Math.floor(bonus / 100);
+  };
+
   P.isApplyRelicStats = function (total) {
     const rates = {};
     for (const item of relics) {
+      if (item.grade === 'support') continue;
       const level = levelOf(this.profile.infiniteRelicLevels, item.id);
       if (level) rates[item.stat] = (rates[item.stat] || 0) + percent(item,level);
     }
@@ -135,9 +181,10 @@
     return `<span class="ir-gems" data-rank="${rank}" aria-hidden="true">${'◆'.repeat(ranks.indexOf(rank) + 1)}</span>`;
   }
   function detail(item, level) {
-    const tier = item.grade === 'upper' ? '上位版・40回降下から' : '通常版';
-    const next = item.grade === 'normal' && level >= 50 ? '最大Lv' : '次のLvで ＋' + percent(item, level + 1) + '%';
-    const effect = level ? 'Lv.' + level + ' ／ ' + item.label + ' ＋' + percent(item, level) + '%' : '未入手 ／ ' + item.label;
+    const sign = item.id === 'obsidian' ? '−' : '＋';
+    const tier = item.grade === 'upper' ? '上位版・40回降下から' : item.grade === 'support' ? '補助遺物' : '通常版';
+    const next = item.grade !== 'upper' && level >= 50 ? '最大Lv' : '次のLvで ' + sign + percent(item, level + 1) + '%';
+    const effect = level ? 'Lv.' + level + ' ／ ' + item.label + ' ' + sign + percent(item, level) + '%' : '未入手 ／ ' + item.label;
     return `<header><h3>${item.name}</h3>${badge(item.rank)}</header>
       <div class="ir-portrait" data-rank="${item.rank}">${art(item)}</div>
       <div class="ir-detail-rank">${gems(item.rank)}</div>
