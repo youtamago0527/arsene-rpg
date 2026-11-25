@@ -9,16 +9,22 @@
   const shopDrawCount=5;
 
   P.isSupportAvailable=function(){return !!window.arseneAdMob?.isNativeIOS?.();};
+  P.isShopAdPreview=function(){
+    const host=window.location?.hostname;
+    return !this.isSupportAvailable()&&(host==='localhost'||host==='127.0.0.1')
+      &&this.localScenario?.id==='infinite-score-ready'&&this.localScenario?.ephemeral===true;
+  };
   P.isSupportSkip=function(){return !!window.arseneQOffer?.hasAdSkip?.();};
   P.isRequestSupport=function(type,onGrant){
+    const previewAd=type==='infiniteReroll'&&this.isShopAdPreview();
     const notify=message=>window.arseneStartFlow?.toast?.(message);
-    if(!this.isSupportAvailable()||!window.arseneQOffer){notify('この端末では広告を利用できません');return false;}
+    if((!this.isSupportAvailable()&&!previewAd)||!window.arseneQOffer){notify('この端末では広告を利用できません');return false;}
     if(type==='infiniteReroll'){
       const state=this.isRun?.()?.shopSupport;
       if(!this.isCanClaimShopGacha(state)){notify('このショップの5連ガチャは利用できません');return false;}
     }
     if(window.arseneQOffer.isOpen?.()){notify('別の広告処理が進行中です');return false;}
-    const opened=window.arseneQOffer.show(type,{onGrant});
+    const opened=window.arseneQOffer.show(type,{onGrant,previewAd});
     if(!opened)notify('広告の確認画面を開けませんでした。もう一度お試しください');
     return opened;
   };
@@ -55,12 +61,13 @@
     return !!state&&!state.rerollUsed&&this.isBagLimit()-this.isBagUsed()>=shopDrawCount;
   };
   P.isShopSupportHtml=function(){
-    if(!this.isSupportAvailable())return '';
+    const previewAd=this.isShopAdPreview();
+    if(!this.isSupportAvailable()&&!previewAd)return '';
     const state=this.isRun().shopSupport;
-    const used=state.rerollUsed,skip=this.isSupportSkip(),canClaim=this.isCanClaimShopGacha(state);
+    const used=state.rerollUsed,skip=!previewAd&&this.isSupportSkip(),canClaim=this.isCanClaimShopGacha(state);
     const rewards=(state.rewardNames||[]).map(name=>`<li>${esc(name)}</li>`).join('');
     return `<section class="is-support-strip is-shop-support">
-      <div><small>PHANTOM SUPPORT</small><h3>${skip?'5連ガチャ':'広告で5連ガチャ'}</h3>
+      <div><small>PHANTOM SUPPORT</small><h3>${skip?'5連ガチャ':previewAd?'テスト広告で5連ガチャ':'広告で5連ガチャ'}</h3>
       <p>抽選した装備5個をバッグに入手。</p></div>
       <button type="button" data-is-support="reroll" ${canClaim?'':'disabled'}>
         ${used?'使用済み':!canClaim?'空き枠不足':skip?'5連ガチャ':'▶ 広告を視聴'}${canClaim&&!skip?'<small>5連ガチャ</small>':''}

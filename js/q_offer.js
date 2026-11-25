@@ -134,10 +134,10 @@
       // iOSで背面のボタンを連打しても、確認POPは常に1個だけにする。
       if (activeModal || offerInFlight) return false;
       const d = { ...(defs[type] || defs.auto2), ...extra }, left = remaining(type);
-      const qCopy = String(extra.copy ?? QD.offer?.[type] ?? d.copy).replace(/\n/g, '<br>'), skip = hasAdSkip(g);
-      const adStatus = skip ? (premium(g).adSkipLicense ? '永久スキップ適用' : `スキップ券を使用（残り${Number(premium(g).adSkipTickets) || 0}）`) : '広告を見るか選んでください';
+      const qCopy = String(extra.copy ?? QD.offer?.[type] ?? d.copy).replace(/\n/g, '<br>'), skip = !d.previewAd && hasAdSkip(g);
+      const adStatus = skip ? (premium(g).adSkipLicense ? '永久スキップ適用' : `スキップ券を使用（残り${Number(premium(g).adSkipTickets) || 0}）`) : d.previewAd ? 'ローカル確認用のテスト広告' : '広告を見るか選んでください';
       const nativeAd = !skip && window.arseneAdMob?.isNativeIOS?.();
-      const countdown = skip || nativeAd ? 'READY' : '3', watchText = skip ? '広告をスキップして発動する' : '広告を見て発動する';
+      const countdown = skip || nativeAd ? 'READY' : '3', watchText = skip ? '広告をスキップして発動する' : d.previewAd ? 'テスト広告を完了する' : '広告を見て発動する';
       const reviveCard = `<div class="q-offer-card q-revive-card" role="dialog" aria-label="戦闘復活"><button class="q-offer-close" data-q-close aria-label="閉じる">✕ CLOSE</button><header><small class="q-revive-tag"><i></i>DAILY REVIVE REWARD</small><h2>怪盗の再起</h2><p>Q「${qCopy}」</p></header><div class="q-revive-details"><div><span><i></i>復活時HP</span><b>最大HPの50%</b></div><div><span><i></i>復帰地点</span><b>現在の戦闘</b></div><div><span><i></i>本日の残り回数</span><b>${left} 回</b></div></div><div class="q-offer-ad"><span>${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch><span>▶　${watchText}</span></button><button class="q-revive-cancel" data-q-close>今回は諦める</button></div>`;
       const normalCard = `<div class="q-offer-card" role="dialog" aria-label="Q offer"><button class="q-offer-close" data-q-close aria-label="閉じる">×</button><div class="q-offer-q">Q</div><small class="q-offer-kicker">Q'S OFFER</small><h2>${d.title}</h2><p>「${qCopy}」</p><div class="q-offer-ad"><span>${adStatus}</span><b data-q-countdown>${countdown}</b></div><button class="q-offer-watch" data-q-watch>${watchText}<span>${skip ? 'SKIP ENTITLEMENT' : nativeAd ? 'WATCH REWARDED AD' : 'WATCH MOCK AD'}</span></button>${['bossDrop', 'overdrive'].includes(type) ? '<button class="q-offer-decline" data-q-close>広告を見ない</button>' : ''}</div>`;
       const modal = document.createElement('div'); modal.className = 'q-offer-modal'; modal.innerHTML = type === 'revive' ? reviveCard : normalCard; if (type === 'revive') modal.classList.add('q-offer-defeat'); modal._qOnClose = d.onClose; activeModal = modal; setOfferButtonsBusy(true); document.body.appendChild(modal);

@@ -7,7 +7,7 @@ const baseline = fs.readFileSync('tests/progression-baseline.js', 'utf8');
 
 assert.match(data, /enemyScalePerFloor:\s*\.16/, '敵は1階ごとに線形16%強化する');
 assert.match(data, /enemyBaseScale:\s*1\.25/, '入口の敵はD4通常敵より25%強い');
-assert.match(data, /returnMinFloor:\s*20/, 'RETURN解禁は20F');
+assert.match(data, /returnMinFloor:\s*20/, '戦闘・カード・行商人のRETURN解禁は20F');
 assert.match(data, /shopRate:\s*\.02/, '通常ショップの出現設定は旧8%の4分の1');
 assert.equal(1.25 * (1 + (20 - 1) * .16), 5.05, '20Fは原種能力の5.05倍');
 assert.match(score, /scale=\(cfg\.enemyBaseScale\|\|1\)\*\(1\+\(r\.floor-1\)\*cfg\.enemyScalePerFloor\)/, '戦闘能力へ入口倍率を適用する');
