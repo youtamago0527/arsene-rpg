@@ -58,10 +58,9 @@ for (const [i, floor] of dungeon.floors.entries()) {
 assert.deepEqual([...ids].sort(), ['astralSurveyor', 'mirrorHound', 'prismMoth']);
 assert.notEqual(d.enemies.astralSurveyor.kind, 'boss');
 compare(d.enemies.chromatia.stats, d.enemies.ostina.stats);
-assert.ok(!game.dungeonBossEntry(dungeon.id), 'wait for the approved portrait');
-d.enemies.chromatia.sprite = 'test-bow-portrait';
+assert.equal(d.enemies.chromatia.sprite, 'assets/enemy-characters/dungeon6/chromatia.webp');
 assert.equal(game.dungeonBossEntry(dungeon.id).key, 'chromatia');
-for (const asset of [dungeon.background, dungeon.music, d.enemies.chromatia.music, ...enemies.filter(e => e.id !== 'chromatia').map(e => e.sprite)]) {
+for (const asset of [dungeon.background, dungeon.music, d.enemies.chromatia.music, ...enemies.map(e => e.sprite)]) {
   assert.ok(fs.existsSync(path.join(__dirname, '..', asset)), asset);
 }
 console.log('D6: six ten-win streaks, rollback, reload, both gates, elements and 10x stats OK');
