@@ -49,7 +49,7 @@
       { id: 'heal', name: '癒奏', text: '最大HPの20%回復', weight: 16 },
       { id: 'mana', name: '魔奏', text: '最大MPの20%回復', weight: 14 },
       { id: 'treasure', name: '宝探', text: '宝箱遭遇率+10%（累積）', weight: 12 },
-      { id: 'hunt', name: '狩猟', text: 'レア敵遭遇率+5%（累積）', weight: 10 },
+      { id: 'hunt', name: '狩猟', text: 'レア敵遭遇率+5%（累積）。レア敵のドロップで加算分リセット。', weight: 10 },
       { id: 'stairs', name: '降奏', text: '即座に次の階へ', weight: 7 },
       { id: 'return', name: 'RETURN', text: '戦利品を持って即帰還', weight: 1 },
       { id: 'forge', name: '鍛造', text: '装備1つの強化値+1', weight: 8 },
