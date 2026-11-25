@@ -231,7 +231,7 @@
           return;
         }
         const jobRebirth = e.target.closest('[data-job-rebirth]');
-        if (jobRebirth) { if (!jobRebirth.disabled) { const r = this.doRebirth(jobRebirth.dataset.jobRebirth); window.arseneStartFlow?.toast(r.ok ? `${D.jobs[jobRebirth.dataset.jobRebirth]?.name || 'JOB'} 転生 +1（${r.count}回目）` : r.reason); } return; }
+        if (jobRebirth) { if (!jobRebirth.disabled) { const r = this.doRebirth(jobRebirth.dataset.jobRebirth); window.arseneStartFlow?.toast(r.ok ? `${D.jobs[jobRebirth.dataset.jobRebirth]?.name || 'JOB'} 転生 +1（${r.count}回目）${r.gladiatorUnlocked ? '／剣闘士 解放' : ''}` : r.reason); } return; }
         const setPassive = e.target.closest('[data-set-passive]');
         if (setPassive) { const parts = setPassive.dataset.setPassive.split(':'); this.setPassiveSlot(Number(parts[0]), parts[1] || null); return; }
         const setAction = e.target.closest('[data-set-action]');
@@ -399,6 +399,7 @@
         for (const [id, job] of Object.entries(D.jobs || {})) {
           if (job.devOnly || job.futureOnly || !job.unlockCondition) continue;
           const cond = job.unlockCondition;
+          if (cond.rebirthsPerParent) continue; // 個別のLv到達履歴と転生回数を読み込み後に判定する。
           if (cond.bossDefeated && !profile.bossDefeated[cond.bossDefeated]) continue;
           if (cond.jobLevels && Object.entries(cond.jobLevels).some(([rid, rlv]) => (profile.jobs[rid]?.level || 1) < rlv)) continue;
           if (!profile.unlockedJobs.includes(id)) profile.unlockedJobs.push(id);
@@ -528,6 +529,7 @@
         // v16：武器学を行動EXP＋無制限Lv、閃きをRank/敵Spark Lv方式へ移行。
         // 旧Lv/EXP/習得技はそのまま保持し、破壊的な再計算は行わない。
         profile.version = 19;
+        this.restoreGladiatorProgress(profile);
         this.checkGladiatorUnlock(profile);
         return profile;
       } catch { return this.freshProfile(); }
@@ -677,13 +679,44 @@
     setCharacterList(list) { this.characterList = Array.isArray(list) ? list : []; this.applyCharacterPresentation(); }
     // ══ ジョブ解放 / パッシブ ══════════════════════════════════
     isPlayerContentVisible(def) { return !!def && !def.devOnly && !def.futureOnly; }
+    restoreGladiatorProgress(profile) {
+      const parents = D.jobs.gladiator.parentJobs;
+      const retained = profile.parentRebirthStats ||= {};
+      for (const id of parents) {
+        if (retained[id] || !profile.jobRebirths[id]) continue;
+        // Older saves mix retained growth and this cycle's growth in one total.
+        // Title growth has no per-cycle history, so credit only the provable carryover.
+        const level = profile.jobs[id]?.level || 1;
+        const levels = level - 1, steps = levels + Math.max(0, level - 20);
+        const perLevel = this.gb().jobGrowthPerLevel[id];
+        const mult = 1 + profile.jobRebirths[id] * (this.gb().rebirthGrowthPerCycle ?? .1);
+        const carry = {};
+        for (const [stat, total] of Object.entries(profile.jobGrowthGained[id] || {})) {
+          const fraction = profile.growthFraction?.[id]?.[stat] || 0;
+          const thisCycle = Math.max(0, Math.round(steps * (perLevel[stat] || 0) * mult - fraction));
+          const possibleTitleGain = Math.min(levels, profile.titleGrowthGained?.[id]?.[stat] || 0);
+          carry[stat] = Math.max(0, total - thisCycle - possibleTitleGain);
+        }
+        retained[id] = carry;
+      }
+      if (profile.unlockedJobs.includes('gladiator')) {
+        // An unlock from the preceding build proves both parents already reached Lv40.
+        profile.gladiatorRequirements = { warrior: true, martialArtist: true };
+        if (!parents.every(id => profile.jobRebirths[id] >= D.jobs.gladiator.unlockCondition.rebirthsPerParent)) {
+          profile.unlockedJobs = profile.unlockedJobs.filter(id => id !== 'gladiator');
+          for (const key of ['currentJob', 'lastNormalJob', 'otherWorldReturnJob']) {
+            if (profile[key] === 'gladiator') profile[key] = profile.initialJob || 'warrior';
+          }
+        }
+      }
+    }
     checkGladiatorUnlock(profile = this.profile) {
       const requirements = D.jobs.gladiator.unlockCondition.jobLevels;
       const reached = profile.gladiatorRequirements ||= {};
       for (const [id, level] of Object.entries(requirements)) {
         if (profile.jobs[id]?.level >= level) reached[id] = true;
       }
-      if (profile.unlockedJobs.includes('gladiator') || !Object.keys(requirements).every(id => reached[id])) return false;
+      if (profile.unlockedJobs.includes('gladiator') || !Object.keys(requirements).every(id => reached[id] && (profile.jobRebirths?.[id] || 0) >= D.jobs.gladiator.unlockCondition.rebirthsPerParent)) return false;
       profile.unlockedJobs.push('gladiator');
       profile.jobs.gladiator ||= { level: 1, exp: 0 };
       return true;
@@ -1149,6 +1182,7 @@
     // 通常JOB      … 今就いているJOBで育てた分だけ乗る（転職すると乗り換わる）
     // PHANTOM THIEF … 全JOBで育てた分を合算し、各能力50%だけ引き継ぐ
     phantomGrowthSources() {
+      // Count each job's own growth once. Parent carryover is a display/combat bonus for Gladiator.
       const gained = this.profile.jobGrowthGained || {}, records = this.profile.phantomGrowthRecords || {}, sources = {};
       const futureJobs = new Set(D.futureJobIds || []);
       for (const id of new Set([...Object.keys(gained), ...Object.keys(records)])) {
@@ -1185,6 +1219,11 @@
         return out;
       }
       for (const [k, v] of Object.entries(gained[jobId] || {})) if (v) out[k] = v;
+      for (const parent of D.jobs[jobId]?.parentJobs || []) {
+        for (const [stat, value] of Object.entries(this.profile.parentRebirthStats?.[parent] || {})) {
+          out[stat] = (out[stat] || 0) + value;
+        }
+      }
       return out;
     }
     passiveEnhancementRank(skillId) { return Math.max(0, Number(this.profile.passiveEnhancements?.[skillId]) || 0); }
@@ -1238,7 +1277,11 @@
     // ══ 転生（輪廻のアルカナ）══════════════════════════════════
     rebirthCount(jobId) { return (this.profile.jobRebirths || {})[jobId] || 0; }
     // 転生1回につき成長+10%。過去に得た永久成長値へは遡って掛からない（複利禁止）。
-    rebirthGrowthMultiplier(jobId) { return 1 + this.rebirthCount(jobId) * (this.gb().rebirthGrowthPerCycle ?? 0.10); }
+    rebirthGrowthMultiplier(jobId) {
+      const parents = D.jobs[jobId]?.parentJobs || [];
+      const cycles = parents.reduce((count, id) => count + this.rebirthCount(id), this.rebirthCount(jobId));
+      return 1 + cycles * (this.gb().rebirthGrowthPerCycle ?? .10);
+    }
     arcanaCount() { return this.profile.inventory.rebirthArcana || 0; }
     isJobMastered(jobId) { return (this.profile.jobMastered || []).includes(jobId); }
     markJobMastered(jobId) { this.profile.jobMastered ||= []; if (!this.profile.jobMastered.includes(jobId)) this.profile.jobMastered.push(jobId); }
@@ -1285,14 +1328,19 @@
       for (const [key, value] of Object.entries(growth)) growth[key] = key === 'critBonus'
         ? Number((Number(value || 0) * retention).toFixed(4))
         : Math.floor(Number(value || 0) * retention);
+      if (D.jobs.gladiator.parentJobs.includes(jobId)) {
+        this.profile.parentRebirthStats ||= {};
+        this.profile.parentRebirthStats[jobId] = { ...growth };
+      }
       if (this.profile.growthFraction) this.profile.growthFraction[jobId] = {};
       this.profile.jobs[jobId] = { level: 1, exp: 0 };
       this.profile.jobRebirths ||= {};
       this.profile.jobRebirths[jobId] = this.rebirthCount(jobId) + 1;
+      const gladiatorUnlocked = this.checkGladiatorUnlock();
       // Lv1習得PASSIVEは、転生直後のLv1到達時点で強化される。
       const reinforcedPassives = this.reinforceJobPassives(jobId, 1);
       this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('job');
-      return { ok: true, count: this.rebirthCount(jobId), retention, reinforcedPassives };
+      return { ok: true, count: this.rebirthCount(jobId), retention, reinforcedPassives, gladiatorUnlocked };
     }
     // D2クリア報酬：双刃士を解放。初回のみ輪廻のアルカナ×1。
     grantMyrthiFirstReward() {
@@ -1401,7 +1449,8 @@
       const n = this.rebirthCount(jobId), check = this.canRebirth(jobId);
       const stars = n > 0 ? `<em class="rb-stars">${'★'.repeat(Math.min(n, 10))}${n > 10 ? ` ×${n}` : ''}</em>` : '';
       const mult = Math.round(this.rebirthGrowthMultiplier(jobId) * 100);
-      return `<div class="rebirth-box"><div class="rb-head"><small>REBIRTH</small><b>転生</b>${stars}</div><div class="rb-info"><span>このJOBの転生</span><b>${n}回</b><span>次の転生</span><b>${n} → ${n + 1}回（+1）</b><span>次回成長</span><b>${mult}%</b><span>所持アルカナ</span><b>${this.arcanaCount()}</b></div><p class="rb-note">Lvアップで得た能力の20%を残してLv.1から再育成。習得済みPASSIVEは残り、再び習得Lvへ到達すると効果が少し強化されます。</p><button class="rb-btn" data-job-rebirth="${jobId}" ${check.ok ? '' : 'disabled'}>${check.ok ? '転生する' : check.reason}<span>${check.ok ? 'REBIRTH' : 'LOCKED'}</span></button></div>`;
+      const parentInfo = (D.jobs[jobId]?.parentJobs || []).map(id => `<span>${D.jobs[id].name}の転生</span><b>${this.rebirthCount(id)}回</b>`).join('');
+      return `<div class="rebirth-box"><div class="rb-head"><small>REBIRTH</small><b>転生</b>${stars}</div><div class="rb-info">${parentInfo}<span>このJOBの転生</span><b>${n}回</b><span>次の転生</span><b>${n} → ${n + 1}回（+1）</b><span>次回成長</span><b>${mult}%</b><span>所持アルカナ</span><b>${this.arcanaCount()}</b></div><p class="rb-note">Lvアップで得た能力の20%を残してLv.1から再育成。習得済みPASSIVEは残り、再び習得Lvへ到達すると効果が少し強化されます。</p><button class="rb-btn" data-job-rebirth="${jobId}" ${check.ok ? '' : 'disabled'}>${check.ok ? '転生する' : check.reason}<span>${check.ok ? 'REBIRTH' : 'LOCKED'}</span></button></div>`;
     }
     specialItemHTML(reward) {
       if (!reward) return '';
@@ -4165,7 +4214,7 @@
       // jobGrowthGained が埋まった双刃士は、旧テーブルぶんの
       // STR/AGIが表示から丸ごと消えて「+1」だけになっていた。
       const grown = { ...bonuses };
-      for (const [k, v] of Object.entries((this.profile.jobGrowthGained || {})[jobId] || {})) grown[k] = (grown[k] || 0) + v;
+      for (const [k, v] of Object.entries(j.parentJobs ? this.jobStatBonuses(jobId) : (this.profile.jobGrowthGained || {})[jobId] || {})) grown[k] = (grown[k] || 0) + v;
       const bonusGrid = Object.entries(grown).filter(([, v]) => v)
         .map(([k, v]) => `<div class="jbn-item"><span>${statLabels[k] || k}</span><b>${k === 'critBonus' ? `+${Math.round(v * 100)}%` : `+${v}`}</b></div>`).join('')
         || '<span class="jbn-none">なし</span>';
