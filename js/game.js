@@ -1629,7 +1629,7 @@
     characterHasSkill(id) { return (this.profile.learnedCharacterSkills || []).includes(id) || (D.characterSkillProgression || []).some(entry => entry.skillId === id && this.profile.level >= entry.level); }
     jobExpNeeded(level) { return D.jobExpTable[level] || null; }
     // 旧growthテーブル方式のJOB(双刃士など)は元々Lv1〜20分しか値を持たない。
-    // Lv21〜40（限界突破帯）は個別に値を足さず、対応するLv1〜20の値を2倍にして自動延長する。
+    // Lv21以降も20レベルごとに同じ成長表を繰り返し、各レベルの獲得量を2倍にする。
     //
     // あわせて転生成長ボーナスもここで掛ける。この倍率は applyJobLevelGrowth() 側に
     // しか入っておらず、テーブル方式のJOBだけ何度転生しても成長量が増えていなかった。
@@ -1638,7 +1638,7 @@
       const job = D.jobs[jobId], level = this.profile.jobs?.[jobId]?.level || 1, bonuses = {};
       for (let lv = 1; lv <= level; lv++) {
         const direct = job?.growth?.[lv];
-        const entry = direct || (lv > 20 ? job?.growth?.[lv - 20] : null);
+        const entry = direct || (lv > 20 ? job?.growth?.[1 + (lv - 1) % 20] : null);
         const scale = direct ? 1 : 2;
         Object.entries(entry || {}).forEach(([key, value]) => bonuses[key] = (bonuses[key] || 0) + value * scale);
       }
