@@ -8,7 +8,7 @@ const html = fs.readFileSync('index.html', 'utf8');
 
 assert.match(forge, /\['merge','装備合成・強化'\],\['transfer','OP移植'\]/);
 assert.doesNotMatch(forge, /OP削除|調律する|製作する/);
-for (const label of ['移植元', '移すOP', '移植先', '上書きするOP', '強化後', '完全に消滅', 'ロック中', '装備中']) {
+for (const label of ['移植元', '移すOP', '移植先', '移植する枠', '空き枠に追加', '強化後', '完全に消滅', 'ロック中', '装備中']) {
   assert(forge.includes(label), label + ' is missing');
 }
 assert.match(forge, /owgMetaHtml\(item\)/);

@@ -18,6 +18,7 @@
   const format = new Intl.NumberFormat('ja-JP');
   const isV2 = gear => gear?.gearVersion === 2;
   const tier = gear => cfg.tiers[gear?.tier-1];
+  const opCapacity = gear => tier(gear)?.count[1] || 0;
   const level = gear => clampInteger(gear?.plus,Number.MAX_SAFE_INTEGER);
   const rate = (rateTotal,key) => rateTotal[key] || 0;
   const allowedOn = (op,part) => !op.table || !!part && Object.values(part.base).some(([table])=>table===op.table);
@@ -159,8 +160,8 @@
   }
 
   function canTransfer(source,target) {
-    if (!isV2(source) || !isV2(target) || source.uid===target.uid || !source.ops?.length ||
-        !target.ops?.length || target.ops.length>(tier(target)?.count[1] || 0)) return false;
+    if (!isV2(source) || !isV2(target) || source.uid===target.uid || !Array.isArray(source.ops) || !source.ops.length ||
+        !Array.isArray(target.ops) || target.ops.length>opCapacity(target)) return false;
     const a = D.items[source.itemId], b = D.items[target.itemId];
     if (!a?.gearFamily || !b?.gearFamily) return false;
     const rules=cfg.transfer;
@@ -169,12 +170,13 @@
       (!rules.infinityOnlyWithInfinity || (source.rarity==='infinity')===(target.rarity==='infinity'));
   }
 
-  function canReplace(source,target,sourceIndex,targetIndex) {
-    const op=source?.ops?.[sourceIndex];
-    const definition=byOp.get(op?.key);
-    return Number.isInteger(sourceIndex) && Number.isInteger(targetIndex) && sourceIndex>=0 && targetIndex>=0 &&
-      canTransfer(source,target) && definition && allowedOn(definition,byItem.get(source.itemId)) &&
-      allowedOn(definition,byItem.get(target.itemId)) && !!target.ops[targetIndex] &&
+  function canTransplant(source,target,sourceIndex,targetIndex) {
+    if (!Number.isInteger(sourceIndex) || sourceIndex<0 || !Number.isInteger(targetIndex) ||
+        targetIndex<0 || !canTransfer(source,target)) return false;
+    const op=source.ops[sourceIndex],definition=byOp.get(op?.key);
+    const validSlot=targetIndex===target.ops.length ? targetIndex<opCapacity(target) : !!target.ops[targetIndex];
+    return !!definition && validSlot && allowedOn(definition,byItem.get(source.itemId)) &&
+      allowedOn(definition,byItem.get(target.itemId)) &&
       (definition.repeatable || !target.ops.some((existing,index)=>existing.key===op.key && index!==targetIndex));
   }
 
@@ -214,7 +216,7 @@
     return `${definition?.label||op.key} +${format.format(op.value)}%［${op.grade}］${stats?`（${stats}）`:''}`;
   }
   D.infiniteGear = {isV2,tier,level,ratesAt,generate,strengthened,optionRates,stat,applyStatRate,damage,extraDamage,
-    canMerge,canTransfer,canReplace,combatKeys,vitalKeys,
+    canMerge,canTransfer,canTransplant,opCapacity,combatKeys,vitalKeys,
     number:value=>format.format(value),opText
   };
 })();
