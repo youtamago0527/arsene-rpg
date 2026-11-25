@@ -17,7 +17,9 @@ assert(D.infiniteScore.recoveryItems.filter(row=>row.itemId.includes('40')).ever
 assert(D.infiniteScore.recoveryItems.filter(row=>row.itemId.includes('60')).every(row=>row.minFloor===60),'high recovery items must start at floor 60');
 assert(!scoreSource.includes("hadReturn=this.isHasReturn(),stack="),'run loot must not stack');
 assert(scoreSource.includes("this.profile.inventory[x.itemId]=(this.profile.inventory[x.itemId]||0)+(x.count||1)"),'return must stack at home');
-assert(scoreSource.includes("this.profile.inventory[id]--"),'import must consume one per slot');
+const beginRun = scoreSource.slice(scoreSource.indexOf('P.isBegin = function'), scoreSource.indexOf('P.isHeader = function'));
+assert.match(beginRun, /const bag = \[\];[\s\S]*lootBag:bag/, 'a new run starts with an empty bag');
+assert(!beginRun.includes('this.profile.inventory[id]--'), 'starting a run must preserve home inventory');
 assert(scoreSource.includes('recoveryDropRate'),'enemy recovery drops missing');
 for (const id of Object.keys(expected)) assert(scoreSource.includes(`product('${id}'`),`${id} missing from shop`);
 assert(gameSource.includes('recoveryItemInfo(item'),'normal battles must support percentage recovery');
