@@ -31,6 +31,7 @@
 
   // その攻撃がどの武器種のものか。技が武器種を持っていればそちらを優先する。
   P.fxWeaponType = function (skill) {
+    if (skill?.id === 'martialStrike' && this.isRun?.() && this.equippedWeapon().id === 'bareFist') return 'fist';
     return skill?.weaponType || this.equippedWeaponType?.() || 'sword';
   };
   // 魔法・回復などの非武器スキルは武器種エフェクトの対象外。
@@ -48,7 +49,7 @@
   // ── 振り／詠唱のタイミング ────────────────────────────────
   P.attackSwingFx = function (skill) {
     if (!this.fxIsWeaponAction(skill)) { this.audio?.sfx?.('magic'); return; }
-    const type = this.fxWeaponType(skill), ren = $('#ren');
+    const effect = this.fxWeaponType(skill), type = effect === 'fist' ? 'martial' : effect, ren = $('#ren');
     if (!ren) return;
     ren.classList.add(`fx-swing-${type}`);
     setTimeout(() => ren.classList.remove(`fx-swing-${type}`), 420);
@@ -73,10 +74,10 @@
       return;
     }
     const type = this.fxWeaponType(skill);
-    ({ sword: 'fxSlash', martial: 'fxClaw', staff: 'fxBurn', instrument: 'fxNotes', shield: 'fxImpact' }[type] || 'fxSlash')
+    ({ sword: 'fxSlash', martial: 'fxClaw', fist: 'fxImpact', staff: 'fxBurn', instrument: 'fxNotes', shield: 'fxImpact' }[type] || 'fxSlash')
       .split(' ').forEach(fn => this[fn]?.(field, at));
     // 武器ごとの音は常に鳴らし、クリティカルのときは衝撃音を重ねる
-    this.audio?.sfx?.({ sword: 'swordHit', martial: 'clawHit', staff: 'fireHit', instrument: 'noteHit', shield: 'playerHit' }[type] || 'swordHit');
+    this.audio?.sfx?.({ sword: 'swordHit', martial: 'clawHit', fist: 'playerHit', staff: 'fireHit', instrument: 'noteHit', shield: 'playerHit' }[type] || 'swordHit');
     if (critical) { this.audio?.sfx?.('criticalHit'); this.fxCritical(field, at); }
   };
 

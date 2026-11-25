@@ -69,7 +69,7 @@
   const oldFresh=P.freshProfile; P.freshProfile=function(){return normalize(oldFresh.call(this));};
   if (window.arseneGame?.profile) normalize(window.arseneGame.profile);
   P.owgEntry=function(uid){return (this.profile.otherWorldGear||[]).find(x=>x.uid===uid)||(this.isRun?.()?.lootBag||[]).find(x=>x.uid===uid);};
-  P.owgEquipped=function(){const run=this.profile?.infiniteScore?.active?this.isRun?.():null;if(run)return Object.values(run.equipment||{}).map(uid=>this.owgEntry(uid)).filter(x=>x?.otherWorldGear);return Object.values(this.profile.otherWorldEquipment||{}).map(uid=>(this.profile.otherWorldGear||[]).find(x=>x.uid===uid)).filter(Boolean);};
+  P.owgEquipped=function(){const run=this.profile?.infiniteScore?.active?this.isRun?.():null;if(run)return Object.values(run.equipment||{}).map(uid=>this.isBagEntry(uid)).filter(x=>x?.otherWorldGear);return Object.values(this.profile.otherWorldEquipment||{}).map(uid=>(this.profile.otherWorldGear||[]).find(x=>x.uid===uid)).filter(Boolean);};
   P.owgDefinition=function(x){return this.equipmentDefinition?.(x?.itemId)||{};};
   P.owgName=function(x){const base=D.items[x.itemId]?.name||x.itemId, rare=(x.ops||[]).slice().sort((a,b)=>b.rank-a.rank)[0];return `${rare&&rare.rank>=5?`《${D.otherWorldGearOps.find(o=>o.key===rare.key)?.label||'異能'}の》`:''}${base}${x.uniqueSkillId?' — 奏技':''}`;};
   P.owgRollStar=function(floor){const bands=floor>=150?[0,10,60,30]:floor>=100?[5,25,55,15]:floor>=50?[15,40,38,7]:floor>=25?[35,45,18,2]:floor>=10?[60,32,7.5,.5]:[82,16,2,0],r=this.isRand()*100;let n=r;for(let i=0;i<4;i++){n-=bands[i];if(n<=0)return i+3;}return 3;};
@@ -91,7 +91,13 @@
   P.owgBaseEquipment=function(source=this.profile.equipment){if(this.isRun?.())return {};const equipment={...(source||{})};for(const x of this.owgEquipped()){const slot=D.items[x.itemId]?.slot;if(slot)delete equipment[slot];}return equipment;};
   const oldTotal=P.totalStats; P.totalStats=function(...args){const filterBase=!this.isRun?.()&&(!args.length||args[0]===this.profile.equipment),baseArgs=this.isRun?.()||filterBase?[this.owgBaseEquipment(args[0])]:args,total=oldTotal.apply(this,baseArgs),fx=this.owgEffects();for(const x of this.owgEquipped()){const d=this.owgDefinition(x),mult=(x.quality||100)/100*(1+(x.tuneLevel||0)*.08);for(const [k,v] of Object.entries(d.bonuses||{}))if(['str','vit','mag','mnd','agi','dex','luk','maxHp','maxMp','critBonus'].includes(k))total[k]=(total[k]||0)+Math.round(v*mult);}for(const k of ['str','vit','mag','mnd','agi','dex','luk','maxHp','maxMp','critBonus'])total[k]=(total[k]||0)+(fx[k]||0);total.def=total.vit;return total;};
   const oldCombat=P.equipmentCombatStats; P.equipmentCombatStats=function(...args){const filterBase=!this.isRun?.()&&(!args.length||args[0]===this.profile.equipment),out=oldCombat.apply(this,this.isRun?.()||filterBase?[this.owgBaseEquipment(args[0])]:args);for(const x of this.owgEquipped()){const values=this.owgEffectiveStats(x);for(const k of ['attackPower','defensePower','magicAttackPower','magicDefensePower'])out[k]=(out[k]||0)+(values[k]?.total||0);}return out;};
-  const oldWeapon=P.equippedWeapon; P.equippedWeapon=function(){const run=this.isRun?.(),uid=run?.equipment?.rightHand||this.profile.otherWorldEquipment?.rightHand,x=this.owgEntry(uid);if(x)return D.weapons[x.itemId]||oldWeapon.call(this);return oldWeapon.call(this);};
+  const oldWeapon = P.equippedWeapon;
+  P.equippedWeapon = function () {
+    if (this.isRun?.()) return oldWeapon.call(this);
+    const uid = this.profile.otherWorldEquipment?.rightHand;
+    const gear = uid && this.profile.otherWorldGear?.find(entry => entry.uid === uid);
+    return D.weapons[gear?.itemId] || oldWeapon.call(this);
+  };
   const oldSkills=P.availableSkills; P.availableSkills=function(){const list=oldSkills.call(this),skills=this.owgEquipped().map(x=>D.skills[x.uniqueSkillId]).filter(Boolean);return [...new Map([...list,...skills].map(x=>[x.id,x])).values()];};
   // Combat reads these two individual OPs through the existing boss-set effect API.
   const oldSet=P.activeSetEffects;
