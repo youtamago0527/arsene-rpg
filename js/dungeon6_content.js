@@ -13,28 +13,30 @@
   const hound = { id: 'mirrorHound', name: '黒鏡の猟犬', sprite: art('mirror-hound'),
     stats: tenfold(D.enemies.repeatedHunter.stats), statRoundingUnit: D.enemies.repeatedHunter.statRoundingUnit * 10,
     ai: [{ id: 'ratBite', name: '反照の牙', kind: 'physical', weight: .6 }, { id: 'attack', name: '鏡爪', kind: 'physical', weight: .4 }] };
-  const nestua = D.enemies.d5MidBoss;
-  const surveyor = { id: 'astralSurveyor', name: '星環の測律機', sprite: art('astral-surveyor'), kind: 'boss', bossRank: 'midBoss', music: bossMusic,
-    stats: { ...tenfold(nestua.form3.stats), maxHp: 10 * (nestua.stats.maxHp + nestua.form2.stats.maxHp + nestua.form3.stats.maxHp) },
+  const surveyor = { id: 'astralSurveyor', name: '星環の測律機', sprite: art('astral-surveyor'),
+    stats: tenfold(D.enemies.repeatedHunter.stats), statRoundingUnit: D.enemies.repeatedHunter.statRoundingUnit * 10,
     ai: [{ id: 'soulBolt', name: '星環照射', kind: 'magic', weight: .55 }, { id: 'attack', name: '振子撃', kind: 'physical', weight: .45 }] };
   const chromatia = Object.assign(D.futureBosses.chromatia, {
-    sprite: art('chromatia'), kind: 'boss', bossRank: 'dungeonBoss', music: bossMusic, stats: tenfold(D.enemies.ostina.stats),
-    ai: [{ id: 'soulBolt', name: '五光の変奏', kind: 'magic', weight: .6 }, { id: 'attack', name: '彩律の槍', kind: 'physical', weight: .4 }]
+    kind: 'boss', bossRank: 'dungeonBoss', music: bossMusic, ignoreFloorStatScale: true, stats: tenfold(D.enemies.ostina.stats),
+    ai: [{ id: 'soulBolt', name: '五光の変奏', kind: 'magic', weight: .6 }, { id: 'attack', name: '彩律の矢', kind: 'physical', weight: .4 }]
   });
   const enemies = [moth, hound, surveyor, chromatia];
   for (const enemy of enemies) Object.assign(enemy, { dungeonId: 'dungeon6', devOnly: true, futureOnly: true, exp: 0, gold: 0, dropTable: [] });
-  const types = { venomWeaver: moth.id, repeatedHunter: hound.id };
-  const names = ['分光回廊', '星環観測室', '五光の礼拝堂'];
+  const rooms = [
+    ['火', '氷', moth, hound], ['水', '雷', hound, moth],
+    ['風', '火', moth, surveyor], ['土', '音', surveyor, hound],
+    ['雷', '氷', hound, surveyor], ['光', '闇', surveyor, moth]
+  ];
   const dungeon = {
     id: 'dungeon6', name: '彩律天文堂', nameEn: 'CHROMATIC OBSERVATORY', unlockCondition: 'dungeon5Clear',
-    background, thumbnail: background, music: battleMusic, bossId: chromatia.id, midBossId: surveyor.id, midBossAfterFloor: 2,
-    description: '五色の光が音に変わる天文堂。硝子の大オルガンの奥で、第六奏卿が指揮を執る。',
-    floors: d5.floors.map((floor, index) => ({
-      id: 'd6f' + (index + 1), name: names[index], background, thumbnail: background, materials: [],
-      winsToClear: floor.winsToClear, enemyScale: { ...floor.enemyScale },
-      encounterProgression: floor.encounterProgression.map(tier => ({
-        ...tier, pool: tier.pool.map(entry => ({ ...entry, id: types[entry.id] }))
-      }))
+    background, thumbnail: background, music: battleMusic, bossId: chromatia.id,
+    midBossGates: [{ afterFloor: 2, enemyId: 'd6MidBoss1' }, { afterFloor: 4, enemyId: 'd6MidBoss2' }],
+    description: '各回廊は10連勝で踏破。途中帰還・敗北でその回廊の連勝はリセットされる。踏破した回廊は記録される。',
+    floors: rooms.map(([element, weakness, main, secondary], index) => ({
+      id: 'd6f' + (index + 1), name: element + 'の回廊', element, weaknesses: [weakness], background, thumbnail: background, materials: [],
+      description: '敵の属性：' + element + ' ／ 弱点：' + weakness + '。10連勝で踏破。途中セーブなし。',
+      consecutiveOnly: true, winsToClear: 10, enemyScale: { ...d5.floors[Math.floor(index / 2)].enemyScale },
+      encounterProgression: [{ minWins: 0, count: [2, 3], pool: [{ id: main.id, weight: 6 }, { id: secondary.id, weight: 4 }] }]
     }))
   };
   D.futureContent.dungeon6 = { dungeon, enemies };
