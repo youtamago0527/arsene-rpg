@@ -10,7 +10,7 @@
   const sorts = { catalog: '掲載順', rarity: 'レアリティ順', name: '名前順' };
   const pageSize = 24;
 
-  const relics = [
+  const artwork = [
     ['hourglass', 'agi', '時の砂時計', 'mythic', '夜空を閉じ込めたような紫の砂が落ちる、古い砂時計。'],
     ['signet', 'str', '緋色の印章指輪', 'mythic', '赤い石を抱く金の指輪。内側には持ち主の紋章が刻まれている。'],
     ['feather', 'agi', '紫苑の羽根', 'epic', '紫の光沢を帯び、軸の先まで細い金細工が施された羽根。'],
@@ -47,45 +47,81 @@
     ['telescope', 'dex', '遠星の望遠鏡', 'common', '真鍮を磨き込んだ、小さな折りたたみ望遠鏡。'],
     ['crest', 'agi', '雷紋の徽章', 'rare', '丸い七宝の中心に稲妻を象った徽章。'],
     ['diadem', 'mag', '霜月の冠', 'epic', '霜をまとった三日月型の冠。']
-  ].map(([id, stat, name, rank, description], index) => {
-    const tier = ranks.indexOf(rank) + 1;
-    const unit = stat === 'maxHp' ? 6 : stat === 'maxMp' ? 3 : 1;
-    return { id, stat, name, rank, description, index, bonus: tier * unit };
-  });
+  ].map(([id, stat, name, rank, description], index) => ({ id, stat, name, rank, description, index }));
 
-  const byId = new Map(relics.map(item => [item.id, item]));
-  const rarityWeight = { common: 48, rare: 29, epic: 15, legendary: 6, mythic: 2 };
-  const statLabels = { str: '力', vit: '体力', mag: '魔力', mnd: '精神', agi: '素早さ', dex: '器用さ', maxHp: '最大HP', maxMp: '最大MP' };
-  function validIds(ids) {
-    return new Set(Array.isArray(ids) ? ids.filter(id => byId.has(id)) : []);
-  }
-  function effect(item) { return statLabels[item.stat] + ' +' + item.bonus; }
-
-  P.isAcquireChestRelic = function (run) {
-    const active = validIds(run.relicIds);
-    const pool = relics.filter(item => !active.has(item.id));
-    if (!pool.length) return null;
-    const tiers = ranks.filter(rank => pool.some(item => item.rank === rank));
-    const tier = this.isPickWeighted(tiers.map(rank => ({ rank, weight: rarityWeight[rank] }))).rank;
-    const candidates = pool.filter(item => item.rank === tier);
-    const item = candidates[Math.floor(this.isRand() * candidates.length)];
-    run.relicIds = [...active, item.id];
-    return { name: item.name, effect: effect(item) };
+  const tiers = {
+    normal: ['phial', 'shard', 'skull', 'knight', 'frost-flower', 'lantern', 'feather', 'hairpin', 'key'],
+    upper: ['wheat', 'chalice', 'claw', 'lock', 'tome', 'mirror', 'hourglass', 'compass', 'crown']
   };
+  const stats = ['maxHp', 'maxMp', 'str', 'vit', 'mag', 'mnd', 'agi', 'dex', 'luk'];
+  const labels = ['最大HP', '最大MP', '力', '体力', '魔力', '精神', '素早さ', '器用さ', '運'];
+  const relics = Object.entries(tiers).flatMap(([grade, ids]) => ids.map((id, n) => {
+    const art = artwork.find(item => item.id === id);
+    return { ...art, grade, stat: stats[n], label: labels[n] };
+  }));
+  const availableRanks = ranks.filter(rank => relics.some(item => item.rank === rank));
 
-  P.isApplyRelics = function (total, run) {
-    for (const id of validIds(run.relicIds)) {
-      const item = byId.get(id);
-      total[item.stat] = (total[item.stat] || 0) + item.bonus;
+  // Percentage curves from pie3636's Tower of Hero simulator (getPara).
+  // Mithril Sword/Armour's magnitude is used for the normal tier; Claymore for the upper tier.
+  const earlyClaymore = [0,30,65,100,140,185,230,280,330,385,460,535,610,690,770,850,935,1030,1130];
+  function percent(item, level) {
+    if (item.grade === 'normal') return 2 * Math.min(level, 20) + Math.max(0, Math.min(level, 50) - 20);
+    if (level < earlyClaymore.length) return earlyClaymore[level];
+    let value = 20 * level + 2.5 * level * (level - 1);
+    for (const [threshold, factor] of [[25000,.88],[50000,.82],[100000,.76],[500000,.70],[1e6,.60],[1e7,.60],[1e8,.60]]) {
+      if (value > threshold) value = threshold + (value - threshold) * factor;
     }
+    return Math.floor(value / 5) * 5;
+  }
+  function levelOf(levels, id) {
+    const value = levels?.[id];
+    return Number.isSafeInteger(value) && value > 0 ? value : 0;
+  }
+
+  P.isMigrateRelicLevels = function (profile) {
+    if (profile.infiniteRelicLevels) return;
+    const levels = {};
+    for (const list of [profile.infiniteRelicIds, profile.infiniteScore?.relicIds]) {
+      for (const id of new Set(Array.isArray(list) ? list : [])) {
+        const old = artwork.find(item => item.id === id);
+        if (!old) continue;
+        const retained = relics.find(item => item.id === id);
+        const target = retained?.id ?? tiers.normal[stats.indexOf(old.stat)];
+        levels[target] = (levels[target] || 0) + 1;
+      }
+    }
+    profile.infiniteRelicLevels = levels;
   };
 
-  P.isBankRunRelics = function (run) {
-    const owned = validIds(this.profile.infiniteRelicIds);
-    const before = owned.size;
-    for (const id of validIds(run.relicIds)) owned.add(id);
-    this.profile.infiniteRelicIds = [...owned];
-    return owned.size - before;
+  P.isRollStairRelic = function (count) {
+    if (count <= 0 || count % 5 || (count % 20 && this.isRand() >= .30)) return null;
+    const levels = this.profile.infiniteRelicLevels ||= {};
+    const pool = relics.filter(item => item.grade === 'upper' ? count >= 40 : levelOf(levels,item.id) < 50);
+    if (!pool.length) {
+      this.profile.deferredRelicDraws = (this.profile.deferredRelicDraws || 0) + 1;
+      return '通常版はすべて最大Lvです。抽選を保存しました。40回降下で受け取れます。';
+    }
+    const draw = () => {
+      const item = pool[Math.floor(this.isRand() * pool.length)];
+      const level = levelOf(levels,item.id) + 1;
+      levels[item.id] = level;
+      return `${item.name} Lv.${level}（${item.label} ＋${percent(item,level)}%）`;
+    };
+    const rewards = [draw()];
+    if (count >= 40 && this.profile.deferredRelicDraws > 0) {
+      for (let i = 0; i < this.profile.deferredRelicDraws; i++) rewards.push(draw());
+      this.profile.deferredRelicDraws = 0;
+    }
+    return rewards.join(" ／ ");
+  };
+
+  P.isApplyRelicStats = function (total) {
+    const rates = {};
+    for (const item of relics) {
+      const level = levelOf(this.profile.infiniteRelicLevels, item.id);
+      if (level) rates[item.stat] = (rates[item.stat] || 0) + percent(item,level);
+    }
+    for (const [stat, rate] of Object.entries(rates)) total[stat] = Math.round(total[stat] * (1 + rate / 100));
   };
 
 
@@ -98,18 +134,21 @@
   function gems(rank) {
     return `<span class="ir-gems" data-rank="${rank}" aria-hidden="true">${'◆'.repeat(ranks.indexOf(rank) + 1)}</span>`;
   }
-  function detail(item, status) {
+  function detail(item, level) {
+    const tier = item.grade === 'upper' ? '上位版・40回降下から' : '通常版';
+    const next = item.grade === 'normal' && level >= 50 ? '最大Lv' : '次のLvで ＋' + percent(item, level + 1) + '%';
+    const effect = level ? 'Lv.' + level + ' ／ ' + item.label + ' ＋' + percent(item, level) + '%' : '未入手 ／ ' + item.label;
     return `<header><h3>${item.name}</h3>${badge(item.rank)}</header>
       <div class="ir-portrait" data-rank="${item.rank}">${art(item)}</div>
       <div class="ir-detail-rank">${gems(item.rank)}</div>
-      <p class="ir-description">${item.description}</p><p class="ir-effect"><b>${effect(item)}</b><br>${status}</p>`;
+      <p class="ir-description">${item.description}</p><p class="ir-effect"><b>${effect}</b><br>${next}<br>${tier}</p>`;
   }
 
   P.isRenderRelics = function (panel) {
     const state = this.isRelicUi ??= { mode: 'list', rank: 'all', sort: 'catalog', page: 0, selected: relics[0].id };
-    const active = validIds(this.isRun()?.relicIds);
-    const owned = validIds(this.profile.infiniteRelicIds);
-    const status = id => [active.has(id) ? '今回発動中' : '', owned.has(id) ? '持ち帰り済み' : active.has(id) ? '帰還で登録' : '未入手'].filter(Boolean).join(' ／ ');
+    const levels = this.profile.infiniteRelicLevels || {};
+    const owned = new Set(relics.filter(item => levelOf(levels, item.id)).map(item => item.id));
+    const status = id => owned.has(id) ? 'Lv.' + levelOf(levels, id) : '未入手';
     const entries = relics.filter(item => state.rank === 'all' || item.rank === state.rank);
     const sort = state.sort;
     if (sort === 'rarity') entries.sort((a, b) => ranks.indexOf(b.rank) - ranks.indexOf(a.rank));
@@ -129,17 +168,17 @@
       <div class="ir-body">
         <nav class="ir-tabs" aria-label="遺物の表示方法">${Object.entries(modes).map(([mode, label]) =>
           `<button type="button" data-ir-mode="${mode}"${pressed(state.mode === mode)}><span aria-hidden="true">${symbols[mode]}</span>${label}</button>`).join('')}</nav>
-        <div class="ir-filters" role="group" aria-label="レアリティで絞り込む">${['all', ...ranks].map(rank =>
+        <div class="ir-filters" role="group" aria-label="レアリティで絞り込む">${['all', ...availableRanks].map(rank =>
           `<button type="button" data-ir-filter="${rank}" data-rank="${rank}"${pressed(state.rank === rank)}>${rarity[rank] || 'すべて'}</button>`).join('')}</div>
         <div class="ir-bar">
-          <span>持ち帰り <b>${owned.size}</b> <small>/ ${relics.length}</small></span>
+          <span>所持 <b>${owned.size}</b> <small>/ ${relics.length}</small></span>
           <select data-ir-sort aria-label="遺物の並べ順">${Object.entries(sorts).map(([key, label]) =>
             `<option value="${key}" ${sort === key ? 'selected' : ''}>${label}</option>`).join('')}</select>
         </div>
         <div class="ir-columns">
           <section class="ir-collection" aria-label="遺物一覧">
             <div class="ir-grid ${state.mode === 'catalog' ? 'ir-catalog' : ''}">${visible.map(item =>
-              `<button type="button" data-ir-item="${item.id}" data-held="${active.has(item.id) ? 'active' : owned.has(item.id) ? 'owned' : ''}" data-rank="${item.rank}" aria-label="${item.name}、${rarity[item.rank]}、${status(item.id)}"${pressed(item === current)}>
+              `<button type="button" data-ir-item="${item.id}" data-held="${owned.has(item.id) ? 'owned' : ''}" data-rank="${item.rank}" aria-label="${item.name}、${rarity[item.rank]}、${status(item.id)}"${pressed(item === current)}>
                 ${art(item)}${state.mode === 'catalog' ? `<small>${item.name}</small>` : gems(item.rank)}</button>`).join('')}</div>
             ${pages > 1 ? `<nav class="ir-pages" aria-label="遺物リストのページ">
               <button type="button" data-ir-page="-1" aria-label="前のページ" ${state.page === 0 ? 'disabled' : ''}>‹</button>
@@ -147,7 +186,7 @@
               <button type="button" data-ir-page="1" aria-label="次のページ" ${state.page + 1 >= pages ? 'disabled' : ''}>›</button>
             </nav>` : ''}
           </section>
-          <article class="ir-detail" aria-label="遺物の詳細" aria-live="polite">${detail(current, status(current.id))}</article>
+          <article class="ir-detail" aria-label="遺物の詳細" aria-live="polite">${detail(current, levelOf(levels, current.id))}</article>
         </div>
       </div>
     </main>`;
@@ -170,7 +209,7 @@
         root.querySelector('[data-ir-item][aria-pressed="true"]')?.setAttribute('aria-pressed', 'false');
         button.setAttribute('aria-pressed', 'true');
         const currentDetail = root.querySelector('.ir-detail');
-        currentDetail.innerHTML = detail(item, status(item.id));
+        currentDetail.innerHTML = detail(item, levelOf(levels, item.id));
       } else if (irPage) {
         state.page += Number(irPage);
         refresh('[data-ir-page]:not(:disabled)');
