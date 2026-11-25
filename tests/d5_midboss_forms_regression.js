@@ -12,7 +12,7 @@ for (let form = 1; form <= 3; form++) {
 }
 
 const expected = [
-  ['maxHp', 33000, 42900, 64350], ['atk', 560, 728, 1092], ['def', 500, 650, 975],
+  ['maxHp', 84480, 109824, 164736], ['atk', 560, 728, 1092], ['def', 500, 650, 975],
   ['mag', 580, 754, 1131], ['mnd', 520, 676, 1014], ['dex', 420, 546, 819]
 ];
 for (const [key, first, second, third] of expected) {
@@ -23,5 +23,28 @@ for (const [key, first, second, third] of expected) {
 if (!game.includes("enemy.id === 'd5MidBoss' && enemy.form < 3")) throw new Error('three-phase transform guard is missing');
 if (!game.includes('transformD5MidBoss(enemy)')) throw new Error('D5 midboss transform is missing');
 if (!game.includes("applyBossOverdriveStats('d5MidBoss'")) throw new Error('overdrive scaling is not retained across forms');
+
+global.window = global;
+for (const moduleName of ['data', 'future_data', 'release_content', 'd4_extra_enemies', 'equipment_progression']) {
+  require('../js/' + moduleName + '.js');
+}
+const { dungeons, enemies } = window.ARSENE_DATA;
+const [d4, d5] = ['dungeon4', 'dungeon5'].map(id => dungeons.find(d => d.id === id));
+function averageHp(floor) {
+  const pool = floor.encounterProgression[0].pool;
+  const sum = pool.reduce((n, entry) => n + entry.weight * Math.round(enemies[entry.id].stats.maxHp * floor.enemyScale.hp), 0);
+  return sum / pool.reduce((n, entry) => n + entry.weight, 0);
+}
+for (const [i, floor] of d5.floors.entries()) {
+  const ratio = averageHp(floor) / averageHp(d4.floors[i]);
+  if (ratio < 9 || ratio > 11) throw new Error('D5 normal enemy HP ratio on floor ' + (i + 1) + ': ' + ratio);
+}
+function combinedHp(boss) {
+  return [boss, boss.form2, boss.form3].reduce((sum, form) => sum + (form?.stats.maxHp || 0), 0);
+}
+for (const key of ['midBossId', 'bossId']) {
+  if (combinedHp(enemies[d5[key]]) !== 10 * combinedHp(enemies[d4[key]])) throw new Error('D5 total HP mismatch: ' + key);
+}
+if (Math.round(enemies.d5MidBoss.form3.stats.maxHp / 64) !== 2574) throw new Error('Unexpected base NESTUA regeneration');
 
 console.log('d5 midboss forms regression: ok');
