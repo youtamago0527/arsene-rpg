@@ -340,23 +340,25 @@
     return Math.max(0, Math.min(remaining, this.isStairRelicDistance()));
   };
 
+  P.isStairPickerHtml = function (limit, preferred) {
+    if (limit <= 1) return '';
+    const distance = Math.min(limit, preferred);
+    const options = limit <= 20 ? Array.from({length:limit}, (_, i) => {
+      const value = i + 1;
+      return '<option value="' + value + '"' + (value === distance ? ' selected' : '') + '>' + value + '階</option>';
+    }).join('') : '';
+    const control = options ? '<select data-is-distance>' + options + '</select>' :
+      '<input data-is-distance type="number" required inputmode="numeric" step="1" min="1" max="' + limit + '" value="' + distance + '">';
+    return '<label class="is-stair-distance">降りる階数（1〜' + limit + '階）' + control + '</label>';
+  };
+
   P.isStairHtml = function () {
     if (!this.isAtStairs()) return '';
     const run = this.isRun(), limit = this.isStairDistanceLimit(run);
     if (!limit) return '<div class="is-stair-object forced"><b>最深階に到達</b></div>';
     const count = run.relicDescents || 0;
-    const distance = Math.min(limit, run.stairDistance || 1);
-    let picker = '';
-    if (limit > 1) {
-      const options = limit <= 20 ? Array.from({length:limit}, (_, i) => {
-        const value = i + 1;
-        return '<option value="' + value + '"' + (value === distance ? ' selected' : '') + '>' + value + '階</option>';
-      }).join('') : '';
-      const control = options ? '<select data-is-distance>' + options + '</select>' :
-        '<input data-is-distance type="number" required inputmode="numeric" step="1" min="1" max="' + limit + '" value="' + distance + '">';
-      picker = '<label class="is-stair-distance">降りる階数（1〜' + limit + '階）' + control + '</label>';
-    }
-    return `<div class="is-stair-object forced"><b>階段を発見</b>${picker}<div><button data-is-action="descend">${limit > 1 ? '選んだ階数を降りる' : '次の階へ降りる'}</button></div><small>階段使用：遺物抽選まであと${5 - count % 5}回 ／ 確定まであと${20 - count % 20}回</small></div>`;
+    const picker = this.isStairPickerHtml(limit, run.stairDistance || this.profile.infiniteStairPreference || 1);
+    return `<div class="is-stair-object forced"><b>階段を発見</b>${picker ? '<span>時空の羅針盤</span>' : ''}${picker}<div><button data-is-action="descend">${limit > 1 ? '選んだ階数を降りる' : '次の階へ降りる'}</button></div><small>階段使用：遺物抽選まであと${5 - count % 5}回 ／ 確定まであと${20 - count % 20}回</small></div>`;
   };
 
   P.isExploreMenuHtml=function(){

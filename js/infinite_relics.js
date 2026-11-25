@@ -51,7 +51,7 @@
 
   const tiers = {
     normal: ['phial', 'shard', 'skull', 'knight', 'frost-flower', 'lantern', 'feather', 'hairpin', 'key'],
-    upper: ['wheat', 'chalice', 'claw', 'lock', 'tome', 'mirror', 'hourglass', 'compass', 'crown']
+    upper: ['wheat', 'chalice', 'claw', 'lock', 'tome', 'mirror', 'hourglass', 'fox-mask', 'crown']
   };
   const stats = ['maxHp', 'maxMp', 'str', 'vit', 'mag', 'mnd', 'agi', 'dex', 'luk'];
   const labels = ['最大HP', '最大MP', '力', '体力', '魔力', '精神', '素早さ', '器用さ', '運'];
@@ -69,8 +69,9 @@
   for (const [id, label] of supportRelics) {
     relics.push({ ...artwork.find(item => item.id === id), grade: 'support', label });
   }
-  const stairRelicId = 'fox-mask';
-  relics.push({ ...artwork.find(item => item.id === stairRelicId), grade: 'stairs', label: '階段移動' });
+  const stairRelicId = 'compass';
+  const compass = { ...artwork.find(item => item.id === stairRelicId), grade: 'stairs', label: '階段移動' };
+  relics.push(compass);
   const availableRanks = ranks.filter(rank => relics.some(item => item.rank === rank));
 
   // Percentage curves from pie3636's Tower of Hero simulator (getPara).
@@ -91,6 +92,8 @@
     return (item.id === 'obsidian' ? '−' : '＋') + percent(item, level) + '%';
   }
 
+  const requiredStairUses = nextLevel => nextLevel * 20;
+
   P.isStairRelicDistance = function () {
     return Math.max(1, levelOf(this.profile.infiniteRelicLevels, stairRelicId));
   };
@@ -101,7 +104,18 @@
   }
 
   P.isMigrateRelicLevels = function (profile) {
-    if (profile.infiniteRelicLevels) return;
+    if (profile.infiniteRelicSchema === 2) return;
+    profile.infiniteRelicSchema = 2;
+    if (profile.infiniteRelicLevels) {
+      // The previous build used fox-mask for traversal and compass for dexterity.
+      const levels = profile.infiniteRelicLevels;
+      const stairs = levelOf(levels, 'fox-mask'), dexterity = levelOf(levels, 'compass');
+      delete levels['fox-mask'];
+      delete levels.compass;
+      if (stairs) levels.compass = stairs;
+      if (dexterity) levels['fox-mask'] = dexterity;
+      return;
+    }
     const levels = {};
     for (const list of [profile.infiniteRelicIds, profile.infiniteScore?.relicIds]) {
       for (const id of new Set(Array.isArray(list) ? list : [])) {
@@ -117,8 +131,13 @@
 
   P.isRollStairRelic = function (count) {
     if (count <= 0 || count % 5 || (count % 20 && this.isRand() >= .30)) return null;
-    const levels = this.profile.infiniteRelicLevels ||= {};
-    const pool = relics.filter(item => item.grade !== 'upper' || count >= 40);
+    this.isMigrateRelicLevels(this.profile);
+    const levels = this.profile.infiniteRelicLevels;
+    const stairThreshold = requiredStairUses(levelOf(levels, stairRelicId) + 1);
+    const pool = relics.filter(item => {
+      if (item.id === stairRelicId) return count >= stairThreshold;
+      return item.grade !== 'upper' || count >= 40;
+    });
     const draw = candidates => {
       const item = candidates[Math.floor(this.isRand() * candidates.length)];
       const level = levelOf(levels,item.id) + 1;
@@ -190,7 +209,7 @@
     return `<span class="ir-gems" data-rank="${rank}" aria-hidden="true">${'◆'.repeat(ranks.indexOf(rank) + 1)}</span>`;
   }
   function detail(item, level) {
-    const tier = item.grade === 'upper' ? '上位版・40回降下から' : item.grade === 'stairs' ? '階段移動の遺物' : item.grade === 'support' ? '補助遺物' : '通常版';
+    const tier = item.grade === 'upper' ? '上位版・40回降下から' : item.grade === 'stairs' ? '階段を' + requiredStairUses(level + 1) + '回使用で次のLvが抽選対象' : item.grade === 'support' ? '補助遺物' : '通常版';
     const next = '次のLvで ' + effectText(item, level + 1);
     const effect = level ? 'Lv.' + level + ' ／ ' + item.label + ' ' + effectText(item, level) : '未入手 ／ ' + item.label;
     return `<header><h3>${item.name}</h3>${badge(item.rank)}</header>
@@ -213,6 +232,9 @@
     const visible = entries.slice(state.page * pageSize, (state.page + 1) * pageSize);
     const current = visible.find(item => item.id === state.selected) || visible[0];
     state.selected = current.id;
+    const compassLevel = levelOf(levels, stairRelicId), run = this.isRun();
+    const limit = run ? this.isStairDistanceLimit(run) : Math.max(1, compassLevel);
+    const selectedDistance = run?.stairDistance || this.profile.infiniteStairPreference || 1;
     panel.dataset.panel = 'infinite-score-relics';
     panel.innerHTML = `<main class="ir-screen" aria-labelledby="ir-title">
       <header class="ir-hero">
@@ -243,6 +265,12 @@
           </section>
           <article class="ir-detail" aria-label="遺物の詳細" aria-live="polite">${detail(current, levelOf(levels, current.id))}</article>
         </div>
+        <section class="ir-compass" aria-label="時空の羅針盤・階段設定">
+          ${art(compass)}
+          <div><strong>${compass.name}</strong> <small>${status(stairRelicId)}</small>
+          <p>${compassLevel ? effectText(compass, compassLevel) : '階段を20回使用すると抽選対象になります。'}</p></div>
+          ${this.isStairPickerHtml(limit, selectedDistance)}
+        </section>
       </div>
     </main>`;
     const root = panel.firstElementChild;
@@ -276,6 +304,14 @@
       }
     });
     root.addEventListener('change', event => {
+      if (event.target.matches('[data-is-distance]')) {
+        const value = Number(event.target.value);
+        if (!Number.isSafeInteger(value) || value < 1 || value > limit || !event.target.reportValidity()) return;
+        if (run) run.stairDistance = value;
+        else this.profile.infiniteStairPreference = value;
+        this.saveProfile();
+        return;
+      }
       if (!event.target.matches('[data-ir-sort]')) return;
       state.sort = event.target.value;
       state.page = 0;

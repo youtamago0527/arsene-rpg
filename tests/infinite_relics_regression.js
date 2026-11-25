@@ -23,7 +23,7 @@ function draw(index, count, poolSize) {
   return game.isRollStairRelic(count);
 }
 const normals = ['phial','shard','skull','knight','frost-flower','lantern','feather','hairpin','key'];
-const uppers = ['wheat','chalice','claw','lock','tome','mirror','hourglass','compass','crown'];
+const uppers = ['wheat','chalice','claw','lock','tome','mirror','hourglass','fox-mask','crown'];
 const stats = ['maxHp','maxMp','str','vit','mag','mnd','agi','dex','luk'];
 function totals() {
   const result = Object.fromEntries(stats.map(key => [key,100]));
@@ -54,17 +54,41 @@ assert.equal(game.profile.infiniteRelicLevels.skull,3);
 game.profile = JSON.parse(JSON.stringify(game.profile));
 game.isMigrateRelicLevels(game.profile);
 assert.deepEqual(game.profile.infiniteRelicLevels,{skull:3});
+// Pick the last entry on every successful roll. This selects the mask exactly when eligible.
+function drawLast(count) {
+  const rolls = count % 20 === 0 ? [.99999] : [0,.99999];
+  game.isRand = () => rolls.shift();
+  return game.isRollStairRelic(count);
+}
+game.profile.infiniteRelicLevels = {};
+for (let level = 1; level <= 4; level++) {
+  const threshold = level * 20;
+  assert.doesNotMatch(drawLast(threshold - 5), /時空の羅針盤/);
+  assert.equal(game.isRollStairRelic(threshold - 1),null);
+  assert.match(drawLast(threshold), /時空の羅針盤/);
+  assert.equal(game.profile.infiniteRelicLevels['compass'],level);
+  assert.doesNotMatch(drawLast(threshold + 5), /時空の羅針盤/);
+}
+game.profile = JSON.parse(JSON.stringify(game.profile));
+assert.doesNotMatch(drawLast(20), /時空の羅針盤/);
+assert.equal(game.isStairRelicDistance(),4);
+assert.match(drawLast(105), /時空の羅針盤 Lv\.5/);
+const oldRelics = { infiniteRelicLevels:{'fox-mask':3,compass:5} };
+game.isMigrateRelicLevels(oldRelics);
+game.isMigrateRelicLevels(oldRelics);
+assert.deepEqual(oldRelics.infiniteRelicLevels,{compass:3,'fox-mask':5});
 const supports = ['shell','lute','obsidian','gear','astrolabe'];
-const allRelics = [...normals, ...uppers, ...supports, 'fox-mask'];
+const allRelics = [...normals, ...uppers, ...supports, 'compass'];
 game.profile.infiniteRelicLevels = Object.fromEntries(allRelics.map(id => [id,50]));
-for (const [index,id] of [...normals,...supports,'fox-mask'].entries()) {
-  assert.match(draw(index,20,15), /Lv\.51/);
+for (const [index,id] of [...normals,...supports].entries()) {
+  assert.match(draw(index,20,14), /Lv\.51/);
   assert.equal(game.profile.infiniteRelicLevels[id],51);
 }
 for (const [index,id] of uppers.entries()) {
-  assert.match(draw(9+index,40,24), /Lv\.51/);
+  assert.match(draw(9+index,40,23), /Lv\.51/);
   assert.equal(game.profile.infiniteRelicLevels[id],51);
 }
+assert.match(draw(23,1020,24), /時空の羅針盤 Lv\.51/);
 assert.equal(game.isStairRelicDistance(),51);
 assert.equal(game.profile.deferredRelicDraws,undefined);
 game.profile.deferredRelicDraws = 2;
@@ -118,7 +142,7 @@ assert.equal(game.owgRollStar(9),5);
 vm.runInNewContext(fs.readFileSync('js/infinite_score.js','utf8'), {
   window:{ BattleGame:Game, ARSENE_DATA:data }, document:{ addEventListener(){}, querySelector(){return null;} }
 });
-game.profile.infiniteRelicLevels['fox-mask'] = 3;
+game.profile.infiniteRelicLevels['compass'] = 3;
 Object.assign(run,{floor:18,relicDescents:4});
 game.isEffectiveCfg = () => ({maxFloor:100});
 game.isAtStairs = () => true;
