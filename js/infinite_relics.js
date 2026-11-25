@@ -75,8 +75,8 @@
   // Mithril Sword/Armour's magnitude is used for the normal tier; Claymore for the upper tier.
   const earlyClaymore = [0,30,65,100,140,185,230,280,330,385,460,535,610,690,770,850,935,1030,1130];
   function percent(item, level) {
-    if (item.grade === 'support') return Math.min(level, 50);
-    if (item.grade === 'normal') return 2 * Math.min(level, 20) + Math.max(0, Math.min(level, 50) - 20);
+    if (item.grade === 'support') return level;
+    if (item.grade === 'normal') return level + Math.min(level, 20);
     if (level < earlyClaymore.length) return earlyClaymore[level];
     let value = 20 * level + 2.5 * level * (level - 1);
     for (const [threshold, factor] of [[25000,.88],[50000,.82],[100000,.76],[500000,.70],[1e6,.60],[1e7,.60],[1e8,.60]]) {
@@ -107,27 +107,25 @@
   P.isRollStairRelic = function (count) {
     if (count <= 0 || count % 5 || (count % 20 && this.isRand() >= .30)) return null;
     const levels = this.profile.infiniteRelicLevels ||= {};
-    const pool = relics.filter(item => item.grade === 'upper' ? count >= 40 : levelOf(levels,item.id) < 50);
-    if (!pool.length) {
-      this.profile.deferredRelicDraws = (this.profile.deferredRelicDraws || 0) + 1;
-      return 'この深さの遺物はすべて最大Lvです。抽選を保存しました。40回降下で受け取れます。';
-    }
-    const draw = () => {
-      const item = pool[Math.floor(this.isRand() * pool.length)];
+    const pool = relics.filter(item => item.grade !== 'upper' || count >= 40);
+    const draw = candidates => {
+      const item = candidates[Math.floor(this.isRand() * candidates.length)];
       const level = levelOf(levels,item.id) + 1;
       levels[item.id] = level;
       return `${item.name} Lv.${level}（${item.label} ${item.id === 'obsidian' ? '−' : '＋'}${percent(item,level)}%）`;
     };
-    const rewards = [draw()];
+    const rewards = [draw(pool)];
     if (count >= 40 && this.profile.deferredRelicDraws > 0) {
-      for (let i = 0; i < this.profile.deferredRelicDraws; i++) rewards.push(draw());
+      // Older saves banked draws when every shallow relic reached the former cap.
+      const upperRelics = pool.filter(item => item.grade === 'upper');
+      for (let i = 0; i < this.profile.deferredRelicDraws; i++) rewards.push(draw(upperRelics));
       this.profile.deferredRelicDraws = 0;
     }
     return rewards.join(" ／ ");
   };
 
   P.isSupportRelicRate = function (id) {
-    return Math.min(50, levelOf(this.profile.infiniteRelicLevels, id));
+    return levelOf(this.profile.infiniteRelicLevels, id);
   };
 
   P.isWeakenRelicEnemy = function (stats) {
@@ -183,7 +181,7 @@
   function detail(item, level) {
     const sign = item.id === 'obsidian' ? '−' : '＋';
     const tier = item.grade === 'upper' ? '上位版・40回降下から' : item.grade === 'support' ? '補助遺物' : '通常版';
-    const next = item.grade !== 'upper' && level >= 50 ? '最大Lv' : '次のLvで ' + sign + percent(item, level + 1) + '%';
+    const next = '次のLvで ' + sign + percent(item, level + 1) + '%';
     const effect = level ? 'Lv.' + level + ' ／ ' + item.label + ' ' + sign + percent(item, level) + '%' : '未入手 ／ ' + item.label;
     return `<header><h3>${item.name}</h3>${badge(item.rank)}</header>
       <div class="ir-portrait" data-rank="${item.rank}">${art(item)}</div>

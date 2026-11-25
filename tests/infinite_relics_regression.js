@@ -40,7 +40,7 @@ for (let i = 0; i < 9; i++) {
   assert.equal(totals()[stats[i]],132);
 }
 for (const [id, pairs] of [
-  ['phial', [[1,2],[10,20],[20,40],[21,41],[50,70]]],
+  ['phial', [[1,2],[10,20],[20,40],[21,41],[50,70],[51,71],[1000,1020]]],
   ['wheat', [[1,30],[2,65],[3,100],[10,460],[18,1130],[19,1235],[20,1350],[50,7125]]]
 ]) {
   for (const [level, bonus] of pairs) {
@@ -54,12 +54,22 @@ assert.equal(game.profile.infiniteRelicLevels.skull,3);
 game.profile = JSON.parse(JSON.stringify(game.profile));
 game.isMigrateRelicLevels(game.profile);
 assert.deepEqual(game.profile.infiniteRelicLevels,{skull:3});
-game.profile.infiniteRelicLevels = Object.fromEntries([...normals, 'shell','lute','obsidian','gear','astrolabe'].map(id => [id,50]));
-assert.ok(draw(0,20,9));
-assert.equal(game.profile.deferredRelicDraws,1);
-draw(0,40,9);
+const supports = ['shell','lute','obsidian','gear','astrolabe'];
+const allRelics = [...normals, ...uppers, ...supports];
+game.profile.infiniteRelicLevels = Object.fromEntries(allRelics.map(id => [id,50]));
+for (const [index,id] of [...normals,...supports].entries()) {
+  assert.match(draw(index,20,14), /Lv\.51/);
+  assert.equal(game.profile.infiniteRelicLevels[id],51);
+}
+for (const [index,id] of uppers.entries()) {
+  assert.match(draw(9+index,40,23), /Lv\.51/);
+  assert.equal(game.profile.infiniteRelicLevels[id],51);
+}
+assert.equal(game.profile.deferredRelicDraws,undefined);
+game.profile.deferredRelicDraws = 2;
+draw(0,40,23);
+assert.equal(game.profile.infiniteRelicLevels.wheat,53);
 assert.equal(game.profile.deferredRelicDraws,0);
-assert.equal(game.profile.infiniteRelicLevels.wheat,2);
 game.profile = { infiniteRelicLevels: { shell:1, lute:1, obsidian:1, gear:1, astrolabe:1 } };
 const player = { hp:25, mp:0, stats:{ maxHp:200, maxMp:39 } };
 const run = {};
@@ -85,6 +95,23 @@ assert.equal(game.owgRollStar(25),5);
 game.profile.infiniteRelicLevels.astrolabe = 1;
 game.isRand = () => .97979;
 assert.equal(game.owgRollStar(25),5);
+game.isRand = () => .999999;
+assert.equal(game.owgRollStar(9),5);
+game.profile.infiniteRelicLevels = Object.fromEntries(allRelics.map(id => [id,1000]));
+assert.match(draw(0,40,23), /Lv\.1001/);
+game.profile = JSON.parse(JSON.stringify(game.profile));
+assert.equal(game.profile.infiniteRelicLevels.phial,1001);
+assert.equal(game.isSupportRelicRate('gear'),1000);
+assert.equal(game.isEarnRelicCoins({},10),110);
+const highEnemy = {maxHp:7500, atk:200, def:0};
+game.isWeakenRelicEnemy(highEnemy);
+assert.deepEqual(highEnemy,{maxHp:1,atk:1,def:0});
+player.hp=1; player.mp=0;
+game.isRecoverRelicVitals(run,player);
+assert.equal(player.hp,200);
+assert.equal(player.mp,39);
+game.isRand = () => 0;
+assert.equal(game.owgRollStar(150),6);
 game.isRand = () => .999999;
 assert.equal(game.owgRollStar(9),5);
 console.log('23 relics: milestone rolls, growth, recovery, weakness, coins and permanent saves: OK');
