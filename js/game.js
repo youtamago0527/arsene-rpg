@@ -2043,7 +2043,11 @@
     makeEnemy(id, index) {
       const t = D.enemies[id], floor = this.activeFloor(this.currentDungeonId), scale = t.ignoreFloorStatScale ? {} : (floor?.enemyScale || {});
       const rateFor = key => scale[key] ?? (key === 'maxHp' ? scale.hp : 1) ?? 1;
-      const stats = Object.fromEntries(Object.entries(t.stats || {}).map(([key, value]) => [key, Math.max(1, Math.round(value * rateFor(key))) ]));
+      // D5 uses ten-point units so floor rounding matches the corresponding D4 encounter exactly.
+      const unit = t.statRoundingUnit || 1;
+      const stats = Object.fromEntries(Object.entries(t.stats || {}).map(([key, value]) =>
+        [key, Math.max(1, Math.round((value / unit) * rateFor(key))) * unit]
+      ));
       const rewardRate = scale.rewards || 1;
       const gold = t.gold && typeof t.gold === 'object' ? { min: Math.round(t.gold.min * rewardRate), max: Math.round(t.gold.max * rewardRate) } : t.gold;
       return { ...t, uid: `enemy-${index}`, label: String.fromCharCode(65 + index), floorId: floor?.id || t.floorId, floorScale: scale, stats, hp: stats.maxHp, exp: Math.round((t.exp || 0) * rewardRate), gold, alive: true, bindResistance: t.bindResistance || 0, bindTurns: 0 };

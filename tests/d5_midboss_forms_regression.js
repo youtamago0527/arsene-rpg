@@ -11,15 +11,6 @@ for (let form = 1; form <= 3; form++) {
   if (!data.includes(`d5-midboss-form${form}.png`)) throw new Error(`D5 midboss form ${form} is not registered`);
 }
 
-const expected = [
-  ['maxHp', 84480, 109824, 164736], ['atk', 560, 728, 1092], ['def', 500, 650, 975],
-  ['mag', 580, 754, 1131], ['mnd', 520, 676, 1014], ['dex', 420, 546, 819]
-];
-for (const [key, first, second, third] of expected) {
-  if (Math.round(first * 1.3) !== second) throw new Error(`${key} phase 2 is not 1.3x`);
-  if (Math.round(second * 1.5) !== third) throw new Error(`${key} phase 3 is not 1.5x phase 2`);
-  if (!data.includes(`${key}: ${second}`) || !data.includes(`${key}: ${third}`)) throw new Error(`${key} phase stats are missing`);
-}
 if (!game.includes("enemy.id === 'd5MidBoss' && enemy.form < 3")) throw new Error('three-phase transform guard is missing');
 if (!game.includes('transformD5MidBoss(enemy)')) throw new Error('D5 midboss transform is missing');
 if (!game.includes("applyBossOverdriveStats('d5MidBoss'")) throw new Error('overdrive scaling is not retained across forms');
@@ -40,15 +31,33 @@ if (!d5.music || d5.music === d4.music || nestua.music !== d5.music || !nestua.f
 for (const track of [d5.music, nestua.form3.music]) {
   if (!fs.existsSync(path.join(root, track))) throw new Error('Missing D5 music: ' + track);
 }
-function averageHp(floor) {
-  const pool = floor.encounterProgression[0].pool;
-  const sum = pool.reduce((n, entry) => n + entry.weight * Math.round(enemies[entry.id].stats.maxHp * floor.enemyScale.hp), 0);
-  return sum / pool.reduce((n, entry) => n + entry.weight, 0);
+global.addEventListener = () => {};
+require('../js/game.js');
+const assert = require('node:assert/strict');
+const battle = Object.create(window.BattleGame.prototype);
+function encounterStats(id, floor) {
+  battle.activeFloor = () => floor;
+  return battle.makeEnemy(id, 0).stats;
 }
+function assertTenfold(actual, baseline) {
+  for (const [key, value] of Object.entries(baseline)) assert.equal(actual[key], value * 10, key);
+}
+const counterparts = { venomWeaver: 'lanternMask', repeatedHunter: 'moonEdgeKnight' };
 for (const [i, floor] of d5.floors.entries()) {
-  const ratio = averageHp(floor) / averageHp(d4.floors[i]);
-  if (ratio < 9 || ratio > 11) throw new Error('D5 normal enemy HP ratio on floor ' + (i + 1) + ': ' + ratio);
+  for (const tier of floor.encounterProgression) {
+    for (const { id } of tier.pool) assertTenfold(encounterStats(id, floor), encounterStats(counterparts[id], d4.floors[i]));
+  }
 }
+assertTenfold(enemies.ostina.stats, enemies.astact.stats);
+const fegoria = enemies.d4MidBoss;
+for (const [key, first] of Object.entries(fegoria.stats)) {
+  if (key === 'maxHp') continue;
+  const last = fegoria.form2.stats[key];
+  assert.equal(nestua.stats[key], first * 10);
+  assert.equal(nestua.form2.stats[key], (first + last) * 5);
+  assert.equal(nestua.form3.stats[key], last * 10);
+}
+assert.deepEqual([nestua.stats.maxHp, nestua.form2.stats.maxHp, nestua.form3.stats.maxHp], [84480, 109824, 164736]);
 function combinedHp(boss) {
   return [boss, boss.form2, boss.form3].reduce((sum, form) => sum + (form?.stats.maxHp || 0), 0);
 }
