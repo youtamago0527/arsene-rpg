@@ -69,6 +69,8 @@
   for (const [id, label] of supportRelics) {
     relics.push({ ...artwork.find(item => item.id === id), grade: 'support', label });
   }
+  const stairRelicId = 'fox-mask';
+  relics.push({ ...artwork.find(item => item.id === stairRelicId), grade: 'stairs', label: '階段移動' });
   const availableRanks = ranks.filter(rank => relics.some(item => item.rank === rank));
 
   // Percentage curves from pie3636's Tower of Hero simulator (getPara).
@@ -84,6 +86,15 @@
     }
     return Math.floor(value / 5) * 5;
   }
+  function effectText(item, level) {
+    if (item.grade === 'stairs') return level === 1 ? '1階降下' : '1〜' + level + '階から選択';
+    return (item.id === 'obsidian' ? '−' : '＋') + percent(item, level) + '%';
+  }
+
+  P.isStairRelicDistance = function () {
+    return Math.max(1, levelOf(this.profile.infiniteRelicLevels, stairRelicId));
+  };
+
   function levelOf(levels, id) {
     const value = levels?.[id];
     return Number.isSafeInteger(value) && value > 0 ? value : 0;
@@ -112,7 +123,7 @@
       const item = candidates[Math.floor(this.isRand() * candidates.length)];
       const level = levelOf(levels,item.id) + 1;
       levels[item.id] = level;
-      return `${item.name} Lv.${level}（${item.label} ${item.id === 'obsidian' ? '−' : '＋'}${percent(item,level)}%）`;
+      return `${item.name} Lv.${level}（${item.label} ${effectText(item, level)}）`;
     };
     const rewards = [draw(pool)];
     if (count >= 40 && this.profile.deferredRelicDraws > 0) {
@@ -161,7 +172,7 @@
   P.isApplyRelicStats = function (total) {
     const rates = {};
     for (const item of relics) {
-      if (item.grade === 'support') continue;
+      if (!item.stat || item.grade === 'stairs' || item.grade === 'support') continue;
       const level = levelOf(this.profile.infiniteRelicLevels, item.id);
       if (level) rates[item.stat] = (rates[item.stat] || 0) + percent(item,level);
     }
@@ -179,10 +190,9 @@
     return `<span class="ir-gems" data-rank="${rank}" aria-hidden="true">${'◆'.repeat(ranks.indexOf(rank) + 1)}</span>`;
   }
   function detail(item, level) {
-    const sign = item.id === 'obsidian' ? '−' : '＋';
-    const tier = item.grade === 'upper' ? '上位版・40回降下から' : item.grade === 'support' ? '補助遺物' : '通常版';
-    const next = '次のLvで ' + sign + percent(item, level + 1) + '%';
-    const effect = level ? 'Lv.' + level + ' ／ ' + item.label + ' ' + sign + percent(item, level) + '%' : '未入手 ／ ' + item.label;
+    const tier = item.grade === 'upper' ? '上位版・40回降下から' : item.grade === 'stairs' ? '階段移動の遺物' : item.grade === 'support' ? '補助遺物' : '通常版';
+    const next = '次のLvで ' + effectText(item, level + 1);
+    const effect = level ? 'Lv.' + level + ' ／ ' + item.label + ' ' + effectText(item, level) : '未入手 ／ ' + item.label;
     return `<header><h3>${item.name}</h3>${badge(item.rank)}</header>
       <div class="ir-portrait" data-rank="${item.rank}">${art(item)}</div>
       <div class="ir-detail-rank">${gems(item.rank)}</div>
