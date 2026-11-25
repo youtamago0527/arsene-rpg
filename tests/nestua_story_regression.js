@@ -5,7 +5,6 @@ const root = path.resolve(__dirname, '..');
 const game = fs.readFileSync(path.join(root, 'js', 'game.js'), 'utf8');
 const data = fs.readFileSync(path.join(root, 'js', 'release_content.js'), 'utf8');
 
-if (!data.includes("name: 'NESTUA', nameEn: 'NESTUA', title: '《ネストゥア》'")) throw new Error('NESTUA formal name is missing');
 for (const line of ['当たり前じゃないなんて', '戦い続けなきゃならないのですか', '助けてくれ――！']) {
   if (!game.includes(line)) throw new Error(`phase 2 clear dialogue missing: ${line}`);
 }

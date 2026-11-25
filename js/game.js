@@ -1912,13 +1912,13 @@
       Object.assign(enemy, { name: form.name, title: form.title, sprite: form.sprite, battleScale: form.battleScale, stats: formStats, hp: formStats.maxHp, alive: true, form: nextForm, phaseTurn: 0, regenTurns: 0, rolledDrops: null });
       this.renderEnemies(); this.updateHUD(); this.playBossMusic('d5MidBoss', nextForm);
       this.flashTitle(nextForm === 2 ? 'SECOND FORM' : 'THIRD FORM', `D5 MID BOSS // PHASE ${nextForm}`);
-      this.setLog(nextForm === 2 ? '侵蝕が全身へ広がり、NESTUAの力が増幅した！' : 'NESTUAは巨大な完全異形へ変貌した！');
+      this.setLog(nextForm === 2 ? '侵蝕が全身へ広がり、ネストゥアの力が増幅した！' : 'ネストゥアは巨大な完全異形へ変貌した！');
       await this.battleSleep(900); this.turn++; this.locked = false; this.showMainCommands();
     }
     async transformPendingBoss(enemy) { if (this.battleMode === 'versicrell') return this.transformVersicrell(enemy); if (this.battleMode === 'd4MidBoss') return this.transformFegoria(enemy); if (this.battleMode === 'd5MidBoss') return this.transformD5MidBoss(enemy); }
     async nestuaStrike(enemy, name, { magical = false, multiplier = 1, hits = 1, clearBuffs = false, echo = false } = {}) {
       const el = document.getElementById(enemy.uid), ren = $('#ren');
-      this.flashTitle(name, magical ? 'DISTORTED JAZZ' : 'CRIMSON RIFF'); this.setLog(`NESTUAの${name}！`);
+      this.flashTitle(name, magical ? 'DISTORTED JAZZ' : 'CRIMSON RIFF'); this.setLog(`ネストゥアの${name}！`);
       let dealt = 0;
       for (let i = 0; i < hits && this.player.hp > 0; i++) {
         this.audio.sfx(magical ? 'dark' : 'slash'); el?.classList.add('enemy-attacking'); await this.battleSleep(hits > 1 ? 180 : 360);
@@ -1942,7 +1942,7 @@
       enemy.lastNestuaTick = this.turn;
       if ((enemy.regenTurns || 0) > 0) {
         const heal = Math.min(Math.round(enemy.stats.maxHp / 64), enemy.stats.maxHp - enemy.hp); enemy.regenTurns--;
-        if (heal > 0) { enemy.hp += heal; this.floating(document.getElementById(enemy.uid), `+${heal}`, 'heal'); this.setLog(`《悪徳の美学》がNESTUAのHPを${heal}回復。`); this.updateHUD(); await this.battleSleep(320); }
+        if (heal > 0) { enemy.hp += heal; this.floating(document.getElementById(enemy.uid), `+${heal}`, 'heal'); this.setLog(`《悪徳の美学》がネストゥアのHPを${heal}回復。`); this.updateHUD(); await this.battleSleep(320); }
       }
       const echoes = this.player.nestuaEchoes || [], due = echoes.filter(e => e.turn <= this.turn), future = echoes.filter(e => e.turn > this.turn);
       this.player.nestuaEchoes = future;
@@ -1952,7 +1952,7 @@
       const guarded = this.player.buffs?.guardUntil === this.turn, damage = guarded ? 250 : 500, actual = Math.min(this.player.hp, damage);
       this.flashTitle("What's Are You Doing?", guarded ? 'FIXED 500 // GUARD 250' : 'FIXED DAMAGE 500'); this.audio.sfx('critical');
       this.player.hp = Math.max(0, this.player.hp - actual); this.persistVitals(); this.floating($('#ren'), actual, 'enemy-damage');
-      this.setLog(`NESTUAのWhat's Are You Doing?――${actual}固定ダメージ！`); this.updateHUD(); await this.battleSleep(650);
+      this.setLog(`ネストゥアのWhat's Are You Doing?――${actual}固定ダメージ！`); this.updateHUD(); await this.battleSleep(650);
     }
     async bossAttackNestua(enemy) {
       await this.nestuaStatusTick(enemy); if (this.player.hp <= 0) return;
@@ -1963,7 +1963,7 @@
       }
       const act = async () => {
         const r = Math.random();
-        if (phase >= 3 && !(enemy.regenTurns > 0) && r < .18) { enemy.regenTurns = 3; this.flashTitle('悪徳の美学', 'REGENERATION // 3T'); this.audio.sfx('dark'); this.setLog('黒赤い外殻が脈動し、NESTUAの再生が始まった！'); this.updateHUD(); await this.battleSleep(520); return; }
+        if (phase >= 3 && !(enemy.regenTurns > 0) && r < .18) { enemy.regenTurns = 3; this.flashTitle('悪徳の美学', 'REGENERATION // 3T'); this.audio.sfx('dark'); this.setLog('黒赤い外殻が脈動し、ネストゥアの再生が始まった！'); this.updateHUD(); await this.battleSleep(520); return; }
         if (phase >= 2 && r < .44) { await this.nestuaStrike(enemy, 'T.クライム', { multiplier: .48, hits: 3 }); return; }
         if (phase >= 2 && r < .66) { await this.nestuaStrike(enemy, '5月の残響', { magical: true, multiplier: .82, echo: true }); return; }
         if (r < .82) { await this.nestuaStrike(enemy, 'ナッシング', { magical: true, multiplier: .88, clearBuffs: true }); return; }
@@ -2127,7 +2127,7 @@
       enemyLayer.dataset.count = String(Math.min(3, Math.max(1, this.enemies.length)));
       enemyLayer.innerHTML = this.enemies.map((e, i) => {
         const statuses = '<button type="button" class="status-strip enemy-statuses" aria-label="敵の状態と解析情報"></button>';
-        const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : e.id === 'd4MidBoss' ? ` fegoria-boss form-${e.form || 1}` : '';
+        const bossClass = e.id === 'd5MidBoss' && e.form >= 2 ? ' nestua-transformed' : e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : e.id === 'd4MidBoss' ? ` fegoria-boss form-${e.form || 1}` : '';
         const slotLabel = String.fromCharCode(65 + i);
         // 肩書き付きボスの表示名。既存の異名テーブルはそのまま使い、文字数を数えて
         // font-sizeを決めるのではなく、肩書きデータが実在するボスだけ2段表示にする。
@@ -3864,7 +3864,7 @@
         if (firstClear) {
           this.profile.flags.nestuaIdentityRevealed = true; this.saveProfile();
           const lines = [
-            { sys: 'NESTUA // SIGNAL LOST' },
+            { sys: 'ネストゥア // SIGNAL LOST' },
             { who: '？？？', text: '……終わった……のか。' },
             { sys: 'IDENTITY RESTORED // 刹那' },
             { who: '刹那', text: 'ずっと……分からなかった。' },
@@ -3886,8 +3886,8 @@
           if (typeof this.playNoiseSequence === 'function') await this.playNoiseSequence(lines);
           else for (const line of lines) { this.setLog(line.text || line.big || line.sys); await this.battleSleep(650); }
         } else this.saveProfile();
-        const note = firstClear ? '<div class="boss-recipe-unlock"><small>IDENTITY RESTORED</small><b>NESTUA // 刹那</b><strong>人間だった異形</strong><span>封鎖された後半ルートが解放された。この先にも同じ境遇の人間がいるかもしれない。</span></div>' : '';
-        this.showResult('VICTORY', firstClear ? 'NESTUAの異形を崩し、刹那を救い出した。' : 'NESTUAを撃破した！', 'MID BOSS // COMPLETE', `${rewardBlock}${note}`);
+        const note = firstClear ? '<div class="boss-recipe-unlock"><small>IDENTITY RESTORED</small><b>ネストゥア // 刹那</b><strong>人間だった異形</strong><span>封鎖された後半ルートが解放された。この先にも同じ境遇の人間がいるかもしれない。</span></div>' : '';
+        this.showResult('VICTORY', firstClear ? 'ネストゥアの異形を崩し、刹那を救い出した。' : 'ネストゥアを撃破した！', 'MID BOSS // COMPLETE', `${rewardBlock}${note}`);
         this.offerRepeatBossMaterialDrop(e, firstClear); return;
       }
       if ((D.dungeons || []).some(dungeon => dungeon.midBossId === this.battleMode)) { const e = D.enemies[this.battleMode], firstClear = !this.isBossDefeated(this.battleMode); this.markBossDefeated(this.battleMode); this.noteBossRematchSnapshot(this.battleMode); this.saveProfile(); const note = firstClear ? `<div class="boss-recipe-unlock"><small>MID BOSS CLEARED</small><b>ROUTE OPEN</b><strong>${e.name} 撃破</strong><span>封鎖された後半ルートが解放された。</span></div>` : ''; this.showResult('VICTORY', `${e.name}を撃破した！`, 'MID BOSS // COMPLETE', `${rewardBlock}${note}`); this.offerRepeatBossMaterialDrop(e, firstClear); return; }

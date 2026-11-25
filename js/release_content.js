@@ -83,17 +83,20 @@
 
   D.enemies.d4MidBoss.music = '音楽系/戦闘用/D4中ボス第一形態.mp3';
   D.enemies.d4MidBoss.form2.music = '音楽系/戦闘用/D4中ボス第二形態.mp3';
+  const d5BattleMusic = '音楽系/戦闘用/D5通常戦闘-毒糸の追奏.mp3';
   Object.assign(D.enemies.d5MidBoss, {
-    name: 'NESTUA', nameEn: 'NESTUA', title: '《ネストゥア》', role: 'MID BOSS / THREE FORMS',
+    music: d5BattleMusic,
+    name: 'ネストゥア', nameEn: 'ネストゥア', title: '', role: 'MID BOSS / THREE FORMS',
     sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form1.png',
     phaseCount: 3,
     battleScale: 1.12,
     form2: {
-      name: 'NESTUA', title: '《ネストゥア》', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form2.png', battleScale: 1.16,
+      name: 'ネストゥア', title: '', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form2.png', battleScale: 1.16,
       stats: { maxHp: 109824, atk: 728, def: 650, mag: 754, mnd: 676, dex: 546, agi: 135, spd: 135 }
     },
     form3: {
-      name: 'NESTUA', title: '《ネストゥア》', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form3.png', battleScale: 1.2,
+      music: '音楽系/戦闘用/刹那第三形態.mp3',
+      name: 'ネストゥア', title: '', sprite: 'assets/enemy-characters/dungeon5/d5-midboss-form3.png', battleScale: 1.2,
       stats: { maxHp: 164736, atk: 1092, def: 975, mag: 1131, mnd: 1014, dex: 819, agi: 203, spd: 203 }
     }
   });
@@ -124,6 +127,7 @@
   if (!D.guitarSeries.entries.some(entry => entry.itemId === 'splurgeGuitar')) D.guitarSeries.entries.push({ dungeonId: 'dungeon4', itemId: 'splurgeGuitar', dropEnemyId: 'd4MidBoss', skillTreeId: 'versicrellGuitar' });
   D.dungeons.push({
     id: 'dungeon5', name: '反復の狩庭', nameEn: 'OSTINATO HUNTING GROUND', background: d3bg[1], thumbnail: d3bg[1], recommendedLevel: 34,
+    music: d5BattleMusic,
     description: '毒と追撃が繰り返される狩庭。敵のHPは断月の楼閣の約10倍。長期戦に備えて火力と回復手段を整えよう。', unlockCondition: 'dungeon4Clear', bossId: 'ostina', midBossId: 'd5MidBoss', midBossAfterFloor: 2,
     floors: [
       floor('d5f1', '毒糸の林廊', '1F VENOM THREAD', 6, d3bg[0], ['hunterThread'], { hp: 1, atk: 1, mag: 1, def: 1, mnd: 1, spd: 1, rewards: 1 }, [{ id: 'venomWeaver', weight: 5 }, { id: 'repeatedHunter', weight: 3 }]),
