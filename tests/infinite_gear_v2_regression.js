@@ -441,3 +441,22 @@ test('V2 affects only equipped bonuses; legacy individuals remain usable and ord
   assert.equal(game.totalStats().maxHp,100);
   assert.equal(game.owgAdjustDamage(200,{id:'skill'},{kind:'boss'},true),null);
 });
+
+test('rare enemy gear skews OP count, grade and value toward stronger results', () => {
+  const totals=[false,true].map(rareDrop=>{
+    const sums={count:0,grade:0,value:0,variableCount:0};
+    for(let i=1;i<=700;i++){
+      let seed=i;
+      const random=()=>((seed=(Math.imul(1664525,seed)+1013904223)>>>0)/2**32);
+      const item=statModel.generate({uid:'test',rarity:4,part:'sword',floor:45,random,rareDrop});
+      sums.count+=item.ops.length;
+      for(const op of item.ops){
+        sums.grade+=cfg.grades.indexOf(op.grade);
+        const definition=cfg.ops.find(candidate=>candidate.key===op.key);
+        if(!definition.values){sums.value+=op.value;sums.variableCount++;}
+      }
+    }
+    return [sums.count,sums.grade/sums.count,sums.value/sums.variableCount];
+  });
+  for(let i=0;i<3;i++)assert(totals[1][i]>totals[0][i]);
+});
