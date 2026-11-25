@@ -385,8 +385,12 @@
         // 上限解放時はいったん全JOBのMASTERを解除する。旧セーブにも各段階を一度だけ適用し、
         // 新しい上限へすでに到達済みのJOBだけ、その場でMASTERへ再認定する。
         if (d3Cleared && !profile.flags.jobMasterReset40Applied) { profile.jobMastered = []; profile.flags.jobMasterReset40Applied = true; }
-        if (d5Cleared && !profile.flags.jobMasterReset70Applied) { profile.jobMastered = []; profile.flags.jobMasterReset70Applied = true; }
-        const currentMasterLevel = d5Cleared ? (D.jobLevelCapFinal || 70) : d3Cleared ? (D.jobLevelCapExtended || 40) : (D.jobLevelCap || 20);
+        const currentMasterLevel = this.effectiveJobLevelCap(profile);
+        const resetFlag = `jobMasterReset${currentMasterLevel}Applied`;
+        if (currentMasterLevel > D.jobLevelCapExtended && !profile.flags[resetFlag]) {
+          profile.jobMastered = [];
+          profile.flags[resetFlag] = true;
+        }
         for (const [id, progress] of Object.entries(profile.jobs || {})) {
           if (!D.jobs[id] || this.isNoGrowthJob(id) || D.jobs[id].noGrowth || (progress?.level || 1) < currentMasterLevel) continue;
           if (!profile.jobMastered.includes(id)) profile.jobMastered.push(id);
@@ -1223,10 +1227,15 @@
       for (const [key, value] of Object.entries(growth)) record[key] = Math.max(Number(record[key]) || 0, Number(value) || 0);
     }
     rebirthUnlocked() { return !!this.profile.flags.rebirthUnlocked; }
-    // D3でLv40、D5でLv70へ段階解放。転生の可否は従来通り
+    // ダンジョンクリアでJOB上限を段階解放。転生の可否は従来通り
     // jobLevelCap(20)基準のcanRebirthが見るため、ここを変えても転生条件には影響しない。
     jobLevelCapUnlocked() { return !!this.profile.flags.jobLevelCapUnlocked; }
-    effectiveJobLevelCap() { return this.isBossDefeated('ostina') || this.profile.flags.dungeon5Clear ? (D.jobLevelCapFinal || 70) : this.jobLevelCapUnlocked() ? (D.jobLevelCapExtended || 40) : (D.jobLevelCap || 20); }
+    effectiveJobLevelCap(profile = this.profile) {
+      const { flags = {}, bossDefeated = {} } = profile;
+      const milestone = D.jobCapMilestones.find(({ flag, boss }) => flags[flag] || bossDefeated[boss]);
+      if (milestone) return milestone.cap;
+      return flags.jobLevelCapUnlocked || flags.dungeon3Clear || bossDefeated.seripes ? D.jobLevelCapExtended : D.jobLevelCap;
+    }
     resetJobMasteryForCap(flag) { if (this.profile.flags[flag]) return false; this.profile.jobMastered = []; this.profile.flags[flag] = true; return true; }
     canRebirth(jobId) {
       const lv = this.profile.jobs?.[jobId]?.level || 1, cap = D.jobLevelCap || 20;
@@ -1340,7 +1349,7 @@
       if (key === 'dualBlade') return this.isJobUnlocked('dualBlade');
       if (key === 'guardian') return this.isJobUnlocked('guardian');
       if (key === 'enhance') return (f.dungeon2BattleWins || 0) >= 15;
-      if (key === 'levelCap') return !!f.jobLevelCapUnlocked;
+      if (key === 'levelCap') return this.effectiveJobLevelCap() > D.jobLevelCap;
       if (key === 'levelCapFinal') return this.isBossDefeated('ostina') || !!f.dungeon5Clear;
       if (key === 'rebirth') return this.rebirthUnlocked();
       if (key === 'phantomThief') return this.isJobUnlocked('phantomThief');
@@ -1361,7 +1370,7 @@
         (e.body || []).forEach(line => {
           if (line.startsWith('- ')) { bullets.push(`<li>${line.slice(2)}</li>`); return; }
           if (bullets.length) { parts.push(`<ul>${bullets.join('')}</ul>`); bullets = []; }
-          parts.push(`<p>${line}</p>`);
+          parts.push(`<p>${line.replace('{jobLevelCap}', () => this.effectiveJobLevelCap())}</p>`);
         });
         if (bullets.length) parts.push(`<ul>${bullets.join('')}</ul>`);
         const body = parts.join('');
@@ -1641,7 +1650,13 @@
       [learnedCharacter, learnedJob].forEach(set => set.forEach(id => { if (!D.skills[id]) set.delete(id); })); learnedJob.forEach(id => { if (D.skills[id]?.source === 'weapon') learnedJob.delete(id); }); this.profile.learnedCharacterSkills = [...learnedCharacter]; this.profile.learnedJobSkills = [...learnedJob]; const learnedWeapon = new Set(this.profile.learnedWeaponSkills || []); Object.values(D.skills).filter(skill => skill?.source === 'weapon' && skill.sparkRate == null && skill.requiredWeaponLevel).forEach(skill => { if ((this.profile.weaponMastery?.[skill.weaponType]?.level || 0) >= skill.requiredWeaponLevel) learnedWeapon.add(skill.id); }); this.profile.learnedWeaponSkills = [...learnedWeapon].filter(id => D.skills[id]?.source === 'weapon'); const allowed = new Set(['quickSlash', ...learnedCharacter, ...learnedJob]); this.profile.activeSkills = (this.profile.activeSkills || []).filter(id => allowed.has(id) && D.skills[id]?.type !== 'PASSIVE').slice(0, 4); Object.entries(this.profile.jobs || {}).forEach(([jobId, progress]) => this.reinforceJobPassives(jobId, progress?.level || 1)); }
     learnedActiveSkillIds() { return [...new Set(['quickSlash', ...(this.profile.learnedCharacterSkills || []), ...(this.profile.learnedJobSkills || [])])].filter(id => D.skills[id]?.type !== 'PASSIVE'); }
     characterHasSkill(id) { return (this.profile.learnedCharacterSkills || []).includes(id) || (D.characterSkillProgression || []).some(entry => entry.skillId === id && this.profile.level >= entry.level); }
-    jobExpNeeded(level) { return D.jobExpTable[level] || null; }
+    jobExpNeeded(level) {
+      if (level >= this.effectiveJobLevelCap()) return null;
+      const table = D.jobExpTable;
+      if (table[level]) return table[level];
+      // Beyond the original curve, keep the final absolute JEXP increment per level.
+      return table[69] + (level - 69) * (table[69] - table[68]);
+    }
     // 旧growthテーブル方式のJOB(双刃士など)は元々Lv1〜20分しか値を持たない。
     // Lv21以降も20レベルごとに同じ成長表を繰り返し、各レベルの獲得量を2倍にする。
     //
@@ -1696,7 +1711,7 @@
       }); return result;
     }
     isBossDefeated(id) { return !!(this.profile.bossDefeated?.[id] || (id === 'zenacad' && this.profile.flags.zenakadoDefeated)); }
-    markBossDefeated(id) { const first = !this.isBossDefeated(id); this.profile.bossDefeated ||= {}; this.profile.bossDefeated[id] = true; if (id === 'zenacad') this.profile.flags.zenakadoDefeated = true; if (first && id === 'ostina') this.resetJobMasteryForCap('jobMasterReset70Applied'); }
+    markBossDefeated(id) { const first = !this.isBossDefeated(id); this.profile.bossDefeated ||= {}; this.profile.bossDefeated[id] = true; if (id === 'zenacad') this.profile.flags.zenakadoDefeated = true; if (first && D.jobCapMilestones.some(tier => tier.boss === id)) this.resetJobMasteryForCap(`jobMasterReset${this.effectiveJobLevelCap()}Applied`); }
     isBossSeriesUnlocked(series) { if (!this.isPlayerContentVisible(series)) return false; const bossId = series?.unlockCondition?.bossDefeated; return !!bossId && this.isBossDefeated(bossId); }
     unlockedBossSeries() { return Object.values(D.bossEquipmentSeries || {}).filter(series => this.isBossSeriesUnlocked(series)); }
     equippedSeriesCount(seriesId, equipment = this.profile.equipment) { return Object.values(equipment).filter(id => id && (D.items[id]?.seriesId === seriesId || this.equipmentDefinition(id)?.seriesId === seriesId)).length; }
@@ -1912,13 +1927,13 @@
       Object.assign(enemy, { name: form.name, title: form.title, sprite: form.sprite, battleScale: form.battleScale, stats: formStats, hp: formStats.maxHp, alive: true, form: nextForm, phaseTurn: 0, regenTurns: 0, rolledDrops: null });
       this.renderEnemies(); this.updateHUD(); this.playBossMusic('d5MidBoss', nextForm);
       this.flashTitle(nextForm === 2 ? 'SECOND FORM' : 'THIRD FORM', `D5 MID BOSS // PHASE ${nextForm}`);
-      this.setLog(nextForm === 2 ? '侵蝕が全身へ広がり、NESTUAの力が増幅した！' : 'NESTUAは巨大な完全異形へ変貌した！');
+      this.setLog(nextForm === 2 ? '侵蝕が全身へ広がり、ネストゥアの力が増幅した！' : 'ネストゥアは巨大な完全異形へ変貌した！');
       await this.battleSleep(900); this.turn++; this.locked = false; this.showMainCommands();
     }
     async transformPendingBoss(enemy) { if (this.battleMode === 'versicrell') return this.transformVersicrell(enemy); if (this.battleMode === 'd4MidBoss') return this.transformFegoria(enemy); if (this.battleMode === 'd5MidBoss') return this.transformD5MidBoss(enemy); }
     async nestuaStrike(enemy, name, { magical = false, multiplier = 1, hits = 1, clearBuffs = false, echo = false } = {}) {
       const el = document.getElementById(enemy.uid), ren = $('#ren');
-      this.flashTitle(name, magical ? 'DISTORTED JAZZ' : 'CRIMSON RIFF'); this.setLog(`NESTUAの${name}！`);
+      this.flashTitle(name, magical ? 'DISTORTED JAZZ' : 'CRIMSON RIFF'); this.setLog(`ネストゥアの${name}！`);
       let dealt = 0;
       for (let i = 0; i < hits && this.player.hp > 0; i++) {
         this.audio.sfx(magical ? 'dark' : 'slash'); el?.classList.add('enemy-attacking'); await this.battleSleep(hits > 1 ? 180 : 360);
@@ -1941,8 +1956,8 @@
       if (enemy.lastNestuaTick === this.turn) return;
       enemy.lastNestuaTick = this.turn;
       if ((enemy.regenTurns || 0) > 0) {
-        const heal = Math.min(Math.round(enemy.stats.maxHp * .04), enemy.stats.maxHp - enemy.hp); enemy.regenTurns--;
-        if (heal > 0) { enemy.hp += heal; this.floating(document.getElementById(enemy.uid), `+${heal}`, 'heal'); this.setLog(`《悪徳の美学》がNESTUAのHPを${heal}回復。`); this.updateHUD(); await this.battleSleep(320); }
+        const heal = Math.min(Math.round(enemy.stats.maxHp / 64), enemy.stats.maxHp - enemy.hp); enemy.regenTurns--;
+        if (heal > 0) { enemy.hp += heal; this.floating(document.getElementById(enemy.uid), `+${heal}`, 'heal'); this.setLog(`《悪徳の美学》がネストゥアのHPを${heal}回復。`); this.updateHUD(); await this.battleSleep(320); }
       }
       const echoes = this.player.nestuaEchoes || [], due = echoes.filter(e => e.turn <= this.turn), future = echoes.filter(e => e.turn > this.turn);
       this.player.nestuaEchoes = future;
@@ -1952,7 +1967,7 @@
       const guarded = this.player.buffs?.guardUntil === this.turn, damage = guarded ? 250 : 500, actual = Math.min(this.player.hp, damage);
       this.flashTitle("What's Are You Doing?", guarded ? 'FIXED 500 // GUARD 250' : 'FIXED DAMAGE 500'); this.audio.sfx('critical');
       this.player.hp = Math.max(0, this.player.hp - actual); this.persistVitals(); this.floating($('#ren'), actual, 'enemy-damage');
-      this.setLog(`NESTUAのWhat's Are You Doing?――${actual}固定ダメージ！`); this.updateHUD(); await this.battleSleep(650);
+      this.setLog(`ネストゥアのWhat's Are You Doing?――${actual}固定ダメージ！`); this.updateHUD(); await this.battleSleep(650);
     }
     async bossAttackNestua(enemy) {
       await this.nestuaStatusTick(enemy); if (this.player.hp <= 0) return;
@@ -1963,7 +1978,7 @@
       }
       const act = async () => {
         const r = Math.random();
-        if (phase >= 3 && !(enemy.regenTurns > 0) && r < .18) { enemy.regenTurns = 3; this.flashTitle('悪徳の美学', 'REGENERATION // 3T'); this.audio.sfx('dark'); this.setLog('黒赤い外殻が脈動し、NESTUAの再生が始まった！'); this.updateHUD(); await this.battleSleep(520); return; }
+        if (phase >= 3 && !(enemy.regenTurns > 0) && r < .18) { enemy.regenTurns = 3; this.flashTitle('悪徳の美学', 'REGENERATION // 3T'); this.audio.sfx('dark'); this.setLog('黒赤い外殻が脈動し、ネストゥアの再生が始まった！'); this.updateHUD(); await this.battleSleep(520); return; }
         if (phase >= 2 && r < .44) { await this.nestuaStrike(enemy, 'T.クライム', { multiplier: .48, hits: 3 }); return; }
         if (phase >= 2 && r < .66) { await this.nestuaStrike(enemy, '5月の残響', { magical: true, multiplier: .82, echo: true }); return; }
         if (r < .82) { await this.nestuaStrike(enemy, 'ナッシング', { magical: true, multiplier: .88, clearBuffs: true }); return; }
@@ -2051,7 +2066,11 @@
     makeEnemy(id, index) {
       const t = D.enemies[id], floor = this.activeFloor(this.currentDungeonId), scale = t.ignoreFloorStatScale ? {} : (floor?.enemyScale || {});
       const rateFor = key => scale[key] ?? (key === 'maxHp' ? scale.hp : 1) ?? 1;
-      const stats = Object.fromEntries(Object.entries(t.stats || {}).map(([key, value]) => [key, Math.max(1, Math.round(value * rateFor(key))) ]));
+      // D5 uses ten-point units so floor rounding matches the corresponding D4 encounter exactly.
+      const unit = t.statRoundingUnit || 1;
+      const stats = Object.fromEntries(Object.entries(t.stats || {}).map(([key, value]) =>
+        [key, Math.max(1, Math.round((value / unit) * rateFor(key))) * unit]
+      ));
       const rewardRate = scale.rewards || 1;
       const gold = t.gold && typeof t.gold === 'object' ? { min: Math.round(t.gold.min * rewardRate), max: Math.round(t.gold.max * rewardRate) } : t.gold;
       return { ...t, uid: `enemy-${index}`, label: String.fromCharCode(65 + index), floorId: floor?.id || t.floorId, floorScale: scale, stats, hp: stats.maxHp, exp: Math.round((t.exp || 0) * rewardRate), gold, alive: true, bindResistance: t.bindResistance || 0, bindTurns: 0 };
@@ -2127,7 +2146,7 @@
       enemyLayer.dataset.count = String(Math.min(3, Math.max(1, this.enemies.length)));
       enemyLayer.innerHTML = this.enemies.map((e, i) => {
         const statuses = '<button type="button" class="status-strip enemy-statuses" aria-label="敵の状態と解析情報"></button>';
-        const bossClass = e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : e.id === 'd4MidBoss' ? ` fegoria-boss form-${e.form || 1}` : '';
+        const bossClass = e.id === 'd5MidBoss' && e.form >= 2 ? ' nestua-transformed' : e.id === 'seripes' ? ' seripes-boss' : e.id === 'versicrell' ? ` versicrell-boss form-${e.form || 1}` : e.id === 'd4MidBoss' ? ` fegoria-boss form-${e.form || 1}` : '';
         const slotLabel = String.fromCharCode(65 + i);
         // 肩書き付きボスの表示名。既存の異名テーブルはそのまま使い、文字数を数えて
         // font-sizeを決めるのではなく、肩書きデータが実在するボスだけ2段表示にする。
@@ -3690,7 +3709,7 @@
       if (progress.level >= masterLevel) this.markJobMastered(jobId);
       if (progress.level >= cap) { progress.exp = 0; progress.expCarry = 0; }
       const gainedLevels = progress.level - from;
-      // Lv21〜40（限界突破帯）で得た分だけ成長量を2倍にする。1回のEXP付与で20を跨いだ場合も
+      // Lv21以降（限界突破帯）で得た分だけ成長量を2倍にする。1回のEXP付与で20を跨いだ場合も
       // 跨いだ範囲だけ正しく2倍になるよう、通常帯と突破帯の到達レベル数を分けて数える。
       const normalLevels = Math.max(0, Math.min(progress.level, 20) - from);
       const overLevels = Math.max(0, progress.level - Math.max(from, 20));
@@ -3864,7 +3883,7 @@
         if (firstClear) {
           this.profile.flags.nestuaIdentityRevealed = true; this.saveProfile();
           const lines = [
-            { sys: 'NESTUA // SIGNAL LOST' },
+            { sys: 'ネストゥア // SIGNAL LOST' },
             { who: '？？？', text: '……終わった……のか。' },
             { sys: 'IDENTITY RESTORED // 刹那' },
             { who: '刹那', text: 'ずっと……分からなかった。' },
@@ -3886,12 +3905,12 @@
           if (typeof this.playNoiseSequence === 'function') await this.playNoiseSequence(lines);
           else for (const line of lines) { this.setLog(line.text || line.big || line.sys); await this.battleSleep(650); }
         } else this.saveProfile();
-        const note = firstClear ? '<div class="boss-recipe-unlock"><small>IDENTITY RESTORED</small><b>NESTUA // 刹那</b><strong>人間だった異形</strong><span>封鎖された後半ルートが解放された。この先にも同じ境遇の人間がいるかもしれない。</span></div>' : '';
-        this.showResult('VICTORY', firstClear ? 'NESTUAの異形を崩し、刹那を救い出した。' : 'NESTUAを撃破した！', 'MID BOSS // COMPLETE', `${rewardBlock}${note}`);
+        const note = firstClear ? '<div class="boss-recipe-unlock"><small>IDENTITY RESTORED</small><b>ネストゥア // 刹那</b><strong>人間だった異形</strong><span>封鎖された後半ルートが解放された。この先にも同じ境遇の人間がいるかもしれない。</span></div>' : '';
+        this.showResult('VICTORY', firstClear ? 'ネストゥアの異形を崩し、刹那を救い出した。' : 'ネストゥアを撃破した！', 'MID BOSS // COMPLETE', `${rewardBlock}${note}`);
         this.offerRepeatBossMaterialDrop(e, firstClear); return;
       }
       if ((D.dungeons || []).some(dungeon => dungeon.midBossId === this.battleMode)) { const e = D.enemies[this.battleMode], firstClear = !this.isBossDefeated(this.battleMode); this.markBossDefeated(this.battleMode); this.noteBossRematchSnapshot(this.battleMode); this.saveProfile(); const note = firstClear ? `<div class="boss-recipe-unlock"><small>MID BOSS CLEARED</small><b>ROUTE OPEN</b><strong>${e.name} 撃破</strong><span>封鎖された後半ルートが解放された。</span></div>` : ''; this.showResult('VICTORY', `${e.name}を撃破した！`, 'MID BOSS // COMPLETE', `${rewardBlock}${note}`); this.offerRepeatBossMaterialDrop(e, firstClear); return; }
-      if (['astact', 'ostina'].includes(this.battleMode)) { const bossId = this.battleMode, isD4 = bossId === 'astact', dungeonId = isD4 ? 'dungeon4' : 'dungeon5', jobId = isD4 ? 'ronin' : 'hunter', proofId = isD4 ? 'roninProof' : 'hunterProof', scoreId = isD4 ? 'staccato' : 'ostinato', firstClear = !this.isBossDefeated(bossId), firstScore = !this.profile.musicScores?.[scoreId]; this.markBossDefeated(bossId); this.profile.flags[`${dungeonId}Clear`] = true; this.profile.musicScores ||= {}; if (firstScore) this.profile.musicScores[scoreId] = true; if (firstClear) { this.profile.inventory[proofId] = Math.max(1, this.profile.inventory[proofId] || 0); this.profile.unlockedJobs = [...new Set([...(this.profile.unlockedJobs || []), jobId])]; this.profile.jobs[jobId] ||= { level: 1, exp: 0 }; if (!isD4) { this.profile.weaponMastery.bow ||= { level: 1, exp: 0 }; this.profile.inventory.d5HunterBow = Math.max(1, this.profile.inventory.d5HunterBow || 0); } } this.noteBossRematchSnapshot(bossId); this.saveProfile(); const e = D.enemies[bossId], keyItems = firstClear ? [D.items[proofId], !isD4 && D.items.d5HunterBow].filter(Boolean) : [], unlocks = firstClear ? [`NEW JOB　${D.jobs[jobId]?.name || jobId}`, !isD4 ? 'NEW WEAPON MASTERY　弓学' : '刀技は剣武器学を共有'] : []; this.showBossRewardSequence({ title: 'VICTORY', copy: `${e.title || ''}${e.name}を打ち倒した。`, kicker: isD4 ? 'FOURTH MAESTRI DEFEATED' : 'FIFTH MAESTRI DEFEATED', html: rewardBlock }, [firstScore && { title: 'SCORE GET', copy: '盗んだ旋律は、プライベートモードで演奏できる。', kicker: 'PHANTOM SCORE', html: this.scoreGetHTML(scoreId) }, firstClear && { title: 'KEY ITEM GET', copy: '新たなJOBへ至る証を盗み出した。', kicker: 'STOLEN REWARDS', html: this.bossKeyRewardHTML(keyItems, unlocks) }, firstClear && { title: 'JOB TUTORIAL', copy: '解放されたJOBの戦い方を確認する。', kicker: (D.jobs[jobId]?.nameEn || jobId).toUpperCase(), html: this.jobUnlockTutorialHTML(jobId) }]); this.offerRepeatBossMaterialDrop(e, firstClear); return; }
+      if (['astact', 'ostina'].includes(this.battleMode)) { const bossId = this.battleMode, isD4 = bossId === 'astact', dungeonId = isD4 ? 'dungeon4' : 'dungeon5', jobId = isD4 ? 'ronin' : 'hunter', proofId = isD4 ? 'roninProof' : 'hunterProof', scoreId = isD4 ? 'staccato' : 'ostinato', firstClear = !this.isBossDefeated(bossId), firstScore = !this.profile.musicScores?.[scoreId]; this.markBossDefeated(bossId); this.profile.flags[`${dungeonId}Clear`] = true; this.profile.musicScores ||= {}; if (firstScore) this.profile.musicScores[scoreId] = true; if (firstClear) { this.profile.inventory[proofId] = Math.max(1, this.profile.inventory[proofId] || 0); this.profile.unlockedJobs = [...new Set([...(this.profile.unlockedJobs || []), jobId])]; this.profile.jobs[jobId] ||= { level: 1, exp: 0 }; if (!isD4) { this.profile.weaponMastery.bow ||= { level: 1, exp: 0 }; this.profile.inventory.d5HunterBow = Math.max(1, this.profile.inventory.d5HunterBow || 0); } } this.noteBossRematchSnapshot(bossId); this.saveProfile(); const e = D.enemies[bossId], keyItems = firstClear ? [D.items[proofId], !isD4 && D.items.d5HunterBow].filter(Boolean) : [], unlocks = firstClear ? [`NEW JOB　${D.jobs[jobId]?.name || jobId}`, !isD4 ? 'NEW WEAPON MASTERY　弓学' : '刀技は剣武器学を共有', `JOBレベル上限解放　Lv.${this.effectiveJobLevelCap()}`] : []; this.showBossRewardSequence({ title: 'VICTORY', copy: `${e.title || ''}${e.name}を打ち倒した。`, kicker: isD4 ? 'FOURTH MAESTRI DEFEATED' : 'FIFTH MAESTRI DEFEATED', html: rewardBlock }, [firstScore && { title: 'SCORE GET', copy: '盗んだ旋律は、プライベートモードで演奏できる。', kicker: 'PHANTOM SCORE', html: this.scoreGetHTML(scoreId) }, firstClear && { title: 'KEY ITEM GET', copy: '新たなJOBへ至る証を盗み出した。', kicker: 'STOLEN REWARDS', html: this.bossKeyRewardHTML(keyItems, unlocks) }, firstClear && { title: 'JOB TUTORIAL', copy: '解放されたJOBの戦い方を確認する。', kicker: (D.jobs[jobId]?.nameEn || jobId).toUpperCase(), html: this.jobUnlockTutorialHTML(jobId) }]); this.offerRepeatBossMaterialDrop(e, firstClear); return; }
       if (milestone) this.showStagedMilestone(rewardBlock, milestone);
       else await this.showBattleClear(reward, levels, jobResult, { mastery: masteryResult, vitals: vitalResult, sparks });
     }

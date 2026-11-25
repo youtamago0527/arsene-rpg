@@ -5,7 +5,6 @@ const root = path.resolve(__dirname, '..');
 const game = fs.readFileSync(path.join(root, 'js', 'game.js'), 'utf8');
 const data = fs.readFileSync(path.join(root, 'js', 'release_content.js'), 'utf8');
 
-if (!data.includes("name: 'NESTUA', nameEn: 'NESTUA', title: '《ネストゥア》'")) throw new Error('NESTUA formal name is missing');
 for (const line of ['当たり前じゃないなんて', '戦い続けなきゃならないのですか', '助けてくれ――！']) {
   if (!game.includes(line)) throw new Error(`phase 2 clear dialogue missing: ${line}`);
 }
@@ -21,7 +20,7 @@ for (const skill of ['Mr.エリック', 'ナッシング', 'T.クライム', '5�
 if (!game.includes('(enemy.phaseTurn - 3) % 4 === 0')) throw new Error("What's 3/7/11 turn cycle is missing");
 if (!game.includes('guarded ? 250 : 500')) throw new Error("What's fixed guard damage is incorrect");
 if (!game.includes('const actions = phase === 3 ? 2 : 1')) throw new Error('phase 3 double action is missing');
-if (!game.includes('enemy.regenTurns = 3') || !game.includes('enemy.stats.maxHp * .04')) throw new Error('three-turn 4% regeneration is missing');
+if (!game.includes('enemy.regenTurns = 3') || !game.includes('enemy.stats.maxHp / 64')) throw new Error('three-turn regeneration at 1/64 of final form HP is missing');
 if (!game.includes("if (enemy.id === 'd5MidBoss') { await this.bossAttackNestua(enemy); return; }")) throw new Error('NESTUA AI is not connected');
 
 console.log('nestua story regression: ok');

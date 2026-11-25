@@ -1702,3 +1702,12 @@
 #game .command-panel[data-layout="main"]{align-content:start}
 @media(max-width:393px){#game .command-panel{height:110px;min-height:110px}}
 @media(max-height:720px){#game .command-panel{height:105px;min-height:105px}}
+
+/* Fade the painted edges of Nestua's transformed portraits into the battle scene. */
+#game .nestua-transformed .enemy-art-image {
+  width: auto;
+  max-width: 100%;
+  filter: none;
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at center, black 70%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 50% at center, black 70%, transparent 100%);
+}
