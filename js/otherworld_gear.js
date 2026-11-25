@@ -77,7 +77,7 @@
       floor >= 50 ? [15,40,38,7] : floor >= 25 ? [35,45,18,2] : floor >= 10 ? [60,32,7.5,.5] : [82,16,2,0];
     const top = bands[3];
     const bonus = this.isRun?.() ? this.isSupportRelicRate('astrolabe') : 0;
-    const enhanced = top * (1 + bonus / 100);
+    const enhanced = Math.min(100, top * (1 + bonus / 100));
     let roll = this.isRand() * 100;
     if (roll >= 100 - enhanced) return 6;
     roll *= (100 - top) / (100 - enhanced);
