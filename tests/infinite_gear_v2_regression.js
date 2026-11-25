@@ -123,6 +123,7 @@ test('recovery OPs roll once on eligible gear and use fractional values even on 
   assert.equal(get(roll(6,'shield',500,()=>0),mpKey),.25);
   assert.equal(get(roll(3,'sword',500,()=>0),hpKey),undefined);
   assert.equal(get(roll(6,'accessory',500,()=>0),mpKey),undefined);
+  assert.equal(get(roll(6,'accessory',500,()=>0),hpKey),1);
   assert.equal(statModel.optionRates([armor])[mpKey],.0025);
   assert.equal(statModel.optionRates([{...armor,ops:[{key:hpKey,value:3}]}])[hpKey],undefined);
   assert.equal(statModel.optionRates([armor,armor,{...armor,ops:[{key:mpKey,value:100}]}])[mpKey],.02);
@@ -139,8 +140,8 @@ test('additional damage can exceed the final base hit, and recovery carries over
   game.floating=()=>{};
   game.setLog=()=>{};
   const hit=game.owgAdjustDamage(200,{id:'attack'},{hp:500,stats:{maxHp:500}},false);
-  assert.deepEqual(plain(hit),{value:450,additionalDamage:250});
-  assert.equal(statModel.extraDamage(cfg.limits.stat-3,{echoDamageRate:20}),3);
+  assert.deepEqual(plain(hit),{value:450,additionalDamage:250,followUps:[{value:250,weak:false}]});
+  assert.equal(statModel.followUpHits(cfg.limits.stat-3,[sword],()=>1)[0].value,3);
   assert.equal(game.owgRestoreFromDamage('hp',30),0);
   assert.equal(game.owgRestoreFromDamage('hp',4),1);
   assert.equal(game.owgRestoreFromDamage('mp',200),0);
@@ -149,8 +150,46 @@ test('additional damage can exceed the final base hit, and recovery carries over
   assert.equal(game.owgRestoreFromDamage('mp',1_000),0);
 });
 
+test('elemental follow-ups unlock at 40F, can repeat, and deal up to 12 bonus hits', () => {
+  const elements=new Set(cfg.ops.filter(op=>op.element).map(op=>op.key));
+  const rolled=new Set();
+  let seed=8947;
+  const random=()=>((seed=(Math.imul(1664525,seed)+1013904223)>>>0)/2**32);
+  for (const part of ['sword','accessory','body']) {
+    for (const floor of [39,40]) {
+      for(let i=0;i<250;i++) for(const op of roll(6,part,floor,random).ops) {
+        if(!elements.has(op.key)) continue;
+        assert.equal(floor,40);
+        assert.notEqual(part,'body');
+        assert([5,8,12,16].includes(op.value));
+        rolled.add(op.key);
+      }
+    }
+  }
+  assert.deepEqual(rolled,elements);
+  const fire={key:'fireFollowUpRate',value:16};
+  const ice={key:'iceFollowUpRate',value:8};
+  const right={...roll(6,'sword',40,random,'right'),ops:Array(6).fill(fire)};
+  const accessory={...roll(6,'accessory',40,random,'ring'),ops:Array(6).fill(ice)};
+  const oldArmor={...roll(6,'body',30,random,'old'),ops:[{key:'echoDamageRate',value:100}]};
+  assert.equal(statModel.followUpHits(200,[oldArmor],()=>1)[0].value,200);
+  assert.equal(statModel.followUpHits(200,[{...right,obtainedFloor:39}],()=>1).length,0);
+  const game=gameWithGear(right,accessory,oldArmor);
+  game.isRun().equipment={rightHand:right.uid,accessory:accessory.uid,body:oldArmor.uid};
+  game.player={hp:100,stats:{maxHp:100}};
+  const enemy={hp:1000,stats:{maxHp:1000},weaknesses:['炎']};
+  game.elementWeaknessRate=({element})=>element==='fire'?1.25:1;
+  const hit=game.owgAdjustDamage(200,{id:'attack'},enemy,false);
+  assert.equal(hit.followUps.length,12);
+  assert.equal(hit.followUps.filter(hit=>hit.weak).length,6);
+  assert.equal(hit.additionalDamage,6*40+6*16);
+  assert.equal(hit.value,536);
+  assert(statModel.canReplace(right,{...right,uid:'other'},0,1));
+  assert(!statModel.canReplace(right,{...right,uid:'older',obtainedFloor:39},0,1));
+});
+
 test('tactical OPs appear only on their equipment families and keep the listed values', () => {
-  const tactical = cfg.ops.filter(op=>op.values && !op.chance && !op.stats && op.table);
+  const tactical = cfg.ops.filter(op=>op.values && !op.chance && !op.stats && !op.followUp && op.table);
   assert.equal(tactical.length,10);
   let seed=57823;
   const random=()=>((seed=(Math.imul(1664525,seed)+1013904223)>>>0)/2**32);
@@ -161,7 +200,7 @@ test('tactical OPs appear only on their equipment families and keep the listed v
       for (const option of gear.ops) {
         const definition=tactical.find(op=>op.key===option.key);
         if (!definition) continue;
-        assert(Object.values(part.base).some(([table])=>table===definition.table));
+        assert((definition.accessory && part.slot==='accessory') || Object.values(part.base).some(([table])=>table===definition.table));
         assert(definition.values.includes(option.value));
         rolled.add(option.key);
       }
@@ -184,7 +223,7 @@ test('paired and all-stat options roll on their assigned grades and eligible equ
       assert.equal(option.grade,cfg.grades[definition.grade]);
       assert(cfg.tiers[gear.tier-1].weights[definition.grade]>0);
       assert(definition.values.includes(option.value));
-      if (definition.table) assert(Object.values(part.base).some(([table])=>definition.table===table));
+      if (definition.table) assert((definition.accessory && part.slot==='accessory') || Object.values(part.base).some(([table])=>definition.table===table));
       rolled.add(option.key);
     }
   }
@@ -248,16 +287,16 @@ test('reward OPs roll past their base ranges and can stack a 1,000% roll into al
   const parts=['sword','buckler','head','body','arms','feet','accessory'];
   const near=(actual,expected)=>assert(Math.abs(actual-expected)<1e-12);
   for (const [key,gradeDraw,normalTier] of [[expKey,.20,5],[goldKey,.025,3]]) {
-    const draws=[0,0,0,...Array.from({length:6},()=>[gradeDraw,.99999,0]).flat()];
+    const draws=[0,0,0,.5,...Array.from({length:6},()=>[gradeDraw,.99999,0]).flat()];
     const source=roll(6,'accessory',1000,()=>draws.shift()??.999,'source');
     assert.equal(source.ops.length,6);
     assert(source.ops.every(op=>op.key===key && op.value===1000));
-    const extremeDraws=[0,0,0,gradeDraw,.99999,1];
+    const extremeDraws=[0,0,0,.5,gradeDraw,.99999,1];
     const extreme=roll(6,'accessory',1000,()=>extremeDraws.shift()??.5).ops[0];
     assert.equal(extreme.key,key);
     assert(extreme.value>cfg.limits.optionPercent);
     assert.equal(statModel.optionRates([{...source,ops:[extreme]}])[key],extreme.value/100);
-    const normalDraws=[0,0,0,normalTier===5?.20:.99999,.99999,0,1];
+    const normalDraws=[0,0,0,...(normalTier===5?[.5]:[]),normalTier===5?.20:.99999,.99999,0,1];
     const normal=roll(normalTier,'accessory',1,()=>normalDraws.shift()??.5).ops[0];
     assert.equal(normal.key,key);
     assert(normal.value>cfg.limits.optionPercent);

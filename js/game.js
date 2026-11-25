@@ -3003,13 +3003,24 @@
     applyPlayerHit(target, hit, skill) {
       if (target.infiniteHp) target.debugDamageTaken = (target.debugDamageTaken || 0) + hit.value;
       const previousHp = target.hp;
-      target.hp = target.infiniteHp ? target.stats.maxHp : Math.max(target.cannotDefeat ? 1 : 0, target.hp - hit.value);
+      if (target.infiniteHp) {
+        target.hp = target.stats.maxHp;
+      } else {
+        const floor = target.cannotDefeat ? 1 : 0;
+        target.hp = Math.max(floor, target.hp - (hit.value - (hit.additionalDamage || 0)));
+        for (const followUp of hit.followUps || []) {
+          if (target.hp <= floor) break;
+          target.hp = Math.max(floor, target.hp - followUp.value);
+        }
+      }
       const actual = previousHp - target.hp;
       if (this.owgRestoreFromDamage?.('hp', actual) > 0) this.persistVitals();
       this.owgAfterLandedHit?.(target, actual, skill);
     }
     showPlayerHit(element, hit, type = 'damage') {
-      const label = hit.additionalDamage ? `${hit.value - hit.additionalDamage} (+${hit.additionalDamage})` : hit.value;
+      const followUps = hit.followUps?.length || 0;
+      const label = followUps ? `${hit.value - hit.additionalDamage} (+${hit.additionalDamage}／追撃${followUps})` : hit.value;
+      if (hit.followUps?.some(extra=>extra.weak) && type==='damage') type='weak';
       this.floating(element, label, hit.critical ? 'critical' : type);
     }
     // 閃き演出：画面フラッシュ＋効果音＋カットインを見せてから技を発動する

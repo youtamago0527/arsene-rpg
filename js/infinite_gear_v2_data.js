@@ -6,6 +6,12 @@
   // Fixed ranges for action and recovery effects, including on INFINITY equipment.
   const tactical = (key,label,grade,table,values,totalCapPercent) =>
     ({key,label,grade,table,values,totalCapPercent});
+  const elementalFollowUps = [
+    ['fire','炎'], ['ice','氷'], ['thunder','雷'], ['light','光'], ['dark','闇']
+  ].map(([element,label])=>({
+    ...op(element+'FollowUpRate',label+'属性の追撃',2),
+    element, followUp:true, repeatable:true, table:'weaponOrAccessory', minFloor:40, values:[5,8,12,16]
+  }));
   const pairValues = [9,12,15,18];
   const combination = (key,label,grade,stats,values=pairValues,details={}) =>
     ({key,label,grade,stats,values,...details});
@@ -69,21 +75,23 @@
       op('skillDamageRate','スキルダメージ',2),op('elementDamageRate','属性ダメージ',2),
       op('healingPowerPercent','回復量',2),op('physicalDamagePercent','物理与ダメージ',2),op('magicDamagePercent','魔法与ダメージ',2),
       op('bossDamageRate','ボスダメージ',3),op('criticalDamageRate','会心ダメージ',3),
-      { ...op('lifeStealRate','HP吸収',3), table:'weapon', chance:.01, values:[1,2,3], totalCapPercent:3 },
+      { ...op('lifeStealRate','HP吸収',3), table:'weapon', accessory:true, chance:.01, values:[1,2,3], totalCapPercent:3 },
       { ...op('hitMpRecoveryRate','被ダメージ時MP回復',3), table:'armor', chance:.0075, values:[.25,.5,.75,1], totalCapPercent:2 },
-      op('echoDamageRate','追加ダメージ',4),op('openingDamageRate','初手ダメージ',4),
+      { ...op('echoDamageRate','追加ダメージ',4), followUp:true, repeatable:true, table:'weaponOrAccessory' },
+      ...elementalFollowUps,
+      op('openingDamageRate','初手ダメージ',4),
       op('executeDamageRate','敵HP30%以下ダメージ',4),op('healthyDamageRate','自身HP90%以上ダメージ',4),
       op('groupDamageRate','敵複数時ダメージ',4),op('mpEfficiencyRate','消費MP効率',4),
       tactical('firstHitWardRate','初撃防壁',3,'armor',[8,12,16,20],30),
       tactical('physicalDamageReductionPercent','物理耐性',2,'armor',[2,3,4,5],12),
       tactical('magicDamageReductionPercent','魔法耐性',2,'armor',[2,3,4,5],12),
       tactical('guardMpRate','防御充填',3,'armor',[3,4,5],8),
-      tactical('guardStrikeRate','守勢からの一撃',4,'armor',[12,16,20,25],40),
+      {...tactical('guardStrikeRate','守勢からの一撃',4,'armor',[12,16,20,25],40),accessory:true},
       tactical('turnHealRate','戦闘再生',3,'accessoryHp',[1,2,3],3),
       tactical('victoryHealRate','戦後手当',2,'accessoryHp',[2,3,4],4),
       tactical('potionBoostRate','薬効増幅',2,'accessoryHp',[10,15,20,25],25),
-      tactical('weaponDefBreakRate','護り崩し',3,'weapon',[6,8,10,12],12),
-      tactical('basicToSkillRate','連携強化',4,'weapon',[12,16,20,25],25),
+      {...tactical('weaponDefBreakRate','護り崩し',3,'weapon',[6,8,10,12],12),accessory:true},
+      {...tactical('basicToSkillRate','連携強化',4,'weapon',[12,16,20,25],25),accessory:true},
       combination('physAttackDefense','攻守の律',2,['attackPower','defensePower']),
       combination('physAttackSpeed','疾攻の律',2,['attackPower','agi']),
       combination('physDefenseSpeed','疾守の律',2,['defensePower','agi']),
@@ -97,7 +105,7 @@
       combination('magicSpirit','魔心の律',2,['mag','mnd']),
       combination('speedDexterity','軽業の律',2,['agi','dex']),
       combination('dexterityLuck','星運の律',2,['dex','luk']),
-      combination('hpAttack','血気の律',3,['maxHp','attackPower'],[12,16,20,24],{table:'weapon'}),
+      combination('hpAttack','血気の律',3,['maxHp','attackPower'],[12,16,20,24],{table:'weapon',accessory:true}),
       combination('mpMagicDefense','静護の律',3,['maxMp','magicDefensePower'],[12,16,20,24],{table:'armor'}),
       combination('allEquipmentPower','武威の律',3,equipmentPower,[6,8,10,12],{summary:'物理・魔法の攻防4種'}),
       combination('allBaseAttributes','才覚の律',3,baseAttributes,[5,7,9,11],{summary:'力〜運の7能力'}),

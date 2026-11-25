@@ -180,8 +180,9 @@
       previousBasicHit:this.player.owgBasicHitTurn===this.turn-1,
       previousGuardHit:this.player.owgGuardHitTurn===this.turn-1
     })));
-    const additionalDamage=gearV2.extraDamage(base,rates);
-    return {value:base+additionalDamage, additionalDamage};
+    const followUps=gearV2.followUpHits(base,equipped,element=>this.elementWeaknessRate({element},enemy));
+    const additionalDamage=followUps.reduce((total,hit)=>total+hit.value,0);
+    return {value:base+additionalDamage,additionalDamage,followUps};
   };
   P.owgRestoreFromDamage=function(vital,amount){
     const player=this.player;

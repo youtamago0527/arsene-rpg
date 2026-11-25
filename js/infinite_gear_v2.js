@@ -20,7 +20,10 @@
   const tier = gear => cfg.tiers[gear?.tier-1];
   const level = gear => clampInteger(gear?.plus,Number.MAX_SAFE_INTEGER);
   const rate = (rateTotal,key) => rateTotal[key] || 0;
-  const allowedOn = (op,part) => !op.table || !!part && Object.values(part.base).some(([table])=>table===op.table);
+  const followUpSlot = part => part?.slot === 'rightHand' || part?.slot === 'accessory';
+  const allowedOn = (op,part) => !op.table || (op.accessory && part?.slot==='accessory') || (op.table==='weaponOrAccessory'
+    ? followUpSlot(part) : !!part && Object.values(part.base).some(([table])=>table===op.table));
+  const unlockedAt = (op,floor) => floorNumber(floor) >= (op.minFloor || 1);
 
   function ratesAt(value) {
     const floor = floorNumber(value);
@@ -79,7 +82,7 @@
     // These odds apply once per eligible item, including when the ordinary grade pool runs out.
     const special = rareOptions.find(op=>rarity.weights[op.grade] && allowedOn(op,part) && sample(random)<op.chance);
     if (special) ops.push(rollOption(special,rarity,floor,random));
-    const available = cfg.ops.filter(op=>!op.chance && allowedOn(op,part));
+    const available = cfg.ops.filter(op=>!op.chance && allowedOn(op,part) && unlockedAt(op,floor));
     for (let i=ops.length;i<count;i++) {
       const weights = rarity.weights.map((weight,grade)=>available.some(op=>op.grade===grade) ? weight : 0);
       const grade = weighted(weights,random);
@@ -136,7 +139,7 @@
     for (const gear of equipment) if (isV2(gear)) {
       for (const op of gear.ops || []) {
         const definition = byOp.get(op.key);
-        if (!definition || !allowedOn(definition,byItem.get(gear.itemId))) continue;
+        if (!definition || definition.followUp || !allowedOn(definition,byItem.get(gear.itemId))) continue;
         if (definition.uncappedGrowth) {
           const value = Number(op.value);
           if (Number.isFinite(value) && value>0) out[op.key] = rate(out,op.key)+Math.floor(value)/100;
@@ -181,7 +184,7 @@
     const definition=byOp.get(op?.key);
     return Number.isInteger(sourceIndex) && Number.isInteger(targetIndex) && sourceIndex>=0 && targetIndex>=0 &&
       canTransfer(source,target) && definition && allowedOn(definition,byItem.get(source.itemId)) &&
-      allowedOn(definition,byItem.get(target.itemId)) && !!target.ops[targetIndex] &&
+      allowedOn(definition,byItem.get(target.itemId)) && unlockedAt(definition,target.obtainedFloor) && !!target.ops[targetIndex] &&
       (definition.repeatable || !target.ops.some((existing,index)=>existing.key===op.key && index!==targetIndex));
   }
 
@@ -199,8 +202,30 @@
     return Math.min(cfg.limits.stat,value*(1+multiplier));
   }
 
-  function extraDamage(base,rates) {
-    return Math.min(cfg.limits.stat-base,Math.floor(base*rate(rates,'echoDamageRate')+1e-8));
+  function followUpHits(base,equipment,weaknessRate) {
+    const hits=[], legacy=[];
+    let remaining=cfg.limits.stat-base;
+    function add(op,element) {
+      if (hits.length>=12 || remaining<=0) return;
+      const weakness=element ? weaknessRate(element) : 1;
+      const value=Math.min(remaining,Math.floor(base*(Number(op.value)/100)*weakness+1e-8));
+      if (!(value>0)) return;
+      hits.push({value,element,weak:weakness>1});
+      remaining-=value;
+    }
+    for (const gear of equipment) {
+      if (!isV2(gear)) continue;
+      const part=byItem.get(gear.itemId);
+      for (const op of gear.ops || []) {
+        const definition=byOp.get(op.key);
+        if (!definition?.followUp || !unlockedAt(definition,gear.obtainedFloor)) continue;
+        if (allowedOn(definition,part)) add(op,definition.element);
+        else if (op.key==='echoDamageRate') legacy.push(op);
+      }
+    }
+    // Armor rolled with the old OP table keeps its saved bonus within the same hit limit.
+    for (const op of legacy) add(op,undefined);
+    return hits;
   }
 
   for (const part of cfg.parts) {
@@ -220,7 +245,7 @@
     const stats = definition?.summary || definition?.stats?.map(key=>byOp.get(key+'Rate').label).join('・');
     return `${definition?.label||op.key} +${format.format(op.value)}%［${op.grade}］${stats?`（${stats}）`:''}`;
   }
-  D.infiniteGear = {isV2,tier,level,ratesAt,generate,strengthened,optionRates,stat,applyStatRate,damage,extraDamage,
+  D.infiniteGear = {isV2,tier,level,ratesAt,generate,strengthened,optionRates,stat,applyStatRate,damage,followUpHits,
     canMerge,canTransfer,canReplace,combatKeys,vitalKeys,
     number:value=>format.format(value),opText
   };
