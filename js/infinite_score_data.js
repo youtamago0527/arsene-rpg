@@ -67,7 +67,10 @@
       { minFloor: 16, maxFloor: 9999, pool: ['voidWatcher', 'abyssalKnight', 'voidGargoyle', 'chaosWitch', 'fortressGolem', 'riftAssailant'] }
     ].map(tier => ({ ...tier, pool: tier.pool.filter(id => D.enemies?.[id]) })),
     enemyPool: ['shadowSlime', 'nightBat', 'ratThief'].filter(id => D.enemies?.[id]),
-    rareEnemyTiers: [{ minFloor: 16, maxFloor: 9999, pool: ['merox'] }].map(tier => ({ ...tier, pool: tier.pool.filter(id => D.enemies?.[id]) })),
+    rareEnemyTiers: [
+      { minFloor: 16, maxFloor: 30, pool: ['merox'] },
+      { minFloor: 31, maxFloor: 9999, pool: ['merox', 'strayMerukuru'] }
+    ].map(tier => ({ ...tier, pool: tier.pool.filter(id => D.enemies?.[id]) })),
     rareEnemyPool: [],
     consumablePool: ['owPotion20', 'owManaPotion20'],
     recoveryItems: [

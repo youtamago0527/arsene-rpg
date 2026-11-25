@@ -2076,10 +2076,14 @@
       return { ...t, uid: `enemy-${index}`, label: String.fromCharCode(65 + index), floorId: floor?.id || t.floorId, floorScale: scale, stats, hp: stats.maxHp, exp: Math.round((t.exp || 0) * rewardRate), gold, alive: true, bindResistance: t.bindResistance || 0, bindTurns: 0 };
     }
     rollEncounter(wins, progression) {
-      if (this.currentDungeonId === 'dungeon3') {
+      const rareEncounters = {
+        dungeon3: D.dungeon3RareEncounters,
+        dungeon5: D.dungeon5RareEncounters
+      }[this.currentDungeonId];
+      if (rareEncounters?.length) {
         const rareMult = this.collectionTitleEffect?.('rareEncounterMultiplier') ?? 1;
         let rareRoll = Math.random();
-        for (const rare of D.dungeon3RareEncounters || []) {
+        for (const rare of rareEncounters) {
           rareRoll -= Math.min(1, (rare.chance || 0) * rareMult);
           if (rareRoll <= 0) return [rare.id];
         }

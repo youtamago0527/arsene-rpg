@@ -85,6 +85,14 @@
     [key, (value + fegoria.form2.stats[key]) / 2]
   ));
   Object.assign(D.enemies, {
+    strayMerukuru: enemy('strayMerukuru', 'はぐれメロクス', 'dungeon5',
+      'assets/enemy-characters/dungeon5/strayMeroxOriginalStyle-v2.png',
+      { maxHp: 34, atk: 205, def: 1450, mag: 110, mnd: 1320, dex: 220, agi: 285, spd: 270, luk: 12 },
+      18000, 0, [{ itemId: 'venomCore', chance: .80 }, { itemId: 'hunterThread', chance: 1 }],
+      [{ id: 'rareEscape', name: '黒銀離脱', kind: 'flee', weight: .72 }, { id: 'meroxRam', name: '残像水銀突進', kind: 'physical', weight: .28 }],
+      { nameEn: 'STRAY MEROX', kind: 'rare', sparkLevel: 50, title: '変異希少種《黒銀の残影》',
+        role: 'EXP TREASURE / MAXIMUM DEFENSE', roleDescription: 'メロクスの変異個体。さらに硬く素早く、ほとんどの攻撃を弾く。',
+        battleScale: .96, ignoreFloorStatScale: true }),
     venomWeaver: enemy('venomWeaver', '毒糸の織り手', 'dungeon5', D.enemies.voidAlchemist.sprite, tenfoldStats(D.enemies.lanternMask.stats), 275, { min: 145, max: 205 }, [{ itemId: 'hunterThread', chance: .55 }], [{ id: 'soulBolt', name: '毒奏', kind: 'magic', weight: .65 }, { id: 'attack', name: '糸刃', kind: 'physical', weight: .35 }], { statRoundingUnit: d5Multiplier }),
     repeatedHunter: enemy('repeatedHunter', '反復の狩影', 'dungeon5', D.enemies.chainReaper.sprite, tenfoldStats(D.enemies.moonEdgeKnight.stats), 310, { min: 165, max: 235 }, [{ itemId: 'venomCore', chance: .42 }, { itemId: 'hunterThread', chance: .28 }], [{ id: 'attack', name: '追い矢', kind: 'physical', weight: .55 }, { id: 'ratBite', name: '反復射', kind: 'physical', weight: .45 }], { statRoundingUnit: d5Multiplier }),
     d5MidBoss: enemy('d5MidBoss', '毒律の追跡者', 'dungeon5', D.enemies.crimsonBehemoth.sprite, { ...tenfoldStats(fegoria.stats), maxHp: 84480 }, 1100, { min: 680, max: 880 }, [{ itemId: 'hunterThread', chance: 1 }, { itemId: 'venomCore', chance: .8 }], [{ id: 'attack', name: '追猟', kind: 'physical', weight: .5 }, { id: 'soulBolt', name: '毒律', kind: 'magic', weight: .5 }], { kind: 'boss', bossRank: 'midBoss', title: '《毒律の追跡者》', role: 'MID BOSS / ATTRITION' }),
@@ -93,6 +101,7 @@
 
   D.enemies.d4MidBoss.music = '音楽系/戦闘用/D4中ボス第一形態.mp3';
   D.enemies.d4MidBoss.form2.music = '音楽系/戦闘用/D4中ボス第二形態.mp3';
+  D.dungeon5RareEncounters = [{ id: 'strayMerukuru', chance: .010 }];
   const d5BattleMusic = '音楽系/戦闘用/D5通常戦闘-毒糸の追奏.mp3';
   Object.assign(D.enemies.d5MidBoss, {
     music: d5BattleMusic,
