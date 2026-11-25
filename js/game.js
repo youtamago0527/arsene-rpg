@@ -1941,7 +1941,7 @@
       if (enemy.lastNestuaTick === this.turn) return;
       enemy.lastNestuaTick = this.turn;
       if ((enemy.regenTurns || 0) > 0) {
-        const heal = Math.min(Math.round(enemy.stats.maxHp * .04), enemy.stats.maxHp - enemy.hp); enemy.regenTurns--;
+        const heal = Math.min(Math.round(enemy.stats.maxHp / 64), enemy.stats.maxHp - enemy.hp); enemy.regenTurns--;
         if (heal > 0) { enemy.hp += heal; this.floating(document.getElementById(enemy.uid), `+${heal}`, 'heal'); this.setLog(`《悪徳の美学》がNESTUAのHPを${heal}回復。`); this.updateHUD(); await this.battleSleep(320); }
       }
       const echoes = this.player.nestuaEchoes || [], due = echoes.filter(e => e.turn <= this.turn), future = echoes.filter(e => e.turn > this.turn);
