@@ -10,7 +10,7 @@ assert.match(support,/bagExpansionUsed/,'RUN単位のバッグ拡張利用状態
 assert.match(support,/Math\.max\(base,33\)/,'緊急拡張は最大33枠にする');
 assert.match(support,/shopCounter/,'ショップ遭遇単位のIDを保存する');
 assert.match(support,/rerollUsed/,'同一ショップで再抽選を一度に制限する');
-assert.match(support,/state\.gear=this\.isGenerateGear\(\)/,'通常装備生成テーブルで再抽選する');
+assert.match(support,/Array\.from\(\{length:shopDrawCount\},\(\)=>this\.isGenerateGear\(\)\)/,'通常装備生成テーブルで再抽選する');
 assert.match(support,/phase='defeatPending'/,'全滅装備を保険確定まで削除しない');
 assert.match(support,/insuranceAuthorized/,'広告完了後のみ装備選択を許可する');
 assert.match(support,/some\(x=>x\.uid===rescue\.uid\)/,'救出装備の二重保存を防ぐ');

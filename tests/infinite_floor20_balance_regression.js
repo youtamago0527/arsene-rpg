@@ -16,7 +16,7 @@ assert.match(data, /minFloor:\s*16, maxFloor:\s*9999, pool:\s*\['voidWatcher'/, 
 assert.match(score, /if\(rare&&!pool\.length\)\{rare=false;pool=this\.isEnemyPoolForFloor\(r\.floor,false\);\}/, 'レア未解禁階では通常敵へ戻してネタバレを防ぐ');
 assert.match(score, /r\.floor>=returnFloor&&!this\.isHasReturn\(\)&&!r\.returnMilestoneClaimed/, '20F初勝利でRETURNを確定入手する');
 assert.match(score, /cards\.filter\(x=>x\.id!==['"]return['"]\|\|returnUnlocked\)/, '20F未満のカード候補にRETURNを出さない');
-assert.match(score, /hasReturn=returnUnlocked&&merchant/, '20F未満の行商人にRETURNを出さない');
+assert.match(score, /hasReturn=state.merchant&&run.floor>=returnFloor/, '20F未満の行商人にRETURNを出さない');
 assert.match(baseline, /dungeon5Clear:[^\n]*maxHp:\s*1168,[^\n]*jobLevel:\s*50/, 'D5クリア想定基準を保持する');
 
 console.log('infinite floor 20 balance regression: ok');
