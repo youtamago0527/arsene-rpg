@@ -3091,7 +3091,9 @@
       enemy.hp = enemy.infiniteHp ? enemy.stats.maxHp : enemy.cannotDefeat ? Math.max(1, enemy.hp - d.value) : Math.max(0, enemy.hp - d.value);
       el.classList.add('hit');
       this.floating(el, d.value, d.critical ? 'critical' : 'damage');
-      this.audio.playWeaponAttack(lw.weaponType); if (d.critical) this.audio.sfx('criticalHit');
+      if (this.isRun?.() && lw.id === 'bareFist') this.audio.sfx('playerHit');
+      else this.audio.playWeaponAttack(lw.weaponType);
+      if (d.critical) this.audio.sfx('criticalHit');
       this.setLog(`左手の${lw.name}で追撃！ ${enemy.name}${enemy.label}に${d.value}ダメージ！`);
       this.updateHUD();
       await this.battleSleep(240);
@@ -3151,7 +3153,9 @@
       enemy.hp = enemy.infiniteHp ? enemy.stats.maxHp : enemy.cannotDefeat ? Math.max(1, enemy.hp - d.value) : Math.max(0, enemy.hp - d.value);
       el.classList.add('hit');
       this.floating(el, d.value, d.critical ? 'critical' : 'damage');
-      this.audio.playWeaponAttack(skill.weaponType || this.equippedWeaponType()); if (d.critical) this.audio.sfx('criticalHit');
+      if (this.fxWeaponType?.(skill) === 'fist') this.audio.sfx('playerHit');
+      else this.audio.playWeaponAttack(skill.weaponType || this.equippedWeaponType());
+      if (d.critical) this.audio.sfx('criticalHit');
       this.setLog(`${enemy.name}${enemy.label}に${d.value}ダメージ！`);
       this.updateHUD();
       await this.battleSleep(260);

@@ -177,8 +177,14 @@
   };
   const origEquippedWeapon = P.equippedWeapon;
   P.equippedWeapon = function () {
-    const uid = this.isRun()?.equipment?.rightHand, gear = uid && this.isBagEntry(uid), weapon = gear && D().weapons[gear.itemId];
-    return weapon || origEquippedWeapon.call(this);
+    const run = this.isRun();
+    if (!run) return origEquippedWeapon.call(this);
+    const gear = this.isBagEntry(run.equipment?.rightHand);
+    return D().weapons[gear?.itemId] || D().weapons.bareFist;
+  };
+  const originalUsesBareFists = P.usesBareFists;
+  P.usesBareFists = function () {
+    return this.isRun() ? this.equippedWeapon().id === 'bareFist' : originalUsesBareFists.call(this);
   };
   const origEffectRate = P.equipmentEffectRate;
   P.equipmentEffectRate = function (type, ...rest) {
@@ -237,6 +243,9 @@
     const stats = origTotalStats.call(this), vitals = this.storedVitals(stats), homeEquipment = copy(this.profile.equipment || {});
     this.profile.equipment = { rightHand:null, leftHand:null, head:null, body:null, arms:null, feet:null, accessory:null };
     this.profile.infiniteScore = { active:true, version:2, floor:1, encounterCountOnFloor:0, stairsFound:false, phase:'explore', lootBag:bag, equipment:{}, dungeonGold:0, buffs:{ treasureBonus:0, rareBonus:0, goldBonus:0, qualityBattles:0 }, importedItems:copy(bag), homeEquipment, homeVitals:copy(this.profile.currentVitals || vitals), seed, rngState:seed, uidCounter:bag.length, hp:vitals.hp, mp:vitals.mp, log:[], forcedEvent:null, floorMap:null, opTransferReserved:{ enabled:false, version:1 }, startedAt:Date.now() };
+    const runVitals = this.storedVitals(this.totalStats());
+    this.profile.infiniteScore.hp = runVitals.hp;
+    this.profile.infiniteScore.mp = runVitals.mp;
     this.isCreateFloorMap();
     this.isLog('RUN開始', { seed, imported:[] }); this.saveProfile(); this.isPlayExploreMusic(); this.isRenderExplore($('#menu-panel'));
   };
