@@ -9,10 +9,17 @@
   const shopDrawCount=5;
 
   P.isSupportAvailable=function(){return !!window.arseneAdMob?.isNativeIOS?.();};
+  P.isShopAdPreview=function(){
+    const host=window.location?.hostname;
+    return !this.isSupportAvailable()&&(host==='localhost'||host==='127.0.0.1')
+      &&this.localScenario?.id==='infinite-score-ready'&&this.localScenario?.ephemeral===true;
+  };
   P.isSupportSkip=function(){return !!window.arseneQOffer?.hasAdSkip?.();};
   P.isRequestSupport=function(type,onGrant){
-    if(!this.isSupportAvailable()||!window.arseneQOffer)return false;
-    return window.arseneQOffer.show(type,{onGrant});
+    const previewAd=type==='infiniteReroll'&&this.isShopAdPreview();
+    if((!this.isSupportAvailable()&&!previewAd)||!window.arseneQOffer)return false;
+    if(type==='infiniteReroll'&&!this.isCanClaimShopGacha())return false;
+    return window.arseneQOffer.show(type,{onGrant,previewAd});
   };
   P.isEnsureSupportState=function(run=this.isRun?.()){
     if(!run)return null;
@@ -47,12 +54,13 @@
     return !!state&&!state.rerollUsed&&this.isBagLimit()-this.isBagUsed()>=shopDrawCount;
   };
   P.isShopSupportHtml=function(){
-    if(!this.isSupportAvailable())return '';
+    const previewAd=this.isShopAdPreview();
+    if(!this.isSupportAvailable()&&!previewAd)return '';
     const state=this.isRun().shopSupport;
-    const used=state.rerollUsed,skip=this.isSupportSkip(),canClaim=this.isCanClaimShopGacha(state);
+    const used=state.rerollUsed,skip=!previewAd&&this.isSupportSkip(),canClaim=this.isCanClaimShopGacha(state);
     const rewards=(state.rewardNames||[]).map(name=>`<li>${esc(name)}</li>`).join('');
     return `<section class="is-support-strip is-shop-support">
-      <div><small>PHANTOM SUPPORT</small><h3>${skip?'5連ガチャ':'広告で5連ガチャ'}</h3>
+      <div><small>PHANTOM SUPPORT</small><h3>${skip?'5連ガチャ':previewAd?'テスト広告で5連ガチャ':'広告で5連ガチャ'}</h3>
       <p>抽選した装備5個をバッグに入手。</p></div>
       <button type="button" data-is-support="reroll" ${canClaim?'':'disabled'}>
         ${used?'使用済み':!canClaim?'空き枠不足':skip?'5連ガチャ':'▶ 広告を視聴'}${canClaim&&!skip?'<small>5連ガチャ</small>':''}

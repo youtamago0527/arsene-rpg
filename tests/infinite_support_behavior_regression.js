@@ -31,5 +31,18 @@ const shop=game();const first=shop.isStartShopEncounter(false);assert.equal(firs
   const insured=game();insured.battleMode='infiniteScore';insured.isRun().lootBag=[{uid:'keep',kind:'equipment',itemId:'gear',otherWorldGear:true,quality:108,plus:4,ops:[]}];await insured.defeat();assert.equal(insured.isRun().phase,'defeatPending','全滅直後もロスト候補を保存する');assert.equal(insured.profile.infiniteScore.active,true);assert.equal(insured.isGrantInsurance(),true);assert.equal(insured.isGrantInsurance(),false,'保険権を二重付与しない');insured.isFinishDefeat('keep');assert.equal(insured.profile.infiniteScore.active,false);assert.equal(insured.profile.otherWorldGear.length,1);insured.isFinishDefeat('keep');assert.equal(insured.profile.otherWorldGear.length,1,'再実行で装備を複製しない');
 
   window.arseneAdMob.isNativeIOS=()=>false;const web=game();web.battleMode='infiniteScore';web.isRun().lootBag=[{uid:'lost',kind:'equipment',itemId:'gear'}];assert.equal(web.isSupportAvailable(),false);assert.equal(web.isRequestSupport('infiniteBag',()=>{}),false);await web.defeat();assert.equal(web.profile.infiniteScore.active,false,'Web版は保険入口を出さず通常ロストを確定する');
+  const preview=game();
+  preview.localScenario={id:'infinite-score-ready',ephemeral:true};
+  window.location={hostname:'arsene.example'};
+  assert.equal(preview.isRequestSupport('infiniteReroll',()=>{}),false);
+  window.location.hostname='127.0.0.1';
+  assert.equal(preview.isRequestSupport('infiniteReroll',()=>{}),false,'ショップに遭遇している必要がある');
+  preview.isStartShopEncounter(true);
+  let offer;
+  window.arseneQOffer.show=(type,options)=>{offer={type,...options};return true;};
+  assert.equal(preview.isRequestSupport('infiniteReroll',()=>{}),true);
+  assert.equal(offer.type,'infiniteReroll');
+  assert.equal(offer.previewAd,true);
+  assert.equal(preview.isRequestSupport('infiniteInsurance',()=>{}),false);
   console.log('infinite support behavior regression: ok');
 })().catch(error=>{console.error(error);process.exitCode=1;});
