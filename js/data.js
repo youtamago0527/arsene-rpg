@@ -360,8 +360,8 @@ window.ARSENE_DATA = {
   jobs: {
     gladiator: {
       id: 'gladiator', name: '剣闘士', nameEn: 'GLADIATOR',
-      description: '戦士と武道家をそれぞれLv40まで育てると解放。両職の技を使い、習得したパッシブを2つ選べる。',
-      parentJobs: ['warrior', 'martialArtist'], unlockCondition: { jobLevels: { warrior: 40, martialArtist: 40 } },
+      description: '戦士・武道家それぞれでLv40に到達し、2回以上転生すると解放。両職の技を使い、習得したパッシブを2つ選べる。',
+      parentJobs: ['warrior', 'martialArtist'], unlockCondition: { jobLevels: { warrior: 40, martialArtist: 40 }, rebirthsPerParent: 2 },
       growthStats: ['str', 'vit', 'agi'], skillUnlocks: {}, passiveUnlocks: {},
       traits: { swiftPower: { name: '剛速一体', text: '素早さの30%を物理攻撃力に加算', rate: .3, rebirthStep: 0 } }
     },
