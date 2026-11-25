@@ -24,6 +24,7 @@
     { stars:5, id:'phantasm', name:'幻奏', power:425, armor:235, color:'#e05eff' },
     { stars:6, id:'infinite', name:'無限', power:575, armor:315, color:'#ffbd4a' }
   ];
+  D.otherWorldGearParts = slots;
   D.otherWorldGearSeries = series;
   D.otherWorldGearIds = [];
   for (const s of series) for (const part of slots) {

@@ -10,7 +10,7 @@ assert.match(support,/bagExpansionUsed/,'RUN単位のバッグ拡張利用状態
 assert.match(support,/Math\.max\(base,33\)/,'緊急拡張は最大33枠にする');
 assert.match(support,/shopCounter/,'ショップ遭遇単位のIDを保存する');
 assert.match(support,/rerollUsed/,'同一ショップで再抽選を一度に制限する');
-assert.match(support,/state\.gear=this\.isGenerateGear\(\)/,'通常装備生成テーブルで再抽選する');
+assert.match(support,/Array\.from\(\{length:shopDrawCount\},\(\)=>this\.isGenerateGear\(\)\)/,'通常装備生成テーブルで再抽選する');
 assert.match(support,/if\(window\.arseneQOffer\.isOpen\?\.\(\)\).*別の広告処理が進行中/,'広告処理中の無反応を画面で説明する');
 assert.match(support,/if\(!opened\)notify\('広告の確認画面を開けませんでした/,'広告画面が開けない場合に理由を表示する');
 assert.match(support,/phase='defeatPending'/,'全滅装備を保険確定まで削除しない');
