@@ -91,9 +91,10 @@
         this.game.currentDungeonId = dungeon.id;
         this.game.currentFloorId = dungeon.floors[0].id;
         const encounter = params.get('encounter');
-        if (encounter === 'boss' || encounter === 'mid') {
-          const id = encounter === 'boss' ? dungeon.bossId : dungeon.midBossId;
-          this.game.startBossEncounter(id, id);
+        if (['route', 'mid', 'mid2', 'boss'].includes(encounter)) {
+          const id = encounter === 'boss' ? dungeon.bossId : dungeon.midBossGates[encounter === 'mid2' ? 1 : 0].enemyId;
+          if (encounter !== 'route' && window.ARSENE_DATA.enemies[id]?.sprite) this.game.startBossEncounter(id, id);
+          else { this.game.dungeonSelectId = dungeon.id; this.game.showMenu('dungeon-select'); }
         } else {
           this.game.audio.playTrack(dungeon.music);
           this.game.startBattle();
