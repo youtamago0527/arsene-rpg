@@ -281,6 +281,7 @@
     this.jobUI.tab = 'abilitySet';
     this.jobUI.detailId = null;
     this.jobUI.modal = null;
+    this.isExploreMenuOpen = false;
     this.owAbilityReturn = true;
     this.owAbilityFrom = 'infinite-score';
     this.renderMenuPanel('job');
@@ -982,10 +983,16 @@
     const isScoreAbilityPanel = name === 'job' && this.isRunForEquipment() && this.owAbilityReturn && this.owAbilityFrom === 'infinite-score';
     if (this.isRun() && !isScorePanel && !isScoreAbilityPanel) return this.isChooseActiveRun();
     this.isSetEquipmentContext(isScorePanel || isScoreAbilityPanel);
-    if(panel&&name.startsWith('infinite-score')){
-      panel.dataset.panel=name;
+    if(panel&&(name.startsWith('infinite-score')||isScoreAbilityPanel)){
       if(panel.parentNode!==document.body)document.body.appendChild(panel);
       panel.hidden=false;panel.style.display='block';panel.classList.add('panel-tall');panel.scrollTop=0;
+      if(isScoreAbilityPanel){
+        // The hideout itself is hidden during exploration. Keep the shared job UI on the exploration layer.
+        const result=origRenderPanel.call(this,name);
+        panel.dataset.panel='infinite-score-abilities';
+        return result;
+      }
+      panel.dataset.panel=name;
       if(name==='infinite-score-warning')this.isRenderWarning(panel);
       else if(name==='infinite-score-import')this.isRenderImport(panel);
       else if(name==='infinite-score-bag')this.isRenderBag(panel);

@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
 const infinite = fs.readFileSync(path.join(root, 'js', 'infinite_score.js'), 'utf8');
@@ -24,5 +25,30 @@ assert.match(game, /WEAPON PICKED UP/, '武器取得通知を明示する');
 assert.match(game, /\$\{item\.name\}\$\{weapon \? 'を拾いました'/, '武器取得通知に実名を表示する');
 assert.match(infinite, /class="is-sell-equipped">装備中/, '異世界の売却一覧で装備中を明示する');
 assert.match(infinite, /isConfirm\('装備中のアイテムです',[\s\S]*外して売る/, '装備中の品をゲーム内モーダルで確認してから売る');
+
+const hideout = { insertBefore(node) { node.parentNode = this; } };
+const body = { appendChild(node) { node.parentNode = this; } };
+const panel = { parentNode: hideout, dataset: {}, style: {}, classList: { add() {} } };
+class BattleGame {
+  renderMenuPanel(name) { panel.dataset.panel = name; }
+}
+const document = { body, querySelector: selector => selector === '#menu-panel' ? panel : null, addEventListener() {} };
+vm.runInNewContext(infinite, { window: { BattleGame, ARSENE_DATA: { items: {} } }, document });
+const player = new BattleGame();
+player.usingInfiniteScoreEquipment = true;
+player.profile = { infiniteScore: { active: true, equipment: {} }, equipment: {} };
+player.isRenderExplore = () => {};
+player.isOpenAbilitySettings();
+assert.equal(panel.parentNode, body, 'ability settings stay outside the hidden hideout');
+assert.equal(panel.dataset.panel, 'infinite-score-abilities');
+assert.equal(panel.hidden, false);
+player.renderMenuPanel('job');
+assert.equal(panel.dataset.panel, 'infinite-score-abilities', 'ability changes keep the exploration panel visible');
+player.renderMenuPanel('infinite-score');
+assert.equal(panel.dataset.panel, 'infinite-score');
+player.profile.infiniteScore.active = false;
+player.renderMenuPanel('job');
+assert.equal(panel.parentNode, hideout, 'normal job screen returns to the hideout');
+assert.equal(panel.dataset.panel, 'job');
 
 console.log('infinite navigation and weapon pickup regression: ok');
