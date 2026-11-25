@@ -63,22 +63,136 @@
 .is-shop button:disabled{opacity:.62!important;color:#a9c6d4!important;background:#0b1b25!important;border-color:#36586a!important}
 
 /* Phantom Shop treatment for the Infinite Score black market. */
-#menu-panel[data-panel="infinite-score-shop"],#menu-panel[data-panel="infinite-score-shop-sell"]{padding:0!important;background:#030407!important}
-.is-shop-screen{box-sizing:border-box;width:min(100%,448px);min-height:100svh;margin:auto;padding:18px 14px 28px;color:#f8fbff;background:radial-gradient(circle at 50% 18%,#164e6355,transparent 38%),radial-gradient(circle at 85% 42%,#5b167044,transparent 36%),#030407;font-family:"Noto Sans JP",system-ui,sans-serif}
-.is-shop-hero{position:relative;padding:17px 15px 15px;text-align:center;border:1px solid #ffffff30;background:linear-gradient(145deg,#0d111ae8,#08070fed);clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);box-shadow:inset 0 0 28px #05d9e812,0 8px 30px #000b}
-.is-shop-hero>small{display:inline-flex;align-items:center;gap:7px;padding:3px 9px;color:#cbd5e1;border:1px solid #ffffff20;background:#ffffff0a;font:700 8px/1.6 monospace;letter-spacing:.16em}.is-shop-hero>small i{width:6px;height:6px;border-radius:50%;background:#22d3ee;box-shadow:0 0 9px #22d3ee}
-.is-shop-hero h2{margin:10px 0 4px;font:900 clamp(22px,7vw,32px)/1 Cinzel,serif;letter-spacing:.06em;color:#fff;text-shadow:-2px 0 #ff2a6d,2px 0 #05d9e8,0 0 18px #7c3aed}.is-shop-hero p{margin:0;color:#94a3b8;font-size:9px;letter-spacing:.08em}.is-shop-hero>strong{display:inline-block;margin-top:11px;padding:5px 13px;color:#67e8f9;border:1px solid #22d3ee66;background:#05131b;font:900 18px Cinzel}.is-shop-hero>strong em{color:#94a3b8;font:700 8px monospace;font-style:normal}
-.is-shop-tabs{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}.is-shop-tabs>*{box-sizing:border-box;display:grid;place-items:center;min-height:40px;margin:0;padding:7px;color:#94a3b8;border:1px solid #334155;background:#080a0f;font-size:12px;font-weight:900;letter-spacing:.08em}.is-shop-tabs>b{color:#fff;border-color:#c084fc;background:linear-gradient(135deg,#4c1d95,#16213a);box-shadow:inset 0 0 15px #c084fc22}.is-shop-tabs button:hover{color:#fff;border-color:#22d3ee;background:#102332}
-.is-shop-stock{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px}.is-shop-stock>small{grid-column:1/-1;color:#22d3ee;font:700 8px monospace;letter-spacing:.2em}
-.is-shop-screen .is-shop-product{position:relative;min-height:88px!important;display:grid;grid-template-columns:34px 1fr;align-items:center;gap:9px;padding:12px!important;text-align:left;color:#fff!important;border:1px solid #ffffff35!important;background:linear-gradient(145deg,#121725,#0a0c13)!important;box-shadow:inset 0 0 18px #ffffff08,0 5px 16px #0008;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);text-shadow:none}
-.is-shop-product>i{grid-row:1/3;display:grid;place-items:center;width:34px;height:34px;color:#05070a;background:linear-gradient(135deg,#67e8f9,#c084fc);font:900 19px Cinzel;font-style:normal;box-shadow:0 0 14px #22d3ee66}.is-shop-product span{min-width:0;display:grid}.is-shop-product small{color:#22d3ee;font:700 7px monospace;letter-spacing:.1em}.is-shop-product b{font-size:12px;white-space:nowrap}.is-shop-product>strong{grid-column:2;color:#f0abfc;font:900 15px Cinzel}.is-shop-product>strong em{color:#94a3b8;font:700 7px monospace;font-style:normal}.is-shop-screen .is-shop-product:hover,.is-shop-screen .is-shop-product:focus-visible{transform:translateY(-1px);border-color:#67e8f9!important;background:linear-gradient(145deg,#17263a,#151026)!important;box-shadow:inset 0 0 22px #22d3ee18,0 0 18px #7c3aed55}
-.is-shop-trade{margin-top:17px;padding-top:12px;border-top:1px solid #ffffff24}.is-shop-trade>header{display:flex;align-items:end;justify-content:space-between}.is-shop-trade h3{margin:2px 0 0;font-size:16px}.is-shop-trade header small{color:#fb7185;font:700 8px monospace;letter-spacing:.18em}.is-shop-trade header>span{color:#64748b;font:700 8px monospace}.is-shop-trade .is-list{margin-top:9px}.is-shop-empty{margin:0;padding:18px;text-align:center;color:#64748b;border:1px dashed #334155;background:#080a0f;font-size:10px}
-.is-shop-trade-only{margin-top:13px}.is-shop-trade-only .is-list{display:grid;gap:7px}
-.is-shop-sell{grid-template-columns:1fr auto auto;align-items:center;border-color:#ffffff24;background:#0a0c12}.is-shop-sell>div small{color:#64748b;font:700 7px monospace}.is-shop-sell>b{color:#67e8f9;font:900 13px Cinzel}.is-shop-sell>b em{color:#64748b;font:700 7px monospace;font-style:normal}.is-shop-sell button{min-height:34px!important;color:#fff!important;background:#4c1d95!important;border-color:#c084fc!important}
-.is-shop-sell.equipped{border-color:#f59e0b;background:linear-gradient(90deg,#241605,#0a0c12);box-shadow:inset 3px 0 #f59e0b}.is-sell-equipped{display:inline-block;margin-left:7px;padding:2px 5px;color:#1a0e00;background:#fbbf24;font:900 8px "Noto Sans JP",sans-serif;font-style:normal}.is-shop-sell.equipped button{background:#7f1d1d!important;border-color:#fca5a5!important}
-.is-shop-exit{width:100%;min-height:48px;margin-top:16px;color:#cbd5e1;border:1px solid #ffffff38;background:#0b0d14;font-weight:800;letter-spacing:.08em;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}.is-shop-exit:hover{color:#fff;border-color:#22d3ee;background:#102332}
-@media(max-width:360px){.is-shop-stock{grid-template-columns:1fr}.is-shop-stock>small{grid-column:1}.is-shop-screen .is-shop-product{min-height:76px!important}}
-.is-support-button small,.is-support-strip button small{display:block;margin-top:3px;color:#9bdcf4;font-size:8px}.is-support-strip{display:grid;grid-template-columns:1fr minmax(132px,42%);gap:9px;align-items:center;margin:12px 0 0;padding:10px;border:1px solid #a855f766;background:linear-gradient(115deg,#11152a,#24103a)}.is-support-strip small{color:#67e8f9;font:700 7px monospace;letter-spacing:.1em}.is-support-strip b{display:block;margin-top:3px;font-size:10px}.is-support-strip button{min-height:48px;color:#fff;border:1px solid #d946ef;background:linear-gradient(100deg,#6d28d9,#db2777);font-weight:900}.is-support-strip button:disabled{filter:grayscale(1);opacity:.55}.is-insurance-screen{box-sizing:border-box;min-height:100svh;padding:14px;background:radial-gradient(circle at 50% 25%,#4a0e2855,transparent 42%),#03050b}.is-insurance{width:min(430px,100%);margin:12px auto;padding:15px;border:1px solid #db2777;background:linear-gradient(150deg,#180712,#080711);box-shadow:0 0 25px #db277744}.is-insurance>small{color:#fb7185;font:800 8px monospace;letter-spacing:.16em}.is-insurance h2{margin:7px 0}.is-insurance>div{display:grid;gap:7px;max-height:52svh;overflow:auto;margin:12px 0}.is-insurance [data-is-insurance-gear]{display:grid;gap:3px;padding:11px;text-align:left;color:#fff;border:1px solid #7c3aed;background:#0b1020}.is-insurance [data-is-insurance-gear] span{color:#f0abfc;font-size:9px}.is-insurance [data-is-insurance-gear] small{color:#9fb4c8;font-size:8px;line-height:1.5}.is-insurance [data-is-insurance-skip]{width:100%;min-height:44px;margin-top:8px;color:#d1d5db;border:1px solid #475569;background:#111827}
+#menu-panel[data-panel="infinite-score-shop"],#menu-panel[data-panel="infinite-score-shop-sell"]{
+  padding:0!important;background:#030611!important;overflow-y:auto!important;overscroll-behavior:contain
+}
+.is-shop-screen{
+  --shop-gold:#e8b66b;
+  --shop-ink:#eef7ff;
+  --shop-heading:"Hiragino Mincho ProN","Yu Mincho",serif;
+  --shop-frame:inset 0 0 0 2px #080612,inset 0 0 0 3px #d1a16d42,0 0 13px #f9b64b21;
+  box-sizing:border-box;width:min(100%,500px);min-height:100%;margin:auto;color:var(--shop-ink);
+  background:radial-gradient(ellipse at 50% 40%,#131021 0%,#040816 59%,#02040b 100%);
+  font-family:"Noto Sans JP",system-ui,sans-serif
+}
+.is-shop-hero{
+  position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  gap:4px;width:100%;aspect-ratio:2/1;min-height:177px;padding:38px 10px 8px;box-sizing:border-box;text-align:center;
+  background:linear-gradient(0deg,#030612 0%,transparent 20%),url('../assets/ui/infinite-shop/merchant.webp') center top/cover no-repeat,#080c20;
+  border-bottom:1px solid #f1bf7d8a
+}
+.is-shop-hero h2{
+  margin:0;color:#fbf6ff;font:900 clamp(25px,7.5vw,44px)/1.08 var(--shop-heading);letter-spacing:.035em;
+  text-shadow:0 2px 3px #020313,0 0 14px #665aff,0 0 28px #8d53ff
+}
+.is-shop-hero>small{color:#ffefc9;font:700 clamp(8px,2.6vw,12px)/1.2 Georgia,serif;letter-spacing:.16em}
+.is-shop-hero p{margin:1px 0;color:#e0ddf3;font:700 clamp(10px,3vw,14px)/1.3 var(--shop-heading);text-shadow:0 1px 4px #000}
+.is-shop-floor{padding:3px 15px;color:#f6f7ff;border:1px solid #a594b5;background:#070e20e6;font:700 12px Georgia,serif;letter-spacing:.12em}
+.is-shop-money,.is-shop-price{display:inline-flex;align-items:center;gap:6px;color:#b9f4ff;white-space:nowrap}
+.is-shop-money{
+  margin-top:3px;min-width:98px;justify-content:center;padding:4px 15px;background:linear-gradient(#101e33,#040913);
+  border:1px solid var(--shop-gold);border-radius:8px;box-shadow:var(--shop-frame)
+}
+.is-shop-money strong,.is-shop-price strong{font:700 21px/1.25 Georgia,serif;font-variant-numeric:tabular-nums}
+.is-shop-money strong small,.is-shop-price strong small{margin-left:3px;font:700 10px/1 var(--shop-heading);color:#deedf5}
+.is-shop-coin{
+  display:inline-grid;place-items:center;flex:none;width:20px;height:20px;border:1px solid #fff0a6;border-radius:50%;
+  background:radial-gradient(circle at 35% 26%,#ffe59a,#df983c 63%,#8e4e22);box-shadow:inset 0 0 0 2px #93502680,0 0 6px #f4bc5155;
+  color:#301705;font:900 14px Georgia,serif
+}
+.is-shop-close{
+  position:absolute;top:8px;right:8px;width:42px;height:42px;display:grid;place-items:center;padding:0;
+  color:#fff;border:1px solid #bdd5ef;border-radius:5px;background:#091227e8;box-shadow:inset 0 0 7px #90bffd66;
+  font:400 30px/1 system-ui,sans-serif
+}
+.is-shop-body{padding:0 11px 21px}
+.is-shop-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:5px 0 14px}
+.is-shop-tabs>*,.is-shop-exit{
+  display:grid;place-items:center;min-height:48px;padding:7px;color:var(--shop-ink);
+  border:1px solid var(--shop-gold);border-radius:9px;background:linear-gradient(160deg,#102138,#060b17 57%,#102037);
+  box-shadow:var(--shop-frame);font:800 17px/1.25 var(--shop-heading);text-shadow:0 2px 4px #020714
+}
+.is-shop-tabs>[aria-current]{border-color:#b7eeff;background:linear-gradient(170deg,#104372,#031329 62%);box-shadow:inset 0 0 12px #54beff87,0 0 9px #62d8ff6e}
+.is-shop-section-title{
+  display:flex;gap:9px;align-items:center;justify-content:center;margin:14px 0 10px;
+  color:#fff1d9;text-align:center;font:800 16px/1.2 var(--shop-heading)
+}
+.is-shop-section-title::before,.is-shop-section-title::after{
+  content:"";height:1px;max-width:124px;flex:1;background:linear-gradient(90deg,transparent,#ebc487);
+  box-shadow:0 0 5px #779bff
+}
+.is-shop-section-title::after{transform:scaleX(-1)}
+.is-shop-stock{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.is-shop-product{
+  display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:1fr auto;gap:6px 7px;align-items:start;
+  min-width:0;min-height:109px;padding:9px 7px 7px;text-align:left;color:var(--shop-ink);
+  border:1px solid var(--shop-gold);border-radius:11px;background:linear-gradient(145deg,#06101d,#0b182a 62%,#10152d);
+  box-shadow:var(--shop-frame);overflow-wrap:anywhere
+}
+.is-shop-product[data-is-buy="weapon"],.is-shop-product[data-is-buy="armor"]{
+  border-color:#e6a5ff;background:radial-gradient(ellipse at 85% 100%,#411451,#121529 66%);
+  box-shadow:inset 0 0 0 2px #15091f,inset 0 0 12px #b838d66b,0 0 10px #b838d63b
+}
+.is-shop-icon{
+  display:grid;place-items:center;width:clamp(34px,11.6vw,67px);aspect-ratio:1;
+  border:1px solid #f8cb83;border-radius:6px;background:#070d20 url('../assets/ui/infinite-shop/products.webp') no-repeat;
+  background-size:200% 200%;box-shadow:0 0 7px #ffbd574d,inset 0 0 0 1px #f8cb8355
+}
+.is-shop-icon--hp{background-position:left top}
+.is-shop-icon--mp{background-position:right top}
+.is-shop-icon--weapon{background-position:left bottom}
+.is-shop-icon--armor{background-position:right bottom}
+.is-shop-icon--return{background:radial-gradient(circle,#194777,#090e22);color:#d4eeff;font:normal 27px/1 Georgia,serif}
+.is-shop-product-info{display:grid;gap:2px;line-height:1.25}
+.is-shop-product-info>small,.is-shop-support>div>small{color:#81e4ee;font:700 9px/1.25 ui-monospace,monospace;letter-spacing:.08em}
+.is-shop-product-info>b{color:#fff6eb;font:800 clamp(12px,3.55vw,17px)/1.3 var(--shop-heading)}
+.is-shop-product-info>span{color:#d2dbe7;font:500 10px/1.45 system-ui,sans-serif}
+.is-shop-product>.is-shop-price{grid-column:1/-1;justify-content:center;border-top:1px solid #e7c89640;padding-top:5px}
+.is-shop-product:disabled,.is-shop-support>button:disabled,.is-shop-sell button:disabled{
+  cursor:default;color:#c6d1e3;filter:saturate(.52);opacity:.72
+}
+.is-shop-product:not(:disabled):active,.is-shop-tabs button:active,.is-shop-exit:active{filter:brightness(1.27)}
+.is-shop-screen button:focus-visible{outline:2px solid #c2f4ff;outline-offset:2px}
+.is-shop-support{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(100px,35%);gap:7px 10px;align-items:center;
+  padding:12px;border:1px solid var(--shop-gold);border-radius:12px;
+  background:radial-gradient(ellipse at 80% 15%,#40134e,#180d28 54%,#080c1b);
+  box-shadow:var(--shop-frame),inset 0 0 15px #e068e13c
+}
+.is-shop-support>div>small{color:#edbdf2}
+.is-shop-support h3{margin:3px 0;color:#fff5ff;font:900 clamp(15px,4.5vw,24px)/1.17 var(--shop-heading)}
+.is-shop-support p{margin:0;color:#f3e4f4;font-size:11px;line-height:1.4}
+.is-shop-support>button{
+  min-height:51px;padding:5px;color:#fff7fe;border:1px solid #ffe1a1;border-radius:8px;
+  background:linear-gradient(155deg,#401557,#742a87);box-shadow:0 0 8px #ffb5676b,inset 0 0 6px #ffbb6ca1;
+  font:900 13px/1.3 var(--shop-heading)
+}
+.is-shop-support>button small{display:block;color:#fff;font-size:12px}
+.is-shop-support .is-shop-support-limit{
+  grid-column:1/-1;justify-self:center;padding:2px 8px;border:1px solid #d6ae7370;border-radius:18px;text-align:center
+}
+.is-shop-support-limit b{color:#ffe393}
+.is-shop-rewards{
+  grid-column:1/-1;display:grid;gap:3px;margin:0;padding:8px 8px 8px 28px;
+  color:#f2e7fb;border:1px solid #9470b3;border-radius:5px;background:#0b1123;
+  font-size:12px;overflow-wrap:anywhere
+}
+.is-shop-trade{max-height:none;overflow:visible}
+.is-shop-sell{grid-template-columns:minmax(0,1fr) auto auto;align-items:center;border-color:#a484646b;background:#091323;color:#eef7ff}
+.is-shop-sell>div{overflow-wrap:anywhere}
+.is-shop-sell button{color:#fff;background:#30214c;border-color:#d2a8e9}
+.is-shop-sell.equipped{border-color:#c69b64}
+.is-sell-equipped{display:inline-block;margin-left:5px;padding:2px 5px;color:#ffe6bd;background:#4a321c;font-size:10px;font-style:normal}
+.is-shop-empty{padding:12px;color:#c6d2e7;text-align:center}
+.is-shop-exit{width:100%;margin-top:16px}
+.is-support-button small{display:block;margin-top:3px;color:#9bdcf4;font-size:8px}
+@media(max-width:350px){
+  .is-shop-body{padding-inline:7px}
+  .is-shop-stock{gap:6px}
+  .is-shop-product{gap:5px;padding-inline:5px}
+  .is-shop-product-info>small{letter-spacing:0;font-size:8px}
+}
+.is-insurance-screen{box-sizing:border-box;min-height:100svh;padding:14px;background:radial-gradient(circle at 50% 25%,#4a0e2855,transparent 42%),#03050b}.is-insurance{width:min(430px,100%);margin:12px auto;padding:15px;border:1px solid #db2777;background:linear-gradient(150deg,#180712,#080711);box-shadow:0 0 25px #db277744}.is-insurance>small{color:#fb7185;font:800 8px monospace;letter-spacing:.16em}.is-insurance h2{margin:7px 0}.is-insurance>div{display:grid;gap:7px;max-height:52svh;overflow:auto;margin:12px 0}.is-insurance [data-is-insurance-gear]{display:grid;gap:3px;padding:11px;text-align:left;color:#fff;border:1px solid #7c3aed;background:#0b1020}.is-insurance [data-is-insurance-gear] span{color:#f0abfc;font-size:9px}.is-insurance [data-is-insurance-gear] small{color:#9fb4c8;font-size:8px;line-height:1.5}.is-insurance [data-is-insurance-skip]{width:100%;min-height:44px;margin-top:8px;color:#d1d5db;border:1px solid #475569;background:#111827}
 
 /* Perceived-size correction for the two artwork-heavy command tiles. */
 .is-explore-command.item{background-image:url("../assets/ui/infinite-score/explore-command-bag-v2.png")}
