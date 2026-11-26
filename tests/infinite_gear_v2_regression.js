@@ -239,7 +239,7 @@ test('returned reward OPs require equipped gear and a normal battle, and add tog
   game.isRun().equipment={rightHand:sword.uid};
   assert.equal(game.rewardExpMultiplier(),1.5);
   assert.equal(game.rewardGoldMultiplier(),2);
-  assert.equal(statModel.opText(sword.ops[0]),'経験値UP +20%［LEGEND］（EXP・JOB EXP）');
+  assert.equal(statModel.opText(sword.ops[0]),'EXP UP +20%［LEGEND］');
   assert.equal(statModel.opText(sword.ops[1]),'GOLD UP +25%［EPIC］');
 });
 

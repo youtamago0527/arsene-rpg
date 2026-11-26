@@ -103,8 +103,7 @@
       combination('allBaseAttributes','才覚の律',3,baseAttributes,[5,7,9,11],{summary:'力〜運の7能力'}),
       combination('allAbilities','全能の律',4,['maxHp','maxMp',...baseAttributes,...equipmentPower],[3,4,6,8],
         {summary:'最大HP・MP／力〜運／物理・魔法の攻防'}),
-      { ...op('normalDungeonExpRate','経験値UP',3), values:[5,10,15,20], repeatable:true, uncappedGrowth:true,
-        summary:'EXP・JOB EXP' },
+      { ...op('normalDungeonExpRate','EXP UP',3), values:[5,10,15,20], repeatable:true, uncappedGrowth:true },
       { ...op('normalDungeonGoldRate','GOLD UP',2), values:[10,15,20,25], repeatable:true, uncappedGrowth:true }
     ]
   };
