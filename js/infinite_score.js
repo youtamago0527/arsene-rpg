@@ -1286,8 +1286,10 @@
       if (!material && !canTune) return choices;
       const preview = bonuses.length ? `<h4>共通OPに素材の50％を上乗せ</h4><ul class="is-forge-bonuses">${bonuses.map(({before,after}) =>
         `<li>${esc(this.isForgeOpText(before))} → <b>${esc(this.isForgeOpText(after))}</b></li>`).join('')}</ul>` : '';
-      const warning = material ? '強化に使った装備は消滅します。' : rate < 1 ? '失敗時に消費するのは欠片・核だけです。' : '';
-      return `${choices}<section class="is-forge-stage"><h3>強化結果</h3><div class="is-forge-deltas">${deltas}</div>
+      const warning = material
+        ? this.isBagPresentation(material).isEquipped ? '装備中の素材は装備から外れ、消滅します。' : '強化に使った装備は消滅します。'
+        : rate < 1 ? '失敗時に消費するのは欠片・核だけです。' : '';
+      return `${choices}<section class="is-forge-stage is-forge-enhance-result"><h3>強化結果</h3><div class="is-forge-deltas">${deltas}</div>
         ${preview}
         ${this.isForgeResultHtml('成功率 ' + Math.round(rate * 100) + '%', `+${current} → +${current + 1}`,
           material ? null : cost, '強化する', advance, warning)}</section>`;
@@ -1393,34 +1395,28 @@
     }
     const rate = material ? 1 : (this.owgTuneRate?.(next) ?? 1);
     const bonuses = material ? this.isForgeEnhanceBonuses(gear, material) : [];
-    const details = [`+${current} → +${next}`, `成功率 ${Math.round(rate * 100)}%`];
-    if (material) {
-      const equipped = Object.values(run.equipment || {}).includes(material.uid);
-      details.push(`${equipped ? '装備中の' : ''}素材「${this.isForgeName(material)}」を消費します。`);
-      for (const {before, after} of bonuses) details.push(`${this.isForgeOpText(before)} → ${this.isForgeOpText(after)}`);
-    } else {
-      details.push(`必要 ${this.isForgeCostText(cost)}`);
-      if (rate < 1) details.push('失敗時に消費するのは欠片・核だけです。');
-    }
-    if (!await this.isConfirm(`${name}を強化しますか？`, details.join('\n'),
-      {kicker:'OTHER WORLD FORGE', confirmLabel:'強化する', danger:!!material})) return;
-    if (this.isRun() !== run || this.isBagEntry(uid) !== gear || (gear.plus || 0) !== current ||
-        (material && (this.isBagEntry(material.uid) !== material || material.locked)) ||
-        (cost && !this.isForgeSpendMaterials(cost))) return;
+    if (cost && !this.isForgeSpendMaterials(cost)) return;
 
-    if (rate >= 1 || this.isRand() < rate) {
+    const succeeded = rate >= 1 || this.isRand() < rate;
+    if (succeeded) {
       gear.plus = gear.tuneLevel = next;
       for (const {before, after} of bonuses) before.value = after.value;
-      if (material) this.isForgeConsumeGear(run, material);
+      if (material) {
+        this.isForgeConsumeGear(run, material);
+        this.isForgeState().materialUid = null;
+      }
       this.isLog(`異世界工房：${name}を+${next}へ強化`);
       this.audio?.sfx?.('confirm');
     } else {
       this.isLog(`異世界工房：${name}の+${next}強化に失敗`);
       this.audio?.sfx?.('defeat');
-      this.isSave();
-      await this.isNotify('強化失敗', `${this.isForgeCostText(cost)}を消費しました。`, {kicker:'TUNING FAILED'});
     }
     this.isSave();
+    if (succeeded) {
+      await this.isNotify('強化成功', `${name}\n+${current} → +${next}`, {kicker:'TUNING SUCCESS'});
+    } else {
+      await this.isNotify('強化失敗', `${this.isForgeCostText(cost)}を消費しました。`, {kicker:'TUNING FAILED'});
+    }
     this.isRenderWorkshop($('#menu-panel'));
   };
 

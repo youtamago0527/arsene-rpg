@@ -93,7 +93,9 @@ test('an identical weapon guarantees a high enhancement and contributes half of 
   g.owgTuneRate = () => .55;
   g.isRand = () => {throw Error('identical gear must not roll chance');};
   g.isLog = g.isSave = () => {};
-  g.isConfirm = async () => false;
+  g.isConfirm = async () => {throw Error('enhancement must not ask for confirmation');};
+  const notices = [];
+  g.isNotify = async (title, details) => notices.push([title, details]);
 
   g.isRenderWorkshop(panel);
   assert.doesNotMatch(panel.innerHTML,/同型合成/);
@@ -106,15 +108,12 @@ test('an identical weapon guarantees a high enhancement and contributes half of 
   g.isRenderWorkshop(panel);
   assert.match(panel.innerHTML,/成功率 100%/);
   assert.match(panel.innerHTML,/str \+3 → <b>str \+5\.5/);
+  assert.match(panel.innerHTML,/装備中の素材は装備から外れ、消滅します。/);
   await g.isForgeEnhance(base.uid, 'locked-duplicate');
   assert.equal(base.plus,5);
+  assert.equal(notices.length,0);
   await g.isForgeEnhance(base.uid, material.uid);
-  assert(g.isBagEntry(material.uid),'cancelling must keep the material');
-  g.isConfirm = async (_, details) => {
-    assert.match(details,/装備中の素材.*消費/);
-    return true;
-  };
-  await g.isForgeEnhance(base.uid, material.uid);
+  assert.deepEqual(notices,[['強化成功','base\n+5 → +6']]);
   assert.equal(base.plus,6);
   assert.equal(base.tuneLevel,6);
   assert.equal(base.ops[0].value,5.5);
@@ -123,6 +122,7 @@ test('an identical weapon guarantees a high enhancement and contributes half of 
   assert.equal(base.ops[2].value,2);
   assert(!base.ops.some(op => op.key === 'mag'));
   assert(!g.isBagEntry(material.uid));
+  assert.equal(g.isForgeState().materialUid,null);
   assert.equal(run.equipment.rightHand,undefined);
   assert.equal(g.isForgeMaterialCount('otherworldShard'),0);
 });
@@ -136,7 +136,7 @@ test('shard enhancement from +3 can fail while preserving the gear, OPs, and pro
   g.profile.inventory = {protectionArcana:1};
   g.owgTuneRate = next => next <= 3 ? 1 : .85;
   g.isRand = () => .99;
-  g.isConfirm = async () => true;
+  g.isConfirm = async () => {throw Error('enhancement must not ask for confirmation');};
   g.isLog = g.isSave = () => {};
   g.isNotify = async (title, details) => {
     assert.equal(title,'強化失敗');
@@ -157,6 +157,10 @@ test('shard enhancement from +3 can fail while preserving the gear, OPs, and pro
 
   base.plus = base.tuneLevel = 2;
   g.isRand = () => {throw Error('enhancement through +3 is guaranteed');};
+  g.isNotify = async (title, details) => {
+    assert.equal(title,'強化成功');
+    assert.match(details,/\+2 → \+3/);
+  };
   await g.isForgeEnhance(base.uid);
   assert.equal(base.plus,3);
   assert.equal(g.isForgeMaterialCount('otherworldShard'),20);

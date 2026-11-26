@@ -292,7 +292,8 @@
   isolation: isolate;
   display: grid;
   place-items: center;
-  margin: 6px 0 0;
+  width: 62%;
+  margin: 6px auto 0;
   aspect-ratio: 1.02;
 }
 .ir-portrait::before {
@@ -304,6 +305,7 @@
   mask-image: radial-gradient(ellipse, #000 60%, transparent 75%);
 }
 .ir-portrait-unknown {
+  width: auto;
   margin: 10px 0 0;
   border: 1px solid #302b43;
   border-radius: 8px;
