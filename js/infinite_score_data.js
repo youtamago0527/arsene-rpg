@@ -84,11 +84,11 @@
   };
 
   Object.assign(D.items, {
-    owPotion20: { id:'owPotion20', name:'異界回復薬', nameEn:'OTHERWORLD POTION', category:'consumable', rarity:'common', description:'最大HPの20%を回復する。', effect:{ hpRate:.2 }, otherWorldItem:true },
-    owPotion40: { id:'owPotion40', name:'異界回復薬・中級', nameEn:'OTHERWORLD POTION II', category:'consumable', rarity:'rare', description:'最大HPの40%を回復する。', effect:{ hpRate:.4 }, otherWorldItem:true },
-    owPotion60: { id:'owPotion60', name:'異界回復薬・高級', nameEn:'OTHERWORLD POTION III', category:'consumable', rarity:'epic', description:'最大HPの60%を回復する。', effect:{ hpRate:.6 }, otherWorldItem:true },
-    owManaPotion20: { id:'owManaPotion20', name:'異界魔力回復薬', nameEn:'OTHERWORLD MANA POTION', category:'consumable', rarity:'common', description:'最大MPの20%を回復する。', effect:{ mpRate:.2 }, otherWorldItem:true },
-    owManaPotion40: { id:'owManaPotion40', name:'異界魔力回復薬・中級', nameEn:'OTHERWORLD MANA POTION II', category:'consumable', rarity:'rare', description:'最大MPの40%を回復する。', effect:{ mpRate:.4 }, otherWorldItem:true },
-    owManaPotion60: { id:'owManaPotion60', name:'異界魔力回復薬・高級', nameEn:'OTHERWORLD MANA POTION III', category:'consumable', rarity:'epic', description:'最大MPの60%を回復する。', effect:{ mpRate:.6 }, otherWorldItem:true }
+    owPotion20: { id:'owPotion20', name:'異界回復薬', nameEn:'OTHERWORLD POTION', category:'consumable', rarity:'common', description:'最大HPの20%を回復する。', effect:{ hpRate:.2 }, otherWorldItem:true, infiniteScoreOnly:true },
+    owPotion40: { id:'owPotion40', name:'異界回復薬・中級', nameEn:'OTHERWORLD POTION II', category:'consumable', rarity:'rare', description:'最大HPの40%を回復する。', effect:{ hpRate:.4 }, otherWorldItem:true, infiniteScoreOnly:true },
+    owPotion60: { id:'owPotion60', name:'異界回復薬・高級', nameEn:'OTHERWORLD POTION III', category:'consumable', rarity:'epic', description:'最大HPの60%を回復する。', effect:{ hpRate:.6 }, otherWorldItem:true, infiniteScoreOnly:true },
+    owManaPotion20: { id:'owManaPotion20', name:'異界魔力回復薬', nameEn:'OTHERWORLD MANA POTION', category:'consumable', rarity:'common', description:'最大MPの20%を回復する。', effect:{ mpRate:.2 }, otherWorldItem:true, infiniteScoreOnly:true },
+    owManaPotion40: { id:'owManaPotion40', name:'異界魔力回復薬・中級', nameEn:'OTHERWORLD MANA POTION II', category:'consumable', rarity:'rare', description:'最大MPの40%を回復する。', effect:{ mpRate:.4 }, otherWorldItem:true, infiniteScoreOnly:true },
+    owManaPotion60: { id:'owManaPotion60', name:'異界魔力回復薬・高級', nameEn:'OTHERWORLD MANA POTION III', category:'consumable', rarity:'epic', description:'最大MPの60%を回復する。', effect:{ mpRate:.6 }, otherWorldItem:true, infiniteScoreOnly:true }
   });
 })();

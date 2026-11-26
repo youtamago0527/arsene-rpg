@@ -40,7 +40,7 @@
   P.isBegin=function(...args){const result=oldBegin.apply(this,args),run=this.isRun?.();if(run){run.support={insuranceUsed:false,bagExpansionUsed:false,shopCounter:0};this.isSave?.();}return result;};
 
   const oldShowBagFull=P.isShowBagFull;
-  P.isShowBagFull=function(){oldShowBagFull.call(this);if(!this.isCanExpandBag())return;const modal=document.getElementById('is-modal'),actions=modal?.querySelector('.is-actions');if(!actions||actions.querySelector('[data-is-support="bag"]'))return;actions.insertAdjacentHTML('afterbegin',`<button class="is-support-button" data-is-support="bag">${this.isSupportLabel('+3枠')}<small>このRUNのみ／最大33枠</small></button>`);};
+  P.isShowBagFull=function(){oldShowBagFull.call(this);if(!this.isCanExpandBag())return;const modal=document.getElementById('is-modal'),actions=modal?.querySelector('.is-actions');if(!actions||actions.querySelector('[data-is-support="bag"]'))return;const extra=33-this.isBagLimit();actions.insertAdjacentHTML('afterbegin',`<button class="is-support-button" data-is-support="bag">${this.isSupportLabel('+'+extra+'枠')}<small>このRUNのみ／最大33枠</small></button>`);};
   P.isGrantBagExpansion=function(run=this.isRun?.(),pending=run?.pendingLoot){
     if(!pending||run!==this.isRun?.()||run.pendingLoot!==pending)return false;
     const support=this.isEnsureSupportState(run);
