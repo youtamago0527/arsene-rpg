@@ -235,11 +235,14 @@
   function gems(rank) {
     return `<span class="ir-gems" data-rank="${rank}" aria-hidden="true">${'◆'.repeat(ranks.indexOf(rank) + 1)}</span>`;
   }
+  const unrevealedArt = '<span class="ir-unrevealed-art" aria-hidden="true">?</span>';
   function detail(item, level) {
+    if (!level) return `<header><h3>未入手</h3></header>
+      <div class="ir-portrait ir-portrait-unknown">${unrevealedArt}</div>`;
     const tier = item.grade === 'upper' ? '上位版・40回降下から' : item.grade === 'stairs' ? '階段を' + requiredStairUses(level + 1) + '回使用で次のLvが抽選対象' : item.grade === 'support' ? '補助遺物' : '通常版';
     const next = '次のLvで ' + effectText(item, level + 1);
     const nextTier = item.id === 'orb' ? '<br>Lv.' + ((Math.floor(level / arcanaTierInterval) + 1) * arcanaTierInterval) + 'で' + (3 + Math.floor(level / arcanaTierInterval)) + '個目の抽選を解放' : '';
-    const effect = level ? 'Lv.' + level + ' ／ ' + item.label + ' ' + effectText(item, level) : '未入手 ／ ' + item.label;
+    const effect = 'Lv.' + level + ' ／ ' + item.label + ' ' + effectText(item, level);
     return `<header><h3>${item.name}</h3>${badge(item.rank)}</header>
       <div class="ir-portrait" data-rank="${item.rank}">${art(item)}</div>
       <div class="ir-detail-rank">${gems(item.rank)}</div>
@@ -282,20 +285,27 @@
         </div>
         <div class="ir-columns">
           <section class="ir-collection" aria-label="遺物一覧">
-            <div class="ir-grid ${state.mode === 'catalog' ? 'ir-catalog' : ''}">${visible.map(item =>
-              `<button type="button" data-ir-item="${item.id}" data-held="${owned.has(item.id) ? 'owned' : ''}" data-rank="${item.rank}" aria-label="${item.name}、${rarity[item.rank]}、${status(item.id)}"${pressed(item === current)}>
-                ${art(item)}${state.mode === 'catalog' ? `<small>${item.name}</small>` : gems(item.rank)}</button>`).join('')}</div>
+            <div class="ir-grid ${state.mode === 'catalog' ? 'ir-catalog' : ''}">${visible.map(item => {
+              const held = owned.has(item.id);
+              const label = held ? `${item.name}、${rarity[item.rank]}、${status(item.id)}` : '未入手の遺物';
+              const icon = held ? art(item) : unrevealedArt;
+              const caption = state.mode === 'catalog' ? `<small>${held ? item.name : '未入手'}</small>` : held ? gems(item.rank) : '';
+              return `<button type="button" data-ir-item="${item.id}" data-held="${held ? 'owned' : 'unknown'}" data-rank="${held ? item.rank : ''}" aria-label="${label}"${pressed(item === current)}>
+                ${icon}${caption}</button>`;
+            }).join('')}</div>
             ${pages > 1 ? `<nav class="ir-pages" aria-label="遺物リストのページ">
               <button type="button" data-ir-page="-1" aria-label="前のページ" ${state.page === 0 ? 'disabled' : ''}>‹</button>
               <span>${state.page + 1} / ${pages}</span>
               <button type="button" data-ir-page="1" aria-label="次のページ" ${state.page + 1 >= pages ? 'disabled' : ''}>›</button>
             </nav>` : ''}
           </section>
-          <article class="ir-detail" aria-label="遺物の詳細" aria-live="polite">${detail(current, levelOf(levels, current.id))}</article>
+          <article class="ir-detail">
+            <div class="ir-detail-content" role="region" aria-label="遺物の詳細" aria-live="polite" tabindex="0">${detail(current, levelOf(levels, current.id))}</div>
+          </article>
         </div>
-        <section class="ir-compass" aria-label="時空の羅針盤・階段設定">
-          ${art(compass)}
-          <div><strong>${compass.name}</strong> <small>${status(stairRelicId)}</small>
+        <section class="ir-compass" aria-label="階段設定">
+          ${compassLevel ? art(compass) : unrevealedArt}
+          <div><strong>${compassLevel ? compass.name : '階段設定'}</strong> <small>${status(stairRelicId)}</small>
           <p>${compassLevel ? effectText(compass, compassLevel) : '階段を20回使用すると抽選対象になります。'}</p></div>
           ${this.isStairPickerHtml(limit, selectedDistance)}
         </section>
@@ -319,8 +329,9 @@
         state.selected = irItem;
         root.querySelector('[data-ir-item][aria-pressed="true"]')?.setAttribute('aria-pressed', 'false');
         button.setAttribute('aria-pressed', 'true');
-        const currentDetail = root.querySelector('.ir-detail');
+        const currentDetail = root.querySelector('.ir-detail-content');
         currentDetail.innerHTML = detail(item, levelOf(levels, item.id));
+        currentDetail.scrollTop = 0;
       } else if (irPage) {
         state.page += Number(irPage);
         refresh('[data-ir-page]:not(:disabled)');
