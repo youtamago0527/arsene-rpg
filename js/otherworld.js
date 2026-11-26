@@ -286,7 +286,7 @@
     f.owBattleCheckpoint = {
       version: 1, date: this.owDateKey(), savedAt: Date.now(), stage, terminal,
       run: copy(this.owRun), battleMode: this.battleMode || 'ow', turn: this.turn || 1,
-      player: this.player ? copy({ hp: this.player.hp, mp: this.player.mp, buffs: this.player.buffs || {}, cooldowns: this.player.cooldowns || {}, resonance: this.player.resonance || 0, lastReceivedType: this.player.lastReceivedType || null, defDownUntil: this.player.defDownUntil || 0 }) : null,
+      player: this.player ? copy({ hp: this.player.hp, mp: this.player.mp, buffs: this.player.buffs || {}, cooldowns: this.player.cooldowns || {}, resonance: this.player.resonance || 0, lastReceivedType: this.player.lastReceivedType || null, owgRevived: !!this.player.owgRevived, defDownUntil: this.player.defDownUntil || 0 }) : null,
       enemies: copy(this.enemies || []), battleLogHistory: copy(this.battleLogHistory || []), chestPicks: copy(this.owChestPicks || null)
     };
     f.owResumePending = true;
@@ -323,7 +323,7 @@
     await this.audio.playTrack(this.otherWorldMusic || this.bossMusic);
     if (cp.stage === 'transition') { this.saveProfile(); await this.playOwTransition(); this.startOwBattle(); return; }
     const stats = this.totalStats(), ps = cp.player;
-    this.player = { stats, hp: Math.max(0, Math.min(stats.maxHp, ps.hp)), mp: Math.max(0, Math.min(stats.maxMp, ps.mp)), inventory: this.profile.inventory, buffs: ps.buffs || {}, cooldowns: ps.cooldowns || {}, resonance: ps.resonance || 0, lastReceivedType: ps.lastReceivedType || null, defDownUntil: ps.defDownUntil || 0 };
+    this.player = { stats, hp: Math.max(0, Math.min(stats.maxHp, ps.hp)), mp: Math.max(0, Math.min(stats.maxMp, ps.mp)), inventory: this.profile.inventory, buffs: ps.buffs || {}, cooldowns: ps.cooldowns || {}, resonance: ps.resonance || 0, lastReceivedType: ps.lastReceivedType || null, owgRevived: !!ps.owgRevived, defDownUntil: ps.defDownUntil || 0 };
     this.enemies = cp.enemies.map(e => ({ ...e, stats: { ...(e.stats || {}) } }));
     this.battleMode = cp.battleMode || (this.owIsBossBattle() ? 'owBoss' : 'ow');
     this.turn = cp.turn || 1; this.locked = false; this.finished = false;

@@ -1950,13 +1950,22 @@
       }
       const echoes = this.player.nestuaEchoes || [], due = echoes.filter(e => e.turn <= this.turn), future = echoes.filter(e => e.turn > this.turn);
       this.player.nestuaEchoes = future;
-      for (const echo of due) { const actual = Math.min(this.player.hp, echo.damage); this.player.hp = Math.max(0, this.player.hp - actual); this.audio.sfx('dark'); this.floating($('#ren'), actual, 'enemy-damage'); this.setLog(`《5月の残響》が${actual}ダメージを反復した！`); this.updateHUD(); await this.battleSleep(350); }
+      for (const echo of due) {
+        if (this.player.hp <= 0) break;
+        const actual = Math.min(this.player.hp, echo.damage);
+        this.player.hp -= actual;
+        this.audio.sfx('dark'); this.floating($('#ren'), actual, 'enemy-damage');
+        this.setLog(`《5月の残響》が${actual}ダメージを反復した！`);
+        if (this.player.hp <= 0 && this.owgTryRevive?.()) this.persistVitals();
+        this.updateHUD(); await this.battleSleep(350);
+      }
     }
     async nestuaWhats(enemy) {
       const guarded = this.player.buffs?.guardUntil === this.turn, damage = guarded ? 250 : 500, actual = Math.min(this.player.hp, damage);
       this.flashTitle("What's Are You Doing?", guarded ? 'FIXED 500 // GUARD 250' : 'FIXED DAMAGE 500'); this.audio.sfx('critical');
       this.player.hp = Math.max(0, this.player.hp - actual);
       this.owgReflectDamage?.(enemy, actual, this.owgEffects?.().damageReflect);
+      if (actual > 0 && this.player.hp <= 0) this.owgTryRevive?.();
       this.persistVitals(); this.floating($('#ren'), actual, 'enemy-damage');
       this.setLog(`ネストゥアのWhat's Are You Doing?――${actual}固定ダメージ！`); this.updateHUD(); await this.battleSleep(650);
     }
@@ -2876,8 +2885,9 @@
       if (skillId === 'resonanceBreak') { const stored = this.player.resonance; skill = { ...skill, resonanceStored: stored, power: this.resonanceMultiplier(stored) }; this.player.resonance = 0; this.flashTitle('RESONANCE BREAK', `${stored.toFixed(1)}% // ×${skill.power}`); }
       this.locked = true; this.clearTargets(); this.keepAutoControlVisible(); $('#phase-label').textContent = 'ACTION'; await this.beginPlayerTurn(); const setEffects = this.activeSetEffects(), freeMp = skill.kind === 'magical' && skill.mp > 0 && Math.random() < (setEffects.freeMagicMpChance || 0); if (this.skillMpCost(skill) > 0) this.usedMpThisBattle = true; if (!freeMp) this.player.mp -= this.skillMpCost(skill); else this.flashTitle('MAESTRO', 'MP COST 0'); if (skill.cooldown) this.player.cooldowns[skill.id] = this.turn + skill.cooldown; this.persistVitals(); this.updateHUD();
       const actors = [{ type: 'player', speed: this.playerCombatStats().agi + roll(0, 4) + (skill.speedBonus || 0), act: async () => {
-        await this.playerActionWithSpark(skill, targetIndex);
-        await this.owgRepeatAttacks?.(skill, targetIndex);
+        const attack = this.owgEmpowerAttack?.(skill) ?? skill;
+        await this.playerActionWithSpark(attack, targetIndex);
+        await this.owgRepeatAttacks?.(attack, targetIndex);
       } }]; this.enemies.filter(e => e.alive).forEach(e => actors.push({ type: 'enemy', enemy: e, speed: e.stats.spd + roll(0, 4), act: () => this.enemyAttack(e) })); actors.sort((a, b) => b.speed - a.speed);
       for (const actor of actors) { if (this.finished || this.player.hp <= 0) break; if (actor.type === 'enemy' && !actor.enemy.alive) continue; await actor.act(); await this.battleSleep(300); if (!this.enemies.some(e => e.alive)) { const fallen = this.enemies[0]; if (this.isPendingBossTransform(fallen)) { await this.transformPendingBoss(fallen); return; } if (this.enemies.every(e => e.escaped)) { await this.enemyEncounterEscaped(); return; } await this.victory(); return; } }
       if (this.player.hp <= 0) { await this.defeat(); return; } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands();
@@ -2969,7 +2979,8 @@
       // 元行動が武器技なら、その選択時に支払ったMPだけは従来どおり消費済み。
       await this.sparkPresentation(sparked);
       this.battleSparks ||= []; this.battleSparks.push(sparked);
-      await this.playerAction(sparked, targetIndex);
+      const action = skill.owgPaidDamageBonus ? {...sparked, owgPaidDamageBonus:skill.owgPaidDamageBonus} : sparked;
+      await this.playerAction(action, targetIndex);
     }
     instantDeathChance(skill, enemy) {
       const effect = skill?.effect || {};
@@ -3393,6 +3404,7 @@
       }
       this.owgRestoreCombatResource?.('mp', actual * (otherWorldOps.mpRestoreOnDamage || 0));
       this.owgReflectDamage?.(options.attacker, actual, otherWorldOps.damageReflect);
+      if (actual > 0 && this.player.hp <= 0) this.owgTryRevive?.(otherWorldOps.reviveOnKnockout || 0);
       this.persistVitals(); return actual;
     }
     async enemySupportAction(enemy, chosen) {

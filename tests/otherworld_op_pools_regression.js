@@ -245,3 +245,59 @@ test('one attack command repeats without paying MP again and stops when the last
   await g.owgRepeatAttacks({target:'self', kind:'support'},0);
   assert.equal(actions,4);
 });
+
+test('weapon costs empower the chosen attack independently and leave at least 1 HP', () => {
+  const g = fixture();
+  const sword = gear(g,'sword',{mpCostDamageBonus:.30,hpCostDamageBonus:.36});
+  const armor = gear(g,'body');
+  g.isRun().equipment.rightHand = sword.uid;
+  assert.equal(g.owgOpFitsItem('mpCostDamageBonus',armor.itemId),false);
+  assert.equal(g.owgOpFitsItem('hpCostDamageBonus',armor.itemId),false);
+  g.floating = () => {};
+  const attack = {id:'attack',kind:'weapon',target:'single'};
+  const enemy = {hp:100,stats:{maxHp:100}};
+  const paid = g.owgEmpowerAttack(attack);
+  assert.equal(g.player.mp,0);
+  assert.equal(g.player.hp,375);
+  assert.equal(g.usedMpThisBattle,true);
+  assert.equal(g.owgDamageWithOps(100,paid,enemy,false),166);
+  assert.equal(g.owgDamageWithOps(100,attack,enemy,false),100);
+
+  g.player.hp = 25;
+  assert.equal(g.owgEmpowerAttack(attack), attack);
+  assert.equal(g.player.hp,25);
+  g.player.hp = 26;
+  assert.equal(g.owgDamageWithOps(100,g.owgEmpowerAttack(attack),enemy,false),136);
+  assert.equal(g.player.hp,1);
+  g.player.mp = 20;
+  assert.equal(g.owgDamageWithOps(100,g.owgEmpowerAttack(attack),enemy,false),130);
+  assert.equal(g.player.mp,10);
+  assert.equal(g.owgEmpowerAttack({target:'self',kind:'support'}).owgPaidDamageBonus,undefined);
+  assert.equal(g.player.mp,10);
+});
+
+test('revival uses the same rate for the roll and restored HP and can succeed once per battle', () => {
+  const g = fixture();
+  const armor = gear(g,'body',{reviveOnKnockout:.12});
+  const charm = gear(g,'accessory_guard',{reviveOnKnockout:.08});
+  Object.assign(g.isRun().equipment,{body:armor.uid,accessory:charm.uid});
+  assert.equal(g.owgOpFitsItem('reviveOnKnockout',gear(g,'sword').itemId),false);
+  g.activeSetEffects = () => ({});
+  g.activePassives = () => [];
+  g.passiveEffectRate = g.equipmentEffectRate = () => 0;
+  g.resonanceEnabled = () => false;
+  g.floating = g.setLog = g.flashTitle = () => {};
+  g.player.hp = 0;
+  assert.equal(g.owgTryRevive(undefined,() => .20),false);
+  g.player.hp = 60;
+  const revive = g.owgTryRevive;
+  g.owgTryRevive = rate => revive.call(g,rate,() => .19);
+  assert.equal(g.receivePlayerDamage(200),60);
+  assert.equal(g.player.hp,100);
+  assert.equal(g.player.owgRevived,true);
+  assert.equal(g.receivePlayerDamage(200),100);
+  assert.equal(g.player.hp,0);
+  delete g.player.owgRevived;
+  assert.equal(revive.call(g,1.25,() => {throw Error('guaranteed revival must not draw');}),true);
+  assert.equal(g.player.hp,500);
+});
