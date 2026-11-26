@@ -1161,7 +1161,7 @@
     const run = this.isRun();
     if (this.isForgeUI?.run !== run) {
       this.isForgeUI = {run, mode:'enhance', selectedUid:null, materialUid:null, sourceUid:null,
-        opIndex:null, replaceIndex:null, help:false, busy:false, pickerScroll:0};
+        opIndex:null, replaceIndex:null, sameOpMode:null, help:false, busy:false, pickerScroll:0};
     }
     return this.isForgeUI;
   };
@@ -1175,12 +1175,17 @@
     return gear.filter(item => item.uid !== target.uid && item.itemId === target.itemId && !item.locked);
   };
 
+  const strengthenForgeOp = (op, materialValue) => {
+    const gain = Number(materialValue) * .5;
+    const value = Number(op.value) + gain;
+    return gain > 0 && Number.isFinite(value) ? {...op, value} : null;
+  };
+
   P.isForgeEnhanceBonuses = function (target, material) {
     const sourceValues = new Map((material.ops || []).map(op => [op.key, Number(op.value)]));
     return (target.ops || []).flatMap(op => {
-      const gain = (sourceValues.get(op.key) || 0) * .5;
-      const value = Number(op.value) + gain;
-      return gain > 0 && Number.isFinite(value) ? [{before:op, after:{...op, value}}] : [];
+      const after = strengthenForgeOp(op, sourceValues.get(op.key));
+      return after ? [{before:op, after}] : [];
     });
   };
 
@@ -1303,13 +1308,29 @@
       const option = source.options.find(({index}) => index === state.opIndex);
       const preview = option && this.isForgeTransferPreview(gear, option.op);
       const replacement = preview?.needsReplace ? gear.ops[state.replaceIndex] : null;
+      const sameOp = preview?.same >= 0 ? gear.ops[preview.same] : null;
+      const strengthening = !!sameOp && state.sameOpMode === 'enhance';
+      const result = strengthening ? preview.strengthened : (sameOp && state.sameOpMode !== 'transfer' ? null : preview?.moved);
       return `<section class="is-forge-stage"><h3>素材装備</h3>
         <button type="button" class="is-forge-entry is-forge-chosen" data-is-forge-change-source>${this.isForgeEntryHtml(source.item)}<span class="is-forge-change">変更</span></button>
-      </section><section class="is-forge-stage"><h3>移植するOPを選ぶ</h3>
+      </section><section class="is-forge-stage"><h3>素材のOPを選ぶ</h3>
         ${this.isForgeOpButtons(source.options, state.opIndex, 'data-is-forge-op')}
+        ${sameOp ? `<h4>同じOPの加工方法を選ぶ</h4>
+          <p class="is-forge-current-op">現在　${esc(this.isForgeOpText(sameOp))}</p>
+          <div class="is-forge-op-list is-forge-methods" role="group" aria-label="同じOPの加工方法">
+            <button type="button" data-is-forge-same-op="enhance" aria-pressed="${strengthening}" ${preview.strengthened ? '' : 'disabled'}>
+              <b>OP強化</b><small>素材の効果値を50％加算</small>
+              ${preview.strengthened ? `<span>${esc(this.isForgeOpText(preview.strengthened))}</span>` : ''}
+            </button>
+            <button type="button" data-is-forge-same-op="transfer" aria-pressed="${state.sameOpMode === 'transfer'}">
+              <b>OP移植</b><small>素材側のOPに入れ替え</small><span>${esc(this.isForgeOpText(preview.moved))}</span>
+            </button>
+          </div>` : ''}
         ${preview?.needsReplace ? `<h4>入れ替えるOPを選ぶ</h4>${this.isForgeOpButtons(gear.ops.map((op,index) => ({op,index})), state.replaceIndex, 'data-is-forge-replace')}` : ''}
-        ${preview ? this.isForgeResultHtml(preview.same >= 0 ? '同一OP合成後' : replacement ? '入れ替え後' : '移植後のOP',
-          `${replacement ? this.isForgeOpText(replacement) + ' → ' : ''}${this.isForgeOpText(preview.result)}`, option.cost, 'OPを移植する', advance && (!preview.needsReplace || !!replacement), '素材装備は移植後に消滅します。') : ''}
+        ${result ? this.isForgeResultHtml(strengthening ? 'OP強化後' : sameOp || replacement ? '入れ替え後' : '移植後のOP',
+          `${sameOp || replacement ? this.isForgeOpText(sameOp || replacement) + ' → ' : ''}${this.isForgeOpText(result)}`,
+          option.cost, strengthening ? 'OPを強化する' : 'OPを移植する',
+          advance && (!preview.needsReplace || !!replacement), '素材装備は加工後に消滅します。') : ''}
       </section>`;
     }
     const options = gear.ops.map((op,index) => ({op,index}));
@@ -1327,7 +1348,7 @@
     const sources = state.mode === 'transfer' ? this.isForgeTransferSources(gear) : [];
     const eligible = this.isForgeEligibleTargets(state.mode, gear, sources);
     const target = eligible.find(item => item.uid === state.selectedUid);
-    if (!target) state.selectedUid = state.sourceUid = state.materialUid = state.opIndex = state.replaceIndex = null;
+    if (!target) state.selectedUid = state.sourceUid = state.materialUid = state.opIndex = state.replaceIndex = state.sameOpMode = null;
     const scroll = panel.dataset.panel === 'infinite-score-workshop' ? panel.scrollTop : 0;
     const used = this.isBagUsed(), limit = this.isBagLimit();
     const targetLabels = {enhance:'強化対象',transfer:'移植先',delete:'削除対象'};
@@ -1356,7 +1377,7 @@
       ${state.help ? `<section class="is-forge-help" role="dialog" aria-modal="true" aria-label="異世界工房ガイド"><div>
         <header><b>異世界工房ガイド</b><button type="button" data-is-forge-help aria-label="ヘルプを閉じる">×</button></header>
         <p>各加工に使える装備が一覧に表示されます。強化・OP移植・OP削除は、手持ちの素材で実行できる装備を選べます。</p>
-        <p>OP移植は、移植先 → 素材装備 → 移植するOPの順に選びます。同じOPは合成し、空き枠があれば追加します。枠がいっぱいの場合は入れ替えるOPを選べます。</p>
+        <p>OP移植は、移植先 → 素材装備 → 移植するOPの順に選びます。同じOPがあるときは、素材側の効果値を50％加える「OP強化」か、素材側のOPに入れ替える「OP移植」を選びます。異なるOPで枠がいっぱいの場合は、入れ替えるOPを選べます。</p>
         <p>欠片・核での強化は＋4から成功率が下がり、失敗時に消費するのは欠片・核だけです。同じ装備を素材にする強化は成功率100％です。共通OPに素材側の効果値の50％が加わり、素材装備は消滅します。</p>
       </div></section>` : ''}
     </main>`;
@@ -1424,24 +1445,24 @@
     this.isRenderWorkshop($('#menu-panel'));
   };
 
-  P.isForgeCombinedOp=function(targetOp,sourceOp){
-    if(!targetOp||!sourceOp||targetOp.key!==sourceOp.key)return copy(sourceOp);
-    return {...copy(targetOp),rank:Math.max(targetOp.rank||1,sourceOp.rank||1),value:(Number(targetOp.value)||0)+(Number(sourceOp.value)||0)};
-  };
   P.isForgeTransferOp=function(op,target){const out=copy(op),maxRank=Math.min(5,Math.max(1,(Number(target?.stars)||3)-1));if(out.rank<=maxRank)return out;out.rank=maxRank;const def=D().otherWorldGearOps?.find(x=>x.key===out.key),cap=def?.values?.[maxRank-1];if(Number.isFinite(cap))out.value=Math.min(Number(out.value)||cap,cap);return out;};
 
   P.isForgeTransferPreview = function (target, op) {
     const ops = target.ops || [], moved = this.isForgeTransferOp(op, target);
     const same = ops.findIndex(item => item.key === moved.key);
-    const result = same >= 0 ? this.isForgeTransferOp(this.isForgeCombinedOp(ops[same], moved), target) : moved;
-    return {same, result, needsReplace:same < 0 && ops.length >= 4};
+    const strengthened = same >= 0 ? strengthenForgeOp(ops[same], op.value) : null;
+    return {same, moved, strengthened, needsReplace:same < 0 && ops.length >= 4};
   };
 
-  P.isForgeTransfer=async function(sourceUid,targetUid=null,opIndex=0,replaceIndex=null){
+  P.isForgeTransfer=async function(sourceUid,targetUid=null,opIndex=0,replaceIndex=null,sameOpMode=null){
     const run = this.isRun(), source = this.isBagEntry(sourceUid), target = this.isBagEntry(targetUid);
     const chosen = source?.ops?.[opIndex];
     if (!run || !source?.otherWorldGear || !target?.otherWorldGear || source.uid === target.uid || source.locked || !chosen) return;
-    const targetOps = target.ops || [], {same, result, needsReplace} = this.isForgeTransferPreview(target, chosen);
+    const targetOps = target.ops || [], {same, moved, strengthened, needsReplace} = this.isForgeTransferPreview(target, chosen);
+    if (same >= 0 && sameOpMode !== 'enhance' && sameOpMode !== 'transfer') return;
+    const enhancing = same >= 0 && sameOpMode === 'enhance';
+    const result = enhancing ? strengthened : moved;
+    if (!result) return;
     const cost = this.isForgeOpCost(chosen);
     if (!this.isForgeHasMaterials(cost)) {
       await this.isNotify('異界素材が足りません', `${this.isForgeCostText(cost)}が必要です。`);
@@ -1449,26 +1470,27 @@
     }
     const replace = needsReplace && replaceIndex === null ? await this.isChoose('入れ替えるOPを選ぶ',
       targetOps.map(op => this.isForgeOpText(op)), {kicker:'OPTION TRANSPLANT'}) : replaceIndex;
-    const replaced = needsReplace ? targetOps[replace] : null;
-    if (needsReplace && !replaced) return;
+    const slot = same >= 0 ? same : needsReplace ? replace : -1;
+    const previous = targetOps[slot];
+    if (needsReplace && !previous) return;
     const equipped = Object.values(run.equipment || {}).includes(source.uid);
-    const action = same >= 0 ? '同一OPを合成' : replaced ? `入れ替え：${this.isForgeOpText(replaced)}` : '空き枠に追加';
+    const action = enhancing ? 'OP強化' : previous ? 'OP入れ替え' : '空き枠に追加';
+    const verb = enhancing ? '強化する' : '移植する';
     const details = [
       `移植先：${this.isForgeName(target)}`,
-      `${action} → ${this.isForgeOpText(result)}`,
+      `${action}：${previous ? this.isForgeOpText(previous) + ' → ' : ''}${this.isForgeOpText(result)}`,
       `${equipped ? '装備中の' : ''}素材「${this.isForgeName(source)}」は消滅します。`,
       `必要 ${this.isForgeCostText(cost)}`
     ].join('\n');
-    if (!await this.isConfirm('OPを移植しますか？', details, {kicker:'OPTION TRANSPLANT', confirmLabel:'移植する', danger:true})) return;
+    if (!await this.isConfirm(`OPを${enhancing ? '強化' : '移植'}しますか？`, details, {kicker:'OPTION TRANSPLANT', confirmLabel:verb, danger:true})) return;
     if (this.isRun() !== run || this.isBagEntry(sourceUid) !== source || source.locked || source.ops[opIndex] !== chosen ||
-        this.isBagEntry(targetUid) !== target || (replaced && target.ops[replace] !== replaced) || !this.isForgeSpendMaterials(cost)) return;
+        this.isBagEntry(targetUid) !== target || (previous && target.ops?.[slot] !== previous) || !this.isForgeSpendMaterials(cost)) return;
     target.ops ||= [];
-    if (same >= 0) target.ops[same] = result;
-    else if (replaced) target.ops[replace] = result;
+    if (previous) target.ops[slot] = result;
     else target.ops.push(result);
     this.isForgeConsumeGear(run, source);
-    this.isForgeUI.sourceUid = this.isForgeUI.opIndex = this.isForgeUI.replaceIndex = null;
-    this.isLog(same >= 0 ? `異世界工房：同一OP合成 ${this.isForgeOpText(result)}` : '異世界工房：OP移植');
+    this.isForgeUI.sourceUid = this.isForgeUI.opIndex = this.isForgeUI.replaceIndex = this.isForgeUI.sameOpMode = null;
+    this.isLog(`異世界工房：${enhancing ? 'OP強化' : 'OP移植'} ${this.isForgeOpText(result)}`);
     this.isSave();
     this.isRenderWorkshop($('#menu-panel'));
   };
@@ -1499,7 +1521,7 @@
     this.isRenderWorkshop($('#menu-panel'));
     try {
       if (state.mode === 'enhance') await this.isForgeEnhance(target.uid, state.materialUid);
-      else if (state.mode === 'transfer') await this.isForgeTransfer(state.sourceUid, target.uid, state.opIndex, state.replaceIndex);
+      else if (state.mode === 'transfer') await this.isForgeTransfer(state.sourceUid, target.uid, state.opIndex, state.replaceIndex, state.sameOpMode);
       else await this.isForgeDelete(target.uid, state.opIndex);
     } finally {
       state.busy = false;
@@ -1511,7 +1533,7 @@
     const game = window.arseneGame;
     const control = event.target.closest(
       '[data-is-forge-mode],[data-is-forge-select],[data-is-forge-change-target],[data-is-forge-material],' +
-      '[data-is-forge-source],[data-is-forge-change-source],[data-is-forge-op],[data-is-forge-replace],' +
+      '[data-is-forge-source],[data-is-forge-change-source],[data-is-forge-op],[data-is-forge-replace],[data-is-forge-same-op],' +
       '[data-is-forge-execute],[data-is-forge-help],[data-action="workshop-exit"],[data-is-action="workshop-exit"]'
     );
     if (!game || !control) return;
@@ -1532,18 +1554,21 @@
         focus = '[data-is-forge-select]';
       }
       state.selectedUid = data.isForgeSelect || null;
-      state.materialUid = state.sourceUid = state.opIndex = state.replaceIndex = null;
+      state.materialUid = state.sourceUid = state.opIndex = state.replaceIndex = state.sameOpMode = null;
     } else if (data.isForgeMaterial !== undefined) {
       state.materialUid = data.isForgeMaterial || null;
       focus = '[data-is-forge-material][aria-pressed="true"]';
     } else if (data.isForgeSource || control.hasAttribute('data-is-forge-change-source')) {
       state.sourceUid = data.isForgeSource || null;
-      state.opIndex = state.replaceIndex = null;
+      state.opIndex = state.replaceIndex = state.sameOpMode = null;
       focus = state.sourceUid ? '[data-is-forge-change-source]' : '[data-is-forge-source]';
     } else if (data.isForgeOp !== undefined) {
       state.opIndex = Number(data.isForgeOp);
-      state.replaceIndex = null;
+      state.replaceIndex = state.sameOpMode = null;
       focus = '[data-is-forge-op][aria-pressed="true"]';
+    } else if (data.isForgeSameOp) {
+      state.sameOpMode = data.isForgeSameOp;
+      focus = '[data-is-forge-same-op][aria-pressed="true"]';
     } else if (data.isForgeReplace !== undefined) {
       state.replaceIndex = Number(data.isForgeReplace);
       focus = '[data-is-forge-replace][aria-pressed="true"]';

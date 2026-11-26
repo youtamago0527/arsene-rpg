@@ -8,7 +8,8 @@ const ids = ['base','donor','locked','expensive'];
 const data = {
   items:Object.fromEntries(ids.map(id => [id, {name:id, category:'equipment', slot:'rightHand'}])),
   weapons:{},
-  infiniteScore:{bagLimit:30, rarity:{}, opLabels:{}}
+  otherWorldGearOps:[{key:'critBonus', values:[.01,.02,.035,.05,.075,.10]}],
+  infiniteScore:{bagLimit:30, rarity:{}, opLabels:{critBonus:'会心率'}}
 };
 const document = {addEventListener(){}, querySelector(){return null;}};
 const context = {window:{BattleGame, ARSENE_DATA:data}, document};
@@ -160,4 +161,56 @@ test('shard enhancement from +3 can fail while preserving the gear, OPs, and pro
   await g.isForgeEnhance(base.uid);
   assert.equal(base.plus,3);
   assert.equal(g.isForgeMaterialCount('otherworldShard'),20);
+});
+
+function sameOpFixture() {
+  const {g,panel} = fixture();
+  const base = g.isBagEntry('base'), donor = g.isBagEntry('donor');
+  base.ops = [{key:'critBonus',rank:2,value:.04},{key:'str',rank:1,value:2}];
+  donor.ops = [{key:'critBonus',rank:5,value:.075}];
+  g.isRun().lootBag.find(item => item.itemId === 'otherworldShard').count = 100;
+  g.isRun().lootBag.find(item => item.itemId === 'otherworldCore').count = 3;
+  g.owgOpValueText = op => Number((op.value * 100).toFixed(2)) + '%';
+  Object.assign(g.isForgeState(),{mode:'transfer',selectedUid:'base',sourceUid:'donor',opIndex:0});
+  return {g,panel,base,donor};
+}
+
+test('matching OPs require a choice and show the actual effects of both options', async () => {
+  const {g,panel,base,donor} = sameOpFixture();
+  g.isRenderWorkshop(panel);
+  assert.match(panel.innerHTML,/data-is-forge-same-op="enhance"[\s\S]*会心率 \+7\.75%/);
+  assert.match(panel.innerHTML,/data-is-forge-same-op="transfer"[\s\S]*会心率 \+3\.5%/);
+  assert.doesNotMatch(panel.innerHTML,/data-is-forge-execute|data-is-forge-replace=/);
+  g.isConfirm = () => {throw Error('no method was selected');};
+  await g.isForgeTransfer(donor.uid,base.uid,0);
+  assert.equal(base.ops[0].value,.04);
+  assert.equal(g.isBagEntry(donor.uid),donor);
+  for (const [mode,result] of [['enhance','7\\.75'],['transfer','3\\.5']]) {
+    g.isForgeState().sameOpMode = mode;
+    g.isRenderWorkshop(panel);
+    assert.match(panel.innerHTML,new RegExp('会心率 \\+4% → 会心率 \\+' + result + '%'));
+  }
+});
+
+test('OP strengthening adds half and preserves rank, while OP transfer moves the capped source OP', async () => {
+  for (const [mode,rank,value] of [['enhance',2,.04 + .075 / 2],['transfer',3,.035]]) {
+    const {g,base,donor} = sameOpFixture();
+    g.isConfirm = async () => false;
+    g.isLog = g.isSave = () => {};
+    await g.isForgeTransfer(donor.uid,base.uid,0,null,mode);
+    assert.equal(g.isBagEntry(donor.uid),donor);
+    assert.equal(g.isForgeMaterialCount('otherworldShard'),100);
+    g.isConfirm = async (title) => {
+      assert.equal(title,mode === 'enhance' ? 'OPを強化しますか？' : 'OPを移植しますか？');
+      return true;
+    };
+    await g.isForgeTransfer(donor.uid,base.uid,0,null,mode);
+    assert.equal(base.ops[0].rank,rank);
+    assert.equal(base.ops[0].value,value);
+    assert.equal(base.ops.length,2);
+    assert.equal(base.ops[1].key,'str');
+    assert.equal(g.isBagEntry(donor.uid),undefined);
+    assert.equal(g.isForgeMaterialCount('otherworldShard'),30);
+    assert.equal(g.isForgeMaterialCount('otherworldCore'),0);
+  }
 });
