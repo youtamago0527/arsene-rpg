@@ -46,7 +46,7 @@
   class BattleGame {
     constructor() {
       document.documentElement.classList.toggle('capacitor-native', !!window.Capacitor?.isNativePlatform?.());
-      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.defeatResolving = false; this.autoBattle = false; this.autoBattleSpeedIndex = -1; this.autoToggleBusy = false; this.autoPickTimer = null; this.autoAdvanceTimer = null; this.simpleBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.enhanceWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.enhanceArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.battleLogExpanded = false; this.lastBattleAction = null; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
+      this.profile = this.loadProfile(); this.sanitizeLeftHandEquipment(); this.sanitizeRightHandEquipment(); this.syncSkillUnlocks(); this.player = null; this.enemies = []; this.turn = 1; this.locked = false; this.finished = false; this.defeatResolving = false; this.autoBattle = false; this.autoBattleSpeedIndex = -1; this.autoToggleBusy = false; this.autoPickTimer = null; this.autoAdvanceTimer = null; this.simpleBattle = false; this.selectedEquipmentId = null; this.battleMode = 'slime'; this.workshopTab = 'craft'; this.craftKind = 'weapon'; this.enhanceKind = 'weapon'; this.craftWeaponType = 'sword'; this.enhanceWeaponType = 'sword'; this.craftDungeonFilter = 'all'; this.craftArmorFilter = 'leftHand'; this.enhanceArmorFilter = 'leftHand'; this.archiveMode = 'monster'; this.battleLogHistory = []; this.lastBattleAction = null; this.dungeonSelectId = 'dungeon1'; this.bossSeriesFilter = null;
       // 旧セーブ・新規プロファイルの両方で楽器学を必ず初期化する。
       this.profile.weaponMastery.instrument ||= { level: 1, exp: 0 };
       this.currentDungeonId = 'dungeon1';
@@ -761,7 +761,8 @@
         const b = D.guardianBalance || {};
         return this.defensePowerFor('physical', s, equipment) * (b.shieldDefRate ?? .5) + this.defensePowerFor('magical', s, equipment) * (b.shieldMdefRate ?? .5);
       }
-      const weapon = D.weapons[equipment?.rightHand], baseRule = (D.weaponScaling || {})[weaponType] || (D.weaponScaling || {}).sword || { scaling: { str: 1 }, powerKey: 'attackPower' };
+      const carried = equipment===this.profile.equipment && !this.isRunForEquipment?.() && this.owgHomeGear?.('rightHand');
+      const weapon = D.weapons[carried?.itemId || equipment?.rightHand], baseRule = (D.weaponScaling || {})[weaponType] || (D.weaponScaling || {}).sword || { scaling: { str: 1 }, powerKey: 'attackPower' };
       const rule = weapon?.scaling ? { ...baseRule, scaling: weapon.scaling, powerKey: weapon.powerKey || baseRule.powerKey, damageType: weapon.damageType || baseRule.damageType } : baseRule;
       let v = 0;
       for (const [stat, rate] of Object.entries(rule.scaling || {})) v += (s[stat] || 0) * rate;
@@ -1332,6 +1333,7 @@
       if (key === 'levelCap') return !!f.jobLevelCapUnlocked;
       if (key === 'rebirth') return this.rebirthUnlocked();
       if (key === 'phantomThief') return this.isJobUnlocked('phantomThief');
+      if (key === 'infiniteScore') return !!this.isInfiniteScoreUnlocked?.();
       if (key === 'otherWorld') return !!f.otherWorldUnlocked;
       return true;
     }
@@ -1475,10 +1477,38 @@
     sparkRateBonus(type, skill) {
       return (this.passiveEffectRate?.('sparkRateBonus') || 0) + (this.equipmentEffectRate?.('sparkRateBonus') || 0);
     }
+    sparkChanceFor(skill, type, score, sourceMultiplier) {
+      return Math.min(1, this.sparkBaseRateForScore(score) * sourceMultiplier * this.traitSparkMult(type) + this.sparkRateBonus(type, skill));
+    }
+    weaponSkillLevelRule(skill) {
+      if (!this.isPlayerContentVisible(skill) || skill.source !== 'weapon' || skill.sparkRank == null || skill.target === 'self') return null;
+      const level = this.profile.weaponSkillLevels?.[skill.id] ?? 1;
+      const rules = this.gb().weaponSkillUpgrades || [];
+      const current = rules.find(rule => rule.level === level);
+      return { level: current?.level ?? 1, multiplier: current?.damage ?? 1 };
+    }
+    leveledWeaponSkillName(skill) {
+      const level = this.weaponSkillLevelRule(skill)?.level ?? 1;
+      return level > 1 ? `${skill.name} Lv${level}` : skill.name;
+    }
+    rollWeaponSkillUpgrade(skill, enemy, type, masteryLevel) {
+      const current = this.weaponSkillLevelRule(skill);
+      if (!enemy || !current || !this.hasWeaponSkill(skill.id)) return null;
+      const next = (this.gb().weaponSkillUpgrades || []).find(row => row.level === current.level + 1);
+      if (!next || masteryLevel < next.mastery || type !== this.equippedWeaponType() || !this.weaponSkillMatchesEquipped(skill)) return null;
+      if (skill.requiredWeaponId && this.profile.equipment?.rightHand !== skill.requiredWeaponId) return null;
+      if (skill.requiresBareFists && !this.usesBareFists()) return null;
+      const score = masteryLevel + Math.max(1, enemy.sparkLevel || 1) - skill.sparkRank - next.rankOffset;
+      const useMultiplier = this.gb().sparkSourceMultipliers?.related ?? .5;
+      if (Math.random() >= this.sparkChanceFor(skill, type, score, useMultiplier)) return null;
+      (this.profile.weaponSkillLevels ||= {})[skill.id] = next.level;
+      this.saveProfile();
+      return { ...skill, name: this.leveledWeaponSkillName(skill), weaponSkillUpgrade: next.level };
+    }
     rollSpark(sourceSkillId, enemy = null) {
       const source = D.skills[sourceSkillId];
       if (this.isNoGrowthJob() || !this.isWeaponMasteryAction(source)) return null;
-      const gb = this.gb(), type = source.weaponType || this.equippedWeaponType(), masteryLevel = this.masteryOf(type).level || 1, enemySparkLevel = Math.max(1, enemy?.sparkLevel || 1);
+      const type = source.weaponType || this.equippedWeaponType(), masteryLevel = this.masteryOf(type).level || 1, enemySparkLevel = Math.max(1, enemy?.sparkLevel || 1);
       const candidates = Object.values(D.skills).filter(s => this.isPlayerContentVisible(s) && s.source === 'weapon' && s.weaponType === type && s.sparkRank != null && !this.hasWeaponSkill(s.id)).sort(() => Math.random() - .5);
       for (const skill of candidates) {
         if (type && this.equippedWeaponType() !== type) continue;
@@ -1487,8 +1517,7 @@
         if (skill.requiredWeaponId && this.profile.equipment?.rightHand !== skill.requiredWeaponId) continue;
         const sourceMultiplier = this.sparkSourceMultiplier(skill, sourceSkillId); if (!(sourceMultiplier > 0)) continue;
         const score = masteryLevel + enemySparkLevel - skill.sparkRank;
-        const baseRate = this.sparkBaseRateForScore(score);
-        const rate = Math.min(1, baseRate * sourceMultiplier * this.traitSparkMult(type) + this.sparkRateBonus(type, skill));
+        const rate = this.sparkChanceFor(skill, type, score, sourceMultiplier);
         if (Math.random() < rate) {
           this.learnedWeaponSkillIds().push(skill.id);
           const pt = this.profile.playtest;
@@ -1497,7 +1526,7 @@
           return skill;
         }
       }
-      return null;
+      return this.rollWeaponSkillUpgrade(source, enemy, type, masteryLevel);
     }
     // 装備中カテゴリの通常攻撃
     basicAttackSkill() { const weapon = this.equippedWeapon(), subtypeId = (D.basicAttackByWeaponSubtype || {})[weapon?.weaponSubtype], map = D.basicAttackByWeaponType || {}; return D.skills[subtypeId || map[this.equippedWeaponType()]] || D.skills.attack; }
@@ -1560,7 +1589,7 @@
       }
       if (vitals?.hp) rows.push(`<div class="growth-row status"><span>最大HP</span><b>+${vitals.hp}</b></div>`);
       if (vitals?.mp) rows.push(`<div class="growth-row status"><span>最大MP</span><b>+${vitals.mp}</b></div>`);
-      const sparkHtml = sparks.map(s => `<div class="growth-spark"><small>NEW TECH</small><b>${s.name}</b><span>${s.nameEn || ''}</span></div>`).join('');
+      const sparkHtml = sparks.map(s => `<div class="growth-spark"><small>${s.weaponSkillUpgrade ? 'TECH LEVEL UP' : 'NEW TECH'}</small><b>${s.name}</b><span>${s.nameEn || ''}</span></div>`).join('');
       return `<div class="growth-result"><header><small>GROWTH</small><b>成長</b></header>${rows.join('')}${sparkHtml}</div>`;
     }
     learnedWeaponSkills() { return this.learnedWeaponSkillIds().map(id => D.skills[id]).filter(skill => this.isPlayerContentVisible(skill)); }
@@ -1700,7 +1729,10 @@
     isDungeonUnlocked(id) { const d = this.getDungeon(id); if (!d) return false; if (!d.unlockCondition) return true; const previousBoss = { dungeon1Clear: 'zenacad', dungeon2Clear: 'myrthi', dungeon3Clear: 'seripes', dungeon4Clear: 'astact', dungeon5Clear: 'ostina' }[d.unlockCondition]; return previousBoss ? this.isBossDefeated(previousBoss) : false; }
     applyDungeonBackground() { const dungeon = this.getDungeon(), floor = this.activeFloor(this.currentDungeonId); const bg = floor?.background || dungeon?.background || 'assets/bg/dungeon-battle-01.png'; const bf = $('#battlefield'); bf.dataset.dungeon = this.currentDungeonId; bf.dataset.floor = floor?.id || ''; bf.style.backgroundImage = `linear-gradient(#0207134a,#0208171f 58%,#02040b5c),url("${bg}")`; bf.style.backgroundSize = 'auto,cover'; bf.style.backgroundPosition = 'center,center bottom'; bf.style.backgroundRepeat = 'no-repeat,no-repeat'; }
     // 武道家が素手のときは拳を握る（JOB特性《無手の型》）。他JOBは従来どおり杖にフォールバック。
-    isBareHanded(hand = 'rightHand') { return !D.weapons[this.profile.equipment?.[hand]]; }
+    isBareHanded(hand = 'rightHand') {
+      const carried = !this.isRunForEquipment?.() && this.owgHomeGear?.(hand);
+      return !D.weapons[carried?.itemId || this.profile.equipment?.[hand]];
+    }
     canUseBareFists(jobId = this.profile.currentJob, equipment = this.profile?.equipment) {
       if (this.jobHasTrait('bareFists', jobId)) return true;
       return jobId === 'phantomThief' && (this.profile?.preferredWeaponType === 'martial' || D.weapons?.[equipment?.rightHand]?.weaponType === 'martial');
@@ -2366,10 +2398,56 @@
         strip.innerHTML = chips.join(''); strip.dataset.statusOwner = `${e.name}${e.label || ''}`; strip.dataset.enemyUid = e.uid; strip.tabIndex = 0; strip.setAttribute('role', 'button'); strip.title = 'タップで敵の状態と解析情報を確認'; strip.onclick = event => { event.preventDefault(); event.stopPropagation(); this.showStatusGroup(strip.dataset.statusOwner, strip); };
       });
     }
-    resetBattleLog() { this.clearQuickResultPopup(); this.battleLogHistory = []; this.battleEvents = []; this.battleLogExpanded = false; this.lastBattleAction = null; $('#log')?.classList.remove('expanded'); }
-    setLog(text) { if (!text) return; this.battleLogHistory ||= []; this.battleLogHistory.push(text); if (this.battleLogHistory.length > 100) this.battleLogHistory.shift(); this.renderBattleLog(); }
-    renderBattleLog() { const log = $('#log'); if (!log) return; const rows = this.battleLogExpanded ? this.battleLogHistory : this.battleLogHistory.slice(-5); log.innerHTML = `<small>COMBAT LOG // ${this.battleLogExpanded ? 'TAP TO CLOSE' : 'TAP FOR HISTORY'}</small><div class="battle-log-lines">${rows.map(t => `<p>${t}</p>`).join('')}</div>`; log.scrollTop = this.battleLogExpanded ? log.scrollHeight : 0; }
-    toggleBattleLog() { this.battleLogExpanded = !this.battleLogExpanded; $('#log')?.classList.toggle('expanded', this.battleLogExpanded); this.renderBattleLog(); }
+    resetBattleLog() {
+      this.clearQuickResultPopup();
+      this.battleLogHistory = [];
+      this.battleEvents = [];
+      this.lastBattleAction = null;
+      $('#battle-history')?.close();
+    }
+    setLog(text) {
+      if (!text) return;
+      this.battleLogHistory ||= [];
+      this.battleLogHistory.push(text);
+      if (this.battleLogHistory.length > 100) this.battleLogHistory.shift();
+      this.renderBattleLog();
+    }
+    renderBattleLog({ scrollToLatest = false } = {}) {
+      const log = $('#log');
+      if (!log) return;
+      const rows = this.battleLogHistory || [];
+      const appendRows = (container, messages) => {
+        const fragment = document.createDocumentFragment();
+        for (const message of messages) {
+          const row = document.createElement('p');
+          row.textContent = message;
+          fragment.appendChild(row);
+        }
+        container.replaceChildren(fragment);
+      };
+      if (!log.querySelector('.battle-log-lines')) {
+        log.innerHTML = '<small>COMBAT LOG // TAP FOR HISTORY</small><div class="battle-log-lines"></div>';
+      }
+      const preview = log.querySelector('.battle-log-lines');
+      appendRows(preview, rows.slice(-5));
+      preview.scrollTop = preview.scrollHeight;
+
+      if (!$('#battle-history')?.open) return;
+      const history = $('#battle-history-entries');
+      const followLatest = scrollToLatest || history.scrollHeight - history.scrollTop - history.clientHeight <= 8;
+      const lastScroll = history.scrollTop;
+      appendRows(history, rows);
+      history.scrollTop = followLatest ? history.scrollHeight : lastScroll;
+    }
+    toggleBattleLog() {
+      const history = $('#battle-history');
+      if (history.open) {
+        history.close();
+      } else {
+        history.showModal();
+        this.renderBattleLog({ scrollToLatest: true });
+      }
+    }
     clearQuickResultPopup() { $('#quick-result-popup')?.remove(); }
     showQuickResultPopup() {
       const report = this.battleRewards?.quickReport, field = $('#battlefield'); if (!report || !field) return;
@@ -2708,9 +2786,14 @@
       const key = effect.hp || effect.hpRate ? 'hp' : effect.mp || effect.mpRate ? 'mp' : null;
       if (!key) return null;
       const maxKey = key === 'hp' ? 'maxHp' : 'maxMp';
-      const rate = Number(effect[`${key}Rate`]) || 0;
-      const amount = rate > 0 ? Math.max(1, Math.ceil((Number(stats?.[maxKey]) || 0) * rate)) : Math.max(0, Number(effect[key]) || 0);
-      return { key, maxKey, rate, amount, label: rate > 0 ? `${key.toUpperCase()} ${Math.round(rate * 100)}%` : `${key.toUpperCase()} +${amount}` };
+      const baseRate = Number(effect[`${key}Rate`]) || 0;
+      const baseAmount = Math.max(0, Number(effect[key]) || 0);
+      const boost = this.owgEffects?.().potionBoostRate || 0;
+      const rate = baseRate * (1 + boost);
+      const amount = rate > 0 ? Math.max(1, Math.ceil((Number(stats?.[maxKey]) || 0) * rate - (boost ? 1e-9 : 0)))
+        : boost ? Math.round(baseAmount * (1 + boost)) : baseAmount;
+      const percent = boost ? Math.round(rate * 1000) / 10 : Math.round(rate * 100);
+      return { key, maxKey, rate, amount, label: rate > 0 ? `${key.toUpperCase()} ${percent}%` : `${key.toUpperCase()} +${amount}` };
     }
     battleUsableItems() {
       return Object.values(D.items)
@@ -2761,7 +2844,7 @@
     showWeaponArts() {
       const wt = this.equippedWeaponType();
       const skills = this.learnedWeaponSkills().filter(s => s.weaponType === wt && this.weaponSkillMatchesEquipped(s));
-      const rows = skills.map(s => this.button(s.name, this.skillCostLabel(s), s.id, !this.canPaySkillCosts(s), `weapon-${wt}`, this.skillListDetail(s))).join('');
+      const rows = skills.map(s => this.button(this.leveledWeaponSkillName(s), this.skillCostLabel(s), s.id, !this.canPaySkillCosts(s), `weapon-${wt}`, this.skillListDetail(s))).join('');
       this.panel(this.button('閉じる', 'BACK', 'back') + rows, 'list');
       const actions = { back: () => this.showMainCommands() };
       skills.forEach(s => { actions[s.id] = () => { const sk = D.skills[s.id]; if (sk?.randomTarget || sk?.target === 'all' || sk?.target === 'self') this.executeRound(s.id, -1); else this.chooseTarget(s.id); }; });
@@ -2884,7 +2967,8 @@
       const buffRate = isMagicSkill ? (this.turn <= (enemy.mdefBuffUntil || 0) ? (enemy.mdefBuffRate || 0) : 0) : (this.turn <= (enemy.defBuffUntil || 0) ? (enemy.defBuffRate || 0) : 0);
       const fortissimo = this.turn <= (enemy.fortissimoUntil || 0) ? (enemy.fortissimoRate || 0) : 0;
       const criticalPierce = critical ? .50 : 0;
-      const effectiveDef = neutral ? 0 : enemyDefStat * (1 + buffRate + fortissimo) * (1 - defDown) * (1 - (skill.ignoreDef || 0)) * (1 - criticalPierce);
+      const breach = enemy.owgBreachUntil >= this.turn ? enemy.owgBreachRate : 0;
+      const effectiveDef = neutral ? 0 : enemyDefStat * (1 + buffRate + fortissimo) * (1 - defDown) * (1 - (skill.ignoreDef || 0)) * (1 - criticalPierce) * (1 - breach);
       let value = skill.kind === 'hybrid' ? (s.str || 0) * skill.strScale + (s.mag || 0) * skill.magScale - effectiveDef : attackPower * power + (s.agi || 0) * (skill.agiScale || 0) - effectiveDef;
       // ちからためは物理攻撃にのみ乗る（杖の通常攻撃は damageType:'magical' なので対象外）
       const isPhysical = skill.kind === 'physical' || (skill.kind === 'weapon' && skill.damageType !== 'magical');
@@ -2916,7 +3000,32 @@
       if (critical) value *= balance.critical.multiplier;
       // 武器学は基礎能力へ混ぜず、対応武器で与える最終ダメージだけを伸ばす。
       value *= this.weaponMasteryMultiplier(wType);
-      return { value: Math.max(1, Math.round(value)), critical, weak };
+      value *= this.weaponSkillLevelRule(skill)?.multiplier ?? 1;
+      const adjusted = this.owgAdjustDamage?.(value, skill, enemy, critical);
+      return { ...(adjusted || { value: Math.max(1, Math.round(value)) }), critical, weak };
+    }
+    applyPlayerHit(target, hit, skill) {
+      if (target.infiniteHp) target.debugDamageTaken = (target.debugDamageTaken || 0) + hit.value;
+      const previousHp = target.hp;
+      if (target.infiniteHp) {
+        target.hp = target.stats.maxHp;
+      } else {
+        const floor = target.cannotDefeat ? 1 : 0;
+        target.hp = Math.max(floor, target.hp - (hit.value - (hit.additionalDamage || 0)));
+        for (const followUp of hit.followUps || []) {
+          if (target.hp <= floor) break;
+          target.hp = Math.max(floor, target.hp - followUp.value);
+        }
+      }
+      const actual = previousHp - target.hp;
+      if (this.owgRestoreFromDamage?.('hp', actual) > 0) this.persistVitals();
+      this.owgAfterLandedHit?.(target, actual, skill);
+    }
+    showPlayerHit(element, hit, type = 'damage') {
+      const followUps = hit.followUps?.length || 0;
+      const label = followUps ? `${hit.value - hit.additionalDamage} (+${hit.additionalDamage}／追撃${followUps})` : hit.value;
+      if (hit.followUps?.some(extra=>extra.weak) && type==='damage') type='weak';
+      this.floating(element, label, hit.critical ? 'critical' : type);
     }
     // 閃き演出：画面フラッシュ＋効果音＋カットインを見せてから技を発動する
     async sparkPresentation(skill) {
@@ -2983,12 +3092,11 @@
         const d = this.damageFor(hitSkill, target, outcome); total += d.value; if (d.critical) criticals++;
         this.refundMpFromSpell(d.value, skill); // 魔導士《魔力還流》
         perHit[target.uid] = (perHit[target.uid] || 0) + d.value;
-        if (target.infiniteHp) target.debugDamageTaken = (target.debugDamageTaken || 0) + d.value;
-        target.hp = target.infiniteHp ? target.stats.maxHp : target.cannotDefeat ? Math.max(1, target.hp - d.value) : Math.max(0, target.hp - d.value);
+        this.applyPlayerHit(target, d, skill);
         this.recordSeripesHit(target, skill, d.value);
         // 撃破した瞬間に見た目も倒す。ここで付けないと「HP0なのに敵が残る」状態になる。
         if (target.hp <= 0) { target.alive = false; tEl.classList.add('defeated'); }
-        this.floating(tEl, d.value, d.critical ? 'critical' : d.weak ? 'weak' : 'damage'); if (d.weak && !d.critical) this.floating(tEl, 'WEAK!', 'weak-label'); this.attackImpactFx ? this.attackImpactFx(skill, tEl, d.critical) : this.audio.sfx(d.critical ? 'critical' : 'enemyHit'); this.updateHUD();
+        this.showPlayerHit(tEl, d, d.weak ? 'weak' : 'damage'); if (d.weak && !d.critical) this.floating(tEl, 'WEAK!', 'weak-label'); this.attackImpactFx ? this.attackImpactFx(skill, tEl, d.critical) : this.audio.sfx(d.critical ? 'critical' : 'enemyHit'); this.updateHUD();
         await this.battleSleep(hits > 1 ? 190 : 420); tEl.classList.remove('hit');
       } if (misses && !total) { this.setLog(`${target.name}${target.label}に攻撃を外した！`); ren.classList.remove('attacking','casting'); if (extremeDance) this.player.comboDance = 0; return { anyHit: false }; }
       const hitNames = Object.keys(perHit).map(uid => { const e = this.enemies.find(x => x.uid === uid); return e ? `${e.name}${e.label}` : ''; }).filter(Boolean); const targetLabel = skill.randomTarget && hitNames.length > 1 ? hitNames.join('・') : `${target.name}${target.label}`; this.setLog(`${criticals ? `CRITICAL ×${criticals}! ` : ''}${targetLabel}に${total}ダメージ！${hits > 1 ? `（${hits}HIT）` : ''}`); if (skill.kind === 'physical' || skill.kind === 'weapon') { delete this.player.buffs.atkCharge; delete this.player.buffs.magicCharge; } if (skill.kind === 'magical' || skill.damageType === 'magical') delete this.player.buffs.magFocus; ren.classList.remove('attacking', 'casting');
@@ -3069,10 +3177,9 @@
       const pursuitPassive = this.activePassiveByType('offHandCritical'), pursuitExtra = outcome.critical ? this.passiveValue(pursuitPassive, 'comboBonusOnCritical') : 0;
       this.comboDanceHit(pursuitExtra);
       const d = this.damageFor(strike, enemy, outcome);
-      if (enemy.infiniteHp) enemy.debugDamageTaken = (enemy.debugDamageTaken || 0) + d.value;
-      enemy.hp = enemy.infiniteHp ? enemy.stats.maxHp : enemy.cannotDefeat ? Math.max(1, enemy.hp - d.value) : Math.max(0, enemy.hp - d.value);
+      this.applyPlayerHit(enemy, d);
       el.classList.add('hit');
-      this.floating(el, d.value, d.critical ? 'critical' : 'damage');
+      this.showPlayerHit(el, d);
       this.audio.playWeaponAttack(lw.weaponType); if (d.critical) this.audio.sfx('criticalHit');
       this.setLog(`左手の${lw.name}で追撃！ ${enemy.name}${enemy.label}に${d.value}ダメージ！`);
       this.updateHUD();
@@ -3129,10 +3236,9 @@
       const outcome = this.rollPlayerAttackOutcome(skill, enemy);
       if (!outcome.hit) { this.triggerEvade('player', enemy, skill, { source: 'counter' }); this.floating(el, 'EVADE', 'miss'); this.setLog(`${enemy.name}${enemy.label}は反撃をかわした！`); await this.battleSleep(260); ren.classList.remove('attacking'); return; }
       const d = this.damageFor(skill, enemy, outcome);
-      if (enemy.infiniteHp) enemy.debugDamageTaken = (enemy.debugDamageTaken || 0) + d.value;
-      enemy.hp = enemy.infiniteHp ? enemy.stats.maxHp : enemy.cannotDefeat ? Math.max(1, enemy.hp - d.value) : Math.max(0, enemy.hp - d.value);
+      this.applyPlayerHit(enemy, d);
       el.classList.add('hit');
-      this.floating(el, d.value, d.critical ? 'critical' : 'damage');
+      this.showPlayerHit(el, d);
       this.audio.playWeaponAttack(skill.weaponType || this.equippedWeaponType()); if (d.critical) this.audio.sfx('criticalHit');
       this.setLog(`${enemy.name}${enemy.label}に${d.value}ダメージ！`);
       this.updateHUD();
@@ -3198,11 +3304,16 @@
     activeMealBuff() { const id = this.activeMealBuffType(); return id ? D.foodMenu?.buffs?.[id] || null : null; }
     mealGoldBonusRate() { return this.activeMealBuff()?.goldRate || 0; }
     mealExpBonusRate() { return this.activeMealBuff()?.expRate || 0; }
+    astraExpBoostUntil() {
+      const expiry = this.profile.astraExpBoostExpiresAt;
+      return Number.isSafeInteger(expiry) && expiry > Date.now() ? expiry : 0;
+    }
+    astraExpMultiplier() { return this.astraExpBoostUntil() ? 2 : 1; }
     rewardExpMultiplier() {
       const mode = String(this.battleMode || '');
       const normalDungeon = mode !== 'infiniteScore' && !mode.startsWith('ow');
       const adBoost = normalDungeon && window.arseneQOffer?.isActive?.('exp2') ? 2 : 1;
-      return (1 + this.mealExpBonusRate()) * adBoost * (this.collectionTitleEffect?.('expMultiplier') ?? 1);
+      return (1 + this.mealExpBonusRate()) * adBoost * this.astraExpMultiplier() * (this.collectionTitleEffect?.('expMultiplier') ?? 1);
     }
     rewardGoldMultiplier() {
       const mode = String(this.battleMode || '');
@@ -3281,10 +3392,10 @@
         if (!outcome.hit) { this.comboDanceMiss(); this.triggerEvade('player', target, skill, { source: 'playerAttackAll' }); this.floating(el, 'EVADE', 'miss'); await this.battleSleep(180); continue; }
         this.comboDanceHit();
         el.classList.add('hit');
-        const d = this.damageFor(skill, target, outcome); if (target.infiniteHp) target.debugDamageTaken = (target.debugDamageTaken || 0) + d.value; target.hp = target.infiniteHp ? target.stats.maxHp : target.cannotDefeat ? Math.max(1, target.hp - d.value) : Math.max(0, target.hp - d.value);
+        const d = this.damageFor(skill, target, outcome); this.applyPlayerHit(target, d, skill);
         this.refundMpFromSpell(d.value, skill); // 魔導士《魔力還流》
         this.recordSeripesHit(target, skill, d.value);
-        this.floating(el, d.value, d.critical ? 'critical' : 'damage'); if (d.weak && !d.critical) this.floating(el, 'WEAK!', 'weak-label'); this.attackImpactFx ? this.attackImpactFx(skill, el, d.critical) : this.audio.sfx(d.critical ? 'critical' : 'enemyHit'); this.updateHUD();
+        this.showPlayerHit(el, d); if (d.weak && !d.critical) this.floating(el, 'WEAK!', 'weak-label'); this.attackImpactFx ? this.attackImpactFx(skill, el, d.critical) : this.audio.sfx(d.critical ? 'critical' : 'enemyHit'); this.updateHUD();
         await this.battleSleep(220); el.classList.remove('hit');
         // 全体攻撃でも状態異常・弱体は個別に判定する（単体攻撃と同じ規則）
         if (target.hp > 0) this.applySkillDebuff(skill, target);
@@ -3316,6 +3427,7 @@
       const lowHpSkill = this.activePassives().find(p => p.passiveEffect?.type === 'lowHpDamageReduction');
       const lowHpPassive = lowHpSkill?.passiveEffect;
       if (lowHpPassive && before / Math.max(1, this.player.stats.maxHp) <= (lowHpPassive.hpThreshold ?? .30)) damage = Math.max(0, Math.round(damage * (1 - this.passiveRate(lowHpSkill))));
+      damage = this.owgOpeningWard?.(damage) ?? damage;
       // REPRISE FULL SET は既存の《不落》(lastStand) をそのまま借りる。
       // 守護士は素で《不落》を持つためセットを着ても何も増えない。
       // 本家適性として「HPが減らずに耐える」へ格上げする（回数は1回のまま）。
@@ -3357,6 +3469,8 @@
           }
         }
       }
+      this.owgRestoreFromDamage?.('mp', actual);
+      this.owgOnGuardHit?.(actual);
       this.persistVitals(); return actual;
     }
     async enemySupportAction(enemy, chosen) {
@@ -3602,15 +3716,16 @@
       (enemy.rolledDrops || []).forEach(([id, n]) => { drops[id] = (drops[id] || 0) + n; });
       Object.entries(enemy.stolenItems || {}).forEach(([id, n]) => { drops[id] = (drops[id] || 0) + n; });
       if (recoveredGold || Object.keys(enemy.stolenItems || {}).length) this.setLog(`${enemy.name}を撃破！ 盗まれた戦利品を取り返した。`);
-      const levels = this.applyRewards({ exp, gold, drops });
+      const awarded = { exp, gold };
+      const levels = this.applyRewards({ exp, gold, drops }, awarded);
       // 武器学EXPは撃破EXP比例ではなく、武器ACTIONの実行時に付与済み。
       const job = this.grantJobExp(exp);
-      rewards.exp += exp; rewards.gold += gold;
+      rewards.exp += awarded.exp; rewards.gold += awarded.gold;
       Object.entries(drops).forEach(([id, n]) => { rewards.drops[id] = (rewards.drops[id] || 0) + n; });
       rewards.levels.push(...levels); if (job) rewards.jobResults.push(job);
       if (job?.to > job?.from && !this.quickResolving) this.queueGrowthBubble('JOB Lv.UP!', `${job.jobName} Lv.${job.from} → ${job.to}`);
       this.updateHUD();
-      return { exp, gold };
+      return awarded;
     }
     battleSummaryHTML() {
       const r = this.battleRewards, notices = `${r?.quickReport || ''}${r?.checkpointNotice || ''}`; if (!r || (!r.exp && !r.gold && !Object.keys(r.drops).length)) return notices;
@@ -3740,10 +3855,10 @@
     bossMaterialDropRows(enemy) {
       return (enemy?.dropTable || []).filter(row => ['material', 'equipment'].includes(D.items?.[row.itemId]?.category));
     }
-    offerRepeatBossMaterialDrop(enemy, firstClear) {
+    offerRepeatBossMaterialDrop(enemy, firstClear, bonusDrop = null) {
       if (firstClear || !enemy || !window.arseneQOffer?.canUse?.('bossDrop')) return false;
-      const rows = this.bossMaterialDropRows(enemy); if (!rows.length) return false;
-      this.bossMaterialOffer = { enemy, rows, claimed: false, prompted: false };
+      const rows = this.bossMaterialDropRows(enemy); if (!rows.length && !bonusDrop) return false;
+      this.bossMaterialOffer = { enemy, rows, bonusDrop, claimed: false, prompted: false };
       this.renderBossResultActions();
       return true;
     }
@@ -3759,7 +3874,7 @@
       }
       const victorious = this.finished && this.profile.flags.lastBattleResult === 'victory';
       const material = victorious ? this.bossMaterialOffer : null;
-      actions.innerHTML = this.resultContinue ? '' : `${material && !material.claimed ? '<button data-result-action="boss-material-ad">広告でドロップをもう1回抽選<small>素材・装備／ドロップ率2倍</small></button>' : ''}`;
+      actions.innerHTML = this.resultContinue ? '' : `${material && !material.claimed ? `<button data-result-action="boss-material-ad">広告でドロップをもう1回抽選<small>素材・装備${material.bonusDrop ? '・輪廻' : ''}／ドロップ率2倍</small></button>` : ''}`;
       actions.hidden = !actions.innerHTML;
       if (material && !material.claimed && !material.prompted && !this.resultContinue) {
         material.prompted = true;
@@ -3772,17 +3887,21 @@
     showBossMaterialOffer() {
       const context = this.bossMaterialOffer;
       if (!context || context.claimed) return false;
-      const { enemy, rows } = context;
+      const { enemy, rows, bonusDrop } = context;
       return window.arseneQOffer?.show('bossDrop', {
         title: `${enemy.name} ドロップ追加獲得`,
-        copy: '広告を見ると、素材・装備をドロップ率2倍でもう1回抽選する。元の戦利品はそのまま残る。',
+        copy: `広告を見ると、素材・装備${bonusDrop ? '・輪廻のアルカナ' : ''}をドロップ率2倍でもう1回抽選する。${bonusDrop ? '輪廻のアルカナは6%。' : ''}元の戦利品はそのまま残る。`,
         onGrant: () => {
+          if (context.claimed || this.bossMaterialOffer !== context) return;
           context.claimed = true;
           this.renderBossResultActions();
           document.querySelector('#boss-result-ad-actions [data-result-action="boss-material-ad"]')?.remove();
           const boostedEnemy = { ...enemy, dropTable: rows.map(row => ({ ...row, chance: Math.min(1, (Number(row.chance) || 0) * 2) })) };
           const drops = {};
           this.rollDrops(boostedEnemy).forEach(([id, count]) => { drops[id] = (drops[id] || 0) + count; });
+          if (bonusDrop && Math.random() < Math.min(1, bonusDrop.chance * 2)) {
+            drops[bonusDrop.itemId] = (drops[bonusDrop.itemId] || 0) + bonusDrop.count;
+          }
           const entries = Object.entries(drops);
           if (entries.length) {
             this.applyRewards({ exp: 0, gold: 0, drops });
@@ -3800,7 +3919,7 @@
       modal.className = 'q-offer-modal boss-double-up-modal';
       const rows = entries.length ? entries.map(([id, n]) => {
         const item = D.items[id];
-        return `<div class="boss-double-up-row rarity-${item?.rarity || 'common'}"><span>${item?.category === 'equipment' ? '装備' : '素材'}</span><b>${item?.name || id}</b><strong>×${n}</strong></div>`;
+        return `<div class="boss-double-up-row rarity-${item?.rarity || 'common'}"><span>${item?.category === 'equipment' ? '装備' : item?.category === 'special' ? '貴重品' : '素材'}</span><b>${item?.name || id}</b><strong>×${n}</strong></div>`;
       }).join('') : '<p class="boss-double-up-empty">今回は追加ドロップなし</p>';
       modal.innerHTML = `<div class="q-offer-card boss-double-up-card" role="dialog" aria-modal="true" aria-label="追加ドロップ結果"><small>DROP DOUBLE UP</small><h2>追加抽選の結果</h2><p>ドロップ率2倍で、もう1回抽選しました。</p><div class="boss-double-up-list">${rows}</div><button class="q-offer-watch" data-double-up-close>結果を確認</button></div>`;
       document.body.appendChild(modal);
@@ -3903,7 +4022,7 @@
       if (growth?.mastery) { const n = this.weaponTypeName(growth.mastery.type); parts.push(`${n}熟練度 <b>+${growth.mastery.gain}</b>${growth.mastery.leveled ? ` / ${n}武器学 Lv.${growth.mastery.before}→<b>Lv.${growth.mastery.after}</b>` : ''}`); }
       if (growth?.vitals?.hp) parts.push(`最大HP <b>+${growth.vitals.hp}</b>`);
       if (growth?.vitals?.mp) parts.push(`最大MP <b>+${growth.vitals.mp}</b>`);
-      (growth?.sparks || []).forEach(s => parts.push(`NEW TECH <b>${s.name}</b>`));
+      (growth?.sparks || []).forEach(s => parts.push(`${s.weaponSkillUpgrade ? 'TECH LEVEL UP' : 'NEW TECH'} <b>${s.name}</b>`));
       if (drops.length) parts.push(drops.map(([id, n]) => `${D.items[id]?.name || id} ×${n}`).join(' / '));
       if (levels.length) parts.push(`LEVEL UP! → LV.${levels[levels.length - 1].to}`);
       if (jobResult) parts.push(`JEXP <b>+${jobResult.exp}</b>${jobResult.to > jobResult.from ? ` / ${jobResult.jobName} Lv.${jobResult.to}` : ''}`);
@@ -3931,7 +4050,12 @@
       this.flashTitle('GAME OVER', 'MISSION FAILED'); this.showGameOverOrRevive('戦闘不能になった。カズに救助され、HP1で拠点へ運び込まれた。', 'RETURN TO HIDEOUT', this.battleSummaryHTML() || '');
     }
     showDefeatWithRevive(copy, kicker = 'CHALLENGE FAILED') { this.showGameOverOrRevive(copy, kicker, this.battleSummaryHTML() || '<div class="boss-result-note">報酬・ドロップなし</div>'); }
-    showGameOverOrRevive(copy, kicker, html) { const showGameOver = () => { this.clearBossOverdriveChallenge?.(); this.showResult('GAME OVER', copy, kicker, html); }; if (!this.showReviveOfferIfAvailable(showGameOver)) showGameOver(); }
+    showGameOverOrRevive(copy, kicker, html) {
+      const showGameOver = () => { this.clearBossOverdriveChallenge?.(); this.showResult('GAME OVER', copy, kicker, html); };
+      if (this.showReviveOfferIfAvailable(showGameOver)) return;
+      if (window.arseneQOffer?.remaining?.('revive') === 0) html += '<p>本日の広告復活は上限に達しました。</p>';
+      showGameOver();
+    }
     showReviveOfferIfAvailable(onDecline) { const offer = window.arseneQOffer; if (!offer?.canUse?.('revive')) return false; return offer.show('revive', { onGrant: () => this.reviveAfterAdNoise(), onClose: onDecline }); }
     reviveAfterAdNoise() { return this.reviveAfterDefeat(); }
     reviveAfterDefeat() { const maxHp = this.player?.stats?.maxHp || this.totalStats().maxHp; this.finished = false; this.defeatResolving = false; this.locked = false; this.player.hp = Math.max(1, Math.ceil(maxHp * .5)); this.persistVitals(); const result = $('#result'); result.hidden = true; result.style.display = 'none'; $('#ren').classList.remove('down'); $('#ren').classList.add('idle'); const dungeon = this.getDungeon(this.currentDungeonId), bossTrack = this.battleMode !== 'slime' ? this.bossMusicFor(this.battleMode, this.enemies?.[0]?.form || 1) : null, track = this.owRun ? (this.otherWorldMusic || this.bossMusic) : (bossTrack || dungeon?.music || this.battleMusic); this.audio.playTrack(track); this.updateHUD(); this.setLog(`${this.playerName()}はHP50%で立ち上がった！`); this.flashTitle('REVIVE', 'PHANTOM RISES AGAIN'); this.showMainCommands(); }
@@ -3984,7 +4108,12 @@
     }
     renderMenuSummary() { const t = this.totalStats(), v = this.storedVitals(t), need = this.expNeeded(), workshopUnlocked = !!this.profile.flags.noelFirstEncounterCleared, progress = this.progressState();  $('#menu-hp').textContent = `${v.hp} / ${t.maxHp}`; $('#menu-mp').textContent = `${v.mp} / ${t.maxMp}`; $('#hideout-hp-bar').style.width = `${100 * v.hp / t.maxHp}%`; $('#hideout-mp-bar').style.width = `${100 * v.mp / t.maxMp}%`; $('#menu-gold').textContent = this.profile.gold.toLocaleString('ja-JP'); const mType = this.equippedWeaponType(), mst = this.masteryOf(mType), mNeed = this.masteryExpNeeded(mst.level), expPct = Math.min(100, 100 * mst.exp / mNeed); $('#menu-exp-text').textContent = `${expPct.toFixed(2)}%`; $('#menu-exp-bar').style.width = `${expPct}%`; const mLabel = $('#menu-exp-label'); if (mLabel) mLabel.textContent = `${this.weaponTypeName(mType)} Lv.${mst.level}`; const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {}, jlv = jst.level || 1, jneed = this.jobExpNeeded(jlv), jexp = jst.exp || 0, jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100; const jexpLabel = $('#menu-jexp-label'), jexpText = $('#menu-jexp-text'), jexpBar = $('#menu-jexp-bar'); if (jexpLabel) jexpLabel.textContent = `${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}`; const mLv = $('#menu-level'); if (mLv) mLv.textContent = `${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}`; if (jexpText) jexpText.textContent = jneed ? `${jpct.toFixed(2)}%` : 'MASTER'; if (jexpBar) jexpBar.style.width = `${jpct}%`; $('#workshop-nav').hidden = !workshopUnlocked; const bossButton = $('#menu-screen [data-menu="boss"]'), bossTitle = bossButton?.querySelector('b'); const d2p = this.dungeon2FloorProgress(), myrthiReady = this.isMyrthiUnlocked() && !this.isBossDefeated('myrthi'); if (myrthiReady) { bossButton.hidden = false; if (bossTitle) bossTitle.textContent = '黒紅の双刃を追う'; bossButton.querySelector('span').textContent = d2p.total ? `MYRTHI // ${d2p.floors} / ${d2p.total} 階 踏破` : `MYRTHI // BATTLE ${d2p.done} / ${d2p.goal}`; } else { bossButton.hidden = !progress.ready; if (bossTitle) bossTitle.textContent = progress.phase === 'noel' ? 'ノエルの反応を追う' : 'ゼナカドの旋律を追う'; bossButton.querySelector('span').textContent = `${progress.bossName} // BATTLE ${Math.min(progress.wins, progress.goal)} / ${progress.goal}`; } const buffEl = $('#hideout-buff'), meal = this.activeMealBuff(); buffEl.classList.toggle('active', !!meal); buffEl.querySelector('strong').textContent = this.mealEffectLabel(meal); buffEl.querySelector('span').textContent = meal ? `効果：${meal.name}／帰還・敗北まで有効` : 'カズのまかないで潜入を強化'; }
     renderMenuPanel(name) {
-      [...$('#menu-nav').querySelectorAll('button')].forEach(b => b.classList.toggle('active', b.dataset.menu === name)); const panel = $('#menu-panel'); panel.hidden = name === 'home'; panel.dataset.panel = name; panel.classList.toggle('panel-tall', name !== 'home'); panel.scrollTop = 0; if (name === 'home') { panel.innerHTML = ''; return; }
+      [...$('#menu-nav').querySelectorAll('button')].forEach(b => b.classList.toggle('active', b.dataset.menu === name)); const panel = $('#menu-panel'); panel.hidden = name === 'home'; panel.dataset.panel = name; panel.classList.toggle('panel-tall', name !== 'home'); panel.scrollTop = 0;
+      if (name === 'home') {
+        panel.innerHTML = '';
+        if (!$('#menu-screen').hidden && !window.arseneQOffer?.isOpen?.()) this.openLoginBonus?.({ automatic: true });
+        return;
+      }
       if (name === 'status') { this.renderStatusPanel(panel); return; }
       if (name === 'items') { this.renderItemsPanel(panel); panel.insertAdjacentHTML('afterbegin', '<button class="panel-home" data-menu="home">拠点へ戻る</button>'); return; }
       if (name === 'dungeon-select') { this.renderDungeonSelect(panel); return; }
@@ -4440,9 +4569,26 @@
             : '腹、満たしとき。装備のためにも踏ん張りや、ほんま。';
       setTimeout(() => this.renderKazuBubble(line), 0);
     }
-    useMenuItem() {
-      // 回復アイテムは戦闘内のアイテムコマンド専用。拠点回復による低階層周回を防ぐ。
-      this.audio.sfx('ui');
+    useMenuItem(id) {
+      // 回復アイテムは引き続き戦闘中のアイテムコマンドから使う。
+      if (id !== 'astraExpBoost') { this.audio.sfx('ui'); return false; }
+      if (this.localScenario?.ephemeral || !(this.profile.inventory[id] > 0)) return false;
+      const previousStock = this.profile.inventory[id];
+      const previousExpiry = this.profile.astraExpBoostExpiresAt;
+      const start = this.astraExpBoostUntil() || Date.now();
+      this.profile.inventory[id]--;
+      this.profile.astraExpBoostExpiresAt = start + D.items[id].durationMs;
+      try { this.saveProfile(); }
+      catch {
+        this.profile.inventory[id] = previousStock;
+        this.profile.astraExpBoostExpiresAt = previousExpiry;
+        window.arseneStartFlow?.toast('保存できませんでした。もう一度お試しください。');
+        return false;
+      }
+      this.audio.sfx('confirm');
+      this.renderMenuPanel('items');
+      window.arseneStartFlow?.toast('経験値2倍の有効時間を24時間追加しました。');
+      return true;
     }
     // ══ 工房ナビゲーション ════════════════════════════════════
     // 第1階層＝製作／強化／分解／素材（4つなので横スクロールが起きない）
@@ -5056,13 +5202,22 @@
       const rows = list.map(([id, n]) => {
         const it = D.items[id], w = D.weapons[id];
         // アルカナは恒久強化用なので拠点で使用可。HP/MP回復アイテムは戦闘内だけで使える。
-        if (this.itemTab === 'consumable') { const recover = this.recoveryItemInfo(it); return `<div class="item-row rarity-${it.rarity}"><div><b>${it.name}</b><small>${it.description}</small></div><strong>×${n}</strong>${it.arcanaStat ? `<button data-use-arcana="${id}">使う</button>` : recover ? '<button disabled>戦闘中のみ</button>' : ''}</div>`; }
+        if (this.itemTab === 'consumable') {
+          const recover = this.recoveryItemInfo(it);
+          const button = it.arcanaStat ? `<button data-use-arcana="${id}">使う</button>`
+            : id === 'astraExpBoost' ? `<button data-use-item="${id}">使う</button>`
+            : recover ? '<button disabled>戦闘中のみ</button>' : '';
+          return `<div class="item-row rarity-${it.rarity}"><div><b>${it.name}</b><small>${it.description}</small></div><strong>×${n}</strong>${button}</div>`;
+        }
         const equipped = Object.values(this.profile.equipment).includes(id), slot = w ? 'rightHand' : it.slot;
         return `<div class="item-row rarity-${it.rarity}${equipped ? ' item-equipped' : ''}"><div><b>${it.name}${this.enchantSuffix(id)}${equipped ? '<mark class="eq-badge">装備中</mark>' : ''}</b><small>${this.bonusText(id)}</small></div><strong>×${n}</strong><button data-equip-item="${id}" data-equip-slot="${slot}" ${equipped ? 'disabled' : ''}>${equipped ? '装備中' : '装備'}</button></div>`;
       }).join('');
       const emptyMsg = this.itemTab === 'consumable' ? '消費アイテムなし' : this.itemTab === 'weapon' ? 'この種類の武器なし' : 'この部位の防具なし';
+      const boostUntil = this.astraExpBoostUntil();
+      const boostStatus = this.itemTab === 'consumable' && boostUntil
+        ? `<p class="inventory-use-note">経験値2倍 発動中 · ${new Date(boostUntil).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}まで</p>` : '';
       const useNote = this.itemTab === 'consumable' ? '<p class="inventory-use-note">拠点では回復アイテムを使用できません。戦闘中の「アイテム」から使用してください。</p>' : '';
-      panel.innerHTML = `<small>INVENTORY</small><h2>アイテム</h2><div class="inventory-screen"><div class="inventory-vitals"><b>HP ${vitals.hp} / ${stats.maxHp}</b><b>MP ${vitals.mp} / ${stats.maxMp}</b></div><div class="item-tabs">${mainTabs}</div><div class="inventory-subtab-area">${subTabs}</div><div class="inventory-list">${useNote}${rows || `<p class="item-empty">${emptyMsg}</p>`}</div></div>`;
+      panel.innerHTML = `<small>INVENTORY</small><h2>アイテム</h2><div class="inventory-screen"><div class="inventory-vitals"><b>HP ${vitals.hp} / ${stats.maxHp}</b><b>MP ${vitals.mp} / ${stats.maxMp}</b></div><div class="item-tabs">${mainTabs}</div><div class="inventory-subtab-area">${subTabs}</div><div class="inventory-list">${boostStatus}${useNote}${rows || `<p class="item-empty">${emptyMsg}</p>`}</div></div>`;
     }
     armorEnchantContent() {
       const et = D.enchantTable, enchants = this.profile.armorEnchants || {};
@@ -5122,11 +5277,11 @@
     }
     equipmentCombatComparison(equipment = this.profile.equipment) {
       const stats = this.totalStats(equipment);
-      const weaponType = D.weapons[equipment?.rightHand]?.weaponType || this.equippedWeaponType();
+      const weaponType = (equipment === this.profile.equipment ? this.equippedWeaponType() : D.weapons[equipment?.rightHand]?.weaponType) || this.equippedWeaponType();
       return { attack: Math.round(this.attackPowerFor(weaponType, stats, equipment)), defense: Math.round(this.defensePowerFor('physical', stats, equipment)), magicDefense: Math.round(this.defensePowerFor('magical', stats, equipment)) };
     }
-    combatComparisonHTML(nextEquipment, compact = false) {
-      const before = this.equipmentCombatComparison(), after = this.equipmentCombatComparison(nextEquipment);
+    combatComparisonHTML(nextEquipment, compact = false, preview = this) {
+      const before = this.equipmentCombatComparison(), after = preview.equipmentCombatComparison(nextEquipment);
       const rows = [['攻撃力', 'ATK', 'attack'], ['防御力', 'DEF', 'defense'], ['魔法防御', 'MDEF', 'magicDefense']];
       return `<div class="combat-compare-strip${compact ? ' compact' : ''}">${rows.map(([label, short, key]) => { const delta = after[key] - before[key], state = delta > 0 ? 'up' : delta < 0 ? 'down' : 'same'; return `<div class="${state}"><span>${compact ? short : label}</span>${compact ? '' : `<b>${before[key]}<i>→</i>${after[key]}</b>`}<em>${delta ? `${delta > 0 ? '+' : ''}${delta}` : '±0'}</em></div>`; }).join('')}</div>`;
     }
@@ -5135,11 +5290,25 @@
       const slot = item.slot || (D.weapons[id] ? 'rightHand' : null); if (!slot) return '';
       return this.combatComparisonHTML({ ...this.profile.equipment, [slot]: id }, true);
     }
+    regularEquipmentPreview(slot, id) {
+      const preview = Object.create(this);
+      const otherWorldEquipment = { ...this.profile.otherWorldEquipment };
+      delete otherWorldEquipment[slot];
+      if (slot === 'rightHand' && this.isTwoHandedWeapon(id)) delete otherWorldEquipment.leftHand;
+      preview.profile = { ...this.profile, otherWorldEquipment, equipment: { ...this.profile.equipment, [slot]: id } };
+      if (slot === 'rightHand') preview.sanitizeLeftHandEquipment();
+      return preview;
+    }
+    setRegularEquipment(slot, id) {
+      const preview = this.regularEquipmentPreview(slot,id);
+      this.profile.equipment = preview.profile.equipment;
+      this.profile.otherWorldEquipment = preview.profile.otherWorldEquipment;
+    }
     equipmentPreviewHTML(id) {
       if (!id) return `<div class="equipment-empty-preview"><b>装備候補を選択</b><span>候補をタップすると、現在装備との能力差を確認できます。</span></div>`;
-      const item = D.items[id], targetSlot = this.equipSlot || item.slot, currentId = this.profile.equipment[targetSlot], currentItem = D.items[currentId], nextEquipment = { ...this.profile.equipment, [targetSlot]: id }, before = this.totalStats(), after = this.totalStats(nextEquipment), active = currentId === id;
+      const item = D.items[id], targetSlot = this.equipSlot || item.slot, carried = this.owgHomeGear?.(targetSlot), currentId = carried?.itemId || this.profile.equipment[targetSlot], currentItem = D.items[currentId], preview = this.regularEquipmentPreview(targetSlot,id), before = this.totalStats(), after = preview.totalStats(), active = !carried && currentId === id;
       const rows = statusStatKeys.map(key => { const delta = after[key] - before[key], state = delta > 0 ? 'up' : delta < 0 ? 'down' : 'same', change = delta ? `${delta > 0 ? '+' : ''}${delta} ${delta > 0 ? '↑' : '↓'}` : '－'; return `<div class="compare-row ${state}"><span>${statLabels[key]}</span><b>${before[key]}</b><i>→</i><strong>${after[key]}</strong><em>${change}</em></div>`; }).join('');
-      return `<div class="equipment-swap"><div><small>現在装備</small><b>${currentItem?.name || 'なし'}</b><span>${currentId ? this.bonusText(currentId) : '補正なし'}</span></div><i>→</i><div><small>変更後</small><b>${item.name}</b><span>${this.bonusText(id)}</span></div></div><div class="equipment-description">${item.description}</div>${this.combatComparisonHTML(nextEquipment)}<div class="compare-table"><div class="compare-head"><span>基礎能力</span><b>現在</b><i></i><strong>装備後</strong><em>変化</em></div>${rows}</div><button class="equip-confirm" data-equip-confirm="${id}" ${active ? 'disabled' : ''}>${active ? '装備中' : 'この装備に変更'}<span>${active ? 'EQUIPPED' : 'EQUIP'}</span></button>`;
+      return `<div class="equipment-swap"><div><small>現在装備</small><b>${carried ? this.owgName(carried) : currentItem?.name || 'なし'}</b><span>${carried ? this.owgBaseText(carried) : currentId ? this.bonusText(currentId) : '補正なし'}</span></div><i>→</i><div><small>変更後</small><b>${item.name}</b><span>${this.bonusText(id)}</span></div></div><div class="equipment-description">${item.description}</div>${this.combatComparisonHTML(preview.profile.equipment,false,preview)}<div class="compare-table"><div class="compare-head"><span>基礎能力</span><b>現在</b><i></i><strong>装備後</strong><em>変化</em></div>${rows}</div><button class="equip-confirm" data-equip-confirm="${id}" ${active ? 'disabled' : ''}>${active ? '装備中' : 'この装備に変更'}<span>${active ? 'EQUIPPED' : 'EQUIP'}</span></button>`;
     }
     musicScoreSectionHTML() { const scores = Object.values(D.musicScores || {}).filter(score => this.isPlayerContentVisible(score)); return `<section class="music-score-section"><h3>楽曲 <span>MUSIC SCORE // PRIVATE MODE</span></h3><div>${scores.map(score => { const owned = !!this.profile.musicScores?.[score.id]; return `<article class="music-score-card ${owned ? 'owned' : 'locked'}"><i>♪</i><div><small>${owned ? 'PLAYABLE SCORE' : 'LOCKED SCORE'}</small><b>${owned ? score.title : '？？？'}</b><strong>${owned ? `（${score.subtitle}）` : '未入手の楽曲'}</strong><span>${owned ? score.description : '入手すると楽曲名と詳細が開示されます。'}</span></div><em>${owned ? 'PRIVATE MODE ITEM' : 'LOCKED'}</em></article>`; }).join('')}</div></section>`; }
     bossSetBonusSectionHTML() {
@@ -5151,6 +5320,7 @@
       const t = this.equipTab || 'equip';
       // 1行に収まる短いラベルにして、内容を階層で分ける（長い1枚ページをやめる）
       const tabs = [['equip', '装備'], ['status', '能力値'], ['mastery', '武器学'], ['arts', '武器技'], ['score', '楽曲']];
+      if (this.owgTabAvailable?.()) tabs.splice(1, 0, ['infinite', '無限奏廊']);
       if (this.profile.titleSystem?.unlocked) tabs.push(['title', '称号']);
       return `<div class="eq-tabs2">${tabs.map(([id, name]) => `<button data-equip-tab="${id}" class="${t === id ? 'active' : ''}">${name}</button>`).join('')}</div>`;
     }
@@ -5174,6 +5344,7 @@
       const rows = all.map(s => {
         const has = learned.includes(s.id);
         const open = this.artsOpenId === s.id;
+        const upgrade = this.weaponSkillLevelRule(s);
         // 派生元の技名は出さない。未習得の技（？？？）の名前がここから漏れてしまうため。
         const meta = has
           ? `${s.mp ? `MP ${s.mp}` : 'MP 0'}${s.hits > 1 ? ` / ${s.hits}回攻撃` : ''}${s.target === 'all' ? ' / 全体' : ''}`
@@ -5181,6 +5352,7 @@
         const detail = open && has
           ? `<div class="wa-detail"><p>${s.description || ''}</p><div class="wa-facts">
               <span>威力</span><b>${s.power != null ? `攻撃性能×${s.power}${s.hits > 1 ? ` を${s.hits}回` : ''}` : '—'}</b>
+              ${upgrade && upgrade.level > 1 ? `<span>技Lv補正</span><b>Lv1比 ×${upgrade.multiplier}</b>` : ''}
               <span>消費MP</span><b>${s.mp || 0}</b>
               ${s.hits > 1 ? `<span>ヒット数</span><b>${s.hits}回</b>` : ''}
               ${s.target === 'all' ? '<span>対象</span><b>敵全体</b>' : `<span>対象</span><b>${s.target === 'self' ? '自分' : '敵単体'}</b>`}
@@ -5190,11 +5362,11 @@
           : '';
         return `<div class="wa-item ${has ? 'has' : 'lock'}${open ? ' open' : ''}">
           <button class="wa-head" ${has ? `data-arts-open="${s.id}"` : 'disabled'}>
-            <b>${has ? s.name : '？？？'}</b><small>${meta}</small>${has ? `<em>${open ? '▲' : '▼'}</em>` : '<em class="wa-lock">未修得</em>'}
+            <b>${has ? this.leveledWeaponSkillName(s) : '？？？'}</b><small>${meta}</small>${has ? `<em>${open ? '▲' : '▼'}</em>` : '<em class="wa-lock">未修得</em>'}
           </button>${detail}</div>`;
       }).join('');
       const nextHint = all.every(s => learned.includes(s.id))
-        ? 'この武器の技はすべて習得しています。'
+        ? 'この武器の技はすべて習得しています。武器学Lv51から技Lv2、Lv100から技Lv3を閃けます。'
         : `武器学Lv.${mst.level}。強敵へ挑むほど上位技を閃きやすく、正しい派生技なら確率が大きく上がります。`;
       panel.innerHTML = `<small>WEAPON ARTS</small><h2>装備・ステータス</h2>${this.equipTabsHtml()}
         <div class="item-tabs wa-tabs">${subTabs}</div>
@@ -5202,6 +5374,7 @@
         <div class="wa-list">${rows || '<p class="item-empty">この武器種の技はまだありません。</p>'}</div>`;
     }
     renderEquipmentPanel(panel) {
+      if (this.equipTab === 'infinite' && this.owgTabAvailable?.()) { this.owgRenderVault(panel); return; }
       if (this.equipTab === 'status') { this.renderStatusPanel(panel, true); return; }
       if (this.equipTab === 'mastery') { this.renderMasteryPanel(panel); return; }
       if (this.equipTab === 'arts') { this.renderWeaponArtsPanel(panel); return; }
@@ -5209,10 +5382,10 @@
       if (this.equipTab === 'title' && this.titlePanelHtml) { this.titlePanelSource = 'equipment'; panel.innerHTML = `<small>BOSS TITLE</small><h2>称号装備</h2>${this.equipTabsHtml()}${this.titlePanelHtml()}`; return; }
       const slots = D.equipmentSlots || [], owned = Object.entries(this.profile.inventory).filter(([id, n]) => n > 0 && this.isPlayerContentVisible(D.items[id]) && D.items[id]?.category === 'equipment');
       if (this.selectedEquipmentId && !(this.profile.inventory[this.selectedEquipmentId] > 0)) this.selectedEquipmentId = null;
-      const isDualBlade = this.dualWieldEnabled(), canUseLeft = !this.isTwoHandedWeapon(this.profile.equipment.rightHand); // 盾は全JOB可。両手武器のときだけ塞ぐ
+      const isDualBlade = this.dualWieldEnabled(), canUseLeft = !this.isTwoHandedWeapon(this.owgHomeGear?.('rightHand')?.itemId || this.profile.equipment.rightHand); // 盾は全JOB可。両手武器のときだけ塞ぐ
       const activeSlot = this.equipSlot && slots.some(s => s.id === this.equipSlot) ? this.equipSlot : null;
       const fists = this.usesBareFists(); // 武道家が素手なら両手を「拳」と表示する
-      const slotHtml = slots.map(slot => { const id = this.profile.equipment[slot.id], item = D.items[id]; const rate = isDualBlade && slot.id === 'leftHand' && D.weapons[id] ? ` ×${Math.round(this.offHandRate() * 100)}%` : ''; const disabled = slot.id === 'leftHand' && !canUseLeft; const count = this.candidatesForSlot(slot.id).length; const leftRule = slot.id === 'leftHand' ? (this.isTwoHandedWeapon(this.profile.equipment.rightHand) ? '<small>両手武器で使用不可</small>' : this.hasPassiveType('dualWield') ? '<small>盾／双刃</small>' : '<small>盾</small>') : ''; return `<button type="button" data-equip-slot-pick="${slot.id}" class="equipment-slot ${id ? 'filled' : 'empty'} ${disabled ? 'slot-disabled' : ''} ${activeSlot === slot.id ? 'slot-active' : ''}" ${disabled ? 'disabled' : ''}><span>${slot.name}<small>${slot.enName}</small>${leftRule}</span><b>${item?.name || (fists && (slot.id === 'rightHand' || slot.id === 'leftHand') ? '拳' : 'なし')}${id ? this.enchantSuffix(id) : ''}${rate}</b>${count && !disabled ? `<i class="slot-count">${count}</i>` : ''}</button>`; }).join('');
+      const slotHtml = slots.map(slot => { const carried = this.owgHomeGear?.(slot.id), id = carried?.itemId || this.profile.equipment[slot.id], item = D.items[id]; const rate = isDualBlade && slot.id === 'leftHand' && D.weapons[id] ? ` ×${Math.round(this.offHandRate() * 100)}%` : ''; const disabled = slot.id === 'leftHand' && !canUseLeft; const count = this.candidatesForSlot(slot.id).length; const leftRule = slot.id === 'leftHand' ? (this.isTwoHandedWeapon(this.profile.equipment.rightHand) ? '<small>両手武器で使用不可</small>' : this.hasPassiveType('dualWield') ? '<small>盾／双刃</small>' : '<small>盾</small>') : ''; return `<button type="button" data-equip-slot-pick="${slot.id}" class="equipment-slot rg-slot ${id ? 'filled' : 'empty'} ${disabled ? 'slot-disabled' : ''} ${activeSlot === slot.id ? 'slot-active' : ''}" ${disabled ? 'disabled' : ''}>${this.isEquipmentIcon?.(slot.id,{itemId:id})||''}<span class="rg-slot-name">${slot.name}<small>${slot.enName}</small>${leftRule}</span><span class="rg-lines"><b>${carried ? this.owgName(carried) : item?.name || (fists && (slot.id === 'rightHand' || slot.id === 'leftHand') ? '拳' : 'なし')}${carried ? (carried.plus ? ' +' + carried.plus : '') : id ? this.enchantSuffix(id) : ''}${rate}</b>${carried ? '<small>無限奏廊</small>' : ''}</span>${count && !disabled ? `<i class="slot-count">${count}</i>` : ''}</button>`; }).join('');
       let workbench;
       if (!activeSlot) {
         workbench = `<div class="equip-hint"><b>装備部位を選んでください</b><span>上の部位をタップすると、そこに装備できるアイテムだけが表示されます。</span></div>`;
@@ -5230,17 +5403,17 @@
         const sortOpts = [{ id: 'default', name: '標準' }, { id: 'attackPower', name: '攻撃力' }, { id: 'defensePower', name: '防御力' }, { id: 'magicDefensePower', name: '魔法防御力' }, ...statusStatKeys.map(k => ({ id: k, name: statLabels[k] }))];
         const sortHtml = `<div class="equip-sort"><span>並べ替え</span><div class="equip-sort-btns">${sortOpts.map(o => `<button data-equip-sort="${o.id}" class="${sortKey === o.id ? 'active' : ''}">${o.name}</button>`).join('')}</div></div>`;
         const weaponTabs = weaponTypes.length ? `<div class="equip-weapon-tabs" role="tablist" aria-label="武器学で絞り込み">${weaponTypes.map(type => { const mastery = this.masteryOf(type.id); return `<button type="button" role="tab" data-equip-weapon-tab="${type.id}" class="${this.equipWeaponType === type.id ? 'active' : ''}"><b>${type.name}</b><small>武器学 Lv.${mastery.level}</small></button>`; }).join('')}</div>` : '';
-        const curId = this.profile.equipment[activeSlot];
+        const curId = this.owgHomeGear?.(activeSlot)?.itemId || this.profile.equipment[activeSlot];
         const unequipBtn = curId ? `<button class="equip-unequip" data-unequip-slot="${activeSlot}">${slotDef?.name}を外す<span>UNEQUIP</span></button>` : '';
-        const cards = list.map(id => { const item = D.items[id], active = this.profile.equipment[activeSlot] === id, selected = this.selectedEquipmentId === id; const delta = this.equipDeltaSummary(id, activeSlot); return `<button data-equip-preview="${id}" aria-pressed="${selected}" class="equipment-candidate rarity-${item.rarity} ${active ? 'equipped-now' : ''} ${selected ? 'selected' : ''}"><span class="candidate-title"><b>${item.name}${this.enchantSuffix(id)}${item.stars ? `<small>${'★'.repeat(item.stars)}</small>` : ''}</b>${active ? '<em>EQUIPPED</em>' : ''}</span><strong>${this.bonusText(id)}</strong>${delta ? `<span class="cand-delta">${delta}</span>` : ''}<small>${item.description}</small></button>`; }).join('');
+        const cards = list.map(id => { const item = D.items[id], active = !this.owgHomeGear?.(activeSlot) && this.profile.equipment[activeSlot] === id, selected = this.selectedEquipmentId === id; const delta = this.equipDeltaSummary(id, activeSlot); return `<button data-equip-preview="${id}" aria-pressed="${selected}" class="equipment-candidate rg-card rarity-${item.rarity} ${active ? 'equipped-now' : ''} ${selected ? 'selected' : ''}">${this.isEquipmentIcon?.(activeSlot,{itemId:id})||''}<span class="candidate-title"><b>${item.name}${this.enchantSuffix(id)}${item.stars ? `<small>${'★'.repeat(item.stars)}</small>` : ''}</b>${active ? '<em>EQUIPPED</em>' : ''}</span><strong>${this.bonusText(id)}</strong>${delta ? `<span class="cand-delta">${delta}</span>` : ''}<small>${item.description}</small></button>`; }).join('');
         const preview = this.selectedEquipmentId ? `<section class="equipment-preview-overlay" role="dialog" aria-modal="true" aria-label="装備比較"><header><div><small>STATUS COMPARISON</small><b>能力比較</b></div><button type="button" data-equip-preview-close aria-label="候補一覧へ戻る">×</button></header>${this.equipmentPreviewHTML(this.selectedEquipmentId)}</section>` : '';
-        workbench = `<section class="equipment-selector-overlay" role="dialog" aria-modal="true" aria-label="${slotDef?.name || '装備'}を選択"><header><div><small>SELECT EQUIPMENT</small><b>${slotDef?.name}の装備 <span>${slotDef?.enName}</span></b></div><button type="button" data-equip-slot-close aria-label="装備部位一覧へ戻る">×</button></header>${weaponTabs}${sortHtml}${unequipBtn}<div class="equipment-candidate-list">${cards || '<p class="item-empty">この部位に装備できるアイテムがありません。</p>'}</div>${preview}</section>`;
+        workbench = `<section class="equipment-selector-overlay rg-screen rg-home-candidates" role="dialog" aria-modal="true" aria-label="${slotDef?.name || '装備'}を選択"><header><div><small>SELECT EQUIPMENT</small><b>${slotDef?.name}の装備 <span>${slotDef?.enName}</span></b></div><button type="button" data-equip-slot-close aria-label="装備部位一覧へ戻る">×</button></header>${weaponTabs}${sortHtml}${unequipBtn}<div class="equipment-candidate-list">${cards || '<p class="item-empty">この部位に装備できるアイテムがありません。</p>'}</div>${preview}</section>`;
       }
-      panel.innerHTML = `<small>EQUIPMENT</small><h2>装備・ステータス</h2>${this.equipTabsHtml()}<div class="equipment-screen"><section class="equipment-slots-wrap"><h3>装備中 <span>CURRENT LOADOUT</span><button type="button" class="equipment-best" data-equip-best>最強<small>BEST</small></button></h3><div class="equipment-slots">${slotHtml}</div></section>${!activeSlot ? `<section class="equipment-workbench">${workbench}</section>` : ''}${this.bossSetBonusSectionHTML()}</div>${activeSlot ? workbench : ''}`;
+      panel.innerHTML = `<small>EQUIPMENT</small><h2>装備・ステータス</h2>${this.equipTabsHtml()}<div class="equipment-screen rg-screen rg-home"><section class="equipment-slots-wrap"><h3>装備中 <span>CURRENT LOADOUT</span><button type="button" class="equipment-best" data-equip-best>最強<small>BEST</small></button></h3><div class="equipment-slots rg-slots">${slotHtml}</div></section>${!activeSlot ? `<section class="equipment-workbench">${workbench}</section>` : ''}${this.bossSetBonusSectionHTML()}</div>${activeSlot ? workbench : ''}`;
     }
     candidatesForSlot(slotId) {
       return Object.entries(this.profile.inventory).filter(([id, n]) => {
-        if (!(n > 0)) return false; const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment') return false;
+        if (!(n > 0)) return false; const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || item.otherWorldGear) return false;
         if (slotId === 'leftHand') return this.isLeftHandItemAllowed(id);
         if (slotId === 'rightHand') return !this.isOffHandOnlyWeapon(id) && this.canEquipRightHand(id);
         return item.slot === slotId;
@@ -5289,11 +5462,12 @@
     }
     isLeftHandItemAllowed(id, jobId = this.profile.currentJob) {
       if (!id) return true;
-      if (this.isTwoHandedWeapon(this.profile?.equipment?.rightHand)) return false;
+      const rightHand = this.owgHomeGear?.('rightHand')?.itemId || this.profile?.equipment?.rightHand;
+      if (this.isTwoHandedWeapon(rightHand)) return false;
       if (this.isShield(id)) return true;
       // 双刃は左右を区別しない。右手が双刃なら、左手にも双刃を持てる。
       // 同じIDを両手に持つことも許すが、その場合は在庫が2本必要（下の needsSpareCopy）。
-      if (this.hasPassiveType('dualWield')) return this.isDualBladeWeapon(this.profile.equipment?.rightHand) && this.isDualBladeWeapon(id);
+      if (this.hasPassiveType('dualWield')) return this.isDualBladeWeapon(rightHand) && this.isDualBladeWeapon(id);
       return false;
     }
     // 盾は防御を得る代わりに素早さを落とす。低下率はデータ側で管理し、
@@ -5323,6 +5497,7 @@
     equipBestLoadout() {
       const slots=(D.equipmentSlots||[]).map(s=>s.id),ordered=['rightHand','leftHand',...slots.filter(s=>s!=='rightHand'&&s!=='leftHand')];
       for(let pass=0;pass<2;pass++)for(const slot of ordered){
+        if(this.owgHomeGear?.(slot))continue;
         if(slot==='leftHand'&&this.isTwoHandedWeapon(this.profile.equipment.rightHand)){this.profile.equipment.leftHand=null;continue;}
         const current=this.profile.equipment[slot],pool=[...new Set([current,...this.candidatesForSlot(slot)].filter(Boolean))].filter(id=>D.items[id]&&(this.profile.inventory[id]||0)>0&&!this.needsSpareCopy(id,slot));
         if(!pool.length)continue;
@@ -5332,15 +5507,15 @@
       this.sanitizeRightHandEquipment();this.sanitizeLeftHandEquipment();this.equipSlot=null;this.equipWeaponType=null;this.selectedEquipmentId=null;this.saveProfile();this.audio.sfx('confirm');this.renderMenuSummary();this.renderMenuPanel('equipment');window.arseneStartFlow?.toast('総合力が最も高い装備へ変更しました');
     }
     equipDeltaSummary(id, slotId) {
-      const before = this.totalStats(), after = this.totalStats({ ...this.profile.equipment, [slotId]: id });
+      const before = this.totalStats(), after = this.regularEquipmentPreview(slotId,id).totalStats();
       const parts = statusStatKeys.map(k => { const d = after[k] - before[k]; return d ? `<i class="${d > 0 ? 'up' : 'down'}">${statLabels[k]} ${d > 0 ? '+' : ''}${d}</i>` : ''; }).filter(Boolean);
       return parts.length ? parts.join('') : '<i class="same">変化なし</i>';
     }
     previewEquipment(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; this.selectedEquipmentId = id; this.renderMenuPanel('equipment'); }
-    equipItem(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; const slot = (this.equipSlot && this.candidatesForSlot(this.equipSlot).includes(id)) ? this.equipSlot : item.slot; if (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) return; if (slot === 'rightHand' && (this.isOffHandOnlyWeapon(id) || !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
-    unequipSlot(slotId) { if (!slotId || !(slotId in this.profile.equipment)) return; const currentWeaponType = D.weapons?.[this.profile.equipment.rightHand]?.weaponType, bareRightHand = slotId === 'rightHand' && this.canUseBareFists(); if (bareRightHand && currentWeaponType === 'martial') this.profile.preferredWeaponType = 'martial'; this.profile.equipment[slotId] = slotId === 'rightHand' && !bareRightHand ? this.defaultWeaponId() : null; if (bareRightHand) this.profile.equipment.leftHand = null; this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('ui'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
-    equipFromInventory(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || !(this.profile.inventory[id] > 0)) return; const slot = this.isOffHandOnlyWeapon(id) ? 'leftHand' : D.weapons[id] ? 'rightHand' : item.slot; if (!slot || (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) || (slot === 'rightHand' && !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } this.profile.equipment[slot] = id; if (slot === 'rightHand') this.sanitizeLeftHandEquipment(); this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('items'); }
-    equipLeftHandWeapon(id) { if (!(this.profile.inventory[id] > 0) || !this.isLeftHandItemAllowed(id)) return; this.profile.equipment.leftHand = id; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
+    equipItem(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || item.category !== 'equipment' || !(this.profile.inventory[id] > 0)) return; const slot = (this.equipSlot && this.candidatesForSlot(this.equipSlot).includes(id)) ? this.equipSlot : item.slot; if (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) return; if (slot === 'rightHand' && (this.isOffHandOnlyWeapon(id) || !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } this.setRegularEquipment(slot,id); this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
+    unequipSlot(slotId) { if (!slotId || (!(slotId in this.profile.equipment) && !this.owgHomeGear?.(slotId))) return; const currentWeaponType = D.weapons?.[this.profile.equipment.rightHand]?.weaponType, bareRightHand = slotId === 'rightHand' && this.canUseBareFists(); if (bareRightHand && currentWeaponType === 'martial') this.profile.preferredWeaponType = 'martial'; this.setRegularEquipment(slotId,slotId === 'rightHand' && !bareRightHand ? this.defaultWeaponId() : null); if (bareRightHand) this.setRegularEquipment('leftHand',null); this.equipSlot = null; this.equipWeaponType = null; this.selectedEquipmentId = null; this.saveProfile(); this.audio.sfx('ui'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
+    equipFromInventory(id) { const item = D.items[id]; if (!this.isPlayerContentVisible(item) || !(this.profile.inventory[id] > 0)) return; const slot = this.isOffHandOnlyWeapon(id) ? 'leftHand' : D.weapons[id] ? 'rightHand' : item.slot; if (!slot || (slot === 'leftHand' && !this.isLeftHandItemAllowed(id)) || (slot === 'rightHand' && !this.canEquipRightHand(id))) return; if (this.needsSpareCopy(id, slot)) { window.arseneStartFlow?.toast('同じ装備を両手に持つには2本必要です'); return; } this.setRegularEquipment(slot,id); this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('items'); }
+    equipLeftHandWeapon(id) { if (!(this.profile.inventory[id] > 0) || !this.isLeftHandItemAllowed(id)) return; this.setRegularEquipment('leftHand',id); this.saveProfile(); this.audio.sfx('confirm'); this.renderMenuSummary(); this.renderMenuPanel('equipment'); }
 
     kazuDialogueCondition(key) {
       const f = this.profile.flags, workshopUnlocked = !!f.noelFirstEncounterCleared;
@@ -5365,6 +5540,11 @@
         case 'myrthi_cleared': return this.isBossDefeated('myrthi');
         case 'myrthi_cleared_first': return this.isBossDefeated('myrthi');
         case 'job_unlocked': return this.jobSystemUnlocked();
+        case 'rebirth_ready': {
+          const jobId = this.profile.currentJob, job = D.jobs[jobId];
+          return !!job && !job.noGrowth && this.rebirthUnlocked() &&
+            (this.profile.jobs?.[jobId]?.level || 1) >= this.effectiveJobLevelCap();
+        }
         case 'job_mastered': return Object.values(this.profile.jobs || {}).some(j => j.level >= 20);
         case 'has_materials_no_workshop': return !workshopUnlocked && (this.profile.discoveredMaterials || []).length > 0;
         case 'reni_chat': return workshopUnlocked;

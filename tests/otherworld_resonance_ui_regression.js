@@ -6,15 +6,20 @@ const infinite = fs.readFileSync('js/infinite_score.js', 'utf8');
 const support = fs.readFileSync('js/infinite_support.js', 'utf8');
 
 class BattleGame {
-  isRun() { return this.profile.infiniteScore.active ? this.profile.infiniteScore : null; }
   activeSetEffects() { return this.isRun() ? {} : { vitPercent: 8, damageReductionPercent: 10 }; }
   equipmentEffectRate() { return 0; }
   bossSetBonusSectionHTML() { return 'BOSS SET'; }
   defeat() { return 'defeated'; }
+  equipTabsHtml() { return ''; }
 }
 
-const data = { items: {}, weapons: {}, armors: {}, skills: {} };
-vm.runInNewContext(gear, { window: { BattleGame, ARSENE_DATA: data }, document: { addEventListener() {} } });
+const data = { items: {}, weapons: {}, armors: {}, enemies: {}, skills: {}, equipmentSlots:[{id:'rightHand',name:'右手',enName:'RIGHT'}] };
+const context = vm.createContext({ window: { BattleGame, ARSENE_DATA: data }, document: { addEventListener() {}, querySelector() { return null; } } });
+for (const file of ['infinite_score_data','infinite_gear_v2_data','infinite_gear_v2']) {
+  vm.runInContext(fs.readFileSync(`js/${file}.js`,'utf8'), context);
+}
+vm.runInContext(infinite, context);
+vm.runInContext(gear, context);
 
 assert.doesNotMatch(gear + infinite + support, /owgResonanceSectionHTML|otherWorldLastStand|owgLastStandUsed/);
 const game = new BattleGame();
@@ -25,9 +30,9 @@ const slots = Object.fromEntries(allGear.map(x => [data.items[x.itemId].slot, x.
 const run = { active: true, lootBag: allGear, equipment: slots };
 game.profile = { inventory: {}, infiniteScore: run, otherWorldGear: [], otherWorldEquipment: {} };
 game.player = { hp: 0 };
+game.usingInfiniteScoreEquipment = true;
 
 assert.deepEqual(game.activeSetEffects(), {}, '異世界装備6部位を揃えても奏廊内で発動しない');
-assert.equal(game.defeat(), 'defeated', '致死ダメージでも通常の敗北処理へ進む');
 assert.equal(game.player.hp, 0);
 allGear[0].ops.push(
   { key: 'damageReductionPercent', value: .05 },

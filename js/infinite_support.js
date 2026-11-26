@@ -1,7 +1,7 @@
 /* INFINITE SCORE — optional rewarded support for the iOS app. */
 (() => {
   'use strict';
-  const D=()=>window.ARSENE_DATA, G=window.BattleGame;
+  const G=window.BattleGame;
   if(!G)return;
   const P=G.prototype;
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -96,7 +96,7 @@
   P.isGrantShopReroll=function(state=this.isRun()?.shopSupport){
     const run=this.isRun();
     if(run?.shopSupport!==state||!this.isCanClaimShopGacha(state))return false;
-    const rewards=Array.from({length:shopDrawCount},()=>this.isGenerateGear());
+    const rewards=Array.from({length:shopDrawCount},()=>this.isGenerateGear({source:'gacha'}));
     state.rewardNames=rewards.map(gear=>this.isLootName?.(gear)||this.owgName?.(gear)||D().items[gear.itemId]?.name||gear.itemId);
     state.rerollUsed=true;
     run.lootBag.push(...rewards);

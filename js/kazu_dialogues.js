@@ -19,6 +19,7 @@ window.KAZU_DIALOGUES = [
   { id:'myrthi_cleared_first_01', condition:'myrthi_cleared_first', priority:83, once:true, dialogues:['ミルティを倒したんか。あの速さを超えたなら、たいした怪盗や。','双刃戦姫を落とすとはなぁ。うち、ちょっと感心してもうたわ。'] },
   { id:'myrthi_cleared_01', condition:'myrthi_cleared', priority:38, once:false, dialogues:['双刃士も使えるようになったな。いろいろ試してみ。','MYRTHIシリーズ、ええ仕上がりやろ。使い倒しや。'] },
   { id:'job_unlocked', condition:'job_unlocked', priority:42, once:true, dialogues:['JOBが使えるようになったで。組み合わせで化けるさかい、よう考えや。','得意なことは職ごとにちゃう。食わず嫌いせんと試し。'] },
+  { id:'rebirth_ready', condition:'rebirth_ready', priority:86, once:true, dialogues:['レベルMAXのジョブ、転生しとるか？ 輪廻のアルカナは、強うなったボスが持っとるらしいで。'] },
   { id:'job_mastered', condition:'job_mastered', priority:44, once:false, dialogues:['JOBマスターかいな。そら強うなっとるわ。','Lv20まで育てたんやったら、次の道も見えてくるで。'] },
   { id:'workshop_used', condition:'workshop_used', priority:22, once:false, dialogues:['ちゃんと工房使うとるな。それが近道やで。','自分で作った装備は大事にし。壊したら泣くで。'] },
   { id:'reni_chat', condition:'reni_chat', priority:10, once:false, dialogues:['工房、助かっとるか。整備するん、結構骨折れたんやで。','帰るたんび成長しとるな。俺には分かるんや、ほんま。'] },

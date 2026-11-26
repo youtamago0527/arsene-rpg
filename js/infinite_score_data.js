@@ -46,17 +46,17 @@
       gaze: { text: '何かがこちらを見ている……', events: ['rare', 'encounter'] }
     },
     cards: [
-      { id: 'heal', name: '癒奏', text: '最大HPの20%回復', weight: 16 },
-      { id: 'mana', name: '魔奏', text: '最大MPの20%回復', weight: 14 },
-      { id: 'treasure', name: '宝探', text: '宝箱遭遇率+10%（累積）', weight: 12 },
-      { id: 'hunt', name: '狩猟', text: 'レア敵遭遇率+5%（累積）', weight: 10 },
-      { id: 'stairs', name: '降奏', text: '即座に次の階へ', weight: 7 },
-      { id: 'return', name: 'RETURN', text: '戦利品を持って即帰還', weight: 1 },
-      { id: 'forge', name: '鍛造', text: '装備1つの強化値+1', weight: 8 },
-      { id: 'gold', name: '黄金', text: 'RUN内の奏貨獲得+20%', weight: 10 },
-      { id: 'quality', name: '奏命', text: '次の3戦、装備品質UP', weight: 9 },
-      { id: 'merchant', name: '行商人', text: 'その場にショップが出現', weight: 7 },
-      { id: 'sublime', name: '昇華', text: '任意OPを1Rank強化', weight: 2 }
+      { id: 'heal', name: '癒奏', text: '最大HPの20%分を回復', weight: 16 },
+      { id: 'mana', name: '魔奏', text: '最大MPの20%分を回復', weight: 14 },
+      { id: 'treasure', name: '宝探', text: '宝箱の追加抽選＋10%。開けるまで累積', weight: 12 },
+      { id: 'hunt', name: '狩猟', text: 'レア敵の追加抽選＋5%。探索中は累積', weight: 10 },
+      { id: 'stairs', name: '降奏', text: '今いる階を抜けて、次の階へ進む', weight: 7 },
+      { id: 'return', name: 'RETURN', text: '戦利品を持ち帰り、探索を終了', weight: 1 },
+      { id: 'forge', name: '鍛造', text: 'バッグから選んだ装備1つの強化値＋1', weight: 8 },
+      { id: 'gold', name: '黄金', text: '探索中の戦闘や発見で手に入る奏貨が＋20%', weight: 10 },
+      { id: 'quality', name: '奏命', text: '次の3戦の間、装備の品質アップ', weight: 9 },
+      { id: 'merchant', name: '行商人', text: 'その場に行商人のショップが出現', weight: 7 },
+      { id: 'sublime', name: '昇華', text: '装備のOPを1つ選んで＋1ランク（ランク3以下）', weight: 2 }
     ],
     // 出現する原種も段階更新する。倍率だけでなく、見た目と行動も攻略進度に合わせる。
     enemyTiers: [

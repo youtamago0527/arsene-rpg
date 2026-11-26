@@ -15,5 +15,8 @@ assert(score.includes("isEquipped?'disabled aria-disabled=\"true\"'"), 'equipped
 assert(css.includes('.is-bag-control:disabled'), 'disabled action style is missing');
 assert(!score.includes('is-bag-item${isEquipped?\' equipped\''), 'generic equipped class can collide with menu layout');
 assert(!score.includes('is-bag-detail${isEquipped?\' equipped\''), 'generic equipped class can collapse bag detail layout');
+assert.match(score, /rarities=\['infinity','mythic'/, 'INFINITY must sort above MYTHIC');
+assert.match(index, /infinite-score\.css\?v=[\d.]+/, 'bag stylesheet is not versioned');
+assert.match(index, /infinite_score\.js\?v=[\d.]+/, 'bag script is not versioned');
 assert(index.includes('css/infinite-bag.css?v='), 'bag stylesheet is not versioned and loaded');
 console.log('infinite bag sort regression: ok');

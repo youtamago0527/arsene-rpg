@@ -1598,28 +1598,6 @@
 #game .player-ui-stack .battle-log>small{top:-4px;left:0}
 #game .player-ui-stack .battle-log-lines{max-height:35px;overflow:hidden}
 #game .player-ui-stack .battle-log p{font-size:7.5px;line-height:1.25}
-#game .player-ui-stack .battle-log.expanded{
-  position:fixed;
-  z-index:80;
-  inset:auto;
-  left:50%;
-  top:50%;
-  width:min(calc(100vw - 24px),406px);
-  height:min(72svh,620px);
-  min-height:320px;
-  max-width:406px;
-  max-height:72svh;
-  margin:0;
-  padding:38px 18px 24px;
-  overflow:auto;
-  transform:translate(-50%,-50%);
-  background:#020713f7;
-  border:1px solid #4bcfff;
-  box-shadow:0 0 0 5px #020713,0 0 0 100vmax #000b,0 0 34px #168fff77;
-  backdrop-filter:blur(12px);
-}
-#game .player-ui-stack:has(.battle-log.expanded){z-index:100}
-#game .battlefield:has(.battle-log.expanded){z-index:200}
 #game .battlefield:has(.battle-status-detail.show){z-index:190}
 #game .battle-status-detail{
   position:fixed;
@@ -1636,8 +1614,55 @@
   box-shadow:0 0 0 5px #020713,0 0 0 100vmax #000b,0 0 34px #168fff77;
 }
 #game .battle-status-detail.show{transform:translate(-50%,-50%) scale(1)}
-#game .player-ui-stack .battle-log.expanded .battle-log-lines{max-height:none;overflow:visible}
-#game .player-ui-stack .battle-log.expanded p{font-size:12px}
+#battle-history {
+  box-sizing: border-box;
+  width: min(calc(100% - 24px), 406px);
+  max-height: min(80svh, 620px);
+  padding: 0;
+  overflow: hidden;
+  color: #d8eaff;
+  background: #020713;
+  border: 1px solid #4bcfff;
+  border-radius: 6px;
+}
+#battle-history[open] { display: flex; flex-direction: column; }
+#battle-history::backdrop { background: #000c; }
+#battle-history header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: none;
+  padding: 10px 14px;
+  background: #081529;
+  border-bottom: 1px solid #305476;
+}
+#battle-history h2 { margin: 0; font-size: 16px; }
+#battle-history button {
+  min-height: 44px;
+  padding: 0 12px;
+  color: inherit;
+  background: #102441;
+  border: 1px solid #4c7796;
+}
+#battle-history-entries {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 4px 14px 10px;
+}
+#battle-history-entries p {
+  position: static;
+  display: block;
+  margin: 0;
+  padding: 8px 0;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid #23445e;
+}
 
 /* 空いた下端へ半身を少し下げる。コマンド絵は元画像比率(約1.17)へ寄せ、縦に潰さない。 */
 #game .ren{bottom:calc(var(--battle-character-bottom,-48px) + 2px)}

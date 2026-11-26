@@ -327,7 +327,7 @@
     this.enemies = cp.enemies.map(e => ({ ...e, stats: { ...(e.stats || {}) } }));
     this.battleMode = cp.battleMode || (this.owIsBossBattle() ? 'owBoss' : 'ow');
     this.turn = cp.turn || 1; this.locked = false; this.finished = false;
-    this.battleLogHistory = cp.battleLogHistory || []; this.battleLogExpanded = false;
+    this.battleLogHistory = cp.battleLogHistory || [];
     this.battleRewards = { exp: 0, gold: 0, drops: {}, levels: [], masteryResults: [], jobResults: [], newRecipes: [] };
     if (cp.stage === 'step') { this.owShowStep([]); return; }
     if (cp.stage === 'chests') { this.owChestPicks = cp.chestPicks || []; this.owShowChests([], this.owChestPicks); return; }
@@ -447,9 +447,11 @@
     };
     const close = () => {
       el.remove(); document.body.classList.remove('ow-glitch');
-      this.renderMenuSummary?.();
-      options.onClose?.();
-      resolve(true);
+      try { this.renderMenuSummary?.(); }
+      finally {
+        try { options.onClose?.(); }
+        finally { resolve(true); }
+      }
     };
     el.addEventListener('click', () => { i++; if (i >= lines.length) close(); else { this.audio?.sfx?.('ui'); render(); } });
     render();
@@ -495,14 +497,14 @@
   P.renderLennyPanel = function (panel) {
     const isNew = !this.profile.flags.otherWorldNewSeen;
     const inf = this.owInterference();
-    panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button>
-      <small>LENNY FOX</small><h2>レニーフォックス</h2>
+    panel.innerHTML = `<small>LENNY FOX</small><h2>レニーフォックス</h2>
       <p class="lenny-lead">「よう。何の用だ？」</p>
-      <div class="lenny-menu">
-        <button data-menu="workshop"><b>工房</b><span>装備の製作・強化・分解</span></button>
-        <button data-lenny="otherworld"><b>異世界</b><span>異界干渉力 ${inf.left} / ${inf.max}</span>${isNew ? '<mark>NEW</mark>' : ''}</button>
-        <button data-lenny="tutorial"><b>PHANTOM THIEFについて</b><span>仕様をもう一度確認する</span></button>
-        <button data-menu="home"><b>閉じる</b><span>拠点へ戻る</span></button>
+      <div class="lenny-menu lenny-menu--art">
+        <button type="button" data-lenny-entry="workshop" data-menu="workshop"><b>工房</b><span>装備の製作・強化・分解</span></button>
+        <button type="button" data-lenny-entry="otherworld" data-lenny="otherworld"><b>異世界</b><span>異界干渉力 ${inf.left} / ${inf.max}</span>${isNew ? '<mark>NEW</mark>' : ''}</button>
+        <button class="astra-exchange-entry" type="button" data-lenny-entry="astra" data-open-astra-exchange aria-haspopup="dialog" aria-controls="astra-exchange"><b>アストラ交換所</b></button>
+        <button type="button" data-lenny-entry="phantom" data-lenny="tutorial"><b>PHANTOM THIEFについて</b><span>仕様をもう一度確認する</span></button>
+        <button type="button" data-lenny-entry="hideout" data-menu="home"><b>閉じる</b><span>拠点へ戻る</span></button>
       </div>`;
   };
 
