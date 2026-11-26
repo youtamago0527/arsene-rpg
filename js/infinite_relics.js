@@ -266,6 +266,9 @@
     const compassLevel = levelOf(levels, stairRelicId), run = this.isRun();
     const limit = run ? this.isStairDistanceLimit(run) : Math.max(1, compassLevel);
     const selectedDistance = run?.stairDistance || this.profile.infiniteStairPreference || 1;
+    const stairPicker = this.isStairPickerHtml(limit, selectedDistance);
+    const stairsHint = compassLevel ? effectText(compass, compassLevel) : '階段を20回使うと抽選対象';
+    const nextDraw = run ? 5 - (run.relicDescents || 0) % 5 : null;
     panel.dataset.panel = 'infinite-score-relics';
     panel.innerHTML = `<main class="ir-screen" aria-labelledby="ir-title">
       <header class="ir-hero">
@@ -303,11 +306,20 @@
             <div class="ir-detail-content" role="region" aria-label="遺物の詳細" aria-live="polite" tabindex="0">${detail(current, levelOf(levels, current.id))}</div>
           </article>
         </div>
-        <section class="ir-compass" aria-label="階段設定">
-          ${compassLevel ? art(compass) : unrevealedArt}
-          <div><strong>${compassLevel ? compass.name : '階段設定'}</strong> <small>${status(stairRelicId)}</small>
-          <p>${compassLevel ? effectText(compass, compassLevel) : '階段を20回使用すると抽選対象になります。'}</p></div>
-          ${this.isStairPickerHtml(limit, selectedDistance)}
+        <section class="ir-footer" aria-label="階段設定と遺物抽選">
+          <div class="ir-footer-card ir-compass">
+            ${compassLevel ? '<img class="ir-setting-icon" src="assets/infinite-relics/relic-compass-icon.webp" alt="" width="128" height="128">' : unrevealedArt}
+            <div><strong>${compassLevel ? compass.name : '階段設定'}</strong> <small>${status(stairRelicId)}</small>
+              ${stairPicker ? '' : `<p>${stairsHint}</p>`}
+            </div>
+            ${stairPicker}
+          </div>
+          <div class="ir-footer-card ir-relic-draw">
+            <img class="ir-setting-icon" src="assets/infinite-relics/relic-stairs-icon.webp" alt="" width="128" height="117">
+            <div><strong>遺物抽選</strong><p>降下5回ごとに抽選</p>
+              <p class="ir-draw-progress">${nextDraw ? `抽選まであと${nextDraw}回` : '降下20回ごとに獲得確定'}</p>
+            </div>
+          </div>
         </section>
       </div>
     </main>`;
