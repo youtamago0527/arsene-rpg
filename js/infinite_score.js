@@ -379,9 +379,8 @@
     if (!this.isAtStairs()) return '';
     const run = this.isRun(), limit = this.isStairDistanceLimit(run);
     if (!limit) return '<div class="is-stair-object forced"><b>最深階に到達</b></div>';
-    const count = run.relicDescents || 0;
     const picker = this.isStairPickerHtml(limit, run.stairDistance || this.profile.infiniteStairPreference || 1);
-    return `<div class="is-stair-object forced"><b>階段を発見</b>${picker ? '<span>時空の羅針盤</span>' : ''}${picker}<div><button data-is-action="descend">${limit > 1 ? '選んだ階数を降りる' : '次の階へ降りる'}</button></div><small>階段使用：遺物抽選まであと${5 - count % 5}回 ／ 確定まであと${20 - count % 20}回</small></div>`;
+    return `<div class="is-stair-object forced"><b>階段を発見</b>${picker ? '<span>時空の羅針盤</span>' : ''}${picker}<div><button data-is-action="descend">${limit > 1 ? '選んだ階数を降りる' : '次の階へ降りる'}</button></div></div>`;
   };
 
   P.isExploreMenuHtml=function(){
