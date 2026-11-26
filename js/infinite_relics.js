@@ -29,7 +29,7 @@
     ['mirror', 'mnd', '月映しの鏡', 'epic', '金縁の手鏡。曇った鏡面に、淡く青い筋が浮かぶ。'],
     ['knight', 'vit', '白騎士の駒', 'common', '白い石を彫り出した馬の駒。たてがみに金の文様が走る。'],
     ['astrolabe', 'dex', '三日月の測天儀', 'rare', '銀の環の内側に、三日月と八芒星を配した測天儀。'],
-    ['twin-rings', 'str', '双環の誓い', 'epic', '青い石をあしらった二つの金の指輪が、互いに絡み合う。'],
+    ['twin-rings', 'str', '双環の誓い', 'rare', '青い石をあしらった二つの金の指輪が、互いに絡み合う。'],
     ['phial', 'maxHp', '潮光の小瓶', 'common', '蓋を閉じたままでも、水色の光が透ける小瓶。'],
     ['globe', 'mnd', '群青の天球儀', 'rare', '群青の球を囲む金の環に、星座の軌跡が刻まれている。'],
     ['scales', 'vit', '星衡の天秤', 'legendary', '星をかたどった飾りの下で、二つの皿が釣り合う天秤。'],
@@ -67,7 +67,9 @@
     ['astrolabe', 'インフィニティ装備の抽選率'],
     ['orb', '通常戦闘のアルカナドロップ'],
     ['quill', 'OP移植・削除の欠片消費'],
-    ['signet', '宝箱で2候補から選べる確率']
+    ['signet', '宝箱で2候補から選べる確率'],
+    ['globe', '戦利品バッグの容量'],
+    ['twin-rings', '装備の持ち帰り枠']
   ];
   for (const [id, label] of supportRelics) {
     relics.push({ ...artwork.find(item => item.id === id), grade: 'support', label });
@@ -113,6 +115,7 @@
     if (item.id === 'orb') return arcanaCount(level) + '個確定';
     if (item.id === 'quill') return '−' + quillDiscount(level) + '%（最低1個）';
     if (item.id === 'signet') return signetChance(level) + '%';
+    if (item.id === 'globe' || item.id === 'twin-rings') return '＋' + level + '枠';
     if (item.grade === 'stairs') return level === 1 ? '1階降下' : '1〜' + level + '階から選択';
     return (item.id === 'obsidian' ? '−' : '＋') + percent(item, level) + '%';
   }
@@ -151,7 +154,7 @@
         const old = artwork.find(item => item.id === id);
         if (!old) continue;
         // These IDs were used for stat bonuses in the original IDs-only catalogue.
-        const retained = ['orb', 'quill', 'signet'].includes(id) ? null : relics.find(item => item.id === id);
+        const retained = ['orb', 'quill', 'signet', 'globe', 'twin-rings'].includes(id) ? null : relics.find(item => item.id === id);
         const target = retained?.id ?? tiers.normal[stats.indexOf(old.stat)];
         levels[target] = (levels[target] || 0) + 1;
       }
@@ -167,7 +170,7 @@
     const pool = relics.filter(item => {
       if (item.id === 'obsidian' && levels.obsidian >= obsidianLevelLimit) return false;
       if (item.id === stairRelicId) return count >= stairThreshold;
-      return item.grade !== 'upper' || count >= 40;
+      return (item.grade !== 'upper' && item.id !== 'twin-rings') || count >= 40;
     });
     const draw = candidates => {
       const item = candidates[Math.floor(this.isRand() * candidates.length)];

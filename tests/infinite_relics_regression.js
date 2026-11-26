@@ -32,10 +32,10 @@ function totals() {
 }
 game.profile = {};
 for (let i = 0; i < 9; i++) {
-  assert.match(draw(i,20,18), /Lv.1/);
+  assert.match(draw(i,20,19), /Lv.1/);
   assert.equal(game.profile.infiniteRelicLevels[normals[i]],1);
   assert.equal(totals()[stats[i]],102);
-  assert.match(draw(i+9,40,27), /Lv.1/);
+  assert.match(draw(i+9,40,29), /Lv.1/);
   assert.equal(game.profile.infiniteRelicLevels[uppers[i]],1);
   assert.equal(totals()[stats[i]],132);
 }
@@ -77,23 +77,24 @@ const oldRelics = { infiniteRelicLevels:{'fox-mask':3,compass:5} };
 game.isMigrateRelicLevels(oldRelics);
 game.isMigrateRelicLevels(oldRelics);
 assert.deepEqual(oldRelics.infiniteRelicLevels,{compass:3,'fox-mask':5});
-const supports = ['shell','lute','obsidian','gear','astrolabe','orb','quill','signet'];
+const supports = ['shell','lute','obsidian','gear','astrolabe','orb','quill','signet','globe','twin-rings'];
 const allRelics = [...normals, ...uppers, ...supports, 'compass'];
 game.profile.infiniteRelicLevels = Object.fromEntries(allRelics.map(id => [id,50]));
-const uncappedShallow = [...normals, ...supports.filter(id => id !== 'obsidian')];
+const uncappedShallow = [...normals, ...supports.filter(id => id !== 'obsidian' && id !== 'twin-rings')];
 for (const [index,id] of uncappedShallow.entries()) {
   assert.match(draw(index,20,uncappedShallow.length), /Lv\.51/);
   assert.equal(game.profile.infiniteRelicLevels[id],51);
 }
 for (const [index,id] of uppers.entries()) {
-  assert.match(draw(9+index,40,25), /Lv\.51/);
+  assert.match(draw(9+index,40,27), /Lv\.51/);
   assert.equal(game.profile.infiniteRelicLevels[id],51);
 }
-assert.match(draw(25,1020,26), /時空の羅針盤 Lv\.51/);
+assert.match(draw(26,40,27), /双環の誓い Lv\.51/);
+assert.match(draw(27,1020,28), /時空の羅針盤 Lv\.51/);
 assert.equal(game.isStairRelicDistance(),51);
 assert.equal(game.profile.deferredRelicDraws,undefined);
 game.profile.deferredRelicDraws = 2;
-draw(0,40,25);
+draw(0,40,27);
 assert.equal(game.profile.infiniteRelicLevels.wheat,53);
 assert.equal(game.profile.deferredRelicDraws,0);
 game.profile = { infiniteRelicLevels: { shell:1, lute:1, obsidian:1, gear:1, astrolabe:1 } };
@@ -124,7 +125,7 @@ assert.equal(game.owgRollStar(25),5);
 game.isRand = () => .999999;
 assert.equal(game.owgRollStar(9),5);
 game.profile.infiniteRelicLevels = Object.fromEntries(allRelics.map(id => [id,1000]));
-assert.match(draw(0,40,25), /Lv\.1001/);
+assert.match(draw(0,40,27), /Lv\.1001/);
 game.profile = JSON.parse(JSON.stringify(game.profile));
 assert.equal(game.profile.infiniteRelicLevels.phial,1001);
 assert.equal(game.isSupportRelicRate('gear'),1000);
@@ -134,8 +135,8 @@ game.isWeakenRelicEnemy(highEnemy);
 assert.deepEqual(highEnemy,{maxHp:3750,atk:100,def:0});
 assert.equal(game.profile.infiniteRelicLevels.obsidian,50);
 game.profile.infiniteRelicLevels.obsidian=49;
-assert.match(draw(11,20,17), /黒曜の円盤 Lv\.50/);
-assert.doesNotMatch(draw(11,20,16), /黒曜の円盤/);
+assert.match(draw(11,20,18), /黒曜の円盤 Lv\.50/);
+assert.doesNotMatch(draw(11,20,17), /黒曜の円盤/);
 assert.equal(game.isSupportRelicRate('obsidian'),50);
 player.hp=1; player.mp=0;
 game.isRecoverRelicVitals(run,player);
@@ -146,8 +147,10 @@ assert.equal(game.owgRollStar(150),6);
 game.isRand = () => .999999;
 assert.equal(game.owgRollStar(9),5);
 vm.runInNewContext(fs.readFileSync('js/infinite_score.js','utf8'), {
-  window:{ BattleGame:Game, ARSENE_DATA:data }, document:{ addEventListener(){}, querySelector(){return null;} }
+  window:{ BattleGame:Game, ARSENE_DATA:data }, document:{ addEventListener(){}, querySelector(){return null;}, getElementById(){return null;} }
 });
+vm.runInNewContext(fs.readFileSync('js/infinite_score_data.js','utf8'),{window:{ARSENE_DATA:data}});
+data.items.fixtureArcana = {arcanaStat:'str'};
 game.profile.infiniteRelicLevels['compass'] = 3;
 Object.assign(run,{floor:18,relicDescents:4});
 game.isEffectiveCfg = () => ({maxFloor:100});
@@ -170,7 +173,7 @@ game.isDescend();
 assert.equal(run.floor,100);
 game.isDescend();
 assert.equal(run.relicDescents,6);
-console.log('27 relics: milestone rolls, growth, recovery, weakness, coins and permanent saves: OK');
+console.log('29 relics: milestone rolls, growth, recovery, weakness, coins and permanent saves: OK');
 
 const { test } = require('node:test');
 
@@ -253,4 +256,38 @@ test('the signet saves a single offer through cancellation and reopening', async
   assert.equal(chestRun.lootBag[0].opRank, 1);
   assert.equal(floor.node.chestOpened, true);
   assert.equal(resultOptions.remapOnClose, true);
+});
+
+test('return keeps all Arcana and only selected gear, with distinct relic capacity bonuses', () => {
+  const playerGame = new Game();
+  const equipment = {rightHand:'home-sword'};
+  const first = {uid:'first',itemId:'owg_boundary_sword',kind:'equipment',otherWorldGear:true,quality:103,ops:[]};
+  const second = {uid:'second',itemId:'owg_boundary_head',kind:'equipment',otherWorldGear:true,quality:92,ops:[]};
+  const lootBag = [
+    first, second, {uid:'unselected',itemId:'owg_boundary_feet',kind:'equipment',otherWorldGear:true},
+    {uid:'return',itemId:'infiniteReturn',count:2},
+    {uid:'hp',itemId:'owPotion20',count:4},
+    {uid:'mp',itemId:'owManaPotion60',count:2},
+    {uid:'shards',itemId:'otherworldShard',count:31},
+    {uid:'stat',itemId:'fixtureArcana',count:3},
+    {uid:'special',itemId:'blessedProtectionArcana',count:1}
+  ];
+  const testRun = {active:true,lootBag,equipment:{},homeEquipment:equipment,homeVitals:{hp:20,mp:5},floor:22};
+  playerGame.profile = {
+    infiniteScore:testRun, infiniteScoreDebug:{}, infiniteRelicLevels:{globe:4},
+    inventory:{potion:2,owPotion20:8,owManaPotion60:5,infiniteReturn:5,fixtureArcana:2}, flags:{}
+  };
+  playerGame.isCfg = () => ({bagLimit:30});
+  playerGame.saveProfile = playerGame.showResult = () => {};
+  assert.equal(playerGame.isBagLimit(),34);
+  assert.equal(playerGame.isReturnGearLimit(),1);
+  assert.equal(playerGame.isReturnRun(['first','second'],testRun),false);
+  playerGame.profile.infiniteRelicLevels['twin-rings'] = 1;
+  assert.equal(playerGame.isReturnGearLimit(),2);
+  assert.equal(playerGame.isReturnRun(['first','second'],testRun),true);
+  assert.equal(playerGame.isReturnRun(['first','second'],testRun),false);
+  assert.deepEqual(playerGame.profile.inventory,{potion:2,fixtureArcana:5,blessedProtectionArcana:1});
+  assert.deepEqual(JSON.parse(JSON.stringify(playerGame.profile.otherWorldGear)), [first, second]);
+  assert.equal(playerGame.profile.infiniteScore.active,false);
+  assert.equal(playerGame.profile.infiniteScore.returnedCount,6);
 });

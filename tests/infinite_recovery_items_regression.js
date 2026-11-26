@@ -16,7 +16,7 @@ assert.equal(D.infiniteScore.recoveryDropRate,.05);
 assert(D.infiniteScore.recoveryItems.filter(row=>row.itemId.includes('40')).every(row=>row.minFloor===30),'mid recovery items must start at floor 30');
 assert(D.infiniteScore.recoveryItems.filter(row=>row.itemId.includes('60')).every(row=>row.minFloor===60),'high recovery items must start at floor 60');
 assert(!scoreSource.includes("hadReturn=this.isHasReturn(),stack="),'run loot must not stack');
-assert(scoreSource.includes("this.profile.inventory[x.itemId]=(this.profile.inventory[x.itemId]||0)+(x.count||1)"),'return must stack at home');
+assert(Object.keys(expected).every(id => D.items[id].infiniteScoreOnly), 'Infinite recovery items must stay within the run');
 const beginRun = scoreSource.slice(scoreSource.indexOf('P.isBegin = function'), scoreSource.indexOf('P.isHeader = function'));
 assert.match(beginRun, /const bag = \[\];[\s\S]*lootBag:bag/, 'a new run starts with an empty bag');
 assert(!beginRun.includes('this.profile.inventory[id]--'), 'starting a run must preserve home inventory');

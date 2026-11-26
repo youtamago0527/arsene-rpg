@@ -110,8 +110,8 @@
   background-image: url("../assets/ui/infinite-score/bag/cyan-button.webp");
 }
 #menu-panel .is-bag-control:disabled { opacity: .53; cursor: default; }
-.is-bag-filters { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px; padding: 6px 2px; border-bottom: 1px solid #374a62; }
-#menu-panel .is-bag-filters .is-bag-control { min-height: 34px; white-space: nowrap; }
+.is-bag-filters { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)) minmax(0,1.25fr); gap: 4px; padding: 6px 2px; border-bottom: 1px solid #374a62; }
+#menu-panel .is-bag-filters .is-bag-control { min-height: 34px; padding-inline: 3px; white-space: nowrap; }
 .is-bag-icon {
   --item-x: 0%;
   --item-y: 0%;
