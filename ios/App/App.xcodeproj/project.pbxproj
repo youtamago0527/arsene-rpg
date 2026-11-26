@@ -19,8 +19,8 @@
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
 		A05E70012026110500000001 /* ArseneStoreKitPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A05E70032026110500000001 /* ArseneStoreKitPlugin.swift */; };
-		A7C0D0012FFF000100000001 /* ArseneGameCenterPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C0D0022FFF000100000001 /* ArseneGameCenterPlugin.swift */; };
 		A05E70022026110500000001 /* ArseneBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A05E70042026110500000001 /* ArseneBridgeViewController.swift */; };
+		A7C0D0012FFF000100000001 /* ArseneGameCenterPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C0D0022FFF000100000001 /* ArseneGameCenterPlugin.swift */; };
 		B20DB632F08017548632EC59 /* Products.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 5203827F6E0CE4C5F9DAA030 /* Products.storekit */; };
 /* End PBXBuildFile section */
 
@@ -49,8 +49,8 @@
 		9582B6822FE993A50072D4E8 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 		A05E70032026110500000001 /* ArseneStoreKitPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArseneStoreKitPlugin.swift; sourceTree = "<group>"; };
-		A7C0D0022FFF000100000001 /* ArseneGameCenterPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArseneGameCenterPlugin.swift; sourceTree = "<group>"; };
 		A05E70042026110500000001 /* ArseneBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArseneBridgeViewController.swift; sourceTree = "<group>"; };
+		A7C0D0022FFF000100000001 /* ArseneGameCenterPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArseneGameCenterPlugin.swift; sourceTree = "<group>"; };
 		F75B1293B7605E2959DF240D /* StoreKitVerification.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StoreKitVerification.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FB63A29692F1BBD14AFC84BA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -81,7 +81,6 @@
 				2400AB9AFBB855FFF49A17D0 /* StoreKitVerification.swift */,
 				5203827F6E0CE4C5F9DAA030 /* Products.storekit */,
 			);
-			name = StoreKitVerification;
 			path = StoreKitVerification;
 			sourceTree = "<group>";
 		};
@@ -429,14 +428,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 43;
+				DEVELOPMENT_TEAM = 9VGS663KBM;
 				INFOPLIST_FILE = App/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.role-playing-games";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.7;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.arsene.remix;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -451,14 +452,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 43;
+				DEVELOPMENT_TEAM = 9VGS663KBM;
 				INFOPLIST_FILE = App/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.role-playing-games";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arsene.remix;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";

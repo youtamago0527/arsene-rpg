@@ -4,7 +4,7 @@ import PackageDescription
 // DO NOT MODIFY THIS FILE - managed by Capacitor CLI commands
 let package = Package(
     name: "CapApp-SPM",
-    platforms: [.iOS(.v15)],
+    platforms: [.iOS(.v16)],
     products: [
         .library(
             name: "CapApp-SPM",
@@ -12,7 +12,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.0"),
-        .package(name: "CapacitorCommunityAdmob", path: "../../../node_modules/.pnpm/@capacitor-community+admob@8.1.0/node_modules/@capacitor-community/admob")
+        .package(name: "CapacitorCommunityAdmob", path: "../../../../arsene-ios-testflight/node_modules/.pnpm/@capacitor-community+admob@8.1.0/node_modules/@capacitor-community/admob")
     ],
     targets: [
         .target(
