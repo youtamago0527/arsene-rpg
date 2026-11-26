@@ -68,7 +68,7 @@
       const params = new URLSearchParams(location.search);
       const localHost = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
       const scenario = params.get('local');
-      if (!localHost || !['versicrell-ready', 'd3-route', 'd3-mid-ready', 'd3-final-ready', 'd4-ready', 'infinite-score-ready', 'infinite-forge-ready'].includes(scenario)) return false;
+      if (!localHost || !['versicrell-ready', 'd3-route', 'd3-mid-ready', 'd3-final-ready', 'd4-ready', 'd6-battle-ready', 'infinite-score-ready', 'infinite-forge-ready'].includes(scenario)) return false;
       this.root.hidden = true;
       this.root.style.display = 'none';
       if (scenario === 'versicrell-ready') {
@@ -79,6 +79,24 @@
         this.game.showMenu('otherworld');
       } else if (scenario === 'infinite-forge-ready') {
         this.game.prepareLocalInfiniteForgeScenario();
+      } else if (scenario === 'd6-battle-ready') {
+        const { dungeon, enemies } = window.ARSENE_DATA.futureContent.dungeon6;
+        this.game.prepareLocalD4Scenario();
+        this.game.localScenario.id = scenario;
+        this.game.profile.bossDefeated.ostina = true;
+        window.ARSENE_DATA.dungeons.push(dungeon);
+        for (const enemy of enemies) window.ARSENE_DATA.enemies[enemy.id] = enemy;
+        this.game.currentDungeonId = dungeon.id;
+        this.game.currentFloorId = dungeon.floors[0].id;
+        const encounter = params.get('encounter');
+        if (['route', 'mid', 'mid2', 'boss'].includes(encounter)) {
+          const id = encounter === 'boss' ? dungeon.bossId : dungeon.midBossGates[encounter === 'mid2' ? 1 : 0].enemyId;
+          if (encounter !== 'route' && window.ARSENE_DATA.enemies[id]?.sprite) this.game.startBossEncounter(id, id);
+          else { this.game.dungeonSelectId = dungeon.id; this.game.showMenu('dungeon-select'); }
+        } else {
+          this.game.audio.playTrack(dungeon.music);
+          this.game.startBattle();
+        }
       } else if (scenario === 'd4-ready') {
         this.game.prepareLocalD4Scenario();
         this.game.showMenu('dungeon-select');

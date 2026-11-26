@@ -2,6 +2,13 @@
 // lockedBy 付きの項目は、対応システムの解放後だけ表示する。
 window.ARSENE_HELP = [
   {
+    id: 'd6Corridors', lockedBy: 'd6Corridors', title: '彩律天文堂の属性回廊', titleEn: 'ELEMENTAL CORRIDORS',
+    body: [
+      '各回廊で10連勝すると踏破が記録されます。途中で拠点に戻る、敗北する、ゲームを終了する、といった場合は挑戦中の回廊の1戦目からです。',
+      '回廊ごとに敵の属性と弱点が変わります。2部屋目と4部屋目の後は中ボスを撃破して先へ進みます。全6部屋を踏破するとクロマティアに挑戦できます。'
+    ]
+  },
+  {
     id: 'basics', title: '基本操作', titleEn: 'BASICS',
     body: [
       '拠点からダンジョンへ潜入し、怪異と戦って素材やGOLDを集めます。',
