@@ -80,7 +80,7 @@
 .is-forge-resource > div > span:not(.is-bag-icon) { color: #e5d5c1; font-size: 11px; }
 .is-forge-resource b { color: var(--forge-ember); font-size: clamp(14px, 4vw, 20px); font-variant-numeric: tabular-nums; }
 
-.is-forge-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.is-forge-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .is-forge-tabs button {
   min-height: 42px;
   min-width: 0;
@@ -168,7 +168,8 @@
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
-.is-forge-deltas strong { color: #9be0aa; }
+.is-forge-deltas strong, .is-forge-bonuses b { color: #9be0aa; }
+.is-forge-bonuses { margin: 0; padding-left: 1.25em; color: #dfdce0; font-size: 12px; line-height: 1.6; }
 .is-forge-summary {
   display: grid;
   gap: 3px;

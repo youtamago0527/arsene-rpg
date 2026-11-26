@@ -13,7 +13,7 @@ assert(score.includes("card.dataset.isResolved='1';card.disabled=true;await g.is
 assert(score.includes('P.isForgeEnhance=async'), 'forge enhancement still uses native UI');
 assert(score.includes('P.isForgeTransfer=async'), 'forge transfer still uses native UI');
 assert(score.includes('P.isForgeDelete=async'), 'forge OP deletion still uses native UI');
-assert(score.includes('P.isForgeMerge=async'), 'forge merge still uses native UI');
+assert(!score.includes('P.isForgeMerge=async'), 'duplicate gear strengthening uses the standard forge entry');
 assert(score.includes('P.isBuy=async'), 'shop bag-full notice still uses native UI');
 assert(score.includes('P.isSell=async'), 'shop equipped-item sale still uses native UI');
 assert(!gear.includes("P.isOpenMerge=function(){alert("), 'removed merge action still uses native alert');
