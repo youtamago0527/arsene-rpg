@@ -38,7 +38,7 @@ test('only gear the player can afford to strengthen is listed', () => {
   const {g,panel} = fixture();
   g.isRenderWorkshop(panel);
   assert.match(panel.innerHTML,/data-is-forge-select="base"/);
-  assert.doesNotMatch(panel.innerHTML,/data-is-forge-select="expensive"/);
+  assert.doesNotMatch(panel.innerHTML,/data-is-forge-select="expensive"|品質|QUALITY/);
   g.isForgeState().selectedUid = 'base';
   g.isRenderWorkshop(panel);
   assert.match(panel.innerHTML,/200 → 216/);

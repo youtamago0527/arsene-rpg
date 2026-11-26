@@ -1214,7 +1214,7 @@
     const stats = this.isForgeStats(gear).filter(stat => stat.value);
     return `${bagIcon(icon)}<span class="is-forge-entry-main">
       <strong>${esc(this.isForgeName(gear))}${gear.plus ? ' +' + gear.plus : ''}</strong>
-      <small><span class="is-forge-stars">${'★'.repeat(gear.stars || 3)}</span> ／ 品質 ${gear.quality || 100} ／ ${gear.ops?.length || 0} OP</small>
+      <small><span class="is-forge-stars">${'★'.repeat(gear.stars || 3)}</span> ／ ${gear.ops?.length || 0} OP</small>
       ${note ? `<small>${esc(note)}</small>` : ''}
     </span><span class="is-forge-entry-side">${isEquipped ? '<em>装備中</em>' : ''}
       ${stats.map(({label,value}) => `<span>${label} <b>${value.toLocaleString()}</b></span>`).join('')}</span>`;
@@ -1258,7 +1258,7 @@
     if (state.mode === 'merge') {
       const candidates = this.isForgeMergeMaterials(gear, allGear);
       const material = candidates.find(item => item.uid === state.materialUid);
-      const result = material ? `+${(gear.plus || 0) + 1} ／ 品質 ${Math.min(120, Math.max(gear.quality || 100, material.quality || 100) + 1)}` : '';
+      const result = material ? `+${gear.plus || 0} → +${(gear.plus || 0) + 1}` : '';
       return `<section class="is-forge-stage"><h3>合成素材を選ぶ</h3><div class="is-forge-material-list">${candidates.map(item =>
         `<button type="button" class="is-forge-entry" data-is-forge-material="${esc(item.uid)}" aria-pressed="${item === material}">${this.isForgeEntryHtml(item)}</button>`
       ).join('')}</div>${material ? this.isForgeResultHtml('合成結果', result, null, '同型合成する', advance, '素材装備は合成後に消滅します。') : ''}</section>`;
