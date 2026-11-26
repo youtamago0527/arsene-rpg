@@ -1418,6 +1418,66 @@
     run.lootBag.splice(run.lootBag.indexOf(gear), 1);
   };
 
+
+  P.isShowForgeSuccess = function ({name, current, next, beforeStats, afterStats, changedOps}) {
+    const labels = {
+      attackPower:'攻撃力', magicAttackPower:'魔法攻撃力', defensePower:'防御力', magicDefensePower:'魔法防御力',
+      maxHp:'最大HP', maxMp:'最大MP', str:'力', vit:'体力', mag:'魔力', mnd:'精神', agi:'素早さ', dex:'器用さ', luk:'運'
+    };
+    const displayNumber = value => (value > 0 ? '+' : '') + value.toLocaleString('ja-JP');
+    const stats = Object.entries(labels).flatMap(([key, label]) => {
+      const before = Number(beforeStats[key]) || 0, after = Number(afterStats[key]) || 0;
+      return before || after ? [{label, before:displayNumber(before), after:displayNumber(after), changed:before !== after}] : [];
+    });
+    const rows = [
+      ...stats.filter(row => row.changed),
+      ...changedOps.filter(({before, after}) => !labels[after.key] ||
+        beforeStats[after.key] !== before.value || afterStats[after.key] !== after.value).map(({before, after}) => ({
+        label:this.owgOpDefinition?.(after.key)?.label || this.isCfg().opLabels?.[after.key] || after.key,
+        before:`+${this.owgOpValueText?.(before) ?? before.value}`,
+        after:`+${this.owgOpValueText?.(after) ?? after.value}`,
+        changed:true,
+        op:true
+      }))
+    ];
+    if (!rows.length) rows.push(...stats);
+    const arrow = '<span class="is-forge-success-arrow" aria-hidden="true">❯❯❯</span>';
+    const dialog = document.createElement('dialog');
+    dialog.className = 'is-forge-success';
+    dialog.setAttribute('aria-labelledby', 'is-forge-success-title');
+    dialog.innerHTML = `<div class="is-forge-success-body">
+      <header class="is-forge-success-heading">
+        <p lang="en">TUNING SUCCESS</p>
+        <h2 id="is-forge-success-title" tabindex="-1" autofocus>強化成功</h2>
+        <div class="is-forge-success-name"><b>${esc(name)}</b></div>
+      </header>
+      <div class="is-forge-success-altar" aria-hidden="true"></div>
+      <div class="is-forge-success-levels" aria-label="強化値 +${current} から +${next}">
+        <span class="is-forge-success-level">+${current}</span>${arrow}<span class="is-forge-success-level is-forge-success-level-new">+${next}</span>
+      </div>
+      ${rows.length ? `<div class="is-forge-success-compare">
+        <span class="is-forge-success-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <table aria-label="強化結果の比較">
+          <thead><tr><th scope="colgroup" colspan="2">強化前 (+${current})</th><th scope="colgroup" colspan="2">強化後 (+${next})</th></tr></thead>
+          <tbody>${rows.map(row => `<tr>
+            <th scope="row"><span class="is-forge-success-row-icon" aria-hidden="true">${row.op ? '◆' : '◇'}</span>${esc(row.label)}${row.op ? '<small>OP</small>' : ''}</th>
+            <td>${esc(row.before)}</td><td aria-hidden="true">${arrow}</td><td${row.changed ? ' class="improved"' : ''}>${esc(row.after)}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>` : ''}
+      <form method="dialog" class="is-forge-success-actions">
+        <button type="submit" class="is-forge-success-confirm"><span>確認</span></button>
+        <button type="submit" class="is-forge-success-close"><span>閉じる</span></button>
+      </form>
+      <div class="is-forge-success-footer" aria-hidden="true"></div>
+    </div>`;
+    return new Promise(resolve => {
+      dialog.addEventListener('close', () => { dialog.remove(); resolve(); }, {once:true});
+      document.body.appendChild(dialog);
+      dialog.showModal();
+    });
+  };
+
   P.isForgeEnhance=async function(uid, materialUid = null){
     const run = this.isRun(), gear = this.isBagEntry(uid);
     if (!run || !gear?.otherWorldGear) return;
@@ -1447,18 +1507,21 @@
         (cost && !this.isForgeSpendMaterials(cost))) return;
 
     if (rate >= 1 || this.isRand() < rate) {
+      const beforeStats = this.isBagGearStats(gear);
+      const changedOps = bonuses.map(({before, after}) => ({before:{...before}, after}));
       gear.plus = gear.tuneLevel = next;
       for (const {before, after} of bonuses) before.value = after.value;
       if (material) this.isForgeConsumeGear(run, material);
       this.isLog(`異世界工房：${name}を+${next}へ強化`);
       this.audio?.sfx?.('confirm');
+      this.isSave();
+      await this.isShowForgeSuccess({name, current, next, beforeStats, afterStats:this.isBagGearStats(gear), changedOps});
     } else {
       this.isLog(`異世界工房：${name}の+${next}強化に失敗`);
       this.audio?.sfx?.('defeat');
       this.isSave();
       await this.isNotify('強化失敗', `${this.isForgeCostText(cost)}を消費しました。`, {kicker:'TUNING FAILED'});
     }
-    this.isSave();
     this.isRenderWorkshop($('#menu-panel'));
   };
 
