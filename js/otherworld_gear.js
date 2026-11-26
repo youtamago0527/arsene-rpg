@@ -81,6 +81,8 @@
     attack('magicDamagePercent','魔法与ダメージ',damageCurve,6),
     attack('hpDrain','HP吸収',[.003,.005,.008,.012,.018,.025],2),
     attack('repeatChance','追加行動率',[.01,.02,.035,.05,.075,.10],3),
+    attack('mpCostDamageBonus','MP消費で与ダメージ',[.08,.13,.20,.30,.43,.60],5),
+    attack('hpCostDamageBonus','HP消費で与ダメージ',[.10,.16,.24,.36,.50,.70],4),
     attack('normalAttackDamageBonus','通常攻撃ダメージ',damageCurve,6),
     attack('skillDamageBonus','技・魔法ダメージ',damageCurve,6),
     attack('singleDamageBonus','単体攻撃ダメージ',damageCurve,5),
@@ -133,6 +135,7 @@
     support('healingPowerPercent','回復技の効果',damageCurve,6),
     support('mpRestoreOnDamage','被ダメージの一部をMP回復',[.003,.006,.01,.015,.022,.032],2),
     support('damageReflect','ダメージ反射',[.03,.05,.08,.12,.17,.24],3),
+    support('reviveOnKnockout','戦闘不能時の復活率／復活HP',[.04,.07,.12,.18,.26,.35],2),
     support('turnHpRegenRate','行動開始時HP再生',[.003,.007,.012,.020,.03,.045],3),
     support('turnMpRegenRate','行動開始時MP再生',[.003,.007,.012,.020,.03,.045],3),
     support('evadeBonus','回避率',[.01,.02,.035,.05,.075,.10],5),
@@ -322,7 +325,8 @@
       (rareOrBoss ? fx.rareBossDamageBonus || 0 : 0) +
       (critical ? fx.criticalDamageBonus || 0 : 0) +
       (skill.element ? fx.elementalDamageBonus || 0 : 0);
-    const damage = bonus ? Math.max(1, Math.round(value * (1 + bonus))) : value;
+    const paidBonus = skill.owgPaidDamageBonus || 0;
+    const damage = bonus || paidBonus ? Math.max(1, Math.round(value * (1 + bonus) * (1 + paidBonus))) : value;
     return damage + Math.floor(damage * (fx.opFollowupDamage || 0));
   };
 
@@ -373,6 +377,44 @@
     if (hp || mp) { this.persistVitals(); this.updateHUD(); }
   };
 
+
+
+  P.owgEmpowerAttack = function (skill) {
+    if (skill.target === 'self' || skill.kind === 'support') return skill;
+    const fx = this.owgEffects();
+    if (!fx.mpCostDamageBonus && !fx.hpCostDamageBonus) return skill;
+    const paid = [];
+    let damageBonus = 0;
+    const costs = [
+      {resource:'mp', stat:'maxMp', costRate:.10, bonus:fx.mpCostDamageBonus},
+      {resource:'hp', stat:'maxHp', costRate:.05, bonus:fx.hpCostDamageBonus}
+    ];
+    for (const {resource, stat, costRate, bonus} of costs) {
+      const cost = Math.ceil(this.player.stats[stat] * costRate);
+      const available = this.player[resource] - (resource === 'hp' ? 1 : 0);
+      if (!(bonus > 0 && cost > 0 && available >= cost)) continue;
+      this.player[resource] -= cost;
+      if (resource === 'mp') this.usedMpThisBattle = true;
+      damageBonus += bonus;
+      paid.push(`${resource.toUpperCase()} -${cost.toLocaleString('ja-JP')}`);
+    }
+    if (!damageBonus) return skill;
+    this.persistVitals();
+    this.floating(document.getElementById('ren'), paid.join(' / '), 'debuff');
+    this.updateHUD();
+    return {...skill, owgPaidDamageBonus:damageBonus};
+  };
+
+  P.owgTryRevive = function (rate = this.owgEffects().reviveOnKnockout, random = Math.random) {
+    const player = this.player;
+    if (!(rate > 0) || player.hp > 0 || player.owgRevived || (rate < 1 && random() >= rate)) return false;
+    player.owgRevived = true;
+    player.hp = Math.max(1, Math.ceil(player.stats.maxHp * Math.min(1, rate)));
+    this.flashTitle('復活', `HP +${player.hp.toLocaleString('ja-JP')}`);
+    this.setLog(`装備のOPが発動し、HP ${player.hp.toLocaleString('ja-JP')}で復活した！`);
+    this.floating(document.getElementById('ren'), `復活 +${player.hp.toLocaleString('ja-JP')}`, 'heal');
+    return true;
+  };
 
   P.owgExtraActionCount = function (random = Math.random) {
     const rate = Number(this.owgEffects().repeatChance);
