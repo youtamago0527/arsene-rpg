@@ -83,16 +83,8 @@
 
 /* Perceived-size correction for the two artwork-heavy command tiles. */
 
-.is-explore-command.relics{background-image:url("../assets/ui/infinite-score/explore-command-relics-v1.webp")}
+.is-explore-command.relics{background-image:url("../assets/ui/infinite-score/explore-command-relics-v2.webp")}
 .is-explore-command.relics:focus-visible{outline:2px solid #f1c3ff;outline-offset:1px}
-.is-relic-command-label{
-  position:absolute;inset:15% 6% 14% 45%;display:grid;grid-template-rows:1fr auto 1fr;gap:2px;align-items:center;
-  color:#fff;pointer-events:none;text-align:center;text-shadow:0 0 7px #cd65ff,0 1px 3px #1b0329
-}
-.is-relic-command-label b{font:900 clamp(14px,4.8vw,23px)/1 "Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;letter-spacing:.10em}
-.is-relic-command-label small{font:700 clamp(7px,2vw,11px)/1 Georgia,serif;letter-spacing:.17em}
-.is-relic-command-label i{position:relative;height:1px;background:linear-gradient(90deg,transparent,#e8b957 30%,#e8b957 70%,transparent)}
-.is-relic-command-label i::after{content:"";position:absolute;left:50%;top:50%;width:4px;height:4px;background:#db61f2;border:1px solid #ffe5a2;transform:translate(-50%,-50%) rotate(45deg)}
 
 .is-explore-command.item{background-image:url("../assets/ui/infinite-score/explore-command-bag-v2.png")}
 .is-explore-command.return{background-image:url("../assets/ui/infinite-score/explore-command-return-v2.png")}
