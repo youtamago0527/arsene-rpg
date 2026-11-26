@@ -193,6 +193,7 @@ test('forge shards are debited using the displayed quill discount', async () => 
   playerGame.isForgeName = gear => gear.uid;
   playerGame.isCfg = () => ({opLabels:{str:'力'}});
   playerGame.isConfirm = async () => true;
+  playerGame.isNotify = async (title) => { assert.equal(title, '強化成功'); };
   playerGame.isRand = () => 0;
   playerGame.owgTuneCost = () => ({shard:3,core:0});
   playerGame.isSave = playerGame.isLog = playerGame.isRenderWorkshop = () => {};
