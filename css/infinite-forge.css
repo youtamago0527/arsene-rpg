@@ -142,7 +142,7 @@
 }
 .is-forge-change { flex: none; color: #f9c28a; font-size: 11px; font-weight: 700; }
 
-.is-forge-replace-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.is-forge-replace-list, .is-forge-methods { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .is-forge-op-list button {
   display: flex;
   align-items: center;
@@ -158,6 +158,10 @@
 }
 .is-forge-op-list b { font-size: 12px; }
 .is-forge-op-list small { color: #e2b88d; font-size: 10px; }
+.is-forge-current-op { margin: 0 0 6px; color: var(--forge-muted); font-size: 11px; }
+.is-forge-methods button { display: grid; justify-content: stretch; gap: 3px; align-content: start; }
+.is-forge-methods button:disabled { opacity: .5; cursor: default; }
+.is-forge-methods span { color: #f6e2bf; font-size: 11px; overflow-wrap: anywhere; }
 
 .is-forge-deltas > div {
   display: grid;
