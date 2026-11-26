@@ -312,7 +312,7 @@
       const { irAction, irMode, irFilter, irItem, irPage } = button.dataset;
       if (irAction === 'close') {
         this.renderMenuPanel(this.isRelicFromHome ? 'otherworld' : 'infinite-score');
-        panel.querySelector(this.isRelicFromHome ? '[data-is-relic-open]' : '[data-is-action="explore-menu"]')?.focus({ preventScroll: true });
+        panel.querySelector('[data-is-relic-open]')?.focus({ preventScroll: true });
       } else if (irItem) {
         if (irItem === state.selected) return;
         const item = relics.find(relic => relic.id === irItem);
