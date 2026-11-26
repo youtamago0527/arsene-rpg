@@ -29,7 +29,7 @@
     ['mirror', 'mnd', '月映しの鏡', 'epic', '金縁の手鏡。曇った鏡面に、淡く青い筋が浮かぶ。'],
     ['knight', 'vit', '白騎士の駒', 'common', '白い石を彫り出した馬の駒。たてがみに金の文様が走る。'],
     ['astrolabe', 'dex', '三日月の測天儀', 'rare', '銀の環の内側に、三日月と八芒星を配した測天儀。'],
-    ['twin-rings', 'str', '双環の誓い', 'epic', '青い石をあしらった二つの金の指輪が、互いに絡み合う。'],
+    ['twin-rings', 'str', '双環の誓い', 'rare', '青い石をあしらった二つの金の指輪が、互いに絡み合う。'],
     ['phial', 'maxHp', '潮光の小瓶', 'common', '蓋を閉じたままでも、水色の光が透ける小瓶。'],
     ['globe', 'mnd', '群青の天球儀', 'rare', '群青の球を囲む金の環に、星座の軌跡が刻まれている。'],
     ['scales', 'vit', '星衡の天秤', 'legendary', '星をかたどった飾りの下で、二つの皿が釣り合う天秤。'],
@@ -65,7 +65,11 @@
     ['obsidian', '敵の最大HP・攻撃・防御'],
     ['gear', '獲得奏貨'],
     ['astrolabe', 'インフィニティ装備の抽選率'],
-    ['orb', 'アルカナの追加獲得']
+    ['orb', '通常戦闘のアルカナドロップ'],
+    ['quill', 'OP移植・削除の欠片消費'],
+    ['signet', '宝箱で2候補から選べる確率'],
+    ['globe', '戦利品バッグの容量'],
+    ['twin-rings', '装備の持ち帰り枠']
   ];
   for (const [id, label] of supportRelics) {
     relics.push({ ...artwork.find(item => item.id === id), grade: 'support', label });
@@ -89,31 +93,29 @@
     return Math.floor(value / 5) * 5;
   }
   const arcanaTierInterval = 50;
-  function arcanaBonusChance(level, owned) {
-    const unlock = (owned - 1) * arcanaTierInterval;
-    if (level < unlock) return 0;
-    const progress = level - unlock + 1;
-    return progress / (progress + 99);
-  }
+  const obsidianLevelLimit = 50;
+  const arcanaCount = level => level ? 2 + Math.floor(level / arcanaTierInterval) : 1;
+  const quillDiscount = level => Math.min(100, level);
+  const signetChance = level => level ? Math.min(100, 4 + level) : 0;
 
   P.isArcanaDropCount = function () {
-    const level = levelOf(this.profile.infiniteRelicLevels, 'orb');
-    if (!level) return 1;
-    let count = 2;
-    for (;;) {
-      const chance = arcanaBonusChance(level, count);
-      if (!chance || this.isRand() >= chance) return count;
-      count++;
-    }
+    return arcanaCount(levelOf(this.profile.infiniteRelicLevels, 'orb'));
+  };
+
+  P.isRelicForgeShardCost = function (cost) {
+    const discount = quillDiscount(this.isSupportRelicRate('quill'));
+    return Math.max(1, Math.floor(cost * (100 - discount) / 100));
+  };
+
+  P.isTreasureChoiceRate = function () {
+    return signetChance(this.isSupportRelicRate('signet')) / 100;
   };
 
   function effectText(item, level) {
-    if (item.id === 'orb') {
-      if (level < arcanaTierInterval) return '2個確定';
-      const chance = arcanaBonusChance(level, 2) * 100;
-      const display = chance >= 99.995 ? '99.99％超' : Number(chance.toFixed(2)) + '％';
-      return '2個確定 ／ 3個目 ' + display + ' ／ 最大' + (2 + Math.floor(level / arcanaTierInterval)) + '個';
-    }
+    if (item.id === 'orb') return arcanaCount(level) + '個確定';
+    if (item.id === 'quill') return '−' + quillDiscount(level) + '%（最低1個）';
+    if (item.id === 'signet') return signetChance(level) + '%';
+    if (item.id === 'globe' || item.id === 'twin-rings') return '＋' + level + '枠';
     if (item.grade === 'stairs') return level === 1 ? '1階降下' : '1〜' + level + '階から選択';
     return (item.id === 'obsidian' ? '−' : '＋') + percent(item, level) + '%';
   }
@@ -126,11 +128,15 @@
 
   function levelOf(levels, id) {
     const value = levels?.[id];
-    return Number.isSafeInteger(value) && value > 0 ? value : 0;
+    if (!Number.isSafeInteger(value) || value <= 0) return 0;
+    return id === 'obsidian' ? Math.min(value, obsidianLevelLimit) : value;
   }
 
   P.isMigrateRelicLevels = function (profile) {
-    if (profile.infiniteRelicSchema === 2) return;
+    if (profile.infiniteRelicLevels?.obsidian > obsidianLevelLimit) {
+      profile.infiniteRelicLevels.obsidian = obsidianLevelLimit;
+    }
+    if (profile.infiniteRelicSchema === 2 && profile.infiniteRelicLevels) return;
     profile.infiniteRelicSchema = 2;
     if (profile.infiniteRelicLevels) {
       // The previous build used fox-mask for traversal and compass for dexterity.
@@ -147,8 +153,8 @@
       for (const id of new Set(Array.isArray(list) ? list : [])) {
         const old = artwork.find(item => item.id === id);
         if (!old) continue;
-        // IDs-only saves predate the bonus-drop orb and used it for magic.
-        const retained = id !== 'orb' ? relics.find(item => item.id === id) : null;
+        // These IDs were used for stat bonuses in the original IDs-only catalogue.
+        const retained = ['orb', 'quill', 'signet', 'globe', 'twin-rings'].includes(id) ? null : relics.find(item => item.id === id);
         const target = retained?.id ?? tiers.normal[stats.indexOf(old.stat)];
         levels[target] = (levels[target] || 0) + 1;
       }
@@ -162,8 +168,9 @@
     const levels = this.profile.infiniteRelicLevels;
     const stairThreshold = requiredStairUses(levelOf(levels, stairRelicId) + 1);
     const pool = relics.filter(item => {
+      if (item.id === 'obsidian' && levels.obsidian >= obsidianLevelLimit) return false;
       if (item.id === stairRelicId) return count >= stairThreshold;
-      return item.grade !== 'upper' || count >= 40;
+      return (item.grade !== 'upper' && item.id !== 'twin-rings') || count >= 40;
     });
     const draw = candidates => {
       const item = candidates[Math.floor(this.isRand() * candidates.length)];
@@ -235,15 +242,20 @@
   function gems(rank) {
     return `<span class="ir-gems" data-rank="${rank}" aria-hidden="true">${'◆'.repeat(ranks.indexOf(rank) + 1)}</span>`;
   }
+  const unrevealedArt = '<span class="ir-unrevealed-art" aria-hidden="true">?</span>';
   function detail(item, level) {
-    const tier = item.grade === 'upper' ? '上位版・40回降下から' : item.grade === 'stairs' ? '階段を' + requiredStairUses(level + 1) + '回使用で次のLvが抽選対象' : item.grade === 'support' ? '補助遺物' : '通常版';
-    const next = '次のLvで ' + effectText(item, level + 1);
-    const nextTier = item.id === 'orb' ? '<br>Lv.' + ((Math.floor(level / arcanaTierInterval) + 1) * arcanaTierInterval) + 'で' + (3 + Math.floor(level / arcanaTierInterval)) + '個目の抽選を解放' : '';
-    const effect = level ? 'Lv.' + level + ' ／ ' + item.label + ' ' + effectText(item, level) : '未入手 ／ ' + item.label;
+    if (!level) return `<header><h3>未入手</h3></header>
+      <div class="ir-portrait ir-portrait-unknown">${unrevealedArt}</div>`;
+    const tier = item.grade === 'upper' ? '上位版' : item.grade === 'stairs' ? '階段移動' : item.grade === 'support' ? '補助遺物' : '通常版';
+    const nextArcanaLevel = (Math.floor(level / arcanaTierInterval) + 1) * arcanaTierInterval;
+    const next = item.id === 'orb' ? `Lv.${nextArcanaLevel}で${arcanaCount(nextArcanaLevel)}個確定`
+      : item.id === 'obsidian' && level >= obsidianLevelLimit ? '最大Lv.' + obsidianLevelLimit
+      : '次のLvで ' + effectText(item, level + 1);
+    const effect = 'Lv.' + level + ' ／ ' + item.label + ' ' + effectText(item, level);
     return `<header><h3>${item.name}</h3>${badge(item.rank)}</header>
       <div class="ir-portrait" data-rank="${item.rank}">${art(item)}</div>
       <div class="ir-detail-rank">${gems(item.rank)}</div>
-      <p class="ir-description">${item.description}</p><p class="ir-effect"><b>${effect}</b><br>${next}${nextTier}<br>${tier}</p>`;
+      <p class="ir-description">${item.description}</p><p class="ir-effect"><b>${effect}</b><br>${next}<br>${tier}</p>`;
   }
 
   P.isRenderRelics = function (panel) {
@@ -263,6 +275,7 @@
     const compassLevel = levelOf(levels, stairRelicId), run = this.isRun();
     const limit = run ? this.isStairDistanceLimit(run) : Math.max(1, compassLevel);
     const selectedDistance = run?.stairDistance || this.profile.infiniteStairPreference || 1;
+    const stairPicker = this.isStairPickerHtml(limit, selectedDistance);
     panel.dataset.panel = 'infinite-score-relics';
     panel.innerHTML = `<main class="ir-screen" aria-labelledby="ir-title">
       <header class="ir-hero">
@@ -282,22 +295,33 @@
         </div>
         <div class="ir-columns">
           <section class="ir-collection" aria-label="遺物一覧">
-            <div class="ir-grid ${state.mode === 'catalog' ? 'ir-catalog' : ''}">${visible.map(item =>
-              `<button type="button" data-ir-item="${item.id}" data-held="${owned.has(item.id) ? 'owned' : ''}" data-rank="${item.rank}" aria-label="${item.name}、${rarity[item.rank]}、${status(item.id)}"${pressed(item === current)}>
-                ${art(item)}${state.mode === 'catalog' ? `<small>${item.name}</small>` : gems(item.rank)}</button>`).join('')}</div>
+            <div class="ir-grid ${state.mode === 'catalog' ? 'ir-catalog' : ''}">${visible.map(item => {
+              const held = owned.has(item.id);
+              const label = held ? `${item.name}、${rarity[item.rank]}、${status(item.id)}` : '未入手の遺物';
+              const icon = held ? art(item) : unrevealedArt;
+              const caption = state.mode === 'catalog' ? `<small>${held ? item.name : '未入手'}</small>` : held ? gems(item.rank) : '';
+              return `<button type="button" data-ir-item="${item.id}" data-held="${held ? 'owned' : 'unknown'}" data-rank="${held ? item.rank : ''}" aria-label="${label}"${pressed(item === current)}>
+                ${icon}${caption}</button>`;
+            }).join('')}</div>
             ${pages > 1 ? `<nav class="ir-pages" aria-label="遺物リストのページ">
               <button type="button" data-ir-page="-1" aria-label="前のページ" ${state.page === 0 ? 'disabled' : ''}>‹</button>
               <span>${state.page + 1} / ${pages}</span>
               <button type="button" data-ir-page="1" aria-label="次のページ" ${state.page + 1 >= pages ? 'disabled' : ''}>›</button>
             </nav>` : ''}
           </section>
-          <article class="ir-detail" aria-label="遺物の詳細" aria-live="polite">${detail(current, levelOf(levels, current.id))}</article>
+          <article class="ir-detail">
+            <div class="ir-detail-content" role="region" aria-label="遺物の詳細" aria-live="polite" tabindex="0">${detail(current, levelOf(levels, current.id))}</div>
+          </article>
         </div>
-        <section class="ir-compass" aria-label="時空の羅針盤・階段設定">
-          ${art(compass)}
-          <div><strong>${compass.name}</strong> <small>${status(stairRelicId)}</small>
-          <p>${compassLevel ? effectText(compass, compassLevel) : '階段を20回使用すると抽選対象になります。'}</p></div>
-          ${this.isStairPickerHtml(limit, selectedDistance)}
+        <section class="ir-footer" aria-label="階段設定">
+          <div class="ir-footer-card ir-compass">
+            ${compassLevel ? '<img class="ir-setting-icon" src="assets/infinite-relics/relic-compass-icon.webp" alt="" width="128" height="128">' : unrevealedArt}
+            <div>${compassLevel ? `<strong>${compass.name}</strong> <small>${status(stairRelicId)}</small>` : '<strong>未入手</strong>'}</div>
+          </div>
+          <div class="ir-footer-card ir-stair-settings">
+            <img class="ir-setting-icon" src="assets/infinite-relics/relic-stairs-icon.webp" alt="" width="128" height="117">
+            ${stairPicker || `<div><strong>階段設定</strong><p>${limit ? '1階ずつ降りる' : '最深階に到達'}</p></div>`}
+          </div>
         </section>
       </div>
     </main>`;
@@ -312,15 +336,16 @@
       const { irAction, irMode, irFilter, irItem, irPage } = button.dataset;
       if (irAction === 'close') {
         this.renderMenuPanel(this.isRelicFromHome ? 'otherworld' : 'infinite-score');
-        panel.querySelector(this.isRelicFromHome ? '[data-is-relic-open]' : '[data-is-action="explore-menu"]')?.focus({ preventScroll: true });
+        panel.querySelector('[data-is-relic-open]')?.focus({ preventScroll: true });
       } else if (irItem) {
         if (irItem === state.selected) return;
         const item = relics.find(relic => relic.id === irItem);
         state.selected = irItem;
         root.querySelector('[data-ir-item][aria-pressed="true"]')?.setAttribute('aria-pressed', 'false');
         button.setAttribute('aria-pressed', 'true');
-        const currentDetail = root.querySelector('.ir-detail');
+        const currentDetail = root.querySelector('.ir-detail-content');
         currentDetail.innerHTML = detail(item, levelOf(levels, item.id));
+        currentDetail.scrollTop = 0;
       } else if (irPage) {
         state.page += Number(irPage);
         refresh('[data-ir-page]:not(:disabled)');

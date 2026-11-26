@@ -40,8 +40,16 @@
   P.isBegin=function(...args){const result=oldBegin.apply(this,args),run=this.isRun?.();if(run){run.support={insuranceUsed:false,bagExpansionUsed:false,shopCounter:0};this.isSave?.();}return result;};
 
   const oldShowBagFull=P.isShowBagFull;
-  P.isShowBagFull=function(){oldShowBagFull.call(this);if(!this.isCanExpandBag())return;const modal=document.getElementById('is-modal'),actions=modal?.querySelector('.is-actions');if(!actions||actions.querySelector('[data-is-support="bag"]'))return;actions.insertAdjacentHTML('afterbegin',`<button class="is-support-button" data-is-support="bag">${this.isSupportLabel('+3枠')}<small>このRUNのみ／最大33枠</small></button>`);};
-  P.isGrantBagExpansion=function(){const run=this.isRun?.(),support=this.isEnsureSupportState(run);if(!run||!support||support.bagExpansionUsed||this.isBagLimit()>=33)return false;support.bagExpansionUsed=true;this.isLog?.('怪盗支援：バッグを33枠へ緊急拡張');this.isSave?.();document.getElementById('is-modal')?.remove();const pending=run.pendingLoot;run.pendingLoot=null;if(pending)this.isAddLoot(pending);this.isRenderBag?.(document.querySelector('#menu-panel'));return true;};
+  P.isShowBagFull=function(){oldShowBagFull.call(this);if(!this.isCanExpandBag())return;const modal=document.getElementById('is-modal'),actions=modal?.querySelector('.is-actions');if(!actions||actions.querySelector('[data-is-support="bag"]'))return;const extra=33-this.isBagLimit();actions.insertAdjacentHTML('afterbegin',`<button class="is-support-button" data-is-support="bag">${this.isSupportLabel('+'+extra+'枠')}<small>このRUNのみ／最大33枠</small></button>`);};
+  P.isGrantBagExpansion=function(run=this.isRun?.(),pending=run?.pendingLoot){
+    if(!pending||run!==this.isRun?.()||run.pendingLoot!==pending)return false;
+    const support=this.isEnsureSupportState(run);
+    if(support.bagExpansionUsed||this.isBagLimit()>=33||this.isBagUsed()>=33)return false;
+    support.bagExpansionUsed=true;
+    this.isResolvePendingLoot();
+    this.isLog('怪盗支援：バッグを33枠へ緊急拡張');
+    return true;
+  };
 
   P.isStartShopEncounter=function(merchant=false){const run=this.isRun?.(),support=this.isEnsureSupportState(run);if(!run||!support)return null;support.shopCounter++;run.shopSupport={id:`${run.seed}-${support.shopCounter}`,merchant:!!merchant,rerollUsed:false,gear:this.isGenerateGear()};this.isSave?.();return run.shopSupport;};
   P.isEnsureShopEncounter=function(merchant=false){const run=this.isRun?.();return run?.shopSupport||this.isStartShopEncounter(merchant);};

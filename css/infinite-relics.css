@@ -16,7 +16,7 @@
   width: min(100%, 710px);
   min-height: 100%;
   margin: 0 auto;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   color: #f0f4ff;
   background: radial-gradient(ellipse at 78% 51%, #201033 0, transparent 58%), linear-gradient(#040816, #02040a 75%, #080719);
 }
@@ -44,8 +44,8 @@
   display: grid;
   align-content: end;
   justify-items: center;
-  min-height: clamp(137px, 35vw, 238px);
-  padding: 49px 34px 13px;
+  min-height: calc(env(safe-area-inset-top) + clamp(128px, 32vw, 224px));
+  padding: calc(env(safe-area-inset-top) + 26px) 34px 10px;
   background: linear-gradient(transparent 78%, #040712 98%), url("../assets/infinite-relics/relic-masthead.webp") center top / 100% 100%;
   text-align: center;
 }
@@ -83,7 +83,7 @@
 .ir-screen :is(button, select):focus-visible { outline: 2px solid #fff0b9; outline-offset: 2px; }
 .ir-screen .ir-close {
   position: absolute;
-  top: 9px;
+  top: calc(env(safe-area-inset-top) + 9px);
   right: 9px;
   width: 42px;
   height: 42px;
@@ -173,7 +173,18 @@
   background: radial-gradient(ellipse at 50% 0, #102446, #020813 70%);
   box-shadow: inset 0 0 0 2px #344d70, inset 0 0 14px #6595d45c, 0 0 6px #36538381;
 }
-.ir-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(4px, .9vw, 8px); }
+.ir-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-content: start;
+  gap: clamp(4px, .9vw, 8px);
+  width: 100%;
+  /* Keep the height of a full page (six rows) when fewer relics are visible. */
+  aspect-ratio: 4 / 6.6;
+  padding: 3px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
 .ir-grid button {
   position: relative;
   display: flex;
@@ -192,6 +203,22 @@
   z-index: 1;
   border-color: #ffffed;
   box-shadow: inset 0 0 4px #fff4cd, inset 0 0 8px #ffcf63, 0 0 9px #ffd06f;
+}
+.ir-grid button[data-held="unknown"] {
+  border-color: #3b475c;
+  background: #03050c;
+  box-shadow: inset 0 0 9px #000;
+}
+.ir-grid button[data-held="unknown"][aria-pressed="true"] {
+  border-color: #94b9d6;
+  box-shadow: inset 0 0 0 1px #55718d;
+}
+.ir-unrevealed-art {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  color: #8d9bb4;
+  font: 600 clamp(15px, 4vw, 27px)/1 Georgia, serif;
 }
 .ir-art {
   display: block;
@@ -214,13 +241,15 @@
 }
 .ir-catalog { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .ir-catalog button { aspect-ratio: auto; padding: 3px; min-height: 54px; }
-.ir-catalog .ir-art { width: 70%; align-self: center; }
+.ir-catalog :is(.ir-art, .ir-unrevealed-art) { width: 70%; align-self: center; }
 .ir-catalog small { font-size: clamp(10px, 2.35vw, 14px); line-height: 1.2; overflow-wrap: anywhere; }
 .ir-pages { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: auto; padding-top: 5px; font: 700 13px/1 Georgia, serif; }
 .ir-pages button { min-width: 36px; min-height: 36px; border: 0; background: transparent; font-size: 23px; }
 .ir-pages button:disabled { color: #67748c; cursor: default; }
 
 .ir-detail {
+  /* Let the collection set the row height, even for relics with long effects. */
+  contain: size;
   display: flex;
   flex-direction: column;
   padding: clamp(15px, 3.4vw, 27px) clamp(9px, 2.25vw, 18px);
@@ -237,6 +266,15 @@
   border-image: url("../assets/infinite-relics/relic-gilt-frame.webp") 158 stretch;
   pointer-events: none;
 }
+.ir-detail-content {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
+}
+.ir-detail-content:focus-visible { outline: 2px solid #fff0b9; outline-offset: -2px; }
 .ir-detail header { display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 4px; }
 .ir-detail h3 { margin: 0; font: 800 clamp(15px, 4.1vw, 29px)/1.28 var(--ir-serif); text-shadow: 0 0 8px #9c68de71; }
 .ir-badge {
@@ -254,7 +292,8 @@
   isolation: isolate;
   display: grid;
   place-items: center;
-  margin: 6px -5px 0;
+  width: 62%;
+  margin: 6px auto 0;
   aspect-ratio: 1.02;
 }
 .ir-portrait::before {
@@ -265,6 +304,15 @@
   background: url("../assets/infinite-relics/relic-portrait-sigil.webp") center / contain no-repeat;
   mask-image: radial-gradient(ellipse, #000 60%, transparent 75%);
 }
+.ir-portrait-unknown {
+  width: auto;
+  margin: 10px 0 0;
+  border: 1px solid #302b43;
+  border-radius: 8px;
+  background: #03050c;
+}
+.ir-portrait-unknown::before { content: none; }
+.ir-portrait-unknown .ir-unrevealed-art { font-size: clamp(24px, 9vw, 56px); }
 .ir-portrait .ir-art { width: 97%; filter: drop-shadow(0 0 7px #b569f077); mask-image: radial-gradient(ellipse, #000 56%, transparent 74%); }
 .ir-detail-rank {
   display: grid;
@@ -301,7 +349,44 @@
 }
 .ir-grid button[data-held="active"]::after { content: "★"; color: #a6fff2; }
 
-.ir-compass { display:grid; grid-template-columns:48px 1fr; align-items:center; gap:6px 12px; margin:10px 0; padding:10px 14px; border:1px solid #82725c; background:var(--ir-glass); }
-.ir-compass .ir-art { width:48px; }
-.ir-compass p { margin:4px 0 0; font-size:13px; }
-.ir-compass .is-stair-distance { grid-column:1 / -1; }
+.ir-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1.07fr) minmax(0, .93fr);
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 10px;
+  background: var(--ir-divider) center top / 100% 1px no-repeat;
+}
+.ir-footer-card {
+  display: grid;
+  grid-template-columns: clamp(26px, 9vw, 54px) minmax(0, 1fr);
+  align-items: center;
+  align-content: center;
+  gap: 5px 6px;
+  min-height: 72px;
+  padding: 9px clamp(8px, 2vw, 14px);
+  border: 1px solid transparent;
+  border-image: url("../assets/infinite-relics/relic-compass-panel.webp") 28 46 fill / 15px stretch;
+}
+.ir-stair-settings { border-image-source: url("../assets/infinite-relics/relic-draw-panel.webp"); }
+.ir-setting-icon {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+.ir-footer-card strong { font: 800 clamp(12px, 3.4vw, 20px)/1.25 var(--ir-serif); }
+.ir-footer-card small { display: inline-block; color: #b7daf6; font-size: clamp(9px, 2.5vw, 13px); }
+.ir-footer-card p { margin: 2px 0 0; color: #c6d3e9; font-size: clamp(10px, 2.55vw, 13px); line-height: 1.38; }
+.ir-stair-settings .is-stair-distance {
+  min-width: 0;
+  margin-top: 0;
+  font-size: clamp(10px, 2.65vw, 14px);
+}
+.ir-stair-settings .is-stair-distance :is(select, input) {
+  min-width: 0;
+  border: 1px solid #6db5d9;
+  border-radius: 5px;
+  background: linear-gradient(#142c49, #080f22);
+  color-scheme: dark;
+}
