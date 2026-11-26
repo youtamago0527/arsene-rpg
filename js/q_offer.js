@@ -19,7 +19,6 @@
     bossDrop: { title: 'ドロップ・ダブルアップ', copy: '素材・装備をドロップ率2倍で追加抽選する。', key: 'bossDrop', label: 'ドロップ追加抽選' },
     overdrive: { title: 'BOSS OVERDRIVE', copy: '広告を見て、限界を超えた強敵との戦闘を解放する。', label: 'オーバードライブ挑戦' },
     infiniteReroll: { title: 'ショップ5連ガチャ', copy: '通常の抽選で出た装備5個を、そのままバッグに入手します。奏貨は不要です。', label: '5連ガチャ' },
-    infiniteInsurance: { title: '怪盗の保険', copy: '全滅で失われる装備から、選んだ1個だけを奪還する。', label: '装備1個奪還' },
     infiniteBag: { title: 'バッグ緊急拡張', copy: 'このRUNに限り、バッグ上限を最大33枠へ拡張する。', label: 'バッグ最大33枠' }
   };
   function game() { return window.arseneGame; }

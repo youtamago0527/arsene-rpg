@@ -700,7 +700,41 @@
   const isVictoryKeepingAuto=P.victory;
   P.victory=function(...args){const keep=this.battleMode==='infiniteScore'&&!!this.autoBattle,index=this.autoBattleSpeedIndex,result=isVictoryKeepingAuto.apply(this,args);if(keep){this.autoBattle=true;this.autoBattleSpeedIndex=index;}return result;};
   const origDefeat=P.defeat;
-  P.defeat=async function(){if(this.battleMode!=='infiniteScore'||!this.isRun())return origDefeat.call(this);this.finished=true;this.endAutoBattle?.();const run=this.isRun(),lost=this.isBagUsed(),lostIds=new Set((run.importedItems||[]).map(x=>x.itemId)),home=copy(run.homeEquipment||this.profile.equipment);for(const slot of Object.keys(home))if(lostIds.has(home[slot]))home[slot]=null;this.profile.equipment=home;this.profile.currentVitals=copy(run.homeVitals||this.profile.currentVitals);this.profile.infiniteScore={active:false,lastResult:'defeat',lostCount:lost,endedAt:Date.now()};this.profile.flags.owRestoreJobPending=true;this.saveProfile();this.audio.stopMusic?.(400);this.audio.sfx('defeat');this.showResult('GAME OVER','探索中に拾った戦利品は、すべて無限奏廊へ消えた。','ALL LOOT LOST',`<div class="is-warning"><strong>LOST</strong><p>${lost}枠の戦利品を失いました。</p><p>基礎能力・JOB・転生・武器学・習得技・RE:MIXは失われません。</p></div>`);};
+  P.isFinalizeRunDefeat = function (run, recovered = null) {
+    if (!run || this.isRun() !== run) return;
+    const lost = this.isBagUsed();
+    const lostIds = new Set((run.importedItems || []).map(item => item.itemId));
+    const home = copy(run.homeEquipment || this.profile.equipment);
+    if (recovered) {
+      lostIds.delete(recovered.itemId);
+      if (recovered.otherWorldGear) {
+        this.profile.otherWorldGear ||= [];
+        if (!this.profile.otherWorldGear.some(item => item.uid === recovered.uid)) this.profile.otherWorldGear.push(copy(recovered));
+      } else {
+        this.profile.inventory[recovered.itemId] = (this.profile.inventory[recovered.itemId] || 0) + (recovered.count || 1);
+      }
+    }
+    for (const slot of Object.keys(home)) if (lostIds.has(home[slot])) home[slot] = null;
+    this.profile.equipment = home;
+    this.profile.currentVitals = copy(run.homeVitals || this.profile.currentVitals);
+    const lostCount = lost - (recovered ? 1 : 0);
+    this.profile.infiniteScore = {active:false, lastResult:'defeat', lostCount, endedAt:Date.now()};
+    if (recovered) this.profile.infiniteScore.rescuedItemId = recovered.itemId;
+    this.profile.flags.owRestoreJobPending = true;
+    this.saveProfile();
+    this.audio.stopMusic?.(400);
+    this.audio.sfx?.('defeat');
+    this.showResult('GAME OVER', recovered ? '受取済みの報酬を引き継いで拠点に戻ります。' : '探索中に拾った戦利品は、すべて無限奏廊へ消えた。',
+      recovered ? 'RUN ENDED' : 'ALL LOOT LOST', `<div class="is-warning"><strong>LOST</strong><p>${lostCount}枠の戦利品を失いました。</p><p>基礎能力・JOB・転生・武器学・習得技・RE:MIXは失われません。</p></div>`);
+  };
+  P.defeat = async function (...args) {
+    if (this.battleMode !== 'infiniteScore') return origDefeat.apply(this,args);
+    const run = this.isRun();
+    if (!run) return;
+    this.finished = true;
+    this.endAutoBattle?.();
+    this.isFinalizeRunDefeat(run);
+  };
 
   P.isAfterBattle=function(){
     const result=$('#result'),game=$('#game'),menu=$('#menu-screen');

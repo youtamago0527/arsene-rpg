@@ -192,7 +192,6 @@
   .is-shop-product{gap:5px;padding-inline:5px}
   .is-shop-product-info>small{letter-spacing:0;font-size:8px}
 }
-.is-insurance-screen{box-sizing:border-box;min-height:100svh;padding:14px;background:radial-gradient(circle at 50% 25%,#4a0e2855,transparent 42%),#03050b}.is-insurance{width:min(430px,100%);margin:12px auto;padding:15px;border:1px solid #db2777;background:linear-gradient(150deg,#180712,#080711);box-shadow:0 0 25px #db277744}.is-insurance>small{color:#fb7185;font:800 8px monospace;letter-spacing:.16em}.is-insurance h2{margin:7px 0}.is-insurance>div{display:grid;gap:7px;max-height:52svh;overflow:auto;margin:12px 0}.is-insurance [data-is-insurance-gear]{display:grid;gap:3px;padding:11px;text-align:left;color:#fff;border:1px solid #7c3aed;background:#0b1020}.is-insurance [data-is-insurance-gear] span{color:#f0abfc;font-size:9px}.is-insurance [data-is-insurance-gear] small{color:#9fb4c8;font-size:8px;line-height:1.5}.is-insurance [data-is-insurance-skip]{width:100%;min-height:44px;margin-top:8px;color:#d1d5db;border:1px solid #475569;background:#111827}
 
 /* Perceived-size correction for the two artwork-heavy command tiles. */
 .is-explore-command.item{background-image:url("../assets/ui/infinite-score/explore-command-bag-v2.png")}
