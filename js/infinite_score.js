@@ -568,7 +568,7 @@
       if(!value&&!delta)return '';
       return `<span><i>${esc(labels[key]||key)}</i><b>${bagValue(key,value)}</b>${!isEquipped?`<em class="${direction}">${delta>0?'▲ +':delta<0?'▼ ':'— '}${bagValue(key,delta)}</em>`:''}</span>`;
     }).join('');
-    const ops=(x.ops||[]).map(o=>`<li>${esc(labels[o.key]||o.key)} <b>+${bagValue(o.key,o.value)}</b> <small>R${o.rank}</small></li>`).join('');
+    const ops=(x.ops||[]).map(o=>`<li>${esc(labels[o.key]||o.key)} <b>+${this.owgOpValueText?.(o) ?? bagValue(o.key,o.value)}</b> <small>R${o.rank}</small></li>`).join('');
     const vitals=item.effect&&!item.effect.returnRun?this.totalStats():null;
     const recovery=vitals&&this.recoveryItemInfo?.(item,vitals);
     const full=recovery&&this.isRun()[recovery.key]>=vitals[recovery.maxKey];
@@ -1149,7 +1149,6 @@
 
   const forgeModes = {
     enhance: {label:'強化', target:'強化する装備を選ぶ', empty:'強化できる装備がありません。装備と必要な欠片・核を確認してください。'},
-    merge: {label:'同型合成', target:'合成する装備を選ぶ', empty:'合成できる装備がありません。同じ種類の素材装備が必要です。'},
     transfer: {label:'OP移植', target:'移植先の装備を選ぶ', empty:'移植できる組み合わせがありません。装備2個と、移植するOPに必要な欠片・核を確認してください。'},
     delete: {label:'OP削除', target:'OPを削除する装備を選ぶ', empty:'OPを削除できる装備がありません。OPの付いた装備と欠片が必要です。'}
   };
@@ -1172,8 +1171,17 @@
     return this.owgTuneCost?.(gear) || {shard:3 + plus * 2, core:plus >= 5 ? 1 : 0};
   };
 
-  P.isForgeMergeMaterials = function (target, gear) {
+  P.isForgeEnhanceMaterials = function (target, gear) {
     return gear.filter(item => item.uid !== target.uid && item.itemId === target.itemId && !item.locked);
+  };
+
+  P.isForgeEnhanceBonuses = function (target, material) {
+    const sourceValues = new Map((material.ops || []).map(op => [op.key, Number(op.value)]));
+    return (target.ops || []).flatMap(op => {
+      const gain = (sourceValues.get(op.key) || 0) * .5;
+      const value = Number(op.value) + gain;
+      return gain > 0 && Number.isFinite(value) ? [{before:op, after:{...op, value}}] : [];
+    });
   };
 
   P.isForgeTransferSources = function (gear) {
@@ -1185,8 +1193,8 @@
   };
 
   P.isForgeEligibleTargets = function (mode, gear, sources) {
-    if (mode === 'enhance') return gear.filter(item => this.isForgeHasMaterials(this.isForgeEnhanceCost(item)));
-    if (mode === 'merge') return gear.filter(item => this.isForgeMergeMaterials(item, gear).length > 0);
+    if (mode === 'enhance') return gear.filter(item => this.isForgeHasMaterials(this.isForgeEnhanceCost(item)) ||
+      this.isForgeEnhanceMaterials(item, gear).length > 0);
     if (mode === 'transfer') return gear.filter(item => sources.some(({item:source}) => source.uid !== item.uid));
     return this.isForgeHasMaterials(this.isForgeOpCost()) ? gear.filter(item => item.ops?.length) : [];
   };
@@ -1202,9 +1210,14 @@
     return this.owgName?.(gear) || D().items[gear?.itemId]?.name || gear?.itemId || '装備なし';
   };
 
-  P.isForgeOpText=function(o){if(!o)return'OP なし';const label=this.isCfg().opLabels[o.key]||o.key,value=Math.abs(Number(o.value))<1?`${Math.round(Number(o.value)*100)}%`:o.value;return `${label} +${value}`;};
+  P.isForgeOpText = function (op) {
+    if (!op) return 'OP なし';
+    const label = this.isCfg().opLabels[op.key] || D().otherWorldGearOps?.find(item => item.key === op.key)?.label || op.key;
+    const value = this.owgOpValueText?.(op) ?? (Math.abs(Number(op.value)) < 1 ? `${Math.round(Number(op.value) * 100)}%` : op.value);
+    return `${label} +${value}`;
+  };
   P.isForgeStats = function (gear) {
-    const values = this.isGearValues(gear);
+    const values = this.isBagGearStats(gear);
     const labels = {attackPower:'攻撃', magicAttackPower:'魔攻', defensePower:'防御', magicDefensePower:'魔防'};
     return Object.entries(labels).map(([key,label]) => ({key,label,value:Number(values[key]) || 0}));
   };
@@ -1234,9 +1247,9 @@
       <button type="button" class="is-forge-execute" data-is-forge-execute ${canRun ? '' : 'disabled'}>${button}</button>`;
   };
 
-  P.isForgeStatPreview = function (gear, current) {
+  P.isForgeStatPreview = function (gear, current, enhanced) {
     const before = this.owgEffectiveStats(gear, gear.tuneLevel || current);
-    const after = this.owgEffectiveStats(gear, current + 1);
+    const after = this.owgEffectiveStats(enhanced, current + 1);
     const deltas = this.isForgeStats(gear).filter(({key}) => before[key] || after[key]).map(({key,label}) => {
       const from = before[key]?.total || 0, to = after[key]?.total || 0;
       return `<div><b>${label}</b><span>${from.toLocaleString()} → ${to.toLocaleString()}</span>
@@ -1248,20 +1261,36 @@
   P.isForgeStageHtml = function (gear, state, allGear, sources) {
     const advance = !state.busy;
     if (state.mode === 'enhance') {
-      const cost = this.isForgeEnhanceCost(gear), current = gear.plus || 0;
-      const deltas = this.isForgeStatPreview(gear, current);
-      const rate = this.owgTuneRate?.(current + 1) ?? 1;
-      return `<section class="is-forge-stage"><h3>強化結果</h3><div class="is-forge-deltas">${deltas}</div>
-        ${this.isForgeResultHtml('成功率 ' + Math.round(rate * 100) + '%', `+${current} → +${current + 1}`,
-          cost, '強化する', advance, rate < 1 ? '失敗すると装備が消滅します。保護のアルカナを使えます。' : '')}</section>`;
-    }
-    if (state.mode === 'merge') {
-      const candidates = this.isForgeMergeMaterials(gear, allGear);
+      const cost = this.isForgeEnhanceCost(gear), canTune = this.isForgeHasMaterials(cost);
+      const candidates = this.isForgeEnhanceMaterials(gear, allGear);
       const material = candidates.find(item => item.uid === state.materialUid);
-      const result = material ? `+${gear.plus || 0} → +${(gear.plus || 0) + 1}` : '';
-      return `<section class="is-forge-stage"><h3>合成素材を選ぶ</h3><div class="is-forge-material-list">${candidates.map(item =>
-        `<button type="button" class="is-forge-entry" data-is-forge-material="${esc(item.uid)}" aria-pressed="${item === material}">${this.isForgeEntryHtml(item)}</button>`
-      ).join('')}</div>${material ? this.isForgeResultHtml('合成結果', result, null, '同型合成する', advance, '素材装備は合成後に消滅します。') : ''}</section>`;
+      const current = gear.plus || 0;
+      const bonuses = material ? this.isForgeEnhanceBonuses(gear, material) : [];
+      const updated = new Map(bonuses.map(({before, after}) => [before, after]));
+      const enhanced = bonuses.length ? {...gear, ops:gear.ops.map(op => updated.get(op) || op)} : gear;
+      const deltas = this.isForgeStatPreview(gear, current, enhanced);
+      const rate = material ? 1 : (this.owgTuneRate?.(current + 1) ?? 1);
+      const choices = candidates.length ? `<section class="is-forge-stage"><h3>強化素材を選ぶ</h3>
+        <div class="is-forge-material-list">
+          ${canTune ? `<button type="button" class="is-forge-entry" data-is-forge-material="" aria-pressed="${!material}">
+            ${bagIcon('shard')}<span class="is-forge-entry-main"><strong>欠片・核で強化</strong><small>${this.isForgeCostText(cost)}</small></span>
+          </button>` : ''}
+          ${candidates.map(item => {
+            const common = this.isForgeEnhanceBonuses(gear, item).length;
+            return `<button type="button" class="is-forge-entry" data-is-forge-material="${esc(item.uid)}" aria-pressed="${item === material}">
+              ${this.isForgeEntryHtml(item, common ? `成功率100％ ／ 共通OP ${common}個` : '成功率100％')}
+            </button>`;
+          }).join('')}
+        </div>
+      </section>` : '';
+      if (!material && !canTune) return choices;
+      const preview = bonuses.length ? `<h4>共通OPに素材の50％を上乗せ</h4><ul class="is-forge-bonuses">${bonuses.map(({before,after}) =>
+        `<li>${esc(this.isForgeOpText(before))} → <b>${esc(this.isForgeOpText(after))}</b></li>`).join('')}</ul>` : '';
+      const warning = material ? '強化に使った装備は消滅します。' : rate < 1 ? '失敗時に消費するのは欠片・核だけです。' : '';
+      return `${choices}<section class="is-forge-stage"><h3>強化結果</h3><div class="is-forge-deltas">${deltas}</div>
+        ${preview}
+        ${this.isForgeResultHtml('成功率 ' + Math.round(rate * 100) + '%', `+${current} → +${current + 1}`,
+          material ? null : cost, '強化する', advance, warning)}</section>`;
     }
     if (state.mode === 'transfer') {
       const candidates = sources.filter(({item}) => item.uid !== gear.uid);
@@ -1301,7 +1330,7 @@
     if (!target) state.selectedUid = state.sourceUid = state.materialUid = state.opIndex = state.replaceIndex = null;
     const scroll = panel.dataset.panel === 'infinite-score-workshop' ? panel.scrollTop : 0;
     const used = this.isBagUsed(), limit = this.isBagLimit();
-    const targetLabels = {enhance:'強化対象',merge:'合成先',transfer:'移植先',delete:'削除対象'};
+    const targetLabels = {enhance:'強化対象',transfer:'移植先',delete:'削除対象'};
     panel.dataset.panel = 'infinite-score-workshop';
     panel.innerHTML = `<main class="is-forge-screen">
       <header class="is-forge-header">
@@ -1328,7 +1357,7 @@
         <header><b>異世界工房ガイド</b><button type="button" data-is-forge-help aria-label="ヘルプを閉じる">×</button></header>
         <p>各加工に使える装備が一覧に表示されます。強化・OP移植・OP削除は、手持ちの素材で実行できる装備を選べます。</p>
         <p>OP移植は、移植先 → 素材装備 → 移植するOPの順に選びます。同じOPは合成し、空き枠があれば追加します。枠がいっぱいの場合は入れ替えるOPを選べます。</p>
-        <p>同型合成とOP移植では、選んだ素材装備が消滅します。奏貨は無限奏廊内で使用し、帰還時消滅します。</p>
+        <p>欠片・核での強化は＋4から成功率が下がり、失敗時に消費するのは欠片・核だけです。同じ装備を素材にする強化は成功率100％です。共通OPに素材側の効果値の50％が加わり、素材装備は消滅します。</p>
       </div></section>` : ''}
     </main>`;
     panel.scrollTop = scroll;
@@ -1344,10 +1373,57 @@
   P.isForgeHasMaterials=function(cost={}){return this.isForgeMaterialCount('otherworldShard')>=(cost.shard||0)&&this.isForgeMaterialCount('otherworldCore')>=(cost.core||0);};
   P.isForgeSpendMaterials=function(cost={}){if(!this.isForgeHasMaterials(cost))return false;const bag=this.isRun().lootBag,spend=(itemId,need)=>{for(let i=bag.length-1;i>=0&&need>0;i--){const x=bag[i];if(x.itemId!==itemId)continue;const take=Math.min(need,Math.max(1,Number(x.count)||1));x.count=(Number(x.count)||1)-take;need-=take;if(x.count<=0)bag.splice(i,1);}};spend('otherworldShard',cost.shard||0);spend('otherworldCore',cost.core||0);return true;};
   P.isForgeCostText=function(cost={}){return `欠片 ${cost.shard||0}${cost.core?` / 核 ${cost.core}`:''}`;};
-  P.isForgeProtectionCount=function(){return Math.max(0,Number(this.profile?.inventory?.protectionArcana)||0)+this.isForgeMaterialCount('protectionArcana');};
-  P.isForgeSpendProtection=function(){const bag=this.isRun()?.lootBag||[],i=bag.findIndex(x=>x.itemId==='protectionArcana');if(i>=0){bag.splice(i,1);return true;}const inv=this.profile.inventory||{};if((inv.protectionArcana||0)>0){inv.protectionArcana--;return true;}return false;};
-  P.isForgeEnhance=async function(uid){const r=this.isRun(),x=this.isBagEntry(uid);if(!r||!x?.otherWorldGear)return;const current=x.plus||0,next=current+1,cost=this.isForgeEnhanceCost(x),rate=this.owgTuneRate?.(next)??1,name=this.isForgeName(x);if(!this.isForgeHasMaterials(cost)){await this.isNotify('異界素材が足りません',`必要 ${this.isForgeCostText(cost)}`);return;}let protectedByArcana=false;if(rate<1&&this.isForgeProtectionCount()>0){const use=await this.isChoose('保護のアルカナを使いますか？',[{label:'使用する',note:`所持 ${this.isForgeProtectionCount()}／失敗時も装備と強化値を維持`},{label:'使用しない',note:'失敗時は装備消滅'}],{kicker:'TUNING PROTECTION'});if(use===null)return;protectedByArcana=use===0;}if(!await this.isConfirm(`${name}を調律しますか？`,`+${current} → +${next}\n必要 ${this.isForgeCostText(cost)}\n成功率 ${Math.round(rate*100)}%${protectedByArcana?'／保護あり':rate<1?'／失敗時消滅':''}`,{kicker:'OTHER WORLD FORGE',confirmLabel:'調律する',danger:rate<1&&!protectedByArcana}))return;if(this.isRun()!==r||this.isBagEntry(uid)!==x||!this.isForgeSpendMaterials(cost))return;if(protectedByArcana)this.isForgeSpendProtection();if(this.isRand()<rate){x.plus=next;x.tuneLevel=next;this.isLog(`異世界工房：${name}を+${next}へ調律`);this.audio?.sfx?.('confirm');}else if(protectedByArcana){this.isLog(`異世界工房：調律失敗、保護のアルカナが${name}を守った`);this.audio?.sfx?.('defeat');await this.isNotify('調律失敗','保護のアルカナにより、装備と現在の強化値を維持しました。',{kicker:'ARCANA PROTECTION'});}else{Object.keys(r.equipment).forEach(s=>{if(r.equipment[s]===x.uid)delete r.equipment[s]});r.lootBag.splice(r.lootBag.indexOf(x),1);this.isLog(`異世界工房：調律失敗、${name}が消滅`);this.audio?.sfx?.('defeat');await this.isNotify('調律失敗',`${name}は無限奏廊へ消滅しました。`,{kicker:'TUNING FAILED'});}this.isSave();this.isRenderWorkshop($('#menu-panel'));};
-  P.isForgeMerge=async function(uid,materialUid=null){const base=this.isBagEntry(uid),candidates=base?this.isForgeMergeMaterials(base,this.isWorkshopGear()):[],mat=materialUid?candidates.find(x=>x.uid===materialUid):null;if(!mat){await this.isNotify('合成できません','同じ種類の異世界装備がありません。',{kicker:'OTHER WORLD FORGE'});return;}if(!await this.isConfirm('同型合成しますか？',`${this.isForgeName(mat)}は素材として消滅します。`,{kicker:'SAME-TYPE SYNTHESIS',confirmLabel:'合成する',danger:true}))return;const r=this.isRun();base.plus=(base.plus||0)+1;base.tuneLevel=base.plus;base.quality=Math.min(120,Math.max(base.quality||100,mat.quality||100)+1);const pool=(mat.ops||[]).filter(o=>!base.ops.some(v=>v.key===o.key));if(base.ops.length<4&&pool.length)base.ops.push(copy(pool.sort((a,b)=>b.rank-a.rank)[0]));Object.keys(r.equipment).forEach(s=>{if(r.equipment[s]===mat.uid)delete r.equipment[s]});r.lootBag.splice(r.lootBag.indexOf(mat),1);this.isLog(`異世界工房：同型合成 +${base.plus}`);this.isSave();this.audio?.sfx?.('confirm');this.isRenderWorkshop($('#menu-panel'));};
+  P.isForgeConsumeGear = function (run, gear) {
+    for (const slot of Object.keys(run.equipment || {})) {
+      if (run.equipment[slot] === gear.uid) delete run.equipment[slot];
+    }
+    run.lootBag.splice(run.lootBag.indexOf(gear), 1);
+  };
+
+  P.isForgeEnhance=async function(uid, materialUid = null){
+    const run = this.isRun(), gear = this.isBagEntry(uid);
+    if (!run || !gear?.otherWorldGear) return;
+    const material = materialUid ? this.isForgeEnhanceMaterials(gear, this.isWorkshopGear()).find(item => item.uid === materialUid) : null;
+    if (materialUid && !material) return;
+    const current = gear.plus || 0, next = current + 1, name = this.isForgeName(gear);
+    const cost = material ? null : this.isForgeEnhanceCost(gear);
+    if (cost && !this.isForgeHasMaterials(cost)) {
+      await this.isNotify('異界素材が足りません', `必要 ${this.isForgeCostText(cost)}`);
+      return;
+    }
+    const rate = material ? 1 : (this.owgTuneRate?.(next) ?? 1);
+    const bonuses = material ? this.isForgeEnhanceBonuses(gear, material) : [];
+    const details = [`+${current} → +${next}`, `成功率 ${Math.round(rate * 100)}%`];
+    if (material) {
+      const equipped = Object.values(run.equipment || {}).includes(material.uid);
+      details.push(`${equipped ? '装備中の' : ''}素材「${this.isForgeName(material)}」を消費します。`);
+      for (const {before, after} of bonuses) details.push(`${this.isForgeOpText(before)} → ${this.isForgeOpText(after)}`);
+    } else {
+      details.push(`必要 ${this.isForgeCostText(cost)}`);
+      if (rate < 1) details.push('失敗時に消費するのは欠片・核だけです。');
+    }
+    if (!await this.isConfirm(`${name}を強化しますか？`, details.join('\n'),
+      {kicker:'OTHER WORLD FORGE', confirmLabel:'強化する', danger:!!material})) return;
+    if (this.isRun() !== run || this.isBagEntry(uid) !== gear || (gear.plus || 0) !== current ||
+        (material && (this.isBagEntry(material.uid) !== material || material.locked)) ||
+        (cost && !this.isForgeSpendMaterials(cost))) return;
+
+    if (rate >= 1 || this.isRand() < rate) {
+      gear.plus = gear.tuneLevel = next;
+      for (const {before, after} of bonuses) before.value = after.value;
+      if (material) this.isForgeConsumeGear(run, material);
+      this.isLog(`異世界工房：${name}を+${next}へ強化`);
+      this.audio?.sfx?.('confirm');
+    } else {
+      this.isLog(`異世界工房：${name}の+${next}強化に失敗`);
+      this.audio?.sfx?.('defeat');
+      this.isSave();
+      await this.isNotify('強化失敗', `${this.isForgeCostText(cost)}を消費しました。`, {kicker:'TUNING FAILED'});
+    }
+    this.isSave();
+    this.isRenderWorkshop($('#menu-panel'));
+  };
+
   P.isForgeCombinedOp=function(targetOp,sourceOp){
     if(!targetOp||!sourceOp||targetOp.key!==sourceOp.key)return copy(sourceOp);
     return {...copy(targetOp),rank:Math.max(targetOp.rank||1,sourceOp.rank||1),value:(Number(targetOp.value)||0)+(Number(sourceOp.value)||0)};
@@ -1390,10 +1466,7 @@
     if (same >= 0) target.ops[same] = result;
     else if (replaced) target.ops[replace] = result;
     else target.ops.push(result);
-    for (const slot of Object.keys(run.equipment || {})) {
-      if (run.equipment[slot] === source.uid) delete run.equipment[slot];
-    }
-    run.lootBag.splice(run.lootBag.indexOf(source), 1);
+    this.isForgeConsumeGear(run, source);
     this.isForgeUI.sourceUid = this.isForgeUI.opIndex = this.isForgeUI.replaceIndex = null;
     this.isLog(same >= 0 ? `異世界工房：同一OP合成 ${this.isForgeOpText(result)}` : '異世界工房：OP移植');
     this.isSave();
@@ -1425,8 +1498,7 @@
     state.busy = true;
     this.isRenderWorkshop($('#menu-panel'));
     try {
-      if (state.mode === 'enhance') await this.isForgeEnhance(target.uid);
-      else if (state.mode === 'merge') await this.isForgeMerge(target.uid, state.materialUid);
+      if (state.mode === 'enhance') await this.isForgeEnhance(target.uid, state.materialUid);
       else if (state.mode === 'transfer') await this.isForgeTransfer(state.sourceUid, target.uid, state.opIndex, state.replaceIndex);
       else await this.isForgeDelete(target.uid, state.opIndex);
     } finally {
@@ -1461,8 +1533,8 @@
       }
       state.selectedUid = data.isForgeSelect || null;
       state.materialUid = state.sourceUid = state.opIndex = state.replaceIndex = null;
-    } else if (data.isForgeMaterial) {
-      state.materialUid = data.isForgeMaterial;
+    } else if (data.isForgeMaterial !== undefined) {
+      state.materialUid = data.isForgeMaterial || null;
       focus = '[data-is-forge-material][aria-pressed="true"]';
     } else if (data.isForgeSource || control.hasAttribute('data-is-forge-change-source')) {
       state.sourceUid = data.isForgeSource || null;
