@@ -392,7 +392,7 @@
     for (const {resource, stat, costRate, bonus} of costs) {
       const cost = Math.ceil(this.player.stats[stat] * costRate);
       const available = this.player[resource] - (resource === 'hp' ? 1 : 0);
-      const appliedBonus = Math.min(bonus || 0, 1 - damageBonus);
+      const appliedBonus = Math.min(bonus || 0, 1);
       if (!(appliedBonus > 0 && cost > 0 && available >= cost)) continue;
       this.player[resource] -= cost;
       if (resource === 'mp') this.usedMpThisBattle = true;
