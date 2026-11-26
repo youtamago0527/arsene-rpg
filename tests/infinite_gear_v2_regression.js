@@ -239,7 +239,8 @@ test('returned reward OPs require equipped gear and a normal battle, and add tog
   game.isRun().equipment={rightHand:sword.uid};
   assert.equal(game.rewardExpMultiplier(),1.5);
   assert.equal(game.rewardGoldMultiplier(),2);
-  assert.match(statModel.opText(sword.ops[0]),/通常D.*JOB EXP/);
+  assert.equal(statModel.opText(sword.ops[0]),'経験値UP +20%［LEGEND］（EXP・JOB EXP）');
+  assert.equal(statModel.opText(sword.ops[1]),'GOLD UP +25%［EPIC］');
 });
 
 test('reward OPs roll past their base ranges and can stack a 1,000% roll into all 42 slots', () => {
