@@ -392,10 +392,11 @@
     for (const {resource, stat, costRate, bonus} of costs) {
       const cost = Math.ceil(this.player.stats[stat] * costRate);
       const available = this.player[resource] - (resource === 'hp' ? 1 : 0);
-      if (!(bonus > 0 && cost > 0 && available >= cost)) continue;
+      const appliedBonus = Math.min(bonus || 0, 1 - damageBonus);
+      if (!(appliedBonus > 0 && cost > 0 && available >= cost)) continue;
       this.player[resource] -= cost;
       if (resource === 'mp') this.usedMpThisBattle = true;
-      damageBonus += bonus;
+      damageBonus += appliedBonus;
       paid.push(`${resource.toUpperCase()} -${cost.toLocaleString('ja-JP')}`);
     }
     if (!damageBonus) return skill;
@@ -406,10 +407,10 @@
   };
 
   P.owgTryRevive = function (rate = this.owgEffects().reviveOnKnockout, random = Math.random) {
-    const player = this.player;
-    if (!(rate > 0) || player.hp > 0 || player.owgRevived || (rate < 1 && random() >= rate)) return false;
+    const player = this.player, chance = Math.min(1, rate);
+    if (!(chance > 0) || player.hp > 0 || player.owgRevived || (chance < 1 && random() >= chance)) return false;
     player.owgRevived = true;
-    player.hp = Math.max(1, Math.ceil(player.stats.maxHp * Math.min(1, rate)));
+    player.hp = Math.max(1, Math.ceil(player.stats.maxHp * chance));
     this.flashTitle('復活', `HP +${player.hp.toLocaleString('ja-JP')}`);
     this.setLog(`装備のOPが発動し、HP ${player.hp.toLocaleString('ja-JP')}で復活した！`);
     this.floating(document.getElementById('ren'), `復活 +${player.hp.toLocaleString('ja-JP')}`, 'heal');

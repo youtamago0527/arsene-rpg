@@ -298,6 +298,29 @@ test('revival uses the same rate for the roll and restored HP and can succeed on
   assert.equal(g.receivePlayerDamage(200),100);
   assert.equal(g.player.hp,0);
   delete g.player.owgRevived;
-  assert.equal(revive.call(g,1.25,() => {throw Error('guaranteed revival must not draw');}),true);
+  armor.ops[0].value = .65;
+  charm.ops[0].value = .65;
+  assert.equal(revive.call(g,undefined,() => {throw Error('guaranteed revival must not draw');}),true);
   assert.equal(g.player.hp,500);
+});
+
+test('HP and MP damage OPs share a 100% cap across all equipped items', () => {
+  const g = fixture();
+  const sword = gear(g,'sword',{mpCostDamageBonus:.60,hpCostDamageBonus:.60});
+  const charm = gear(g,'accessory_might',{mpCostDamageBonus:.60});
+  g.isRun().equipment.rightHand = sword.uid;
+  g.floating = () => {};
+  const attack = {id:'attack',kind:'weapon',target:'single'};
+  const enemy = {hp:1000,stats:{maxHp:1000}};
+  const combined = g.owgEmpowerAttack(attack);
+  assert.equal(combined.owgPaidDamageBonus,1);
+  assert.equal(g.owgDamageWithOps(100,combined,enemy,false),200);
+  assert.equal(g.player.hp,375);
+  assert.equal(g.player.mp,0);
+  g.isRun().equipment.accessory = charm.uid;
+  g.player.hp = 400;
+  g.player.mp = 10;
+  assert.equal(g.owgEmpowerAttack(attack).owgPaidDamageBonus,1);
+  assert.equal(g.player.hp,400);
+  assert.equal(g.player.mp,0);
 });
