@@ -159,8 +159,8 @@
 
   // ── ダメージへ反映 ────────────────────────────────────────
   const origDamageFor = P.damageFor;
-  P.damageFor = function (skill, enemy) {
-    const r = origDamageFor.call(this, skill, enemy);
+  P.damageFor = function (skill, enemy, outcome) {
+    const r = origDamageFor.call(this, skill, enemy, outcome);
     if (!r || !this.player) return r;
     const w = this.equippedWeapon() || {};
     const wType = skill.weaponType || w.weaponType || 'sword';

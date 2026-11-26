@@ -780,7 +780,7 @@
       const a = D.accuracy || { base: .9, dexRate: .006, defenderAgiRate: .005, min: .05, max: 1 };
       const weaponModifier = this.weaponAccuracyModifier(options.weaponType, options.weapon);
       const skillModifier = Number(options.skill?.accuracyModifier ?? 0) || 0;
-      const otherModifier = Number(options.otherModifier ?? attackerStats?.accuracyModifier ?? 0) || 0;
+      const otherModifier = (Number(options.otherModifier ?? attackerStats?.accuracyModifier ?? 0) || 0) + (options.gearHitModifier || 0);
       const agiRate = a.defenderAgiRate ?? a.enemySpdRate ?? .005;
       const raw = a.base + this.combatDex(attackerStats) * a.dexRate - this.combatAgi(defenderStats) * agiRate + weaponModifier + skillModifier + otherModifier;
       return clamp(raw, a.min ?? .05, a.max ?? 1);
@@ -806,6 +806,7 @@
       return { hit: Math.random() < hitChance, critical: false, unavoidable: false, hitChance, criticalChance };
     }
     rollPlayerAttackOutcome(skill, enemy, options = {}) {
+      options = { ...options, gearHitModifier: this.owgEffects?.().accuracyUp || 0 };
       const weapon = options.weapon || this.equippedWeapon();
       const weaponType = options.weaponType || skill?.weaponType || weapon?.weaponType || this.equippedWeaponType();
       const stats = this.playerCombatStats(), offHandPassive = this.activePassiveByType('offHandCritical'), offHandCrit = options.offHand ? this.passiveRate(offHandPassive) : 0;
@@ -821,11 +822,11 @@
       return this.rollAttackOutcome(stats, enemy?.stats || {}, { ...options, skill, weapon, weaponType, criticalChance });
     }
     rollEnemyAttackOutcome(enemy, action = {}, options = {}) {
-      return this.rollAttackOutcome(enemy?.stats || {}, this.playerCombatStats(), { ...options, skill: action, weaponType: action.weaponType || null, criticalChance: options.criticalChance || 0 });
+      return this.rollAttackOutcome(enemy?.stats || {}, this.playerCombatStats(), { ...options, skill: action, weaponType: action.weaponType || null, criticalChance: options.criticalChance || 0, gearHitModifier: -(this.owgEffects?.().evadeBonus || 0) });
     }
     // 旧呼び出し互換。新規処理はrollPlayerAttackOutcomeで会心→命中の順に判定する。
     hitChanceAgainst(enemy, stats = this.player?.stats || this.totalStats(), skill = {}, weapon = this.equippedWeapon()) {
-      return this.hitChanceBetween(stats, enemy?.stats || {}, { skill, weapon, weaponType: skill.weaponType || weapon?.weaponType || this.equippedWeaponType() });
+      return this.hitChanceBetween(stats, enemy?.stats || {}, { skill, weapon, weaponType: skill.weaponType || weapon?.weaponType || this.equippedWeaponType(), gearHitModifier: this.owgEffects?.().accuracyUp || 0 });
     }
     emitBattleEvent(type, detail = {}) {
       const event = { type, turn: this.turn || 0, timestamp: Date.now(), ...detail };
@@ -2727,8 +2728,9 @@
       const key = effect.hp || effect.hpRate ? 'hp' : effect.mp || effect.mpRate ? 'mp' : null;
       if (!key) return null;
       const maxKey = key === 'hp' ? 'maxHp' : 'maxMp';
-      const rate = Number(effect[`${key}Rate`]) || 0;
-      const amount = rate > 0 ? Math.max(1, Math.ceil((Number(stats?.[maxKey]) || 0) * rate)) : Math.max(0, Number(effect[key]) || 0);
+      const boost = 1 + (this.owgEffects?.()[key === 'hp' ? 'extraPotionHpRate' : 'extraPotionMpRate'] || 0);
+      const rate = (Number(effect[`${key}Rate`]) || 0) * boost;
+      const amount = rate > 0 ? Math.max(1, Math.ceil((Number(stats?.[maxKey]) || 0) * rate)) : Math.max(0, (Number(effect[key]) || 0) * boost);
       return { key, maxKey, rate, amount, label: rate > 0 ? `${key.toUpperCase()} ${Math.round(rate * 100)}%` : `${key.toUpperCase()} +${amount}` };
     }
     battleUsableItems() {
@@ -2876,7 +2878,7 @@
       if (this.player.hp <= 0) { await this.defeat(); return; } this.endPlayerTurn(); this.turn++; this.locked = false; this.updateHUD(); this.showMainCommands();
     }
     effectivePlayerStat(key) { const base = this.player.stats[key] || 0; return key === 'mag' && (this.player.buffs?.blueEcho || 0) > 0 ? base * 1.10 : base; }
-    async beginPlayerTurn() { if (this.characterHasSkill('blueEcho') && Math.random() < .20) { this.player.buffs.blueEcho = 2; this.audio.sfx('passiveProc'); this.flashTitle('BLUE ECHO', 'MAG +10% // 2 TURNS'); this.setLog('蒼の残響が魔力を高める！'); await this.battleSleep(260); } if ((this.player.buffs.regenerate || 0) > 0) { const chance = this.player.buffs.regenerateChance ?? 1; if (Math.random() < chance) { const rate = this.player.buffs.regenerateRate || .08, boost = 1 + this.passiveEffectRate('healUp') + this.equipmentEffectRate('healingPowerPercent'), heal = Math.max(1, Math.ceil(this.player.stats.maxHp * rate * boost * this.traitHealMult())), gained = Math.min(this.receivedHealAmount(heal), this.player.stats.maxHp - this.player.hp); this.player.hp += gained; if (gained) { this.floating($('#ren'), `+${gained}`, 'heal'); this.setLog(`リジェネレートでHPが${gained}回復！`); this.updateHUD(); await this.battleSleep(220); } } else { this.floating($('#ren'), 'REGEN MISS', 'miss'); this.setLog('リジェネレートの祈りは、このターン実を結ばなかった。'); await this.battleSleep(140); } } }
+    async beginPlayerTurn() { this.owgTurnRecovery?.(); if (this.characterHasSkill('blueEcho') && Math.random() < .20) { this.player.buffs.blueEcho = 2; this.audio.sfx('passiveProc'); this.flashTitle('BLUE ECHO', 'MAG +10% // 2 TURNS'); this.setLog('蒼の残響が魔力を高める！'); await this.battleSleep(260); } if ((this.player.buffs.regenerate || 0) > 0) { const chance = this.player.buffs.regenerateChance ?? 1; if (Math.random() < chance) { const rate = this.player.buffs.regenerateRate || .08, boost = 1 + this.passiveEffectRate('healUp') + this.equipmentEffectRate('healingPowerPercent'), heal = Math.max(1, Math.ceil(this.player.stats.maxHp * rate * boost * this.traitHealMult())), gained = Math.min(this.receivedHealAmount(heal), this.player.stats.maxHp - this.player.hp); this.player.hp += gained; if (gained) { this.floating($('#ren'), `+${gained}`, 'heal'); this.setLog(`リジェネレートでHPが${gained}回復！`); this.updateHUD(); await this.battleSleep(220); } } else { this.floating($('#ren'), 'REGEN MISS', 'miss'); this.setLog('リジェネレートの祈りは、このターン実を結ばなかった。'); await this.battleSleep(140); } } }
     endPlayerTurn() { if ((this.player.buffs.blueEcho || 0) > 0) this.player.buffs.blueEcho--; if ((this.player.buffs.regenerate || 0) > 0) { this.player.buffs.regenerate--; if (this.player.buffs.regenerate <= 0) { delete this.player.buffs.regenerate; delete this.player.buffs.regenerateRate; delete this.player.buffs.regenerateChance; } } if (this.player.buffs.defUp && this.turn > this.player.buffs.defUp.until) delete this.player.buffs.defUp; if (this.player.buffs.guardUntil === this.turn) { delete this.player.buffs.guardUntil; delete this.player.buffs.guardReduction; } }
     damageFor(skill, enemy, outcome = null) {
       const s = this.playerCombatStats(), w = skill.weaponOverrideId ? D.weapons[skill.weaponOverrideId] : this.equippedWeapon(), balance = D.combatBalance;
@@ -2935,7 +2937,8 @@
       if (critical) value *= balance.critical.multiplier;
       // 武器学は基礎能力へ混ぜず、対応武器で与える最終ダメージだけを伸ばす。
       value *= this.weaponMasteryMultiplier(wType);
-      return { value: Math.max(1, Math.round(value)), critical, weak };
+      const damage = Math.max(1, Math.round(value));
+      return { value: this.owgDamageWithOps?.(damage, skill, enemy, critical) ?? damage, critical, weak };
     }
     // 閃き演出：画面フラッシュ＋効果音＋カットインを見せてから技を発動する
     async sparkPresentation(skill) {
@@ -3003,7 +3006,9 @@
         this.refundMpFromSpell(d.value, skill); // 魔導士《魔力還流》
         perHit[target.uid] = (perHit[target.uid] || 0) + d.value;
         if (target.infiniteHp) target.debugDamageTaken = (target.debugDamageTaken || 0) + d.value;
+        const hpBeforeHit = target.hp;
         target.hp = target.infiniteHp ? target.stats.maxHp : target.cannotDefeat ? Math.max(1, target.hp - d.value) : Math.max(0, target.hp - d.value);
+        this.owgRecoverFromDamageDealt?.(hpBeforeHit - target.hp);
         this.recordSeripesHit(target, skill, d.value);
         // 撃破した瞬間に見た目も倒す。ここで付けないと「HP0なのに敵が残る」状態になる。
         if (target.hp <= 0) { target.alive = false; tEl.classList.add('defeated'); }
@@ -3089,7 +3094,9 @@
       this.comboDanceHit(pursuitExtra);
       const d = this.damageFor(strike, enemy, outcome);
       if (enemy.infiniteHp) enemy.debugDamageTaken = (enemy.debugDamageTaken || 0) + d.value;
+      const hpBeforeHit = enemy.hp;
       enemy.hp = enemy.infiniteHp ? enemy.stats.maxHp : enemy.cannotDefeat ? Math.max(1, enemy.hp - d.value) : Math.max(0, enemy.hp - d.value);
+      this.owgRecoverFromDamageDealt?.(hpBeforeHit - enemy.hp);
       el.classList.add('hit');
       this.floating(el, d.value, d.critical ? 'critical' : 'damage');
       this.audio.playWeaponAttack(lw.weaponType); if (d.critical) this.audio.sfx('criticalHit');
@@ -3149,7 +3156,9 @@
       if (!outcome.hit) { this.triggerEvade('player', enemy, skill, { source: 'counter' }); this.floating(el, 'EVADE', 'miss'); this.setLog(`${enemy.name}${enemy.label}は反撃をかわした！`); await this.battleSleep(260); ren.classList.remove('attacking'); return; }
       const d = this.damageFor(skill, enemy, outcome);
       if (enemy.infiniteHp) enemy.debugDamageTaken = (enemy.debugDamageTaken || 0) + d.value;
+      const hpBeforeHit = enemy.hp;
       enemy.hp = enemy.infiniteHp ? enemy.stats.maxHp : enemy.cannotDefeat ? Math.max(1, enemy.hp - d.value) : Math.max(0, enemy.hp - d.value);
+      this.owgRecoverFromDamageDealt?.(hpBeforeHit - enemy.hp);
       el.classList.add('hit');
       this.floating(el, d.value, d.critical ? 'critical' : 'damage');
       this.audio.playWeaponAttack(skill.weaponType || this.equippedWeaponType()); if (d.critical) this.audio.sfx('criticalHit');
@@ -3300,7 +3309,10 @@
         if (!outcome.hit) { this.comboDanceMiss(); this.triggerEvade('player', target, skill, { source: 'playerAttackAll' }); this.floating(el, 'EVADE', 'miss'); await this.battleSleep(180); continue; }
         this.comboDanceHit();
         el.classList.add('hit');
-        const d = this.damageFor(skill, target, outcome); if (target.infiniteHp) target.debugDamageTaken = (target.debugDamageTaken || 0) + d.value; target.hp = target.infiniteHp ? target.stats.maxHp : target.cannotDefeat ? Math.max(1, target.hp - d.value) : Math.max(0, target.hp - d.value);
+        const d = this.damageFor(skill, target, outcome); if (target.infiniteHp) target.debugDamageTaken = (target.debugDamageTaken || 0) + d.value;
+        const hpBeforeHit = target.hp;
+        target.hp = target.infiniteHp ? target.stats.maxHp : target.cannotDefeat ? Math.max(1, target.hp - d.value) : Math.max(0, target.hp - d.value);
+        this.owgRecoverFromDamageDealt?.(hpBeforeHit - target.hp);
         this.refundMpFromSpell(d.value, skill); // 魔導士《魔力還流》
         this.recordSeripesHit(target, skill, d.value);
         this.floating(el, d.value, d.critical ? 'critical' : 'damage'); if (d.weak && !d.critical) this.floating(el, 'WEAK!', 'weak-label'); this.attackImpactFx ? this.attackImpactFx(skill, el, d.critical) : this.audio.sfx(d.critical ? 'critical' : 'enemyHit'); this.updateHUD();
@@ -3322,6 +3334,8 @@
     async magicProjectile(targetEl) { const field = $('#battlefield').getBoundingClientRect(), weapon = $('#weapon-layer'), sprite = $('#ren .ren-sprite'), weaponRect = weapon?.getBoundingClientRect(), from = weaponRect && weaponRect.width > 0 && weaponRect.height > 0 ? weaponRect : sprite.getBoundingClientRect(), to = targetEl.getBoundingClientRect(), orb = document.createElement('i'), sx = from.right - field.left, sy = from.top - field.top + from.height * .22, ex = to.left - field.left + to.width * .48, ey = to.top - field.top + to.height * .58; orb.className = 'magic-projectile'; orb.style.left = `${sx}px`; orb.style.top = `${sy}px`; orb.style.setProperty('--shot-x', `${ex - sx}px`); orb.style.setProperty('--shot-y', `${ey - sy}px`); $('#battlefield').appendChild(orb); await this.battleSleep(460); orb.remove(); }
     receivePlayerDamage(amount, type = 'physical', options = {}) {
       let damage = Math.max(0, Math.round(amount));
+      const otherWorldOps = this.owgEffects?.() || {};
+      damage = this.owgGuardDamage?.(damage, otherWorldOps) ?? damage;
       if (options.critical) damage = Math.max(0, Math.round(damage * (1 - Math.min(.8, this.equipmentEffectRate('receivedCriticalDamageReductionPercent')))));
       if (this.player.buffs?.fortressUntil === this.turn) damage = Math.max(0, Math.round(damage * (1 - (this.player.buffs.fortressReduction ?? .30))));
       const setEffects = this.activeSetEffects(), setReduction = clamp((setEffects.damageReductionPercent || 0) / 100, 0, .8);
@@ -3376,6 +3390,7 @@
           }
         }
       }
+      this.owgRestoreCombatResource?.('mp', actual * (otherWorldOps.mpRestoreOnDamage || 0));
       this.persistVitals(); return actual;
     }
     async enemySupportAction(enemy, chosen) {
@@ -3637,13 +3652,14 @@
     }
     rollDrops(enemy) {
       const drops = [], bonus = this.traitDropRateBonus(), mult = this.collectionTitleEffect?.('dropMultiplier') ?? 1;
-      const equipmentHits = [];
+      const equipmentHits = [], rareBonus = this.owgEffects?.().rareDropUp || 0;
       (enemy.dropTable || []).forEach(d => {
         const item = D.items[d.itemId], equipment = item?.category === 'equipment';
         // DROP特性の+2%は通常素材には従来どおり加算するが、希少装備へ加算すると
         // 0.4%が2.4%になるため、装備だけは倍率として適用する。
+        const rareEquipment = equipment && ['rare', 'epic', 'legendary', 'mythic'].includes(item.rarity);
         const chance = equipment
-          ? (Number(d.chance) || 0) * mult * (1 + bonus)
+          ? (Number(d.chance) || 0) * mult * (1 + bonus) * (1 + (rareEquipment ? rareBonus : 0))
           : (Number(d.chance) || 0) * mult + bonus;
         if (Math.random() >= Math.min(1, chance)) return;
         if (equipment) equipmentHits.push(d.itemId);
