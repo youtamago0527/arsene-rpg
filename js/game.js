@@ -1936,12 +1936,12 @@
       const el = document.getElementById(enemy.uid), ren = $('#ren');
       this.flashTitle(name, magical ? 'DISTORTED JAZZ' : 'CRIMSON RIFF'); this.setLog(`ネストゥアの${name}！`);
       let dealt = 0;
-      for (let i = 0; i < hits && this.player.hp > 0; i++) {
+      for (let i = 0; i < hits && enemy.alive && this.player.hp > 0; i++) {
         this.audio.sfx(magical ? 'dark' : 'slash'); el?.classList.add('enemy-attacking'); await this.battleSleep(hits > 1 ? 180 : 360);
         const power = magical ? enemy.stats.mag : enemy.stats.atk, raw = this.enemyRawDamage(magical ? 'magical' : 'physical', power, 1);
         const outcome = this.rollEnemyAttackOutcome(enemy, { id: name, kind: magical ? 'magic' : 'physical' });
         if (!outcome.hit) { this.triggerEvade(enemy, 'player', { name }, { source: 'nestua' }); this.floating(ren, 'EVADE', 'miss'); }
-        else { ren.classList.add('hit'); this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(Math.max(1, Math.round(raw * multiplier + roll(-2, 3))), magical ? 'magical' : 'physical'); dealt += actual; this.floating(ren, actual, 'enemy-damage'); }
+        else { ren.classList.add('hit'); this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(Math.max(1, Math.round(raw * multiplier + roll(-2, 3))), magical ? 'magical' : 'physical', {attacker:enemy}); dealt += actual; this.floating(ren, actual, 'enemy-damage'); }
         this.updateHUD(); await this.battleSleep(hits > 1 ? 210 : 420); el?.classList.remove('enemy-attacking'); ren.classList.remove('hit');
       }
       if (clearBuffs) {
@@ -1967,7 +1967,9 @@
     async nestuaWhats(enemy) {
       const guarded = this.player.buffs?.guardUntil === this.turn, damage = guarded ? 250 : 500, actual = Math.min(this.player.hp, damage);
       this.flashTitle("What's Are You Doing?", guarded ? 'FIXED 500 // GUARD 250' : 'FIXED DAMAGE 500'); this.audio.sfx('critical');
-      this.player.hp = Math.max(0, this.player.hp - actual); this.persistVitals(); this.floating($('#ren'), actual, 'enemy-damage');
+      this.player.hp = Math.max(0, this.player.hp - actual);
+      this.owgReflectDamage?.(enemy, actual, this.owgEffects?.().damageReflect);
+      this.persistVitals(); this.floating($('#ren'), actual, 'enemy-damage');
       this.setLog(`ネストゥアのWhat's Are You Doing?――${actual}固定ダメージ！`); this.updateHUD(); await this.battleSleep(650);
     }
     async bossAttackNestua(enemy) {
@@ -1986,7 +1988,7 @@
         await this.nestuaStrike(enemy, 'Mr.エリック', { magical: true, multiplier: 1.08 });
       };
       const actions = phase === 3 ? 2 : 1;
-      for (let i = 0; i < actions && this.player.hp > 0; i++) await act();
+      for (let i = 0; i < actions && enemy.alive && this.player.hp > 0; i++) await act();
     }
     async applyVersicrellMovement(enemy, mode) {
       enemy.movement = mode; enemy.defBuffUntil = 0; enemy.mdefBuffUntil = 0; enemy.defBuffRate = 0; enemy.mdefBuffRate = 0;
@@ -2003,13 +2005,13 @@
       const raw = this.enemyRawDamage(magical ? 'magical' : 'physical', magical ? enemy.stats.mag : enemy.stats.atk, 1), outcome = this.rollEnemyAttackOutcome(enemy, action);
       const damage = Math.max(1, Math.round(raw * multiplier + roll(D.combatBalance.enemyVariance.min, D.combatBalance.enemyVariance.max)));
       if (!outcome.hit) { this.triggerEvade(enemy, 'player', action, { source: 'versicrell' }); this.floating(ren, 'EVADE', 'miss'); this.setLog(`${action.name}をかわした！`); }
-      else { ren.classList.add('hit'); this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, magical ? 'magical' : 'physical'); this.floating(ren, actual, 'enemy-damage'); this.setLog(`${this.playerName()}は${actual}ダメージを受けた！`); }
+      else { ren.classList.add('hit'); this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, magical ? 'magical' : 'physical', {attacker:enemy}); this.floating(ren, actual, 'enemy-damage'); this.setLog(`${this.playerName()}は${actual}ダメージを受けた！`); }
       this.updateHUD(); await this.battleSleep(430); el?.classList.remove('enemy-attacking'); if (cssClass) el?.classList.remove(cssClass); ren.classList.remove('hit');
       if (action.id === 'noiseChord' && outcome.hit && Math.random() < (action.debuffChance || .25)) { const magicDown = Math.random() < .5; this.player.buffs[magicDown ? 'versicrellMagDown' : 'versicrellAtkDown'] = { rate: .10, until: this.turn + 2 }; this.floating(ren, magicDown ? 'MAG -10%' : 'ATK -10%', 'miss'); }
     }
     async bossAttackVersicrell(enemy) {
       if (enemy.form === 2 && !enemy.coda && enemy.hp / enemy.stats.maxHp <= .25) { enemy.coda = true; enemy.movement = 'coda'; enemy.defBuffUntil = enemy.mdefBuffUntil = 0; enemy.stats.atk = Math.round(enemy.stats.atk * 1.25); enemy.stats.mag = Math.round(enemy.stats.mag * 1.25); enemy.stats.spd = Math.round(enemy.stats.spd * 1.18); this.flashTitle('CODA', 'NO MORE DEFENSE'); this.setLog('銀環が砕け、ヴェルシクレルは守りを捨てた！'); await this.battleSleep(700); }
-      if (enemy.coda) { const action = Math.random() < .52 ? enemy.specialAttacks.silverClaw : enemy.specialAttacks.axeChord; await this.versicrellStrike(enemy, action, 1.28, action.id === 'axeChord' ? 'guitar-axe-windup' : 'silver-claw'); if (this.player.hp > 0 && Math.random() < .28) await this.versicrellStrike(enemy, enemy.specialAttacks.preciousSky, .85); return; }
+      if (enemy.coda) { const action = Math.random() < .52 ? enemy.specialAttacks.silverClaw : enemy.specialAttacks.axeChord; await this.versicrellStrike(enemy, action, 1.28, action.id === 'axeChord' ? 'guitar-axe-windup' : 'silver-claw'); if (enemy.alive && this.player.hp > 0 && Math.random() < .28) await this.versicrellStrike(enemy, enemy.specialAttacks.preciousSky, .85); return; }
       if (!enemy.movement) { await this.applyVersicrellMovement(enemy, 'first'); return; }
       if (enemy.movementActionsLeft <= 0) {
         if (enemy.movement === 'first') { await this.applyVersicrellMovement(enemy, 'second'); return; }
@@ -2036,7 +2038,7 @@
         el.classList.add('enemy-attacking'); await this.battleSleep(300); let anyHit = false;
         const balance = D.combatBalance;
         for (let i = 0; i < 4; i++) {
-          if (this.player.hp <= 0) break;
+          if (!enemy.alive || this.player.hp <= 0) break;
           const action = enemy.specialAttacks?.deadlyRhythm || { id: 'deadlyRhythm', name: 'DEADLY RHYTHM', kind: 'physical' };
           const outcome = this.rollEnemyAttackOutcome(enemy, action);
           if (!outcome.hit) { this.triggerEvade(enemy, 'player', action, { hitIndex: i, source: 'myrthiDeadlyRhythm' }); this.floating(ren, 'EVADE', 'miss'); await this.battleSleep(200); continue; }
@@ -2045,7 +2047,7 @@
           const defUpBuff = (this.player.buffs?.defUp && this.turn <= this.player.buffs.defUp.until) ? (1 + (this.player.buffs.defUp.rate || 0)) : 1;
           const raw = this.enemyRawDamage('physical', enemy.stats.atk, defUpBuff);
           const dmg = Math.max(1, Math.round(raw + roll(balance.enemyVariance.min, balance.enemyVariance.max)));
-          const actual = this.receivePlayerDamage(dmg, 'physical'); this.audio.sfx('playerHit'); this.floating(ren, actual, 'enemy-damage'); this.updateHUD(); await this.battleSleep(200); ren.classList.remove('hit');
+          const actual = this.receivePlayerDamage(dmg, 'physical', {attacker:enemy}); this.audio.sfx('playerHit'); this.floating(ren, actual, 'enemy-damage'); this.updateHUD(); await this.battleSleep(200); ren.classList.remove('hit');
         }
         el.classList.remove('enemy-attacking'); if (anyHit) await this.tryCounter(enemy); return;
       }
@@ -2060,7 +2062,7 @@
       enemy.beat++;
       if (!outcome.hit) { this.triggerEvade(enemy, 'player', chosen, { source: 'myrthiAttack' }); this.floating(ren, 'EVADE', 'miss'); this.setLog(`ミルティの${chosen.name}！ ${this.playerName()}は攻撃をかわした！ 【BEAT ${enemy.beat}/4】`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); return; }
       ren.classList.add('hit');
-      this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, 'physical'); this.floating(ren, actual, 'enemy-damage');
+      this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, 'physical', {attacker:enemy}); this.floating(ren, actual, 'enemy-damage');
       this.setLog(`ミルティの${chosen.name}！ ${this.playerName()}は${actual}ダメージを受けた！ 【BEAT ${enemy.beat}/4】`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
       await this.tryCounter(enemy);
     }
@@ -3053,12 +3055,8 @@
       const defeated = [];
       for (const uid of Object.keys(perHit)) { const t = this.enemies.find(x => x.uid === uid); if (!t || t.hp > 0 || t.rolledDrops) continue; defeated.push(t); }
       for (const t of defeated) {
-        t.alive = false; const tEl = document.getElementById(t.uid);
-        this.audio.sfx('defeat'); tEl.classList.add('defeated');
-        if (this.isPendingBossTransform(t)) { t.rolledDrops = []; this.setLog('BATTLE COMPLETE...'); continue; }
-        t.rolledDrops = this.rollDrops(t);
-        t.rolledDrops.forEach(([id]) => { const item = D.items[id]; if (item) { this.floating(tEl, item.name, 'heal'); if (this.shouldAnnounceDrop(item)) this.announceRareDrop(item); } });
-        const earned = this.grantEnemyReward(t);
+        const earned = this.awardEnemyDefeat(t, document.getElementById(t.uid));
+        if (!earned) continue;
         this.setLog(`${t.name}${t.label}を撃破！ EXP+${earned.exp} GOLD+${earned.gold}`);
       }
       if (extremeDance) { this.player.comboDance = 0; this.floating($('#ren'), '連舞 0', 'miss'); this.updateHUD(); }
@@ -3350,7 +3348,7 @@
       this.setLog(defeatedNames.length ? `${defeatedNames.join('、')}を撃破！` : `${skill.name}が敵全体を襲う！`); await this.battleSleep(400);
     }
     async magicProjectile(targetEl) { const field = $('#battlefield').getBoundingClientRect(), weapon = $('#weapon-layer'), sprite = $('#ren .ren-sprite'), weaponRect = weapon?.getBoundingClientRect(), from = weaponRect && weaponRect.width > 0 && weaponRect.height > 0 ? weaponRect : sprite.getBoundingClientRect(), to = targetEl.getBoundingClientRect(), orb = document.createElement('i'), sx = from.right - field.left, sy = from.top - field.top + from.height * .22, ex = to.left - field.left + to.width * .48, ey = to.top - field.top + to.height * .58; orb.className = 'magic-projectile'; orb.style.left = `${sx}px`; orb.style.top = `${sy}px`; orb.style.setProperty('--shot-x', `${ex - sx}px`); orb.style.setProperty('--shot-y', `${ey - sy}px`); $('#battlefield').appendChild(orb); await this.battleSleep(460); orb.remove(); }
-    receivePlayerDamage(amount, type = 'physical') {
+    receivePlayerDamage(amount, type = 'physical', options = {}) {
       let damage = Math.max(0, Math.round(amount));
       const otherWorldOps = this.owgEffects?.() || {};
       damage = this.owgGuardDamage?.(damage, otherWorldOps) ?? damage;
@@ -3408,6 +3406,7 @@
         }
       }
       this.owgRestoreCombatResource?.('mp', actual * (otherWorldOps.mpRestoreOnDamage || 0));
+      this.owgReflectDamage?.(options.attacker, actual, otherWorldOps.damageReflect);
       this.persistVitals(); return actual;
     }
     async enemySupportAction(enemy, chosen) {
@@ -3427,7 +3426,7 @@
       const defUp = (!magical && this.player.buffs?.defUp && this.turn <= this.player.buffs.defUp.until) ? 1 + (this.player.buffs.defUp.rate || 0) : 1;
       const base = this.enemyRawDamage(magical ? 'magical' : 'physical', (magical ? enemy.stats.mag : enemy.stats.atk) * power, defUp);
       const reflected = recorded * (grand ? (D.seripesBalance?.grandRepriseDamageRate ?? .48) : (D.seripesBalance?.repriseDamageRate ?? .32));
-      const actual = this.receivePlayerDamage(Math.max(1, base + reflected + roll(-1, 2)), magical ? 'magical' : 'physical'); this.audio.sfx('playerHit'); this.floating(ren, actual, 'enemy-damage'); this.setLog(`セリペスの${name}！ ${actual}ダメージ。`); this.updateHUD(); await this.battleSleep(480); el.classList.remove('enemy-attacking'); ren.classList.remove('hit'); await this.tryCounter(enemy);
+      const actual = this.receivePlayerDamage(Math.max(1, base + reflected + roll(-1, 2)), magical ? 'magical' : 'physical', {attacker:enemy}); this.audio.sfx('playerHit'); this.floating(ren, actual, 'enemy-damage'); this.setLog(`セリペスの${name}！ ${actual}ダメージ。`); this.updateHUD(); await this.battleSleep(480); el.classList.remove('enemy-attacking'); ren.classList.remove('hit'); await this.tryCounter(enemy);
     }
     async bossAttackSeripes(enemy) {
       const hpRate = enemy.hp / enemy.stats.maxHp, b = D.seripesBalance || {};
@@ -3454,7 +3453,7 @@
       this.audio.sfx(sparklerPhase ? 'magic' : 'slash'); el?.classList.add('enemy-attacking'); await this.battleSleep(sparklerPhase === 3 ? 560 : 360);
       const raw = this.enemyRawDamage('physical', enemy.stats.atk, 1), outcome = this.rollEnemyAttackOutcome(enemy, action), damage = Math.max(1, Math.round(raw * multiplier + roll(D.combatBalance.enemyVariance.min, D.combatBalance.enemyVariance.max)));
       if (!outcome.hit) { this.triggerEvade(enemy, 'player', action, { source: 'fegoria' }); this.floating(ren, 'EVADE', 'miss'); this.setLog(`${this.playerName()}は${action.name}をかわした！`); }
-      else { ren.classList.add('hit'); this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, 'physical'); this.floating(ren, actual, 'enemy-damage'); this.setLog(`${this.playerName()}は${actual}ダメージを受けた！`); }
+      else { ren.classList.add('hit'); this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, 'physical', {attacker:enemy}); this.floating(ren, actual, 'enemy-damage'); this.setLog(`${this.playerName()}は${actual}ダメージを受けた！`); }
       this.updateHUD(); await this.battleSleep(430); el?.classList.remove('enemy-attacking'); ren.classList.remove('hit'); if (sparklerPhase) el?.classList.remove(`fegoria-sparkler-${sparklerPhase}`);
       return outcome.hit;
     }
@@ -3523,7 +3522,7 @@
       const balance = D.combatBalance, attackStat = isMagic ? enemy.stats.mag : enemy.stats.atk;
       const defMul = isMagic ? 1 : (this.turn <= (this.player.defDownUntil || 0) ? .8 : 1);
       const raw = this.enemyRawDamage(isMagic ? 'magical' : 'physical', attackStat, defMul), outcome = this.rollEnemyAttackOutcome(enemy, chosen), damage = Math.max(1, Math.round(raw + roll(balance.enemyVariance.min, balance.enemyVariance.max)));
-      if (!outcome.hit) { this.triggerEvade(enemy, 'player', chosen, { source: 'enemyAttack' }); this.floating(ren, 'EVADE', 'miss'); this.setLog(`${this.playerName()}は攻撃をかわした！`); } else { ren.classList.add('hit'); this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, isMagic ? 'magical' : 'physical'); this.floating(ren, actual, 'enemy-damage'); this.setLog(`${this.playerName()}は${actual}ダメージを受けた！`); } this.updateHUD(); await this.battleSleep(420); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
+      if (!outcome.hit) { this.triggerEvade(enemy, 'player', chosen, { source: 'enemyAttack' }); this.floating(ren, 'EVADE', 'miss'); this.setLog(`${this.playerName()}は攻撃をかわした！`); } else { ren.classList.add('hit'); this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, isMagic ? 'magical' : 'physical', {attacker:enemy}); this.floating(ren, actual, 'enemy-damage'); this.setLog(`${this.playerName()}は${actual}ダメージを受けた！`); } this.updateHUD(); await this.battleSleep(420); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
       if (outcome.hit) await this.tryCounter(enemy);
     }
     async bossAttack(enemy) {
@@ -3559,7 +3558,7 @@
       const outcome = this.rollEnemyAttackOutcome(enemy, chosen);
       if (!outcome.hit) { this.triggerEvade(enemy, 'player', chosen, { source: 'bossAttack' }); this.floating(ren, 'EVADE', 'miss'); this.setLog(`${this.playerName()}は${chosen.name}をかわした！`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); return; }
       ren.classList.add('hit');
-      this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, isMagic ? 'magical' : 'physical'); this.floating(ren, actual, 'enemy-damage'); this.setLog(`${this.playerName()}は${actual}ダメージを受けた！`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
+      this.audio.sfx('playerHit'); const actual = this.receivePlayerDamage(damage, isMagic ? 'magical' : 'physical', {attacker:enemy}); this.floating(ren, actual, 'enemy-damage'); this.setLog(`${this.playerName()}は${actual}ダメージを受けた！`); this.updateHUD(); await this.battleSleep(450); el.classList.remove('enemy-attacking'); ren.classList.remove('hit');
       await this.tryCounter(enemy);
     }
     // 使った攻撃の属性が敵の弱点に含まれていれば倍率を返す。含まれなければ1。
@@ -3640,6 +3639,26 @@
       const goNext = () => { this.cancelAutoAdvance(); this.startBattle(); };
       this.bindActions({ next: goNext, hideout: () => { this.cancelAutoAdvance(); this.showMenu('home'); } });
       this.scheduleAutoAdvance(goNext);
+    }
+
+
+    awardEnemyDefeat(enemy, el) {
+      enemy.alive = false;
+      this.audio.sfx('defeat');
+      el?.classList.add('defeated');
+      if (this.isPendingBossTransform(enemy)) {
+        enemy.rolledDrops = [];
+        this.setLog('BATTLE COMPLETE...');
+        return null;
+      }
+      enemy.rolledDrops = this.rollDrops(enemy);
+      for (const [id] of enemy.rolledDrops) {
+        const item = D.items[id];
+        if (!item) continue;
+        this.floating(el, item.name, 'heal');
+        if (this.shouldAnnounceDrop(item)) this.announceRareDrop(item);
+      }
+      return this.grantEnemyReward(enemy);
     }
 
     grantEnemyReward(enemy) {

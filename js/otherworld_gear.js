@@ -132,6 +132,7 @@
     support('receivedHealingPercent','受けるHP回復量',damageCurve,6),
     support('healingPowerPercent','回復技の効果',damageCurve,6),
     support('mpRestoreOnDamage','被ダメージの一部をMP回復',[.003,.006,.01,.015,.022,.032],2),
+    support('damageReflect','ダメージ反射',[.03,.05,.08,.12,.17,.24],3),
     support('turnHpRegenRate','行動開始時HP再生',[.003,.007,.012,.020,.03,.045],3),
     support('turnMpRegenRate','行動開始時MP再生',[.003,.007,.012,.020,.03,.045],3),
     support('evadeBonus','回避率',[.01,.02,.035,.05,.075,.10],5),
@@ -344,6 +345,24 @@
 
   P.owgRecoverFromDamageDealt = function (damage) {
     if (damage > 0 && this.owgRestoreCombatResource('hp', damage * (this.owgEffects().hpDrain || 0))) this.persistVitals();
+  };
+
+
+  P.owgReflectDamage = function (attacker, received, rate) {
+    if (!(rate > 0) || !(received > 0) || !attacker?.alive || this.player.hp <= 0) return;
+    const reflected = Math.floor(received * rate);
+    const damage = attacker.infiniteHp ? reflected :
+      Math.min(reflected, attacker.hp - (attacker.cannotDefeat ? 1 : 0));
+    if (!(damage > 0)) return;
+
+    if (attacker.infiniteHp) attacker.debugDamageTaken = (attacker.debugDamageTaken || 0) + damage;
+    else attacker.hp -= damage;
+
+    const el = document.getElementById(attacker.uid);
+    this.floating(el, `反射 ${damage.toLocaleString('ja-JP')}`, 'damage');
+    if (attacker.hp > 0) return;
+    const earned = this.awardEnemyDefeat(attacker, el);
+    if (earned) this.setLog(`${attacker.name}${attacker.label || ''}を反射で撃破！ EXP+${earned.exp} GOLD+${earned.gold}`);
   };
 
   P.owgTurnRecovery = function () {
