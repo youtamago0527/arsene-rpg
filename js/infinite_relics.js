@@ -65,7 +65,9 @@
     ['obsidian', '敵の最大HP・攻撃・防御'],
     ['gear', '獲得奏貨'],
     ['astrolabe', 'インフィニティ装備の抽選率'],
-    ['orb', 'アルカナの追加獲得']
+    ['orb', '通常戦闘のアルカナドロップ'],
+    ['quill', 'OP移植・削除の欠片消費'],
+    ['signet', '宝箱で2候補から選べる確率']
   ];
   for (const [id, label] of supportRelics) {
     relics.push({ ...artwork.find(item => item.id === id), grade: 'support', label });
@@ -89,31 +91,28 @@
     return Math.floor(value / 5) * 5;
   }
   const arcanaTierInterval = 50;
-  function arcanaBonusChance(level, owned) {
-    const unlock = (owned - 1) * arcanaTierInterval;
-    if (level < unlock) return 0;
-    const progress = level - unlock + 1;
-    return progress / (progress + 99);
-  }
+  const obsidianLevelLimit = 50;
+  const arcanaCount = level => level ? 2 + Math.floor(level / arcanaTierInterval) : 1;
+  const quillDiscount = level => Math.min(100, level);
+  const signetChance = level => level ? Math.min(100, 4 + level) : 0;
 
   P.isArcanaDropCount = function () {
-    const level = levelOf(this.profile.infiniteRelicLevels, 'orb');
-    if (!level) return 1;
-    let count = 2;
-    for (;;) {
-      const chance = arcanaBonusChance(level, count);
-      if (!chance || this.isRand() >= chance) return count;
-      count++;
-    }
+    return arcanaCount(levelOf(this.profile.infiniteRelicLevels, 'orb'));
+  };
+
+  P.isRelicForgeShardCost = function (cost) {
+    const discount = quillDiscount(this.isSupportRelicRate('quill'));
+    return Math.max(1, Math.floor(cost * (100 - discount) / 100));
+  };
+
+  P.isTreasureChoiceRate = function () {
+    return signetChance(this.isSupportRelicRate('signet')) / 100;
   };
 
   function effectText(item, level) {
-    if (item.id === 'orb') {
-      if (level < arcanaTierInterval) return '2個確定';
-      const chance = arcanaBonusChance(level, 2) * 100;
-      const display = chance >= 99.995 ? '99.99％超' : Number(chance.toFixed(2)) + '％';
-      return '2個確定 ／ 3個目 ' + display + ' ／ 最大' + (2 + Math.floor(level / arcanaTierInterval)) + '個';
-    }
+    if (item.id === 'orb') return arcanaCount(level) + '個確定';
+    if (item.id === 'quill') return '−' + quillDiscount(level) + '%（最低1個）';
+    if (item.id === 'signet') return signetChance(level) + '%';
     if (item.grade === 'stairs') return level === 1 ? '1階降下' : '1〜' + level + '階から選択';
     return (item.id === 'obsidian' ? '−' : '＋') + percent(item, level) + '%';
   }
@@ -126,11 +125,15 @@
 
   function levelOf(levels, id) {
     const value = levels?.[id];
-    return Number.isSafeInteger(value) && value > 0 ? value : 0;
+    if (!Number.isSafeInteger(value) || value <= 0) return 0;
+    return id === 'obsidian' ? Math.min(value, obsidianLevelLimit) : value;
   }
 
   P.isMigrateRelicLevels = function (profile) {
-    if (profile.infiniteRelicSchema === 2) return;
+    if (profile.infiniteRelicLevels?.obsidian > obsidianLevelLimit) {
+      profile.infiniteRelicLevels.obsidian = obsidianLevelLimit;
+    }
+    if (profile.infiniteRelicSchema === 2 && profile.infiniteRelicLevels) return;
     profile.infiniteRelicSchema = 2;
     if (profile.infiniteRelicLevels) {
       // The previous build used fox-mask for traversal and compass for dexterity.
@@ -147,8 +150,8 @@
       for (const id of new Set(Array.isArray(list) ? list : [])) {
         const old = artwork.find(item => item.id === id);
         if (!old) continue;
-        // IDs-only saves predate the bonus-drop orb and used it for magic.
-        const retained = id !== 'orb' ? relics.find(item => item.id === id) : null;
+        // These IDs were used for stat bonuses in the original IDs-only catalogue.
+        const retained = ['orb', 'quill', 'signet'].includes(id) ? null : relics.find(item => item.id === id);
         const target = retained?.id ?? tiers.normal[stats.indexOf(old.stat)];
         levels[target] = (levels[target] || 0) + 1;
       }
@@ -162,6 +165,7 @@
     const levels = this.profile.infiniteRelicLevels;
     const stairThreshold = requiredStairUses(levelOf(levels, stairRelicId) + 1);
     const pool = relics.filter(item => {
+      if (item.id === 'obsidian' && levels.obsidian >= obsidianLevelLimit) return false;
       if (item.id === stairRelicId) return count >= stairThreshold;
       return item.grade !== 'upper' || count >= 40;
     });
@@ -240,13 +244,15 @@
     if (!level) return `<header><h3>未入手</h3></header>
       <div class="ir-portrait ir-portrait-unknown">${unrevealedArt}</div>`;
     const tier = item.grade === 'upper' ? '上位版' : item.grade === 'stairs' ? '階段移動' : item.grade === 'support' ? '補助遺物' : '通常版';
-    const next = '次のLvで ' + effectText(item, level + 1);
-    const nextTier = item.id === 'orb' ? '<br>Lv.' + ((Math.floor(level / arcanaTierInterval) + 1) * arcanaTierInterval) + 'で' + (3 + Math.floor(level / arcanaTierInterval)) + '個目の抽選を解放' : '';
+    const nextArcanaLevel = (Math.floor(level / arcanaTierInterval) + 1) * arcanaTierInterval;
+    const next = item.id === 'orb' ? `Lv.${nextArcanaLevel}で${arcanaCount(nextArcanaLevel)}個確定`
+      : item.id === 'obsidian' && level >= obsidianLevelLimit ? '最大Lv.' + obsidianLevelLimit
+      : '次のLvで ' + effectText(item, level + 1);
     const effect = 'Lv.' + level + ' ／ ' + item.label + ' ' + effectText(item, level);
     return `<header><h3>${item.name}</h3>${badge(item.rank)}</header>
       <div class="ir-portrait" data-rank="${item.rank}">${art(item)}</div>
       <div class="ir-detail-rank">${gems(item.rank)}</div>
-      <p class="ir-description">${item.description}</p><p class="ir-effect"><b>${effect}</b><br>${next}${nextTier}<br>${tier}</p>`;
+      <p class="ir-description">${item.description}</p><p class="ir-effect"><b>${effect}</b><br>${next}<br>${tier}</p>`;
   }
 
   P.isRenderRelics = function (panel) {

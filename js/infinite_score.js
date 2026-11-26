@@ -7,6 +7,8 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const copy = v => JSON.parse(JSON.stringify(v));
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const stacksInRun = itemId => itemId === 'otherworldShard' || itemId === 'otherworldCore';
+  const lootCount = entry => Math.max(1, Math.floor(Number(entry?.count) || 1));
 
   // Native dialogs suspend WebAudio on iOS. Keep decisions inside the game UI.
   P.isGameDialog = function ({ kicker='INFINITE SCORE', title='', message='', choices=[], danger=false }={}) {
@@ -39,11 +41,24 @@
     run.floor = Math.max(1, Number(run.floor) || 1);
     run.encounterCountOnFloor = Math.max(0, Number(run.encounterCountOnFloor) || 0);
     run.lootBag = Array.isArray(run.lootBag) ? run.lootBag : [];
-    // v2以前のRUNでスタックされていた品も、無限奏廊内では1個＝1枠へ展開する。
-    if (run.lootBag.some(entry => (Number(entry?.count) || 1) > 1)) {
-      const split = [];
+    // 工房素材をまとめ、旧セーブの他の消耗品は従来どおり1個1枠にする。
+    const materials = run.lootBag.filter(entry => stacksInRun(entry?.itemId));
+    if (materials.length > new Set(materials.map(entry => entry.itemId)).size ||
+        run.lootBag.some(entry => !stacksInRun(entry?.itemId) && lootCount(entry) > 1)) {
+      const split = [], stacks = new Map();
       for (const entry of run.lootBag) {
-        const count = Math.max(1, Math.floor(Number(entry?.count) || 1));
+        const count = lootCount(entry);
+        if (stacksInRun(entry.itemId)) {
+          const existing = stacks.get(entry.itemId);
+          if (existing) {
+            existing.count += count;
+          } else {
+            const stack = { ...entry, count };
+            stacks.set(entry.itemId, stack);
+            split.push(stack);
+          }
+          continue;
+        }
         for (let i = 0; i < count; i++) split.push({ ...copy(entry), uid: i ? `${entry.uid}-split-${i + 1}` : entry.uid, count:1 });
       }
       run.lootBag = split;
@@ -400,6 +415,7 @@
   P.isRenderExplore = function (panel) {
     const r=this.isRun(); if(!r){this.renderMenuPanel('otherworld');return;}
     const map=this.isFloorMap(),current=this.isMapNode(map.currentId);if(current?.chestPending) this.isRoomResult={title:'宝箱を発見',text:'奥に装備が眠っている。',tone:'item',action:'treasure-open',label:'宝箱を開ける'};
+    if (current?.chestPending && current.chestOffer) this.isRoomResult.label = '装備を選ぶ';
     if(current?.row===0&&!current.cleared)current.cleared=true;
     // 部屋のイベントを解決した時点で先がなければ、進むを押し直さず帰路を提示する。
     const atDeadEnd=!!(current?.visited&&current?.cleared&&!current?.stairs&&!this.isMapNextNodes().length&&this.isMapBackNode());
@@ -690,9 +706,41 @@
   // ── 装備生成 / バッグ処理 ─────────────────────────────────
   P.isGenerateGear=function(force={}){if(typeof this.owgGenerate!=='function')throw new Error('異世界装備生成器が読み込まれていません。');return this.owgGenerate({floor:this.isRun()?.floor||1,...force});};
   P.isGenerateDebugGear=async function(){const n=await this.isChoose('生成する装備の★',['★3','★4','★5','★6'],{kicker:'DEBUG // GEAR GENERATOR'});return n===null?null:this.isGenerateGear({stars:n+3});};
-  P.isAddLoot=function(entry){const r=this.isRun();if(!r)return false;
-    if(r.pendingLoot){(r.pendingLootQueue||=[]).push(copy(entry));this.isSave();return false;}
-    const count=Math.max(1,Math.floor(Number(entry.count)||1)),isReturn=entry.itemId==='infiniteReturn',hadReturn=this.isHasReturn();let added=0;for(let i=0;i<count;i++){const one={...copy(entry),uid:i===0?entry.uid:this.isUid('loot'),count:1};if(this.isBagUsed()>=this.isBagLimit()){r.pendingLoot={...one,count:count-added};this.isSave();this.isShowBagFull();break;}r.lootBag.push(one);added++;}if(isReturn&&!hadReturn&&added)r.returnButtonNew=true;if(added){this.isLog(`入手：${D().items[entry.itemId]?.name||entry.itemId}${added>1?` ×${added}`:''}`);this.isShowLootPop(entry,added);}return added===count;};
+  P.isAddLoot = function (entry) {
+    const run = this.isRun();
+    if (!run) return false;
+    const count = lootCount(entry), stackable = stacksInRun(entry.itemId);
+    const stack = stackable && run.lootBag.find(item => item.itemId === entry.itemId);
+    if (run.pendingLoot && !stack) {
+      (run.pendingLootQueue ||= []).push(copy(entry));
+      this.isSave();
+      return false;
+    }
+    const unlocksReturn = entry.itemId === 'infiniteReturn' && !this.isHasReturn();
+    let added = 0;
+    if (stack) {
+      stack.count = lootCount(stack) + count;
+      added = count;
+    } else {
+      const perSlot = stackable ? count : 1;
+      for (; added < count; added += perSlot) {
+        const item = { ...copy(entry), uid: added ? this.isUid('loot') : entry.uid, count:perSlot };
+        if (this.isBagUsed() >= this.isBagLimit()) {
+          run.pendingLoot = { ...item, count:count - added };
+          this.isSave();
+          this.isShowBagFull();
+          break;
+        }
+        run.lootBag.push(item);
+      }
+    }
+    if (unlocksReturn && added) run.returnButtonNew = true;
+    if (added) {
+      this.isLog(`入手：${D().items[entry.itemId]?.name || entry.itemId}${added > 1 ? ` ×${added}` : ''}`);
+      this.isShowLootPop(entry, added);
+    }
+    return added === count;
+  };
   P.isResolvePendingLoot=function(discard=false){
     const run=this.isRun(),pending=run?.pendingLoot;
     if(!pending||(!discard&&this.isBagUsed()>=this.isBagLimit()))return false;
@@ -824,7 +872,7 @@
     const award=entry=>{
       const added=this.isAddLoot(entry);
       const name=this.isLootName?.(entry)||D().items[entry.itemId]?.name||entry.itemId;
-      drops.push(name+(added?'':'（空き枠待ち）'));
+      drops.push(name + (entry.count > 1 ? ' ×' + entry.count : '') + (added ? '' : '（空き枠待ち）'));
       return added;
     };
     const milestone=r.floor>=returnFloor&&!this.isHasReturn()&&!r.returnMilestoneClaimed;
@@ -846,6 +894,13 @@
         this.isLog('狩猟：レア敵遭遇率の加算分をリセット');
       }
     }else if(!r.pendingLoot)this.isCollectMonsterArcana(drops);
+    if (cfg.forgeDrops) {
+      const { shards, rareShards, rareCores } = cfg.forgeDrops;
+      const count = rareDefeated ? rareShards : shards;
+      if (count > 0) award({uid:this.isUid('shard'), kind:'item', itemId:'otherworldShard', count});
+      if (rareDefeated && rareCores > 0) award({uid:this.isUid('core'), kind:'item', itemId:'otherworldCore', count:rareCores});
+      if (r.pendingLoot) this.isShowBagFull();
+    }
 
     this.isRollStairs();
     const showCards=this.isRand()<cfg.cardRate;
@@ -891,8 +946,8 @@
     panel.dataset.panel='infinite-score-shop';
     panel.innerHTML=`<section class="is-shop-screen"><header class="is-shop-hero"><small><i></i>${merchant?'WANDERING MERCHANT':'INFINITE SCORE // SHOP'}</small><h2>✦ ${merchant?'彷徨う行商人':'奏廊ショップ'} ✦</h2><p>${merchant?'迷宮を渡る影の商人':'奏廊の狭間でだけ開く商店'} ／ FLOOR ${floor}</p><strong>${r.dungeonGold.toLocaleString()}<em> 奏貨</em></strong></header><nav class="is-shop-tabs"><b>購入</b><button data-is-action="shop-sell">売却 ${r.lootBag.length}</button></nav><div class="is-shop-stock"><small>AVAILABLE STOCK // 通常戦闘 約3〜5回分</small>${stock}</div><button class="is-shop-exit" data-is-action="explore">◀ 奏廊へ戻る</button></section>`;
   };
-  P.isRenderShopSell=function(panel){const r=this.isRun(),equipped=new Set(Object.values(r.equipment||{}).filter(Boolean)),sell=r.lootBag.map(x=>{const active=equipped.has(x.uid);return `<article class="is-item is-shop-sell${active?' equipped':''}"><div><strong>${esc(D().items[x.itemId]?.name||x.itemId)}${active?'<em class="is-sell-equipped">装備中</em>':''}</strong><small>${x.kind==='equipment'?'EQUIPMENT':'LOOT ITEM'}${active?' // EQUIPPED':''}</small></div><b>${this.isSellPrice(x)}<em> 奏貨</em></b><button data-is-sell="${x.uid}"${active?' data-is-sell-equipped="true"':''}>${active?'装備中を売却':'売却'}</button></article>`;}).join('');panel.dataset.panel='infinite-score-shop-sell';panel.innerHTML=`<section class="is-shop-screen"><header class="is-shop-hero"><small><i></i>TRADE-IN</small><h2>✦ 戦利品売却 ✦</h2><p>LOOT BAGの戦利品を奏貨へ交換</p><strong>${r.dungeonGold.toLocaleString()}<em> 奏貨</em></strong></header><nav class="is-shop-tabs"><button data-is-action="shop-buy">購入</button><b>売却 ${r.lootBag.length}</b></nav><section class="is-shop-trade is-shop-trade-only"><header><div><small>SELECT LOOT</small><h3>売却する戦利品</h3></div><span>${r.lootBag.length} ITEMS</span></header><div class="is-list">${sell||'<p class="is-shop-empty">売却できる戦利品はまだない。</p>'}</div></section><button class="is-shop-exit" data-is-action="shop-buy">◀ 購入画面へ戻る</button></section>`;};
-  P.isSellPrice=function(x){if(x.kind!=='equipment')return 1;const ri=['common','rare','epic','legendary','mythic'].indexOf(x.rarity);return Math.max(2,Math.min(12,2+(ri<0?0:ri*2)+(x.plus||0)+(x.ops?.length||0)));};
+  P.isRenderShopSell=function(panel){const r=this.isRun(),equipped=new Set(Object.values(r.equipment||{}).filter(Boolean)),sell=r.lootBag.map(x=>{const active=equipped.has(x.uid);return `<article class="is-item is-shop-sell${active?' equipped':''}"><div><strong>${esc(D().items[x.itemId]?.name||x.itemId)}${active?'<em class="is-sell-equipped">装備中</em>':''}</strong><small>${x.kind==='equipment'?'EQUIPMENT':'LOOT ITEM'}${stacksInRun(x.itemId)&&lootCount(x)>1?' ×'+lootCount(x):''}${active?' // EQUIPPED':''}</small></div><b>${this.isSellPrice(x)}<em> 奏貨</em></b><button data-is-sell="${x.uid}"${active?' data-is-sell-equipped="true"':''}>${active?'装備中を売却':'売却'}</button></article>`;}).join('');panel.dataset.panel='infinite-score-shop-sell';panel.innerHTML=`<section class="is-shop-screen"><header class="is-shop-hero"><small><i></i>TRADE-IN</small><h2>✦ 戦利品売却 ✦</h2><p>LOOT BAGの戦利品を奏貨へ交換</p><strong>${r.dungeonGold.toLocaleString()}<em> 奏貨</em></strong></header><nav class="is-shop-tabs"><button data-is-action="shop-buy">購入</button><b>売却 ${r.lootBag.length}</b></nav><section class="is-shop-trade is-shop-trade-only"><header><div><small>SELECT LOOT</small><h3>売却する戦利品</h3></div><span>${r.lootBag.length} ITEMS</span></header><div class="is-list">${sell||'<p class="is-shop-empty">売却できる戦利品はまだない。</p>'}</div></section><button class="is-shop-exit" data-is-action="shop-buy">◀ 購入画面へ戻る</button></section>`;};
+  P.isSellPrice=function(x){if(x.kind!=='equipment')return stacksInRun(x.itemId)?lootCount(x):1;const ri=['common','rare','epic','legendary','mythic'].indexOf(x.rarity);return Math.max(2,Math.min(12,2+(ri<0?0:ri*2)+(x.plus||0)+(x.ops?.length||0)));};
   P.isBuy=async function(id,price){const r=this.isRun();if(r.dungeonGold<price)return;if(this.isBagUsed()>=this.isBagLimit()){await this.isNotify('LOOT BAGが満杯です','先にアイテムを使用・装備・破棄して空きを作ってください。',{kicker:'SHOP // BAG FULL'});return;}r.dungeonGold-=price;const x=id==='gear'?this.isGenerateGear():{uid:this.isUid('buy'),kind:'item',itemId:id,count:1};this.isAddLoot(x);this.isRenderShop($('#menu-panel'),!!this.isShopMerchantMode,false);};
   P.isSell=async function(uid){const r=this.isRun(),x=this.isBagEntry(uid);if(!x)return;const slots=Object.keys(r.equipment).filter(s=>r.equipment[s]===uid),name=D().items[x.itemId]?.name||x.itemId;if(slots.length&&!await this.isConfirm('装備中のアイテムです',`${name}を外して売却しますか？`,{kicker:'SHOP // SELL',confirmLabel:'外して売る',danger:true}))return;slots.forEach(s=>delete r.equipment[s]);r.dungeonGold+=this.isSellPrice(x);r.lootBag.splice(r.lootBag.indexOf(x),1);this.isLog(`売却：${name}`);this.isRenderShopSell($('#menu-panel'));};
   P.isReturnRun=function(){const r=this.isRun();if(!r)return;for(const x of r.lootBag){if(x.kind==='equipment'&&x.generated)this.profile.infiniteScoreGear.push(copy(x));this.profile.inventory[x.itemId]=(this.profile.inventory[x.itemId]||0)+(x.count||1);}const count=r.lootBag.length,floor=r.floor;this.profile.equipment=copy(r.homeEquipment||this.profile.equipment);this.profile.currentVitals=copy(r.homeVitals||this.profile.currentVitals);this.profile.infiniteScore={active:false,lastResult:'return',returnedCount:count,lastFloor:floor,endedAt:Date.now()};this.profile.flags.owRestoreJobPending=true;this.saveProfile();document.getElementById('is-modal')?.remove();this.showResult('RETURN SUCCESS',`${count}枠の戦利品を通常所持品へ持ち帰った。`,'INFINITE SCORE // ESCAPED',`<div class="is-stairs"><b>FLOOR ${floor}から生還</b><p>生成装備のレアリティ・OP・強化値は専用インスタンス記録にも保存されています。</p></div>`);};
@@ -939,21 +994,53 @@
     this.isSave();
     this.isRenderExplore($('#menu-panel'));
   };
-  P.isOpenTreasure = function () {
+  P.isOpenTreasure = async function () {
     const run = this.isRun();
-    if (!run) return;
+    if (!run || this.isChoosingTreasure) return;
     const node = this.isMapNode(this.isFloorMap().currentId);
     if (!node?.chestPending || node.chestOpened) return;
+    let offer = node.chestOffer;
+    if (!offer) {
+      const rates = Object.entries(this.isCfg().chestRates).map(([id, weight]) => ({ id, weight }));
+      const chest = this.isPickWeighted(rates).id;
+      const opRank = chest === 'gold' ? 3 : chest === 'silver' ? 1 : undefined;
+      const choices = [this.isGenerateGear({ opRank })];
+      const extraChance = this.isTreasureChoiceRate();
+      if (extraChance > 0 && this.isRand() < extraChance) {
+        choices.push(this.isGenerateGear({ opRank }));
+        node.chestOffer = { chest, choices };
+        this.isSave();
+      }
+      offer = { chest, choices };
+    }
+    let pick = 0;
+    if (offer.choices.length > 1) {
+      const choices = offer.choices.map(gear => {
+        const stats = this.isForgeStats(gear).filter(stat => stat.value).map(stat => `${stat.label} ${stat.value}`);
+        const ops = (gear.ops || []).map(op => this.isForgeOpText(op));
+        return {
+          label: this.isForgeName(gear),
+          note: ['★' + gear.stars, 'QUALITY ' + gear.quality, ...stats, ...ops].join(' ／ ')
+        };
+      });
+      this.isChoosingTreasure = true;
+      try {
+        pick = await this.isChoose('宝箱から装備を1つ選ぶ', choices, { kicker:'緋色の印章指輪' });
+      } finally {
+        this.isChoosingTreasure = false;
+      }
+      if (!offer.choices[pick] || this.isRun() !== run ||
+          this.isMapNode(this.isFloorMap().currentId) !== node || node.chestOpened) return;
+    }
+    const { chest } = offer, gear = offer.choices[pick];
     node.chestOpened = true;
     node.chestPending = false;
-    const rates = Object.entries(this.isCfg().chestRates).map(([id, weight]) => ({ id, weight }));
-    const chest = this.isPickWeighted(rates).id;
-    const opRank = chest === 'gold' ? 3 : chest === 'silver' ? 1 : undefined;
-    const gear = this.isGenerateGear({ opRank });
+    delete node.chestOffer;
     const name = this.owgName?.(gear) || D().items[gear.itemId]?.name || gear.itemId;
     run.buffs.treasureBonus = 0;
     const added = this.isAddLoot(gear);
     this.isLog(`宝箱(${chest})：${name}`, { rarity: gear.rarity, item: gear.itemId, ops: gear.ops });
+    this.isSave();
     this.isRenderRoomResult(name + 'を発見', added ? '装備をバッグへ収めた。' : '装備を持つにはバッグに空きが必要です。', 'item', { remapOnClose: true });
   };
   P.isRoomResultHtml=function(){const result=this.isRoomResult;if(!result)return'';return `<section class="is-room-result ${result.tone||'normal'}"><small>ROOM EVENT // FLOOR ${this.isRun()?.floor||1}</small><h2>${esc(result.title)}</h2><p>${esc(result.text)}</p><button class="is-primary" data-is-action="${esc(result.action||'room-result-close')}">${esc(result.label||'探索を続ける')}</button></section>`;};
@@ -982,13 +1069,17 @@
       return `<section class="is-forge-preview"><header><small>SAME-TYPE SYNTHESIS</small><h3>同型合成</h3><b>+${current} <i>＋</i> ${mat?`+${mat.plus||0}`:'素材なし'}</b></header><div class="is-forge-pair"><article><small>BASE</small><b>${esc(this.isForgeName(x))}</b><span>QUALITY ${x.quality||100}</span></article><i>＋</i><article><small>MATERIAL</small><b>${mat?esc(this.isForgeName(mat)):'同型装備なし'}</b><span>${mat?`QUALITY ${mat.quality||100}`:'素材を入手してください'}</span></article></div><div class="is-forge-candidates">${candidates.map(v=>`<button class="${v.uid===mat?.uid?'selected':''}" data-is-forge-material="${v.uid}">${equipped.has(v.uid)?'<i>EQUIPPED</i>':''}<b>${esc(this.isForgeName(v))}</b><span>+${v.plus||0} / QUALITY ${v.quality||100}</span></button>`).join('')}</div><div class="is-forge-result"><small>完成予測</small><b>+${current+1} / QUALITY ${mat?Math.min(120,Math.max(x.quality||100,mat.quality||100)+1):x.quality||100}</b></div><p class="is-forge-warning">素材装備は合成後に消滅します。</p><button class="is-forge-execute" data-is-forge-execute ${mat&&!state.busy?'':'disabled'}>${state.busy?'合成中…':'同型合成する'}<span>奏貨消費なし</span></button></section>`;
     }
     if(mode==='transfer'){
-      const sources=this.isWorkshopGear().filter(v=>v.uid!==x.uid&&v.ops?.length),src=sources.find(v=>v.uid===state.sourceUid)||sources[0];state.sourceUid=src?.uid||null;const op=src?.ops?.[Math.min(state.opIndex,src.ops.length-1)]||src?.ops?.[0];if(src&&state.opIndex>=src.ops.length)state.opIndex=0;const transferCost=op?{shard:20+op.rank*10,core:Math.max(1,op.rank-2)}:{shard:0,core:0},can=!!op&&this.isForgeHasMaterials(transferCost),preview=op?this.isForgeTransferOp(op,x):null;
+      const sources=this.isWorkshopGear().filter(v=>v.uid!==x.uid&&v.ops?.length),src=sources.find(v=>v.uid===state.sourceUid)||sources[0];state.sourceUid=src?.uid||null;const op=src?.ops?.[Math.min(state.opIndex,src.ops.length-1)]||src?.ops?.[0];if(src&&state.opIndex>=src.ops.length)state.opIndex=0;const transferCost=op?this.isForgeOpCost(op):{shard:0,core:0},can=!!op&&this.isForgeHasMaterials(transferCost),preview=op?this.isForgeTransferOp(op,x):null;
       return `<section class="is-forge-preview"><header><small>OPTION TRANSPLANT</small><h3>OP移植</h3><b>TARGET <i>←</i> SOURCE</b></header><div class="is-forge-pair"><article><small>TARGET / 移植先</small><b>${esc(this.isForgeName(x))}</b><span>${esc((x.ops||[]).map(o=>this.isForgeOpText(o)).join(' / ')||'OP なし')}</span></article><i>←</i><article><small>SOURCE / 提供装備</small><b>${src?esc(this.isForgeName(src)):'提供装備なし'}</b><span>${op?esc(this.isForgeOpText(op)):'移植可能OPなし'}</span></article></div><div class="is-forge-candidates">${sources.map(v=>`<button class="${v.uid===src?.uid?'selected':''}" data-is-forge-source="${v.uid}">${equipped.has(v.uid)?'<i>EQUIPPED</i>':''}<b>${esc(this.isForgeName(v))}</b><span>${v.ops.length} OP</span></button>`).join('')}</div><div class="is-forge-op-list">${src?src.ops.map((o,i)=>`<button class="${state.opIndex===i?'selected':''}" data-is-forge-op="${i}">${esc(this.isForgeOpText(o))}</button>`).join(''):'<p>OPを持つ提供装備がありません。</p>'}</div><div class="is-forge-result"><small>移植後OP（★上限 R${Math.min(5,Math.max(1,(Number(x.stars)||3)-1))}）</small><b>${preview?esc(this.isForgeOpText(preview)):'—'}</b></div><p class="is-forge-warning">SOURCE装備は移植後に消滅します。</p>${this.isForgeMaterialCostHtml(transferCost,can)}<button class="is-forge-execute" data-is-forge-execute ${can&&!state.busy?'':'disabled'}>${state.busy?'移植中…':'OPを移植する'}<span>${this.isForgeCostText(transferCost)}</span></button></section>`;
     }
-    const op=x.ops?.[Math.min(state.opIndex,x.ops.length-1)]||x.ops?.[0];if(x.ops?.length&&state.opIndex>=x.ops.length)state.opIndex=0;const deleteCost={shard:10,core:0},can=!!op&&this.isForgeHasMaterials(deleteCost);
-    return `<section class="is-forge-preview danger"><header><small>OPTION DELETE</small><h3>OP削除</h3><b>${op?esc(this.isForgeOpText(op)):'削除可能OPなし'}</b></header><div class="is-forge-op-list">${ops}</div><div class="is-forge-result"><small>削除後</small><b>選択OPを削除</b></div>${this.isForgeMaterialCostHtml(deleteCost,can)}<button class="is-forge-execute danger" data-is-forge-execute ${can&&!state.busy?'':'disabled'}>${state.busy?'削除中…':'このOPを削除する'}<span>欠片 10</span></button></section>`;
+    const op=x.ops?.[Math.min(state.opIndex,x.ops.length-1)]||x.ops?.[0];if(x.ops?.length&&state.opIndex>=x.ops.length)state.opIndex=0;const deleteCost=this.isForgeOpCost(),can=!!op&&this.isForgeHasMaterials(deleteCost);
+    return `<section class="is-forge-preview danger"><header><small>OPTION DELETE</small><h3>OP削除</h3><b>${op?esc(this.isForgeOpText(op)):'削除可能OPなし'}</b></header><div class="is-forge-op-list">${ops}</div><div class="is-forge-result"><small>削除後</small><b>選択OPを削除</b></div>${this.isForgeMaterialCostHtml(deleteCost,can)}<button class="is-forge-execute danger" data-is-forge-execute ${can&&!state.busy?'':'disabled'}>${state.busy?'削除中…':'このOPを削除する'}<span>${this.isForgeCostText(deleteCost)}</span></button></section>`;
   };
   P.isForgeCostHtml=function(cost,can){const gold=this.isRun()?.dungeonGold||0,remaining=gold-cost;return `<div class="is-forge-cost${can?'':' short'}"><span><small>現在奏貨</small><b>${gold.toLocaleString()}</b></span><i>−</i><span><small>加工費</small><b>${cost.toLocaleString()}</b></span><i>＝</i><span><small>残り奏貨</small><b>${Math.max(0,remaining).toLocaleString()}</b></span></div>${can?'':'<p class="is-forge-short">奏貨が不足しています</p>'}`;};
+  P.isForgeOpCost = function (op) {
+    const shard = op ? 20 + op.rank * 10 : 10;
+    return { shard:this.isRelicForgeShardCost(shard), core:op ? Math.max(1, op.rank - 2) : 0 };
+  };
   P.isForgeMaterialCount=function(itemId){return (this.isRun()?.lootBag||[]).filter(x=>x.itemId===itemId).reduce((sum,x)=>sum+Math.max(1,Number(x.count)||1),0);};
   P.isForgeHasMaterials=function(cost={}){return this.isForgeMaterialCount('otherworldShard')>=(cost.shard||0)&&this.isForgeMaterialCount('otherworldCore')>=(cost.core||0);};
   P.isForgeSpendMaterials=function(cost={}){if(!this.isForgeHasMaterials(cost))return false;const bag=this.isRun().lootBag,spend=(itemId,need)=>{for(let i=bag.length-1;i>=0&&need>0;i--){const x=bag[i];if(x.itemId!==itemId)continue;const take=Math.min(need,Math.max(1,Number(x.count)||1));x.count=(Number(x.count)||1)-take;need-=take;if(x.count<=0)bag.splice(i,1);}};spend('otherworldShard',cost.shard||0);spend('otherworldCore',cost.core||0);return true;};
@@ -999,7 +1090,7 @@
   P.isRenderWorkshop=function(panel){
     const r=this.isRun(),gear=this.isWorkshopGear(),state=this.isForgeState(),selected=gear.find(x=>x.uid===state.selectedUid),equipped=new Set(Object.values(r.equipment||{}).filter(Boolean)),used=this.isBagUsed(),limit=this.isBagLimit(),full=used>=limit;
     panel.dataset.panel='infinite-score-workshop';
-    panel.innerHTML=`<main class="is-forge-screen"><header class="is-forge-header"><button data-is-forge-help aria-label="ヘルプ">?</button><div><small>RARE ENCOUNTER // OTHER WORLD FORGE</small><h2>異世界工房</h2></div><button data-is-action="workshop-exit">工房を出る</button></header><section class="is-forge-resource"><div><small>異界の欠片</small><b>${this.isForgeMaterialCount('otherworldShard')}</b><em>FORGE MATERIAL</em></div><p>工房の加工で消費するRUN内素材。奏貨は帰還時消滅。</p><div><small>異界の核</small><b>${this.isForgeMaterialCount('otherworldCore')}</b><em>+6以降・OP移植</em></div></section><nav class="is-forge-tabs">${[['enhance','強化'],['merge','同型合成'],['transfer','OP移植'],['delete','OP削除']].map(([id,label])=>`<button class="${state.mode===id?'active':''}${id==='delete'?' danger':''}" data-is-forge-mode="${id}">${label}</button>`).join('')}</nav><section class="is-forge-picker"><header><b>装備選択</b><span class="${full?'full':''}">バッグ ${used} / ${limit}</span></header><div>${gear.map(x=>this.isForgeGearCard(x,x.uid===selected?.uid,equipped.has(x.uid))).join('')||'<p class="is-forge-empty">異世界装備を所持していません。</p>'}</div></section><section class="is-forge-detail-layout">${this.isForgeSelectedHtml(selected,equipped.has(selected?.uid))}<div class="is-forge-preview-column"><small>PROCESS PREVIEW // 右側プレビュー</small>${this.isForgeModePanel(selected,state)}</div></section>${state.help?`<section class="is-forge-help"><div><header><b>異世界工房ガイド</b><button data-is-forge-help>×</button></header><p><strong>調律</strong> 異界の欠片を使い、RUN中の装備強化値を+1します。+6以降は異界の核も必要です。</p><p><strong>同型合成</strong> 同じ種類の装備を素材にして、強化値とQUALITYを上げます。</p><p><strong>OP移植</strong> 欠片と核を使い、SOURCE装備のOPをTARGETへ移します。移植ランクはTARGETの★に制限されます。</p><p><strong>OP削除</strong> 異界の欠片10個で選択したOPを取り除きます。</p><p><strong>異界素材</strong> 無限奏廊内で拾った欠片と核だけを使用します。</p></div></section>`:''}</main>`;
+    panel.innerHTML=`<main class="is-forge-screen"><header class="is-forge-header"><button data-is-forge-help aria-label="ヘルプ">?</button><div><small>RARE ENCOUNTER // OTHER WORLD FORGE</small><h2>異世界工房</h2></div><button data-is-action="workshop-exit">工房を出る</button></header><section class="is-forge-resource"><div><small>異界の欠片</small><b>${this.isForgeMaterialCount('otherworldShard')}</b><em>FORGE MATERIAL</em></div><p>工房の加工で消費するRUN内素材。奏貨は帰還時消滅。</p><div><small>異界の核</small><b>${this.isForgeMaterialCount('otherworldCore')}</b><em>+6以降・OP移植</em></div></section><nav class="is-forge-tabs">${[['enhance','強化'],['merge','同型合成'],['transfer','OP移植'],['delete','OP削除']].map(([id,label])=>`<button class="${state.mode===id?'active':''}${id==='delete'?' danger':''}" data-is-forge-mode="${id}">${label}</button>`).join('')}</nav><section class="is-forge-picker"><header><b>装備選択</b><span class="${full?'full':''}">バッグ ${used} / ${limit}</span></header><div>${gear.map(x=>this.isForgeGearCard(x,x.uid===selected?.uid,equipped.has(x.uid))).join('')||'<p class="is-forge-empty">異世界装備を所持していません。</p>'}</div></section><section class="is-forge-detail-layout">${this.isForgeSelectedHtml(selected,equipped.has(selected?.uid))}<div class="is-forge-preview-column"><small>PROCESS PREVIEW // 右側プレビュー</small>${this.isForgeModePanel(selected,state)}</div></section>${state.help?`<section class="is-forge-help"><div><header><b>異世界工房ガイド</b><button data-is-forge-help>×</button></header><p><strong>調律</strong> 異界の欠片を使い、RUN中の装備強化値を+1します。+6以降は異界の核も必要です。</p><p><strong>同型合成</strong> 同じ種類の装備を素材にして、強化値とQUALITYを上げます。</p><p><strong>OP移植</strong> 欠片と核を使い、SOURCE装備のOPをTARGETへ移します。移植ランクはTARGETの★に制限されます。</p><p><strong>OP削除</strong> 異界の欠片を使って選択したOPを取り除きます。必要数は加工画面に表示されます。</p><p><strong>異界素材</strong> 無限奏廊内で拾った欠片と核だけを使用します。</p></div></section>`:''}</main>`;
   };
   const isRenderWorkshopBase=P.isRenderWorkshop;
   P.isRenderWorkshop=function(panel){
@@ -1013,7 +1104,7 @@
     const picker=panel?.querySelector('.is-forge-picker>div');
     if(picker){picker.scrollLeft=previous;requestAnimationFrame(()=>{if(picker.isConnected)picker.scrollLeft=previous;});}
   };
-  P.isForgeEnhance=async function(uid){const r=this.isRun(),x=this.isBagEntry(uid);if(!r||!x?.otherWorldGear)return;const current=x.plus||0,next=current+1,cost=this.owgTuneCost?.(x)||{shard:3+current*2,core:current>=5?1:0},rate=this.owgTuneRate?.(next)??1,name=this.isForgeName(x);if(!this.isForgeHasMaterials(cost)){await this.isNotify('異界素材が足りません',`必要 ${this.isForgeCostText(cost)}`);return;}let protectedByArcana=false;if(rate<1&&this.isForgeProtectionCount()>0){const use=await this.isChoose('保護のアルカナを使いますか？',[{label:'使用する',note:`所持 ${this.isForgeProtectionCount()}／失敗時も装備と強化値を維持`},{label:'使用しない',note:'失敗時は装備消滅'}],{kicker:'TUNING PROTECTION'});if(use===null)return;protectedByArcana=use===0;}if(!await this.isConfirm(`${name}を調律しますか？`,`+${current} → +${next}\n必要 ${this.isForgeCostText(cost)}\n成功率 ${Math.round(rate*100)}%${protectedByArcana?'／保護あり':rate<1?'／失敗時消滅':''}`,{kicker:'OTHER WORLD FORGE',confirmLabel:'調律する',danger:rate<1&&!protectedByArcana}))return;this.isForgeSpendMaterials(cost);if(protectedByArcana)this.isForgeSpendProtection();if(this.isRand()<rate){x.plus=next;x.tuneLevel=next;this.isLog(`異世界工房：${name}を+${next}へ調律`);this.audio?.sfx?.('confirm');}else if(protectedByArcana){this.isLog(`異世界工房：調律失敗、保護のアルカナが${name}を守った`);this.audio?.sfx?.('defeat');await this.isNotify('調律失敗','保護のアルカナにより、装備と現在の強化値を維持しました。',{kicker:'ARCANA PROTECTION'});}else{Object.keys(r.equipment).forEach(s=>{if(r.equipment[s]===x.uid)delete r.equipment[s]});r.lootBag.splice(r.lootBag.indexOf(x),1);this.isLog(`異世界工房：調律失敗、${name}が消滅`);this.audio?.sfx?.('defeat');await this.isNotify('調律失敗',`${name}は無限奏廊へ消滅しました。`,{kicker:'TUNING FAILED'});}this.isSave();this.isRenderWorkshop($('#menu-panel'));};
+  P.isForgeEnhance=async function(uid){const r=this.isRun(),x=this.isBagEntry(uid);if(!r||!x?.otherWorldGear)return;const current=x.plus||0,next=current+1,cost=this.owgTuneCost?.(x)||{shard:3+current*2,core:current>=5?1:0},rate=this.owgTuneRate?.(next)??1,name=this.isForgeName(x);if(!this.isForgeHasMaterials(cost)){await this.isNotify('異界素材が足りません',`必要 ${this.isForgeCostText(cost)}`);return;}let protectedByArcana=false;if(rate<1&&this.isForgeProtectionCount()>0){const use=await this.isChoose('保護のアルカナを使いますか？',[{label:'使用する',note:`所持 ${this.isForgeProtectionCount()}／失敗時も装備と強化値を維持`},{label:'使用しない',note:'失敗時は装備消滅'}],{kicker:'TUNING PROTECTION'});if(use===null)return;protectedByArcana=use===0;}if(!await this.isConfirm(`${name}を調律しますか？`,`+${current} → +${next}\n必要 ${this.isForgeCostText(cost)}\n成功率 ${Math.round(rate*100)}%${protectedByArcana?'／保護あり':rate<1?'／失敗時消滅':''}`,{kicker:'OTHER WORLD FORGE',confirmLabel:'調律する',danger:rate<1&&!protectedByArcana}))return;if(this.isRun()!==r||this.isBagEntry(uid)!==x||!this.isForgeSpendMaterials(cost))return;if(protectedByArcana)this.isForgeSpendProtection();if(this.isRand()<rate){x.plus=next;x.tuneLevel=next;this.isLog(`異世界工房：${name}を+${next}へ調律`);this.audio?.sfx?.('confirm');}else if(protectedByArcana){this.isLog(`異世界工房：調律失敗、保護のアルカナが${name}を守った`);this.audio?.sfx?.('defeat');await this.isNotify('調律失敗','保護のアルカナにより、装備と現在の強化値を維持しました。',{kicker:'ARCANA PROTECTION'});}else{Object.keys(r.equipment).forEach(s=>{if(r.equipment[s]===x.uid)delete r.equipment[s]});r.lootBag.splice(r.lootBag.indexOf(x),1);this.isLog(`異世界工房：調律失敗、${name}が消滅`);this.audio?.sfx?.('defeat');await this.isNotify('調律失敗',`${name}は無限奏廊へ消滅しました。`,{kicker:'TUNING FAILED'});}this.isSave();this.isRenderWorkshop($('#menu-panel'));};
   P.isForgeMerge=async function(uid,materialUid=null){const base=this.isBagEntry(uid),candidates=this.isWorkshopGear().filter(x=>x.uid!==uid&&x.itemId===base?.itemId),mat=materialUid?candidates.find(x=>x.uid===materialUid):null;if(!mat){await this.isNotify('合成できません','同じ種類の異世界装備がありません。',{kicker:'OTHER WORLD FORGE'});return;}if(!await this.isConfirm('同型合成しますか？',`${this.isForgeName(mat)}は素材として消滅します。`,{kicker:'SAME-TYPE SYNTHESIS',confirmLabel:'合成する',danger:true}))return;const r=this.isRun();base.plus=(base.plus||0)+1;base.tuneLevel=base.plus;base.quality=Math.min(120,Math.max(base.quality||100,mat.quality||100)+1);const pool=(mat.ops||[]).filter(o=>!base.ops.some(v=>v.key===o.key));if(base.ops.length<4&&pool.length)base.ops.push(copy(pool.sort((a,b)=>b.rank-a.rank)[0]));Object.keys(r.equipment).forEach(s=>{if(r.equipment[s]===mat.uid)delete r.equipment[s]});r.lootBag.splice(r.lootBag.indexOf(mat),1);this.isLog(`異世界工房：同型合成 +${base.plus}`);this.isSave();this.audio?.sfx?.('confirm');this.isRenderWorkshop($('#menu-panel'));};
   P.isForgeCombinedOp=function(targetOp,sourceOp){
     if(!targetOp||!sourceOp||targetOp.key!==sourceOp.key)return copy(sourceOp);
@@ -1023,18 +1114,35 @@
   P.isForgeTransfer=async function(sourceUid,targetUid=null,opIndex=0){
     const src=this.isBagEntry(sourceUid),chosen=src?.ops?.[opIndex],target=this.isBagEntry(targetUid);
     if(!src||!chosen||!target||src.uid===target.uid)return;
-    const r=this.isRun(),cost={shard:20+chosen.rank*10,core:Math.max(1,chosen.rank-2)},moved=this.isForgeTransferOp(chosen,target),same=target.ops.findIndex(o=>o.key===chosen.key),combined=same>=0?this.isForgeTransferOp(this.isForgeCombinedOp(target.ops[same],moved),target):null;
+    const r=this.isRun(),cost=this.isForgeOpCost(chosen),moved=this.isForgeTransferOp(chosen,target),same=target.ops.findIndex(o=>o.key===chosen.key),combined=same>=0?this.isForgeTransferOp(this.isForgeCombinedOp(target.ops[same],moved),target):null;
     if(!this.isForgeHasMaterials(cost)){await this.isNotify('異界素材が足りません',`必要 ${this.isForgeCostText(cost)}`);return;}
     const replace=same<0&&target.ops.length>=4?await this.isChoose('上書きするOPを選択',target.ops.map(o=>({label:this.isCfg().opLabels[o.key]||o.key,note:`RANK ${o.rank}`})),{kicker:'OPTION TRANSPLANT'}):-1;
     if(same<0&&target.ops.length>=4&&!target.ops[replace])return;
     const resultText=same>=0?`同一OPを合成して ${this.isForgeOpText(combined)} に強化します。\n`:'';
     if(!await this.isConfirm('OPを移植しますか？',`${this.isForgeName(src)}は消滅します。\n${resultText}必要 ${this.isForgeCostText(cost)}`,{kicker:'OPTION TRANSPLANT',confirmLabel:'移植する',danger:true}))return;
-    this.isForgeSpendMaterials(cost);
+    if (this.isRun() !== r || this.isBagEntry(sourceUid) !== src || src.ops[opIndex] !== chosen ||
+        this.isBagEntry(targetUid) !== target || !this.isForgeSpendMaterials(cost)) return;
     if(same>=0)target.ops[same]=combined;else if(replace>=0)target.ops[replace]=moved;else target.ops.push(moved);
     Object.keys(r.equipment).forEach(s=>{if(r.equipment[s]===src.uid)delete r.equipment[s]});
     r.lootBag.splice(r.lootBag.indexOf(src),1);this.isForgeUI.sourceUid=null;this.isLog(same>=0?`異世界工房：同一OP合成 ${this.isForgeOpText(combined)}`:'異世界工房：OP移植');this.isSave();this.isRenderWorkshop($('#menu-panel'));
   };
-  P.isForgeDelete=async function(uid,index=0){const x=this.isBagEntry(uid),op=x?.ops?.[index],cost={shard:10,core:0};if(!op)return;if(!this.isForgeHasMaterials(cost)){await this.isNotify('異界の欠片が足りません','必要 欠片 10');return;}if(!await this.isConfirm('このOPを削除しますか？',`${this.isForgeOpText(op)}\n${this.isForgeName(x)}\n必要 欠片 10`,{kicker:'OPTION DELETE',confirmLabel:'削除する',danger:true}))return;this.isForgeSpendMaterials(cost);x.ops.splice(index,1);this.isForgeUI.opIndex=0;this.isLog('異世界工房：OP削除');this.isSave();this.isRenderWorkshop($('#menu-panel'));};
+  P.isForgeDelete=async function(uid,index=0){
+    const run = this.isRun(), gear = this.isBagEntry(uid), op = gear?.ops?.[index];
+    if (!op) return;
+    const cost = this.isForgeOpCost(), costText = this.isForgeCostText(cost);
+    if (!this.isForgeHasMaterials(cost)) {
+      await this.isNotify('異界の欠片が足りません', `必要 ${costText}`);
+      return;
+    }
+    if (!await this.isConfirm('このOPを削除しますか？', `${this.isForgeOpText(op)}\n${this.isForgeName(gear)}\n必要 ${costText}`,
+      {kicker:'OPTION DELETE', confirmLabel:'削除する', danger:true})) return;
+    if (this.isRun() !== run || this.isBagEntry(uid) !== gear || gear.ops[index] !== op || !this.isForgeSpendMaterials(cost)) return;
+    gear.ops.splice(index, 1);
+    this.isForgeUI.opIndex = 0;
+    this.isLog('異世界工房：OP削除');
+    this.isSave();
+    this.isRenderWorkshop($('#menu-panel'));
+  };;
 
   P.isForgeExecute=async function(){const s=this.isForgeState(),x=this.isBagEntry(s.selectedUid);if(!x||s.busy)return;s.busy=true;this.isRenderWorkshop($('#menu-panel'));try{if(s.mode==='enhance')await this.isForgeEnhance(x.uid);else if(s.mode==='merge')await this.isForgeMerge(x.uid,s.materialUid);else if(s.mode==='transfer')await this.isForgeTransfer(s.sourceUid,x.uid,s.opIndex);else await this.isForgeDelete(x.uid,s.opIndex);}finally{s.busy=false;if(this.isRun())this.isRenderWorkshop($('#menu-panel'));}};
 
