@@ -8,7 +8,7 @@ const bag = fs.readFileSync(path.join(root, 'css/infinite-bag.css'), 'utf8');
 const infinite = fs.readFileSync(path.join(root, 'js/infinite_score.js'), 'utf8');
 
 assert(index.includes("classList.add('standalone-app')"), 'home-screen standalone detection is missing');
-assert(index.includes('ios-safe-area.css?v=0.2.8'), 'safe-area cache bust was not updated');
+assert(index.includes('ios-safe-area.css?v=1.0.8'), 'safe-area cache bust was not updated');
 assert(!safe.includes('.is-explore-commands{bottom:calc(8.2%'), 'duplicate Infinite command offset remains');
 assert(!safe.includes('.is-explore-log{bottom:calc(1.1%'), 'relative Infinite log is still displaced');
 assert(safe.includes('html.standalone-app .hideout-screen'), 'standalone safe-area shell is missing');

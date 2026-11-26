@@ -4,6 +4,7 @@
   const G=window.BattleGame;
   if(!G)return;
   const P=G.prototype;
+  const D=()=>window.ARSENE_DATA;
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   const shopDrawCount=5;
@@ -41,37 +42,47 @@
   P.isBegin=function(...args){const result=oldBegin.apply(this,args),run=this.isRun?.();if(run){run.support={bagExpansionUsed:false,shopCounter:0};this.isSave?.();}return result;};
 
   const oldShowBagFull=P.isShowBagFull;
-  P.isShowBagFull=function(){oldShowBagFull.call(this);if(!this.isCanExpandBag())return;const modal=document.getElementById('is-modal'),actions=modal?.querySelector('.is-actions');if(!actions||actions.querySelector('[data-is-support="bag"]'))return;actions.insertAdjacentHTML('afterbegin',`<button class="is-support-button" data-is-support="bag">${this.isSupportLabel('+3枠')}<small>このRUNのみ／最大33枠</small></button>`);};
-  P.isGrantBagExpansion=function(){const run=this.isRun?.(),support=this.isEnsureSupportState(run);if(!run||!support||support.bagExpansionUsed||this.isBagLimit()>=33)return false;support.bagExpansionUsed=true;this.isLog?.('怪盗支援：バッグを33枠へ緊急拡張');this.isSave?.();document.getElementById('is-modal')?.remove();const pending=run.pendingLoot;run.pendingLoot=null;if(pending)this.isAddLoot(pending);this.isRenderBag?.(document.querySelector('#menu-panel'));return true;};
+  P.isShowBagFull=function(){oldShowBagFull.call(this);if(!this.isCanExpandBag())return;const modal=document.getElementById('is-modal'),actions=modal?.querySelector('.is-actions');if(!actions||actions.querySelector('[data-is-support="bag"]'))return;const extra=33-this.isBagLimit();actions.insertAdjacentHTML('afterbegin',`<button class="is-support-button" data-is-support="bag">${this.isSupportLabel('+'+extra+'枠')}<small>このRUNのみ／最大33枠</small></button>`);};
+  P.isGrantBagExpansion=function(run=this.isRun?.(),pending=run?.pendingLoot){
+    if(!pending||run!==this.isRun?.()||run.pendingLoot!==pending)return false;
+    const support=this.isEnsureSupportState(run);
+    if(support.bagExpansionUsed||this.isBagLimit()>=33||this.isBagUsed()>=33)return false;
+    support.bagExpansionUsed=true;
+    this.isResolvePendingLoot();
+    this.isLog('怪盗支援：バッグを33枠へ緊急拡張');
+    return true;
+  };
 
   P.isStartShopEncounter=function(merchant=false){const run=this.isRun?.(),support=this.isEnsureSupportState(run);if(!run||!support)return null;support.shopCounter++;run.shopSupport={id:`${run.seed}-${support.shopCounter}`,merchant:!!merchant,rerollUsed:false};this.isSave?.();return run.shopSupport;};
   P.isEnsureShopEncounter=function(merchant=false){const run=this.isRun?.();return run?.shopSupport||this.isStartShopEncounter(merchant);};
   const oldResolveEvent=P.isResolveEvent;
   P.isResolveEvent=function(type){if(type==='shop'||type==='merchant')this.isStartShopEncounter(type==='merchant');return oldResolveEvent.call(this,type);};
-  const oldRenderExplore=P.isRenderExplore;
-  P.isRenderExplore=async function(panel){
+  // Finish rewards already authorized on older builds before resuming a run.
+  P.isFinishDefeat=async function(){
     const run=this.isRun?.();
-    // Old saves may have stopped between defeat and reward selection.
-    if (run?.phase === 'defeatPending') {
-      const choices = run.support?.insuranceAuthorized ? (run.lootBag || []).filter(item => item.kind === 'equipment') : [];
-      let recovered = null;
-      if (choices.length) {
-        if (this.pendingLegacyReward === run) return;
-        this.pendingLegacyReward = run;
-        let pick;
-        try {
-          pick = await this.isChoose('受取済みの装備を選択', choices.map(item => ({
-            label: this.isLootName?.(item) || D().items[item.itemId]?.name || item.itemId,
-            note: `強化 +${item.plus || 0} ／ QUALITY ${item.quality || 100}`
-          })), {message:'前のバージョンで獲得した装備を1個引き継げます。'});
-        } finally { this.pendingLegacyReward = null; }
-        if (this.isRun() !== run) return;
-        if (pick == null) { this.showMenu('otherworld'); return; }
-        recovered = choices[pick];
-      }
-      this.isFinalizeRunDefeat(run, recovered);
-      return;
+    if(run?.phase!=='defeatPending')return;
+    const choices = run.support?.insuranceAuthorized ? (run.lootBag || []).filter(item => item.kind === 'equipment') : [];
+    let recovered = null;
+    if (choices.length) {
+      if (this.pendingLegacyReward === run) return;
+      this.pendingLegacyReward = run;
+      let pick;
+      try {
+        pick = await this.isChoose('受取済みの装備を選択', choices.map(item => ({
+          label: this.isLootName?.(item) || D().items[item.itemId]?.name || item.itemId,
+          note: `強化 +${item.plus || 0} ／ QUALITY ${item.quality || 100}`
+        })), {dismissible:false,message:'前のバージョンで獲得した装備を1個引き継げます。'});
+      } finally { this.pendingLegacyReward = null; }
+      if (this.isRun() !== run) return;
+      if (pick == null) return;
+      recovered = choices[pick];
     }
+    this.isFinalizeRunDefeat(run, recovered);
+  };
+  const oldRenderExplore=P.isRenderExplore;
+  P.isRenderExplore=function(panel){
+    const run=this.isRun?.();
+    if(run?.phase==='defeatPending')return this.isFinishDefeat();
     if (run) run.shopSupport=null;
     return oldRenderExplore.call(this,panel);
   };

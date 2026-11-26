@@ -36,11 +36,17 @@
     return a.map((value,i) => value + (b[i]-value)*(floor-low)/(high-low));
   }
 
-  function rewardRates(floor,source) {
+  function rewardRates(floor,source,infinityBonusPercent) {
     const rates = ratesAt(floor);
     if (source === 'treasure') return rates.slice(0,5).map((weight,index)=>weight * .75 ** index);
     if (source === 'gacha') return rates.slice(0,3).map((weight,index)=>weight * .5 ** index);
-    return rates;
+    if (!(infinityBonusPercent > 0)) return rates;
+    const top = rates.length - 1;
+    const current = rates[top];
+    if (current <= 0 || current >= 100) return rates;
+    const boosted = Math.min(100, current * (1 + infinityBonusPercent / 100));
+    const scale = (100 - boosted) / (100 - current);
+    return rates.map((weight,index) => index === top ? boosted : weight * scale);
   }
 
   function weighted(weights,random) {
@@ -110,9 +116,9 @@
     }));
   }
 
-  function generate({uid,floor:rawFloor=1,random,rarity:forced,part:requested,source='enemy'}) {
+  function generate({uid,floor:rawFloor=1,random,rarity:forced,part:requested,source='enemy',infinityBonusPercent=0}) {
     const floor = floorNumber(rawFloor);
-    const index = forced === undefined ? weighted(rewardRates(floor,source),random)
+    const index = forced === undefined ? weighted(rewardRates(floor,source,infinityBonusPercent),random)
       : typeof forced === 'string' ? cfg.tiers.findIndex(row=>row.id===forced) : forced-1;
     const rarity = cfg.tiers[index];
     const part = requested ? byPart.get(typeof requested==='string' ? requested : requested.id)
@@ -170,7 +176,7 @@
 
   function canTransfer(source,target) {
     if (!isV2(source) || !isV2(target) || source.uid===target.uid || !source.ops?.length ||
-        !target.ops?.length || target.ops.length>(tier(target)?.count[1] || 0)) return false;
+        !Array.isArray(target.ops) || !tier(target) || target.ops.length>tier(target).count[1]) return false;
     const a = D.items[source.itemId], b = D.items[target.itemId];
     if (!a?.gearFamily || !b?.gearFamily) return false;
     const rules=cfg.transfer;
@@ -179,13 +185,21 @@
       (!rules.infinityOnlyWithInfinity || (source.rarity==='infinity')===(target.rarity==='infinity'));
   }
 
-  function canReplace(source,target,sourceIndex,targetIndex) {
-    const op=source?.ops?.[sourceIndex];
-    const definition=byOp.get(op?.key);
-    return Number.isInteger(sourceIndex) && Number.isInteger(targetIndex) && sourceIndex>=0 && targetIndex>=0 &&
-      canTransfer(source,target) && definition && allowedOn(definition,byItem.get(source.itemId)) &&
-      allowedOn(definition,byItem.get(target.itemId)) && unlockedAt(definition,target.obtainedFloor) && !!target.ops[targetIndex] &&
+  function acceptsOption(source,target,sourceIndex,targetIndex) {
+    if (!canTransfer(source,target) || !Number.isInteger(sourceIndex) || sourceIndex<0) return false;
+    const op=source.ops[sourceIndex], definition=byOp.get(op?.key);
+    return !!definition && allowedOn(definition,byItem.get(source.itemId)) &&
+      allowedOn(definition,byItem.get(target.itemId)) && unlockedAt(definition,target.obtainedFloor) &&
       (definition.repeatable || !target.ops.some((existing,index)=>existing.key===op.key && index!==targetIndex));
+  }
+
+  function canReplace(source,target,sourceIndex,targetIndex) {
+    return Number.isInteger(targetIndex) && targetIndex>=0 && !!target?.ops?.[targetIndex] &&
+      acceptsOption(source,target,sourceIndex,targetIndex);
+  }
+
+  function canAppend(source,target,sourceIndex) {
+    return acceptsOption(source,target,sourceIndex,-1) && target.ops.length<tier(target).count[1];
   }
 
   function damage(value, rates, {basic,skill,enemy,critical,turn,hp,maxHp,alive,previousBasicHit,previousGuardHit}) {
@@ -246,7 +260,7 @@
     return `${definition?.label||op.key} +${format.format(op.value)}%［${op.grade}］${stats?`（${stats}）`:''}`;
   }
   D.infiniteGear = {isV2,tier,level,ratesAt,generate,strengthened,optionRates,stat,applyStatRate,damage,followUpHits,
-    canMerge,canTransfer,canReplace,combatKeys,vitalKeys,
+    canMerge,canTransfer,canReplace,canAppend,combatKeys,vitalKeys,
     number:value=>format.format(value),opText
   };
 })();

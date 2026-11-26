@@ -82,12 +82,21 @@
   P.owgGenerate=function({floor=this.isRun()?.floor||1,rarity,part,source}={}){
     normalize(this.profile);
     const uid=`owg-v2-${Date.now()}-${++this.profile.otherWorldGearUid}`;
-    return gearV2.generate({uid,floor,rarity,part,source,random:()=>this.isRand()});
+    const infinityBonusPercent = this.isRun?.() ? this.isSupportRelicRate?.('astrolabe') || 0 : 0;
+    return gearV2.generate({uid,floor,rarity,part,source,infinityBonusPercent,random:()=>this.isRand()});
   };
+  P.owgOpValueText = function (op) {
+    const firstValue = D.otherWorldGearOps.find(item => item.key === op.key)?.values[0];
+    const isPercent = firstValue > 0 && firstValue < 1;
+    const value = Number(op.value) * (isPercent ? 100 : 1);
+    return value.toLocaleString('ja-JP', {maximumFractionDigits:4}) + (isPercent ? '%' : '');
+  };
+  P.owgTuneCost=function(x){const lv=x.tuneLevel||0,base={3:3,4:5,5:8,6:12}[x.stars],step={3:2,4:3,5:4,6:5}[x.stars];return {shard:base+lv*step,core:lv<5?0:{3:1,4:1,5:2,6:3}[x.stars]};};
+  P.owgTuneRate=function(next){return next<=3?1:({4:.85,5:.70,6:.55,7:.42,8:.32,9:.24,10:.18}[next]??Math.max(.05,.18-(next-10)*.02));};
   P.owgOpText=function(item,op){
     if (gearV2.isV2(item)) return gearV2.opText(op);
     const label=D.otherWorldGearOps.find(row=>row.key===op.key)?.label||D.infiniteScore.opLabels[op.key]||op.key;
-    const value=Math.abs(op.value)<1?`${Number((op.value*100).toFixed(2))}%`:op.value;
+    const value=this.owgOpValueText(op);
     return `${label} +${value}［旧R${op.rank}］`;
   };
   P.owgMetaHtml=function(x){
@@ -104,7 +113,6 @@
     }).join(' ／ ');
   };
 
-  const oldReturn=P.isReturnRun; P.isReturnRun=function(){const r=this.isRun?.();if(!r)return oldReturn.call(this);normalize(this.profile);for(const x of r.lootBag){if(x.otherWorldGear)this.profile.otherWorldGear.push(copy(x));else this.profile.inventory[x.itemId]=(this.profile.inventory[x.itemId]||0)+(x.count||1);}const count=r.lootBag.length,floor=r.floor;this.profile.equipment=copy(r.homeEquipmentInProfile ? this.profile.equipment : (r.homeEquipment||this.profile.equipment));this.profile.currentVitals=copy(r.homeVitals||this.profile.currentVitals);this.profile.infiniteScore={active:false,lastResult:'return',returnedCount:count,lastFloor:floor,endedAt:Date.now()};this.profile.flags.owRestoreJobPending=true;this.saveProfile();document.getElementById('is-modal')?.remove();this.showResult('RETURN SUCCESS',`${count}枠の戦利品を持ち帰った。`,'INFINITE SCORE // ESCAPED',`<div class="is-stairs"><b>FLOOR ${floor}から生還</b><p>異世界装備は《異世界装備庫》へ保管されました。</p></div>`);};
 
   P.owgEffects=function(){
     const equipped=this.owgEquipped(), out=gearV2.optionRates(equipped);
@@ -154,6 +162,7 @@
     if (equipped.some(gearV2.isV2)) {
       for (const key of gearV2.vitalKeys) total[key]=gearV2.applyStatRate(total[key]||0,rates[key+'Rate']);
     }
+    if (this.isRunForEquipment?.()) this.isApplyRelicStats?.(total);
     total.def=total.vit;
     return total;
   };
@@ -286,7 +295,7 @@
     return Math.max(0,Math.ceil(oldMpCost.call(this,skill)*factor));
   };
   const oldCfg=P.isEffectiveCfg;P.isEffectiveCfg=function(){const c=oldCfg.call(this),fx=this.owgEffects();return {...c,gearDropRate:Math.min(.95,(c.gearDropRate||0)+(fx.gearDropUp||0)),rareEnemyRate:(c.rareEnemyRate||0)+(fx.rareEnemyUp||0),returnItemRate:Math.min(.15,(c.returnItemRate||0)+(fx.returnUp||0)),treasureRate:(c.treasureRate||0)+(fx.treasureUp||0),stairBaseRate:Math.min(95,(c.stairBaseRate||0)+(fx.stairUp||0)*100)};};
-  const oldBagLimit=P.isBagLimit;P.isBagLimit=function(){return oldBagLimit.call(this)+(this.owgEffects().bagPlus||0);};
+  const oldBagLimit=P.isBagLimit;P.isBagLimit=function(){return oldBagLimit.call(this)+Math.floor(this.owgEffects().bagPlus||0);};
 
   P.owgHomeGear=function(slot){
     if(this.isRunForEquipment?.())return;

@@ -40,18 +40,20 @@ const shop=game();const first=shop.isStartShopEncounter(false);assert.equal(firs
     assert.deepEqual(g.profile.equipment,{rightHand:'gear'});
     assert.equal(g.isRun(),null);
   }
+  for (const resume of [g=>g.isChooseActiveRun(),g=>g.renderMenuPanel('otherworld'),g=>g.isRenderExplore(fakePanel)]) {
   for (const earned of [false,true]) {
     const g=game(),run=g.isRun();
     run.phase='defeatPending';
     run.support.insuranceAuthorized=earned;
     run.lootBag=[{uid:'kept',kind:'equipment',itemId:'gear',otherWorldGear:true}];
     g.isChoose=async()=>{assert.ok(earned);return 0;};
-    await g.isRenderExplore(fakePanel);
+    await resume(g);
     assert.equal(g.profile.infiniteScore.active,false);
     assert.equal(g.profile.otherWorldGear.length,earned?1:0);
     assert.equal(g.profile.infiniteScore.lostCount,earned?0:1);
     g.isFinalizeRunDefeat(run,run.lootBag[0]);
     assert.equal(g.profile.otherWorldGear.length,earned?1:0);
+  }
   }
   console.log('infinite support behavior regression: ok');
 })().catch(error=>{console.error(error);process.exitCode=1;});
