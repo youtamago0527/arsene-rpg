@@ -7,7 +7,8 @@ const data = {
   items:{}, weapons:{}, armors:{}, accessories:{}, skills:{},
   infiniteScore:{bagLimit:30, rarity:{}, opLabels:{}, opRanks:{}}
 };
-const document = {addEventListener(){}, querySelector(){return null;}};
+const battleElement = {classList:{add(){}, remove(){}}};
+const document = {addEventListener(){}, querySelector(selector){return selector === '#ren' ? battleElement : null;}, getElementById(){return battleElement;}};
 const context = {window:{ARSENE_DATA:data}, document, addEventListener(){}};
 vm.createContext(context);
 vm.runInContext(fs.readFileSync('js/game.js','utf8'), context);
@@ -132,4 +133,59 @@ test('on-hit recovery, conditional damage and additional damage use the equipped
   g.owgTurnRecovery();
   assert.equal(g.player.hp,297);
   assert.equal(g.player.mp,17);
+});
+
+test('reflection uses actual HP lost, targets the attacker, and grants a reflected kill once', async () => {
+  const g = fixture();
+  const shield = gear(g, 'shield', {damageReflect:.24});
+  const charm = gear(g, 'accessory_guard', {damageReflect:.26});
+  assert.equal(g.owgOpFitsItem('damageReflect', shield.itemId), true);
+  assert.equal(g.owgOpFitsItem('damageReflect', charm.itemId), true);
+  assert.equal(g.owgOpFitsItem('damageReflect', gear(g, 'arms').itemId), false);
+  Object.assign(g.isRun().equipment,{leftHand:shield.uid,accessory:charm.uid});
+  g.player.buffs.guardUntil = g.turn;
+  g.player.buffs.guardReduction = .5;
+  g.activeSetEffects = () => ({});
+  g.activePassives = () => [];
+  g.passiveEffectRate = g.equipmentEffectRate = () => 0;
+  g.resonanceEnabled = () => false;
+  g.enemyRawDamage = () => 100;
+  g.battleSleep = async () => {};
+  g.rollEnemyAttackOutcome = () => ({hit:true});
+  g.audio = {sfx(){}};
+  g.playerName = () => 'ソラ';
+  g.rollDrops = () => [];
+  data.combatBalance = {enemyVariance:{min:0,max:0}};
+  const popups = [];
+  g.floating = (_, text) => {popups.push(text);};
+  const rewards = [];
+  g.grantEnemyReward = enemy => {rewards.push(enemy); return {exp:1,gold:0};};
+  let won = 0;
+  g.victory = async () => {won++;};
+  const enemy = hp => ({uid:'enemy', name:'敵', label:'', hp, alive:true, stats:{atk:1}, ai:[{name:'打撃', kind:'physical', weight:1}]});
+  const attacker = enemy(50), bystander = enemy(20);
+  g.enemies = [attacker,bystander];
+  await g.enemyAttack(attacker);
+  assert.equal(g.player.hp, 350);
+  assert.equal(attacker.hp, 25);
+  assert.equal(bystander.hp, 20);
+  assert.ok(popups.includes('反射 25'));
+  assert.equal(rewards.length, 0);
+
+  await g.enemyOnlyTurn();
+  assert.equal(won, 1);
+  assert.deepEqual(rewards,[attacker,bystander]);
+  assert.equal(attacker.alive, false);
+  assert.equal(bystander.alive, false);
+
+  const storyBoss = {...enemy(25),cannotDefeat:true};
+  g.receivePlayerDamage(100,'magical',{attacker:storyBoss});
+  assert.equal(storyBoss.hp, 1);
+  g.receivePlayerDamage(100,'magical');
+  const hazardousAttacker = enemy(25);
+  g.player.hp = 10;
+  g.receivePlayerDamage(100,'magical',{attacker:hazardousAttacker});
+  assert.equal(g.player.hp, 0);
+  assert.equal(hazardousAttacker.hp, 25);
+  assert.equal(rewards.length, 2);
 });

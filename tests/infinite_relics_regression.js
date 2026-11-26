@@ -198,6 +198,7 @@ test('forge shards are debited using the displayed quill discount', async () => 
   playerGame.isSave = playerGame.isLog = playerGame.isRenderWorkshop = () => {};
   assert.equal(playerGame.isForgeOpCost(source.ops[0]).shard, 24);
   assert.equal(playerGame.isForgeOpCost().shard, 8);
+  playerGame.isShowForgeSuccess = async () => {};
   await playerGame.isForgeEnhance(target.uid);
   assert.equal(target.plus, 1);
   assert.equal(playerGame.isForgeMaterialCount('otherworldShard'), 35);
