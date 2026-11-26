@@ -80,7 +80,7 @@
     attack('physicalDamagePercent','物理与ダメージ',damageCurve,6),
     attack('magicDamagePercent','魔法与ダメージ',damageCurve,6),
     attack('hpDrain','HP吸収',[.003,.005,.008,.012,.018,.025],2),
-    attack('repeatChance','追加発動',[.01,.02,.035,.05,.075,.10],3),
+    attack('repeatChance','追加行動率',[.01,.02,.035,.05,.075,.10],3),
     attack('normalAttackDamageBonus','通常攻撃ダメージ',damageCurve,6),
     attack('skillDamageBonus','技・魔法ダメージ',damageCurve,6),
     attack('singleDamageBonus','単体攻撃ダメージ',damageCurve,5),
@@ -373,26 +373,41 @@
     if (hp || mp) { this.persistVitals(); this.updateHUD(); }
   };
 
+
+  P.owgExtraActionCount = function (random = Math.random) {
+    const rate = Number(this.owgEffects().repeatChance);
+    if (!(rate > 0) || !Number.isFinite(rate)) return 0;
+    const guaranteed = Math.floor(rate);
+    // Match the precision used when displaying an OP. Summed rates can land just below a whole number.
+    const remainder = Math.round((rate - guaranteed) * 1e6) / 1e6;
+    return guaranteed + (remainder >= 1 || (remainder > 0 && random() < remainder) ? 1 : 0);
+  };
+
+  P.owgRepeatAttacks = async function (skill, targetIndex) {
+    if (skill.target === 'self' || skill.kind === 'support') return;
+    const canAttack = () => !this.finished && this.player.hp > 0 && this.enemies.some(enemy => enemy.alive);
+    if (!canAttack()) return;
+    const count = this.owgExtraActionCount();
+    if (!count) return;
+    this.flashTitle('追加行動', `EXTRA ACTION ×${count.toLocaleString('ja-JP')}`);
+    this.setLog('装備のOPが発動し、続けざまに攻撃！');
+    await this.battleSleep(200);
+    // Run just once per selected attack. Each repeat uses the normal hit and retargeting rules.
+    for (let i = 0; i < count && canAttack(); i++) await this.playerAttack(skill, targetIndex);
+  };
+
   P.owgTrapDamage = function (amount) {
     return Math.round(amount * (1 - Math.min(.9, this.owgEffects().trapDamageDown || 0)));
   };
   const oldWeapon=P.equippedWeapon; P.equippedWeapon=function(){const run=this.isRun?.(),uid=run?.equipment?.rightHand||this.profile.otherWorldEquipment?.rightHand,x=this.owgEntry(uid);if(x)return D.weapons[x.itemId]||oldWeapon.call(this);return oldWeapon.call(this);};
   const oldSkills=P.availableSkills; P.availableSkills=function(){const list=oldSkills.call(this),skills=this.owgEquipped().map(x=>D.skills[x.uniqueSkillId]).filter(Boolean);return [...new Map([...list,...skills].map(x=>[x.id,x])).values()];};
-  // Combat reads these two individual OPs through the existing boss-set effect API.
-  const oldSet=P.activeSetEffects;
-  P.activeSetEffects=function(...args){
-    const effects=oldSet.apply(this,args);
-    const {damageReductionPercent=0,repeatChance=0}=this.owgEffects();
-    if(!damageReductionPercent&&!repeatChance)return effects;
-    const result={...effects};
-    if(damageReductionPercent){
-      result.damageReductionPercent=Math.min(80,(effects.damageReductionPercent||0)+damageReductionPercent*100);
-    }
-    if(repeatChance){
-      result.physicalRepeatChance=Math.min(.30,(effects.physicalRepeatChance||0)+repeatChance);
-      result.magicRepeatChance=Math.min(.30,(effects.magicRepeatChance||0)+repeatChance);
-    }
-    return result;
+// Damage reduction uses the same calculation as other sources of damage reduction.
+  const oldSet = P.activeSetEffects;
+  P.activeSetEffects = function (...args) {
+    const effects = oldSet.apply(this, args);
+    const {damageReductionPercent = 0} = this.owgEffects();
+    if (!damageReductionPercent) return effects;
+    return {...effects, damageReductionPercent:Math.min(80, (effects.damageReductionPercent || 0) + damageReductionPercent * 100)};
   };
   const oldMpCost=P.skillMpCost;P.skillMpCost=function(skill){return Math.max(0,Math.ceil(oldMpCost.call(this,skill)*(1-Math.min(.75,this.owgEffects().mpCostDown||0))));};
   const oldCfg=P.isEffectiveCfg;P.isEffectiveCfg=function(){const c=oldCfg.call(this),fx=this.owgEffects();return {...c,gearDropRate:Math.min(.95,(c.gearDropRate||0)+(fx.gearDropUp||0)),rareEnemyRate:(c.rareEnemyRate||0)+(fx.rareEnemyUp||0),returnItemRate:Math.min(.15,(c.returnItemRate||0)+(fx.returnUp||0)),treasureRate:(c.treasureRate||0)+(fx.treasureUp||0),stairBaseRate:Math.min(95,(c.stairBaseRate||0)+(fx.stairUp||0)*100)};};

@@ -35,8 +35,9 @@ allGear[0].ops.push(
   { key: 'physicalDamagePercent', value: .10 }
 );
 assert.deepEqual({ ...game.activeSetEffects() }, {
-  damageReductionPercent: 5, physicalRepeatChance: .075, magicRepeatChance: .075
-}, '軽減・追加発動は装備個別のOPから適用する');
+  damageReductionPercent: 5
+}, 'ダメージ軽減は装備個別のOPから適用する');
+assert.equal(game.owgExtraActionCount(() => .07), 1, '追加行動は装備OPの確率で個別に判定する');
 assert.equal(game.equipmentEffectRate('physicalDamagePercent'), .10);
 
 run.active = false;
@@ -44,8 +45,9 @@ assert.deepEqual(game.activeSetEffects(), { vitPercent: 8, damageReductionPercen
 game.profile.otherWorldGear = allGear;
 game.profile.otherWorldEquipment = slots;
 assert.deepEqual({ ...game.activeSetEffects() }, {
-  vitPercent: 8, damageReductionPercent: 15, physicalRepeatChance: .075, magicRepeatChance: .075
+  vitPercent: 8, damageReductionPercent: 15
 }, '帰還後も異世界のセット効果は発動せず、ボスセットと個別OPを適用する');
+assert.equal(game.owgExtraActionCount(() => .07), 1, '帰還して装備したOPも追加行動に加算する');
 assert.equal(game.bossSetBonusSectionHTML(), 'BOSS SET');
 const panel = { dataset: {} };
 game.owgRenderVault(panel);
