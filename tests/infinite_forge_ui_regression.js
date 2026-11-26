@@ -1,53 +1,80 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const path = require('node:path');
+const vm = require('node:vm');
+const { test } = require('node:test');
 
-const root = path.resolve(__dirname, '..');
-const infinite = fs.readFileSync(path.join(root, 'js', 'infinite_score.js'), 'utf8');
-const startFlow = fs.readFileSync(path.join(root, 'js', 'start-flow.js'), 'utf8');
-const infiniteData = fs.readFileSync(path.join(root, 'js', 'infinite_score_data.js'), 'utf8');
-const css = fs.readFileSync(path.join(root, 'css', 'infinite-forge.css'), 'utf8');
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-
-assert.match(infinite, /\['enhance','強化'\],\['merge','同型合成'\],\['transfer','OP移植'\],\['delete','OP削除'\]/, '工房の4機能をタブ表示する');
-assert.match(css, /PROCESS PREVIEW \/\/ 加工内容/, '選択装備に対する処理結果を事前表示する');
-assert.match(infinite, /バッグ \$\{used\} \/ \$\{limit\}/, '30枠バッグの使用数を表示する');
-assert.match(infinite, /帰還時消滅/, '奏貨が帰還時に消えることを明示する');
-assert.match(infinite, /EQUIPPED/, '装備中の装備をカードで識別する');
-assert.match(infinite, /残り奏貨/, '操作後の奏貨残額を事前表示する');
-assert.match(infinite, /isForgeMerge=async function\(uid,materialUid=null\)/, '選択した同型素材を非同期モーダル経由で既存合成処理へ渡す');
-assert.match(infinite, /isForgeTransfer=async function\(sourceUid,targetUid=null,opIndex=0\)/, '選択した移植元・移植先・OPをゲーム内確認後に既存処理へ渡す');
-assert.match(infinite, /isForgeDelete=async function\(uid,index=0\)/, '選択した削除OPをゲーム内確認後に既存処理へ渡す');
-assert.match(startFlow, /infinite-forge-ready/, '工房単体のローカル確認導線を用意する');
-assert.match(infinite, /flags\.infiniteScoreWarningSeen = true/, '工房単体確認ではセリペス警告会話をスキップする');
-assert.match(infinite, /previous=panel\?\.querySelector\('\.is-forge-picker>div'\)\?\.scrollLeft/, '装備選択一覧の横スクロール位置を再描画前に保存する');
-assert.match(infinite, /picker\.scrollLeft=previous;requestAnimationFrame/, '再描画後も装備選択一覧の横スクロール位置を復元する');
-assert.match(infinite, /isForgeCombinedOp=function\(targetOp,sourceOp\)/, '同一OP移植時の合成結果を計算する');
-assert.match(infinite, /value:\(Number\(targetOp\.value\)\|\|0\)\+\(Number\(sourceOp\.value\)\|\|0\)/, '同一OPは対象と素材の効果値を加算する');
-assert.match(infinite, /target\.ops\[same\]=combined/, '同一OPを素材OPで上書きせず強化結果へ置き換える');
-assert.match(infinite, /同一OP合成後：\$\{this\.isForgeOpText\(result\)\}/, '移植前のプレビューにも同一OPの強化結果を表示する');
-assert.match(infinite, /return `\$\{label\} \+\$\{value\}`/, '工房のOP表示ではR表記を出さない');
-for (const label of ['獲得経験値UP', '素材ドロップ率UP', '魔法与ダメージ', '被ダメージ軽減', '帰還札出現率UP', 'バッグ枠追加']) {
-  assert.match(infiniteData, new RegExp(label), `異世界OP「${label}」を日本語表示する`);
+class BattleGame {}
+const ids = ['base','donor','locked','expensive'];
+const data = {
+  items:Object.fromEntries(ids.map(id => [id, {name:id, category:'equipment', slot:'rightHand'}])),
+  weapons:{},
+  infiniteScore:{bagLimit:30, rarity:{}, opLabels:{}}
+};
+const document = {addEventListener(){}, querySelector(){return null;}};
+const context = {window:{BattleGame, ARSENE_DATA:data}, document};
+for (const file of ['js/infinite_score.js','js/infinite_relics.js']) {
+  vm.runInNewContext(fs.readFileSync(file,'utf8'), context);
 }
-assert.match(css, /\.is-forge-detail-layout\{grid-template-columns:minmax\(132px,36%\) minmax\(0,64%\);align-items:stretch\}/, '参考コード同様に装備と加工予測を横並びにする');
-assert.match(css, /overflow-x:auto/, '装備カードを横スクロール可能にする');
-assert.match(css, /\.is-forge-gear-icon,\.is-forge-gear-card\.selected \.is-forge-gear-icon,\.is-forge-gear-card>b\+small\{display:none!important\}/, '選択・装備状態を問わず仮アイコンと内部スロット名を表示しない');
-assert.match(css, /\.is-forge-gear-card\.selected \.is-forge-card-stats\{display:flex!important\}/, '選択中カードの能力欄も通常カードと同じ並びにする');
-assert.match(css, /\.is-forge-gear-card\.selected \.is-forge-card-op\{display:block!important\}/, '選択中カードのOP欄も通常カードと同じ並びにする');
-assert.match(css, /\.is-forge-gear-card\.selected\{gap:0!important\}/, '選択状態の共通gapがカード内部へ混入しない');
-assert.match(css, /\.is-forge-gear-card\.equipped\{display:flex!important;gap:0!important;margin-bottom:0!important\}/, '装備中の共通レイアウトが工房カードへ混入しない');
-assert.match(css, /\.is-forge-gear-card\.equipped \.is-forge-card-stats b\{font-size:inherit!important\}/, '装備中カードの能力数値を通常カードと同じ大きさにする');
-assert.match(css, /\.is-forge-gear-card\{flex-basis:112px;height:92px;/, '装備カード下部の空白を削り詳細パネルを上へ詰める');
-assert.match(css, /\.is-forge-tabs button\{min-height:28px;padding:2px\}/, '参考コード同様に工房タブをコンパクトにする');
-assert.match(css, /\.is-forge-gear-card\.equipped \.is-forge-card-stats\{display:flex!important;flex:0 0 auto!important;[^}]+border:0!important/, '装備中カードの能力欄も通常カードと同じ表示にする');
-assert.match(css, /\.is-forge-gear-card\.selected>b\{[^}]+height:auto!important[^}]+line-height:normal!important/, '選択中カードでも装備名の高さを消さない');
-assert.match(css, /\.is-forge-gear-card\.selected \.is-forge-card-stats\{flex:0 0 auto!important;height:auto!important;min-height:0!important;[^}]+border:0!important/, '選択中カードの能力欄に大きな囲み枠を付けない');
-assert.match(css, /\.is-forge-detail-layout\{grid-template-columns:[^}]+;align-items:stretch\}/, '左右の詳細パネルを同じ高さに揃える');
-assert.match(css, /\.is-forge-selected\{box-sizing:border-box;height:calc\(100% - 10\.4px\);[^}]+margin-top:10\.4px/, '選択装備パネルの枠上端を右の加工パネル本体へ揃える');
-assert.match(css, /\.is-forge-selected>b:nth-of-type\(2\)\{position:absolute;right:11px;top:47px/, '強化値を装備名と同じ行へ配置する');
-assert.match(css, /\.is-forge-selected>p\{[^}]+font-size:10px/, '選択装備のOPを読みやすく表示する');
-assert.match(css, /env\(safe-area-inset-bottom/, 'iPhoneのセーフエリアを確保する');
-assert.match(html, /css\/infinite-forge\.css/, '工房専用スタイルを読み込む');
 
-console.log('infinite forge UI regression: ok');
+function fixture() {
+  const g = new BattleGame();
+  const gear = (uid, ops, tuneLevel=0, locked=false) => ({uid, itemId:uid, kind:'equipment', otherWorldGear:true,
+    stars:4, ops, tuneLevel, locked});
+  const op = (key, rank) => ({key, rank, value:rank + 1});
+  g.profile = {infiniteScoreDebug:{}, infiniteRelicLevels:{}, infiniteScore:{active:true,equipment:{},lootBag:[
+    gear('base', ['str','vit','mnd','dex'].map(key => op(key,3))),
+    gear('donor', [op('mag',1),op('agi',4)]),
+    gear('locked', [op('luk',1)], 0, true),
+    gear('expensive', [], 20),
+    {itemId:'otherworldShard', count:45},
+    {itemId:'otherworldCore', count:1}
+  ]}};
+  g.owgTuneCost = item => ({shard:5 + item.tuneLevel * 3, core:item.tuneLevel >= 5 ? 1 : 0});
+  g.owgEffectiveStats = (_, level) => ({attackPower:{total:200 + level * 16}});
+  return {g, panel:{dataset:{}, scrollTop:0, querySelector(){return null;}}};
+}
+
+test('only gear the player can afford to strengthen is listed', () => {
+  const {g,panel} = fixture();
+  g.isRenderWorkshop(panel);
+  assert.match(panel.innerHTML,/data-is-forge-select="base"/);
+  assert.doesNotMatch(panel.innerHTML,/data-is-forge-select="expensive"/);
+  g.isForgeState().selectedUid = 'base';
+  g.isRenderWorkshop(panel);
+  assert.match(panel.innerHTML,/200 → 216/);
+  assert.match(panel.innerHTML,/必要素材　欠片 5/);
+});
+
+test('transfer chooses target, affordable source and OP, then an explicit replacement', () => {
+  const {g,panel} = fixture();
+  const state = g.isForgeState();
+  state.mode = 'transfer';
+  g.isRenderWorkshop(panel);
+  assert.match(panel.innerHTML,/移植先の装備を選ぶ/);
+  assert.doesNotMatch(panel.innerHTML,/data-is-forge-source=/);
+  assert.doesNotMatch(panel.innerHTML,/data-is-forge-select="donor"/);
+  state.selectedUid = 'base';
+  g.isRenderWorkshop(panel);
+  assert.match(panel.innerHTML,/data-is-forge-source="donor"/);
+  assert.doesNotMatch(panel.innerHTML,/data-is-forge-source="locked"/);
+  state.sourceUid = 'donor';
+  g.isRenderWorkshop(panel);
+  assert.match(panel.innerHTML,/data-is-forge-op="0"/);
+  assert.doesNotMatch(panel.innerHTML,/data-is-forge-op="1"/);
+  state.opIndex = 0;
+  g.isRenderWorkshop(panel);
+  assert.match(panel.innerHTML,/data-is-forge-execute disabled/);
+  state.replaceIndex = 0;
+  g.isRenderWorkshop(panel);
+  assert.doesNotMatch(panel.innerHTML,/data-is-forge-execute disabled/);
+  assert.match(panel.innerHTML,/欠片 30 \/ 核 1/);
+});
+
+test('without a usable source or necessary materials the list does not offer a transfer', () => {
+  const {g,panel} = fixture();
+  g.isForgeState().mode = 'transfer';
+  g.isRun().lootBag.pop();
+  g.isRenderWorkshop(panel);
+  assert.match(panel.innerHTML,/移植できる組み合わせがありません/);
+  assert.doesNotMatch(panel.innerHTML,/data-is-forge-select=/);
+});
