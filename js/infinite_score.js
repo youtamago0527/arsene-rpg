@@ -976,7 +976,7 @@
   P.isCardPicks=function(force=null){const returnUnlocked=(this.isRun()?.floor||1)>=Math.max(1,Number(this.isEffectiveCfg().returnMinFloor)||20);let pool=this.isCfg().cards.filter(x=>x.id!=='return'||returnUnlocked);if(force==='returnCard'&&returnUnlocked)pool=[pool.find(x=>x.id==='return'),...pool.filter(x=>x.id!=='return')];if(force==='sublime')pool=[pool.find(x=>x.id==='sublime'),...pool.filter(x=>x.id!=='sublime')];const out=[];while(out.length<3&&pool.length){const pick=(force&&out.length===0)?pool[0]:this.isPickWeighted(pool);out.push(pick);pool=pool.filter(x=>x.id!==pick.id);}return out;};
   P.isShowCards=function(force=null){const picks=this.isCardPicks(force);this.isRun().pendingCards=picks;this.saveProfile();this.showResult('ENCHANT CARD','3枚から1枚を選ぶ。選ばなかったカードは消滅する。','INFINITE SCORE',`<div class="is-cards">${picks.map((c,i)=>`<button class="is-card" data-is-card="${i}"><b>《${esc(c.name)}》</b><span>${esc(c.text)}</span></button>`).join('')}</div>`);this.isHideDefaultResultMenu();};
   P.isChooseGear=async function(title,predicate=()=>true){const list=this.isRun().lootBag.filter(x=>x.kind==='equipment'&&predicate(x));if(!list.length)return null;const n=await this.isChoose(title,list.map(x=>({label:D().items[x.itemId]?.name||x.itemId,note:`+${x.plus||0}`})),{kicker:'GEAR SELECT'});return n===null?null:list[n];};
-  P.isApplyCard=function(index){const r=this.isRun(),c=r.pendingCards?.[index];if(!c)return;r.pendingCards=null;const stats=this.totalStats();if(c.id==='heal')r.hp=Math.min(stats.maxHp,r.hp+Math.ceil(stats.maxHp*.2));else if(c.id==='mana')r.mp=Math.min(stats.maxMp,r.mp+Math.ceil(stats.maxMp*.2));else if(c.id==='treasure')r.buffs.treasureBonus=Math.min(1,(r.buffs.treasureBonus||0)+.1);else if(c.id==='hunt')r.buffs.rareBonus=Math.min(1,(r.buffs.rareBonus||0)+.05);else if(c.id==='stairs'){if(this.isStairDistanceLimit(r)>1){const node=this.isMapNode(this.isFloorMap().currentId);node.stairs=true;r.stairsFound=true;this.saveProfile();this.isAfterBattle();}else{this.isAfterBattle();this.isDescend();}return;}else if(c.id==='return'){this.isReturnRun();return;}else if(c.id==='gold')r.buffs.goldBonus=(r.buffs.goldBonus||0)+.2;else if(c.id==='quality')r.buffs.qualityBattles=3;else if(c.id==='merchant'){this.isAfterBattle();this.isRenderShop($('#menu-panel'),true);return;}else if(c.id==='forge'){const x=this.isChooseGear('鍛造する装備を選択');if(x)x.plus=(x.plus||0)+1;}else if(c.id==='sublime'){const x=this.isChooseGear('昇華する装備を選択',x=>x.ops?.some(o=>o.rank<4));if(x){const candidates=x.ops.filter(o=>o.rank<4),n=Number(prompt(`強化するOPを選択\n${candidates.map((o,i)=>`${i+1}: ${this.isCfg().opLabels[o.key]||o.key} R${o.rank}`).join('\n')}`))-1,op=candidates[n];if(op){op.rank++;op.value=this.isCfg().opRanks[op.key][op.rank-1];}}}this.isLog(`CARD《${c.name}》`);this.saveProfile();this.isAfterBattle();};
+  P.isApplyCard=function(index){const r=this.isRun(),c=r.pendingCards?.[index];if(!c)return;if(c.id==='return')return this.isRequestReturn(c);r.pendingCards=null;const stats=this.totalStats();if(c.id==='heal')r.hp=Math.min(stats.maxHp,r.hp+Math.ceil(stats.maxHp*.2));else if(c.id==='mana')r.mp=Math.min(stats.maxMp,r.mp+Math.ceil(stats.maxMp*.2));else if(c.id==='treasure')r.buffs.treasureBonus=Math.min(1,(r.buffs.treasureBonus||0)+.1);else if(c.id==='hunt')r.buffs.rareBonus=Math.min(1,(r.buffs.rareBonus||0)+.05);else if(c.id==='stairs'){if(this.isStairDistanceLimit(r)>1){const node=this.isMapNode(this.isFloorMap().currentId);node.stairs=true;r.stairsFound=true;this.saveProfile();this.isAfterBattle();}else{this.isAfterBattle();this.isDescend();}return;}else if(c.id==='gold')r.buffs.goldBonus=(r.buffs.goldBonus||0)+.2;else if(c.id==='quality')r.buffs.qualityBattles=3;else if(c.id==='merchant'){this.isAfterBattle();this.isRenderShop($('#menu-panel'),true);return;}else if(c.id==='forge'){const x=this.isChooseGear('鍛造する装備を選択');if(x)x.plus=(x.plus||0)+1;}else if(c.id==='sublime'){const x=this.isChooseGear('昇華する装備を選択',x=>x.ops?.some(o=>o.rank<4));if(x){const candidates=x.ops.filter(o=>o.rank<4),n=Number(prompt(`強化するOPを選択\n${candidates.map((o,i)=>`${i+1}: ${this.isCfg().opLabels[o.key]||o.key} R${o.rank}`).join('\n')}`))-1,op=candidates[n];if(op){op.rank++;op.value=this.isCfg().opRanks[op.key][op.rank-1];}}}this.isLog(`CARD《${c.name}》`);this.saveProfile();this.isAfterBattle();};
   const isApplyCardNative=P.isApplyCard;
   P.isApplyCard=async function(index){const c=this.isRun()?.pendingCards?.[index];if(!c||!['forge','sublime'].includes(c.id))return isApplyCardNative.call(this,index);this.isRun().pendingCards=null;const x=await this.isChooseGear(c.id==='forge'?'鍛造する装備を選択':'昇華する装備を選択',c.id==='sublime'?x=>x.ops?.some(o=>o.rank<4):()=>true);if(x&&c.id==='forge')x.plus=(x.plus||0)+1;if(x&&c.id==='sublime'){const candidates=x.ops.filter(o=>o.rank<4),n=await this.isChoose('強化するOPを選択',candidates.map(o=>({label:this.isCfg().opLabels[o.key]||o.key,note:`RANK ${o.rank} → ${o.rank+1}`})),{kicker:'SUBLIMATION'}),op=n===null?null:candidates[n];if(op){op.rank++;op.value=this.isCfg().opRanks[op.key][op.rank-1];}}this.isLog(`CARD《${c.name}》`);this.saveProfile();this.isAfterBattle();};
   P.isRenderShop=function(panel,merchant=false){
@@ -999,10 +999,13 @@
     return 1 + (this.isSupportRelicRate?.('twin-rings') || 0);
   };
 
-  P.isRequestReturn = async function () {
+  const hasReturnSource = (game, run, card) => game.isHasReturn()
+    || (card?.id === 'return' && run.pendingCards?.includes(card));
+
+  P.isRequestReturn = async function (card) {
     const run = this.isRun();
     if (!run || run.phase === 'defeatPending' || this.isReturnSelectionOpen) return;
-    if (!this.isHasReturn()) {
+    if (!hasReturnSource(this, run, card)) {
       await this.isNotify('RETURNを持っていません', '探索中にRETURNを入手すると帰還できます。');
       return;
     }
@@ -1013,7 +1016,7 @@
     try {
       if (!limit) {
         if (await this.isConfirm('無限奏廊から帰還しますか？', message, {kicker:'RETURN CHECK', confirmLabel:'帰還する'})) {
-          this.isReturnRun([], run);
+          this.isReturnRun([], run, card);
         }
         return;
       }
@@ -1022,14 +1025,14 @@
         message:`${message}\n装備は最大${limit}個持ち帰れます。`,
         choices:gear.map(item => this.isRunGearChoice(item)), selectionLimit:limit, confirmLabel:'帰還する', danger:true
       });
-      if (Array.isArray(selection)) this.isReturnRun(selection.map(index => gear[index].uid), run);
+      if (Array.isArray(selection)) this.isReturnRun(selection.map(index => gear[index].uid), run, card);
     } finally {
       this.isReturnSelectionOpen = false;
     }
   };
 
-  P.isReturnRun = function (gearUids, run) {
-    if (!run || run !== this.isRun() || run.phase === 'defeatPending' || !this.isHasReturn()) return false;
+  P.isReturnRun = function (gearUids, run, card) {
+    if (!run || run !== this.isRun() || run.phase === 'defeatPending' || !hasReturnSource(this, run, card)) return false;
     const selected = new Set(gearUids), gear = run.lootBag.filter(entry => selected.has(entry.uid) && isEquipment(entry));
     if (gear.length !== selected.size || gear.length > this.isReturnGearLimit()) return false;
     const inventory = this.profile.inventory;
@@ -1048,10 +1051,12 @@
         inventory[entry.itemId] = (inventory[entry.itemId] || 0) + 1;
       }
     }
-    this.profile.equipment = copy(run.homeEquipment || this.profile.equipment);
+    const homeEquipment = run.homeEquipmentInProfile ? this.profile.equipment : run.homeEquipment;
+    this.profile.equipment = copy(homeEquipment || this.profile.equipment);
     this.profile.currentVitals = copy(run.homeVitals || this.profile.currentVitals);
     this.profile.infiniteScore = {active:false, lastResult:'return', returnedCount:gear.length + arcanaCount, lastFloor:run.floor, endedAt:Date.now()};
     this.profile.flags.owRestoreJobPending = true;
+    this.isSetEquipmentContext?.(false);
     this.saveProfile();
     document.getElementById('is-modal')?.remove();
     this.showResult('RETURN SUCCESS', `アルカナ ${arcanaCount}個 ／ 装備 ${gear.length}個を持ち帰った。`, 'INFINITE SCORE // ESCAPED',
@@ -1560,7 +1565,24 @@
 
   document.addEventListener('click',e=>{if(e.target.closest('[data-is-action="resume"]'))window.arseneGame?.isPlayExploreMusic?.();},true);
   document.addEventListener('click',e=>{const a=e.target.closest('[data-is-action="explore-log"]'),g=window.arseneGame;if(!a||!g)return;e.preventDefault();e.stopImmediatePropagation();g.isExploreLogExpanded=!g.isExploreLogExpanded;g.isRenderExplore($('#menu-panel'));});
-  document.addEventListener('click',async e=>{const card=e.target.closest('[data-is-card]'),g=window.arseneGame;if(!card||!g)return;e.preventDefault();e.stopImmediatePropagation();if(card.dataset.isResolved)return;card.dataset.isResolved='1';card.disabled=true;await g.isApplyCard(+card.dataset.isCard);},true);
+  document.addEventListener('click', async event => {
+    const button = event.target.closest('[data-is-card]'), game = window.arseneGame;
+    if (!button || !game) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (button.dataset.isResolved) return;
+    button.dataset.isResolved = '1';
+    button.disabled = true;
+    const index = Number(button.dataset.isCard);
+    try {
+      await game.isApplyCard(index);
+    } finally {
+      if (game.isRun()?.pendingCards?.[index]?.id === 'return') {
+        delete button.dataset.isResolved;
+        button.disabled = false;
+      }
+    }
+  }, true);
   document.addEventListener('click',e=>{const a=e.target.closest('[data-is-action="shop-sell"],[data-is-action="shop-buy"]'),g=window.arseneGame;if(!a||!g)return;e.preventDefault();e.stopImmediatePropagation();const panel=$('#menu-panel');if(a.dataset.isAction==='shop-sell')g.isRenderShopSell(panel);else g.isRenderShop(panel,!!g.isShopMerchantMode,false);},true);
   document.addEventListener('click',e=>{
     const screen=e.target.closest('.is-bag-screen'),g=window.arseneGame;
