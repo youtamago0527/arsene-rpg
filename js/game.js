@@ -1344,6 +1344,7 @@
     // 文章は js/help_data.js（window.ARSENE_HELP）側で管理する。
     helpUnlocked(key) {
       const f = this.profile.flags || {};
+      if (key === 'd6Corridors') return D.dungeons.some(d => d.id === 'dungeon6') && this.isDungeonUnlocked('dungeon6');
       if (key === 'workshop') return !!f.noelFirstEncounterCleared;
       if (key === 'magicKnight') return this.isJobUnlocked('magicKnight');
       if (key === 'dualBlade') return this.isJobUnlocked('dualBlade');
@@ -2073,7 +2074,8 @@
       ));
       const rewardRate = scale.rewards || 1;
       const gold = t.gold && typeof t.gold === 'object' ? { min: Math.round(t.gold.min * rewardRate), max: Math.round(t.gold.max * rewardRate) } : t.gold;
-      return { ...t, uid: `enemy-${index}`, label: String.fromCharCode(65 + index), floorId: floor?.id || t.floorId, floorScale: scale, stats, hp: stats.maxHp, exp: Math.round((t.exp || 0) * rewardRate), gold, alive: true, bindResistance: t.bindResistance || 0, bindTurns: 0 };
+      const affinity = floor?.element && t.kind !== 'boss' ? { element: floor.element, weaknesses: floor.weaknesses } : {};
+      return { ...t, ...affinity, uid: `enemy-${index}`, label: String.fromCharCode(65 + index), floorId: floor?.id || t.floorId, floorScale: scale, stats, hp: stats.maxHp, exp: Math.round((t.exp || 0) * rewardRate), gold, alive: true, bindResistance: t.bindResistance || 0, bindTurns: 0 };
     }
     rollEncounter(wins, progression) {
       if (this.currentDungeonId === 'dungeon3') {
@@ -2297,7 +2299,7 @@
       const battleGold = $('#battle-gold'); if (battleGold) { const amount = Math.max(0, this.profile.gold || 0), digits = String(amount).length; battleGold.textContent = amount.toLocaleString('ja-JP'); battleGold.dataset.amountSize = digits >= 9 ? 'tiny' : digits >= 7 ? 'compact' : 'normal'; }
       const p = this.player, expNeed = this.expNeeded(); $('#player-hp').textContent = `${p.hp} / ${p.stats.maxHp}`; $('#player-mp').textContent = `${p.mp} / ${p.stats.maxMp}`; $('#player-hp-bar').style.width = `${100 * p.hp / p.stats.maxHp}%`; $('#player-mp-bar').style.width = `${100 * p.mp / p.stats.maxMp}%`; const expBar = $('#player-exp-bar'), mType = this.equippedWeaponType(), m = this.masteryOf(mType), mNeed = this.masteryExpNeeded(m.level), expPct = Math.min(100, 100 * m.exp / mNeed); if (expBar) { expBar.style.width = `${expPct}%`; $('#player-exp-label').textContent = `${expPct.toFixed(2)}%`; } const mName = $('#player-exp-name'); if (mName) mName.textContent = `${this.weaponTypeName(mType)} Lv.${m.level}`; const jid = this.profile.currentJob, jst = this.profile.jobs?.[jid] || {}, jlv = jst.level || 1, jneed = this.jobExpNeeded(jlv), jexp = jst.exp || 0, jpct = jneed ? Math.min(100, 100 * jexp / jneed) : 100, jexpBar = $('#player-jexp-bar'), jexpName = $('#player-jexp-name'); if (jexpName) jexpName.textContent = `${D.jobs[jid]?.name || 'JOB'} Lv.${jlv}`; if (jexpBar) { jexpBar.style.width = `${jpct}%`; $('#player-jexp-label').textContent = jneed ? `${jpct.toFixed(2)}%` : 'MASTER'; } const jobLabel = $('#player-job-label'); if (jobLabel) jobLabel.textContent = `${D.jobs[jid]?.name || ''} Lv.${jlv}`; $('#turn-label').textContent = String(this.turn).padStart(2, '0');
       const rr = $('#resonance-row'), resonance = Math.min(D.guardianBalance?.resonanceMax || 100, this.player?.resonance || 0); if (rr) { rr.hidden = !this.resonanceEnabled(); rr.classList.toggle('max', resonance >= 100); $('#resonance-bar').style.width = `${resonance}%`; $('#resonance-label').textContent = resonance >= 100 ? 'MAX' : `${resonance.toFixed(1)}%`; }
-      const checkpointLabel = $('#checkpoint-label'), checkpoint = this.battleMode === 'slime' ? this.checkpointState() : null; if (checkpointLabel) { checkpointLabel.hidden = !checkpoint; checkpointLabel.textContent = checkpoint ? `次のセーフゾーンまであと${checkpoint.remaining}戦` : ''; }
+      const checkpointLabel = $('#checkpoint-label'), checkpoint = this.battleMode === 'slime' ? this.checkpointState() : null; if (checkpointLabel) { checkpointLabel.hidden = !checkpoint; checkpointLabel.textContent = checkpoint ? (checkpoint.consecutiveOnly ? `回廊 ${checkpoint.wins} / ${checkpoint.goal}連勝　途中帰還でリセット` : `次のセーフゾーンまであと${checkpoint.remaining}戦`) : ''; }
       this.renderBattleStatuses();
       /* Remote detached enemy HUD update (superseded by the per-enemy foot HUD).
       this.enemies.forEach(e => { const hud = document.getElementById(`${e.uid}-hud`), bar = hud?.querySelector('.enemy-hp-meter i'); if (bar) bar.style.width = `${100 * e.hp / e.stats.maxHp}%`; hud?.classList.toggle('defeated', !e.alive); });
@@ -3909,7 +3911,15 @@
         this.showResult('VICTORY', firstClear ? 'ネストゥアの異形を崩し、刹那を救い出した。' : 'ネストゥアを撃破した！', 'MID BOSS // COMPLETE', `${rewardBlock}${note}`);
         this.offerRepeatBossMaterialDrop(e, firstClear); return;
       }
-      if ((D.dungeons || []).some(dungeon => dungeon.midBossId === this.battleMode)) { const e = D.enemies[this.battleMode], firstClear = !this.isBossDefeated(this.battleMode); this.markBossDefeated(this.battleMode); this.noteBossRematchSnapshot(this.battleMode); this.saveProfile(); const note = firstClear ? `<div class="boss-recipe-unlock"><small>MID BOSS CLEARED</small><b>ROUTE OPEN</b><strong>${e.name} 撃破</strong><span>封鎖された後半ルートが解放された。</span></div>` : ''; this.showResult('VICTORY', `${e.name}を撃破した！`, 'MID BOSS // COMPLETE', `${rewardBlock}${note}`); this.offerRepeatBossMaterialDrop(e, firstClear); return; }
+      if ((D.dungeons || []).some(dungeon => dungeon.midBossId === this.battleMode || dungeon.midBossGates?.some(gate => gate.enemyId === this.battleMode))) { const e = D.enemies[this.battleMode], firstClear = !this.isBossDefeated(this.battleMode); this.markBossDefeated(this.battleMode); this.noteBossRematchSnapshot(this.battleMode); this.saveProfile(); const note = firstClear ? `<div class="boss-recipe-unlock"><small>MID BOSS CLEARED</small><b>ROUTE OPEN</b><strong>${e.name} 撃破</strong><span>封鎖された後半ルートが解放された。</span></div>` : ''; this.showResult('VICTORY', `${e.name}を撃破した！`, 'MID BOSS // COMPLETE', `${rewardBlock}${note}`); this.offerRepeatBossMaterialDrop(e, firstClear); return; }
+      if (this.currentDungeonId === 'dungeon6' && this.battleMode === 'chromatia') {
+        this.markBossDefeated(this.battleMode);
+        this.profile.flags.dungeon6Clear = true;
+        this.noteBossRematchSnapshot(this.battleMode);
+        this.saveProfile();
+        this.showResult('VICTORY', 'クロマティアを撃破した！', 'D6 CLEARED', rewardBlock);
+        return;
+      }
       if (['astact', 'ostina'].includes(this.battleMode)) { const bossId = this.battleMode, isD4 = bossId === 'astact', dungeonId = isD4 ? 'dungeon4' : 'dungeon5', jobId = isD4 ? 'ronin' : 'hunter', proofId = isD4 ? 'roninProof' : 'hunterProof', scoreId = isD4 ? 'staccato' : 'ostinato', firstClear = !this.isBossDefeated(bossId), firstScore = !this.profile.musicScores?.[scoreId]; this.markBossDefeated(bossId); this.profile.flags[`${dungeonId}Clear`] = true; this.profile.musicScores ||= {}; if (firstScore) this.profile.musicScores[scoreId] = true; if (firstClear) { this.profile.inventory[proofId] = Math.max(1, this.profile.inventory[proofId] || 0); this.profile.unlockedJobs = [...new Set([...(this.profile.unlockedJobs || []), jobId])]; this.profile.jobs[jobId] ||= { level: 1, exp: 0 }; if (!isD4) { this.profile.weaponMastery.bow ||= { level: 1, exp: 0 }; this.profile.inventory.d5HunterBow = Math.max(1, this.profile.inventory.d5HunterBow || 0); } } this.noteBossRematchSnapshot(bossId); this.saveProfile(); const e = D.enemies[bossId], keyItems = firstClear ? [D.items[proofId], !isD4 && D.items.d5HunterBow].filter(Boolean) : [], unlocks = firstClear ? [`NEW JOB　${D.jobs[jobId]?.name || jobId}`, !isD4 ? 'NEW WEAPON MASTERY　弓学' : '刀技は剣武器学を共有', `JOBレベル上限解放　Lv.${this.effectiveJobLevelCap()}`] : []; this.showBossRewardSequence({ title: 'VICTORY', copy: `${e.title || ''}${e.name}を打ち倒した。`, kicker: isD4 ? 'FOURTH MAESTRI DEFEATED' : 'FIFTH MAESTRI DEFEATED', html: rewardBlock }, [firstScore && { title: 'SCORE GET', copy: '盗んだ旋律は、プライベートモードで演奏できる。', kicker: 'PHANTOM SCORE', html: this.scoreGetHTML(scoreId) }, firstClear && { title: 'KEY ITEM GET', copy: '新たなJOBへ至る証を盗み出した。', kicker: 'STOLEN REWARDS', html: this.bossKeyRewardHTML(keyItems, unlocks) }, firstClear && { title: 'JOB TUTORIAL', copy: '解放されたJOBの戦い方を確認する。', kicker: (D.jobs[jobId]?.nameEn || jobId).toUpperCase(), html: this.jobUnlockTutorialHTML(jobId) }]); this.offerRepeatBossMaterialDrop(e, firstClear); return; }
       if (milestone) this.showStagedMilestone(rewardBlock, milestone);
       else await this.showBattleClear(reward, levels, jobResult, { mastery: masteryResult, vitals: vitalResult, sparks });
@@ -3961,7 +3971,7 @@
     }
     handleResultAction(action, target) { if (action === 'hideout') { this.showMenu('home'); return; } if (action === 'boss-material-ad') { this.showBossMaterialOffer(); return; } if (action === 'boss-overdrive') { this.showOverdriveModal?.(this.battleMode); return; } if (action === 'boss-now') { this.startBossByKey(target); return; } if (action === 'next-floor' || action === 'continue-floor') { this.currentDungeonId = this.floorDungeonId(target) || this.currentDungeonId; this.currentFloorId = target; $('#ren').classList.remove('victory'); this.startBattle(); } }
 
-    showMenu(panel = 'home') { if (this.player) this.persistVitals(); if (panel === 'home' && this.profile.flags?.owRestoreJobPending) this.restoreNormalDungeonJob(true); this.cleanupBattleTransientUI(); this.endAutoBattle(); if (panel === 'home' && this.activeMealBuffType()) { this.clearMealBuff(); this.saveProfile(); } const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderHideoutRouteStatus(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
+    showMenu(panel = 'home') { this.roomStreak = null; if (this.player) this.persistVitals(); if (panel === 'home' && this.profile.flags?.owRestoreJobPending) this.restoreNormalDungeonJob(true); this.cleanupBattleTransientUI(); this.endAutoBattle(); if (panel === 'home' && this.activeMealBuffType()) { this.clearMealBuff(); this.saveProfile(); } const result = $('#result'), game = $('#game'), menu = $('#menu-screen'); result.hidden = true; result.style.display = 'none'; game.hidden = true; game.style.display = 'none'; menu.hidden = false; menu.style.display = 'block'; this.audio.playTrack(this.menuMusic); this.renderMenuSummary(); this.renderHideoutRouteStatus(); this.renderMenuPanel(panel); window.scrollTo({ top: 0, behavior: 'instant' }); if (panel === 'home') setTimeout(() => this.showKazuDialogue(), 600); }
     hideoutRouteStatus() {
       const available = (D.dungeons || []).filter(dungeon => this.isDungeonUnlocked(dungeon.id));
       const dungeon = available[available.length - 1] || this.getDungeon('dungeon1');
@@ -4229,11 +4239,11 @@
         const cls = cleared ? 'cleared' : unlocked ? 'open' : 'locked';
         const danger = floor.enemyScale?.hp > 1 ? `<mark>ENEMY ×${floor.enemyScale.hp.toFixed(2)}</mark>` : '';
         const safe = unlocked && !cleared ? this.checkpointState(d.id, floor.id) : null;
-        return `<div class="dungeon-tree-node ${cls}">${index ? '<i class="tree-line"></i>' : ''}<button data-enter-floor="${floor.id}" ${unlocked ? '' : 'disabled'}><span>${index + 1}F</span><div><small>${floor.nameEn || 'FLOOR'} ${unlocked ? danger : ''}</small><b>${unlocked ? floor.name : '???'}</b><em>${unlocked ? (floor.description || '') : (d.midBossId && index >= (d.midBossAfterFloor || 99) && !this.isBossDefeated(d.midBossId) ? '中ボスを撃破すると解放' : '前の階を踏破すると解放')}</em><u><i style="width:${pct}%"></i></u><strong>${cleared ? 'CLEARED' : unlocked ? `BATTLE ${Math.min(wins, goal)} / ${goal}` : 'LOCKED'}</strong>${safe ? `<small class="floor-safe">次のセーフゾーンまであと${safe.remaining}戦</small>` : ''}</div></button></div>`;
+        return `<div class="dungeon-tree-node ${cls}">${index ? '<i class="tree-line"></i>' : ''}<button data-enter-floor="${floor.id}" ${unlocked ? '' : 'disabled'}><span>${index + 1}F</span><div><small>${floor.nameEn || 'FLOOR'} ${unlocked ? danger : ''}</small><b>${unlocked ? floor.name : '???'}</b><em>${unlocked ? (floor.description || '') : (d.midBossId && index >= (d.midBossAfterFloor || 99) && !this.isBossDefeated(d.midBossId) ? '中ボスを撃破すると解放' : '前の階を踏破すると解放')}</em><u><i style="width:${pct}%"></i></u><strong>${cleared ? 'CLEARED' : unlocked ? `BATTLE ${Math.min(wins, goal)} / ${goal}` : 'LOCKED'}</strong>${safe ? `<small class="floor-safe">${safe.consecutiveOnly ? `踏破まであと${safe.remaining}連勝` : `次のセーフゾーンまであと${safe.remaining}戦`}</small>` : ''}</div></button></div>`;
       }) : [];
       const dungeonSafe = !floors.length ? this.checkpointState(d.id, null) : null;
       const floorTree = floors.length ? '' : `<div class="dungeon-tree-node ${midGate ? 'locked' : 'open'}"><button ${midGate ? 'disabled' : `data-enter-dungeon="${d.id}"`}><span>IN</span><div><small>ENTRY POINT</small><b>${midGate ? '銀環に進路を阻まれている' : '潜入開始'}</b><em>${midGate ? '中ボスを撃破するとD3後半へ進める' : (d.description || '怪異の気配を追って潜入する。')}</em><strong>${midGate ? 'MID BOSS REQUIRED' : progress}</strong>${dungeonSafe ? `<small class="floor-safe">次のセーフゾーンまであと${dungeonSafe.remaining}戦</small>` : ''}</div></button></div>`;
-      const midBossNode = midBoss ? (() => { const rm = midBoss.rematch, locked = midBoss.cleared && rm && !rm.ready, status = !midBoss.cleared ? '挑戦可能' : locked ? `再戦まであと ${rm.need - rm.done} 戦` : '再戦可能'; return `<div class="dungeon-tree-node boss ${locked ? 'locked' : 'open'}"><i class="tree-line"></i><button data-boss-challenge="${midBoss.key}" ${locked ? 'disabled' : ''}><span>◉</span><div><small>MID BOSS // ${midBoss.enName}</small><b>${midBoss.name}</b><em>${midBoss.title}</em><strong>${status}</strong></div><figure style="background-image:url('${midBoss.sprite}')"></figure></button></div>`; })() : '';
+      const renderMidBoss = midBoss => midBoss ? (() => { const rm = midBoss.rematch, locked = midBoss.cleared && rm && !rm.ready, status = !midBoss.cleared ? '挑戦可能' : locked ? `再戦まであと ${rm.need - rm.done} 戦` : '再戦可能'; return `<div class="dungeon-tree-node boss ${locked ? 'locked' : 'open'}"><i class="tree-line"></i><button data-boss-challenge="${midBoss.key}" ${locked ? 'disabled' : ''}><span>◉</span><div><small>MID BOSS // ${midBoss.enName}</small><b>${midBoss.name}</b><em>${midBoss.title}</em><strong>${status}</strong></div><figure style="background-image:url('${midBoss.sprite}')"></figure></button></div>`; })() : '';
       const boss = this.dungeonBossEntry(d.id);
       let bossNode = '';
       if (boss) {
@@ -4242,8 +4252,14 @@
         bossNode = `<div class="dungeon-tree-node boss ${locked ? 'locked' : 'open'}"><i class="tree-line"></i><button data-boss-challenge="${boss.key}" ${locked ? 'disabled' : ''}><span>⚠</span><div><small>BOSS // ${boss.enName}</small><b>${boss.name}</b><em>${boss.title || ''}</em><strong>${status}</strong></div><figure style="background-image:url('${boss.sprite || d.thumbnail}')"></figure></button></div>`;
       }
       const midAt = Math.max(0, Math.min(floorNodes.length, d.midBossAfterFloor || floorNodes.length));
-      const routeNodes = floors.length ? `${floorNodes.slice(0, midAt).join('')}${midBossNode}${floorNodes.slice(midAt).join('')}${bossNode}` : `${floorTree}${midBossNode}${bossNode}`;
-      panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>DUNGEON SELECT</small><h2>潜入先を選択</h2><nav class="dungeon-tabs">${tabs}</nav><section class="dungeon-route"><header style="background-image:url('${d.thumbnail}')"><div><small>${d.nameEn || d.enName || d.name}</small><h3>${d.name}</h3><span>推奨 Lv.${d.recommendedLevel}+　//　${progress}</span>${isNew ? '<mark>NEW AREA</mark>' : ''}</div></header><div class="dungeon-tree">${routeNodes}</div></section>`;
+      const midBossNode = renderMidBoss(midBoss);
+      const routeNodes = d.midBossGates ? floorNodes.map((node, index) => {
+        const gate = d.midBossGates.find(g => g.afterFloor === index + 1);
+        if (!gate) return node;
+        const entry = this.dungeonMidBossEntry(d.id, gate);
+        return node + (entry ? renderMidBoss(entry) : `<div class="dungeon-tree-node boss locked"><button disabled><span>◉</span><div><small>MID BOSS</small><b>中ボス${d.midBossGates.indexOf(gate) + 1}</b><em>${this.isFloorCleared(floors[index].id) ? '中ボスデータ準備中' : `${gate.afterFloor}部屋踏破後に挑戦`}</em></div></button></div>`);
+      }).join('') + (bossNode || `<div class="dungeon-tree-node boss locked"><button disabled><span>⚠</span><div><small>AREA BOSS</small><b>${D.enemies[d.bossId]?.name || '最終ボス'}</b><em>${this.allFloorsCleared(d.id) ? 'ボスデータ準備中' : '6部屋踏破後に挑戦'}</em></div></button></div>`) : floors.length ? `${floorNodes.slice(0, midAt).join('')}${midBossNode}${floorNodes.slice(midAt).join('')}${bossNode}` : `${floorTree}${midBossNode}${bossNode}`;
+      panel.innerHTML = `<button class="panel-home" data-menu="home">拠点へ戻る</button><small>DUNGEON SELECT</small><h2>潜入先を選択</h2><nav class="dungeon-tabs">${tabs}</nav><section class="dungeon-route"><header style="background-image:url('${d.thumbnail}')"><div><small>${d.nameEn || d.enName || d.name}</small><h3>${d.name}</h3><span>${d.recommendedLevel ? `推奨 Lv.${d.recommendedLevel}+　//　` : ''}${progress}</span>${isNew ? '<mark>NEW AREA</mark>' : ''}</div></header><div class="dungeon-tree">${routeNodes}</div></section>`;
     }
     // ══ 階層選択ページ ══
     // 「1枚を下へ長くスクロール」ではなく、ダンジョン選択とは別ページとして開く。
@@ -4294,7 +4310,10 @@
     // ダンジョン側に floors があれば階層制。無ければ従来どおり1枚のダンジョン。
     // 進捗は profile.flags.floorWins に階層IDごとの勝利数で持つ。
     floorsOf(dungeonId = this.currentDungeonId) { return this.getDungeon(dungeonId)?.floors || null; }
-    floorWins(floorId) { return (this.profile.flags.floorWins || {})[floorId] || 0; }
+    floorWins(floorId) {
+      const saved = this.profile.flags.floorWins?.[floorId] || 0;
+      return this.roomStreak?.id === floorId ? Math.max(saved, this.roomStreak.wins) : saved;
+    }
     floorDef(floorId) { for (const d of D.dungeons || []) for (const f of d.floors || []) if (f.id === floorId) return f; return null; }
     isFloorCleared(floorId) { const f = this.floorDef(floorId); return !!f && this.floorWins(floorId) >= (f.winsToClear ?? 33); }
     // 1階は常に解放。以降は直前の階をクリアしていれば解放。
@@ -4302,6 +4321,7 @@
       const dungeonId = this.floorDungeonId(floorId), dungeon = this.getDungeon(dungeonId), floors = this.floorsOf(dungeonId) || [];
       const i = floors.findIndex(f => f.id === floorId);
       if (i <= 0) return i === 0;
+      if (dungeon.midBossGates?.some(gate => i >= gate.afterFloor && !this.isBossDefeated(gate.enemyId))) return false;
       if (dungeon?.midBossId && i >= (dungeon.midBossAfterFloor || floors.length) && !this.isBossDefeated(dungeon.midBossId)) return false;
       return this.isFloorCleared(floors[i - 1].id);
     }
@@ -4314,7 +4334,17 @@
       if (chosen && this.isFloorUnlocked(chosen.id)) return chosen;
       return fs.find(f => this.isFloorUnlocked(f.id) && !this.isFloorCleared(f.id)) || fs.filter(f => this.isFloorUnlocked(f.id)).pop() || fs[0];
     }
-    recordFloorWin(floorId) { if (!floorId) return; this.profile.flags.floorWins ||= {}; this.profile.flags.floorWins[floorId] = this.floorWins(floorId) + 1; }
+    recordFloorWin(floorId) {
+      if (!floorId) return;
+      const floor = this.floorDef(floorId), wins = this.floorWins(floorId) + 1;
+      if (floor?.consecutiveOnly) {
+        if (wins > floor.winsToClear) return;
+        if (wins < floor.winsToClear) { this.roomStreak = { id: floorId, wins }; return; }
+        this.roomStreak = null;
+      }
+      this.profile.flags.floorWins ||= {};
+      this.profile.flags.floorWins[floorId] = wins;
+    }
     isDungeonFirstClearComplete(dungeonId = this.currentDungeonId) { const dungeon = this.getDungeon(dungeonId), bossId = dungeon?.bossId || ({ dungeon1: 'zenacad', dungeon2: 'myrthi', dungeon3: 'seripes' })[dungeonId]; return bossId ? this.isBossDefeated(bossId) : false; }
     checkpointState(dungeonId = this.currentDungeonId, floorId = this.currentFloorId) {
       if (this.isDungeonFirstClearComplete(dungeonId)) return null;
@@ -4324,14 +4354,16 @@
       else if (dungeonId === 'dungeon1') { const progress = this.progressState(); if (progress.phase === 'complete') return null; wins = progress.wins; goal = progress.goal; }
       else return null;
       if (wins >= goal) return null;
+      if (floor?.consecutiveOnly) return { wins, goal, saved: 0, nextSafe: goal, remaining: goal - wins, floorId: floor.id, consecutiveOnly: true };
       const nextSafe = Math.min(goal, (Math.floor(wins / 5) + 1) * 5);
       return { wins, goal, saved: Math.floor(wins / 5) * 5, nextSafe, remaining: Math.max(1, nextSafe - wins), floorId: floor?.id || null };
     }
     rollbackToCheckpoint() {
       if (this.battleMode !== 'slime') return null;
       const state = this.checkpointState(); if (!state) return null;
-      const before = state.wins, after = Math.floor(before / 5) * 5;
-      if (state.floorId) { this.profile.flags.floorWins ||= {}; this.profile.flags.floorWins[state.floorId] = after; }
+      const before = state.wins, after = state.saved;
+      if (state.consecutiveOnly) this.roomStreak = null;
+      else if (state.floorId) { this.profile.flags.floorWins ||= {}; this.profile.flags.floorWins[state.floorId] = after; }
       else { const progress = this.progressState(), key = progress.phase === 'noel' ? 'preNoelBattleWins' : 'postNoelBattleWins'; this.profile.flags[key] = after; }
       return before === after ? null : { before, after, lost: before - after, nextBattle: after + 1 };
     }
@@ -4356,6 +4388,7 @@
       }
       const dungeon = this.getDungeon(dungeonId), bossId = dungeon?.bossId;
       if (bossId && D.enemies[bossId]) {
+        if (dungeon.midBossGates && (!D.enemies[bossId].sprite || dungeon.midBossGates.some(gate => !this.isBossDefeated(gate.enemyId)))) return null;
         const cleared = this.isBossDefeated(bossId), ready = this.allFloorsCleared(dungeonId);
         if (!cleared && (!ready || (dungeon.midBossId && !this.isBossDefeated(dungeon.midBossId)))) return null;
         const e = D.enemies[bossId];
@@ -4370,10 +4403,12 @@
       const boss = this.dungeonBossEntry(this.currentDungeonId);
       return boss?.cleared && boss.rematch?.ready ? boss : null;
     }
-    dungeonMidBossEntry(dungeonId) {
-      const dungeon = this.getDungeon(dungeonId), enemyId = dungeon?.midBossId || (dungeonId === 'dungeon3' ? 'versicrell' : null);
+    dungeonMidBossEntry(dungeonId, gateOverride = null) {
+      const dungeon = this.getDungeon(dungeonId);
+      const gateData = gateOverride || dungeon?.midBossGates?.find(gate => !this.isBossDefeated(gate.enemyId));
+      const enemyId = gateData?.enemyId || dungeon?.midBossId || (dungeonId === 'dungeon3' ? 'versicrell' : null);
       if (!enemyId || !D.enemies[enemyId]) return null;
-      const floors = this.floorsOf(dungeonId) || [], gate = dungeon?.midBossAfterFloor || Math.ceil(floors.length / 2);
+      const floors = this.floorsOf(dungeonId) || [], gate = gateData?.afterFloor || dungeon?.midBossAfterFloor || Math.ceil(floors.length / 2);
       const cleared = this.isBossDefeated(enemyId), ready = floors.slice(0, gate).every(floor => this.isFloorCleared(floor.id));
       if (!cleared && !ready) return null;
       // 中ボス再戦は全ダンジョン共通。D6以降もmidBossIdを設定するだけで5戦再戦になる。
