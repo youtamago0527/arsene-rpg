@@ -43,6 +43,8 @@
   try { lastRead = localStorage.getItem(readKey); } catch {}
   let announcement = null;
   let installedVersion = null;
+  let publishedVersion = null;
+  let remoteNotice = null;
   let nextCheck = 0;
   let checking;
 
@@ -53,9 +55,13 @@
   }
 
   function needsUpdate() {
-    if (!announcement || !installedVersion) return false;
-    const firstDifference = installedVersion.findIndex((part, index) => part !== announcement.versionParts[index]);
-    return firstDifference >= 0 && installedVersion[firstDifference] < announcement.versionParts[firstDifference];
+    const latest = publishedVersion?.parts ?? announcement?.versionParts;
+    return !!(latest && installedVersion && compareVersions(latest, installedVersion) > 0);
+  }
+
+  function compareVersions(left, right) {
+    const firstDifference = left.findIndex((part, index) => part !== right[index]);
+    return firstDifference < 0 ? 0 : left[firstDifference] - right[firstDifference];
   }
 
   function parseAnnouncement(data) {
@@ -72,35 +78,61 @@
   function refreshEntry() {
     badge.hidden = !announcement || announcement.id === lastRead;
     entry.hidden = !announcement;
+    const title = document.querySelector('[data-title-update]');
+    if (!title) return;
+    title.hidden = !needsUpdate();
+    title.querySelector('[data-title-update-version]').textContent = publishedVersion?.version ?? announcement?.version ?? '';
+    const link = title.querySelector('[data-title-update-store]');
+    link.href = storeURL;
+    link.onclick = event => openStore(event, title.querySelector('[data-title-update-status]'));
+  }
+
+  function selectAnnouncement() {
+    if (!publishedVersion || (remoteNotice && compareVersions(remoteNotice.versionParts, publishedVersion.parts) === 0)) {
+      announcement = remoteNotice;
+      return;
+    }
+    const { version, parts } = publishedVersion;
+    announcement = {
+      id: `release-${version}`, version, versionParts: parts,
+      title: 'アップデートを配信しました',
+      changes: ['変更内容はApp Storeの「バージョン履歴」で確認できます。']
+    };
+  }
+
+  async function checkStoreVersion() {
+    if (!native?.getStoreVersion) return;
+    const { version } = await native.getStoreVersion();
+    const parts = versionParts(version);
+    if (parts) publishedVersion = { version, parts };
+  }
+
+  async function checkRemoteNotice() {
+    const response = await fetch(feed, { cache: 'no-store', credentials: 'omit', signal: AbortSignal.timeout(5000) });
+    if (!response.ok) throw new Error('Update notice unavailable');
+    remoteNotice = parseAnnouncement(await response.json());
   }
 
   function checkNotice() {
     if (checking || Date.now() < nextCheck) return checking;
     checking = (async () => {
-      try {
-        const response = await fetch(feed, { cache: 'no-store', credentials: 'omit', signal: AbortSignal.timeout(5000) });
-        if (!response.ok) throw new Error('Update notice unavailable');
-        announcement = parseAnnouncement(await response.json());
-        nextCheck = Date.now() + 5 * 60 * 1000;
-        refreshEntry();
-      } catch {
-        nextCheck = Date.now() + 60 * 1000;
-        if (!announcement) {
-          try {
-            const bundled = await fetch(new URL('data/app-update-notice.json', document.baseURI), {
-              signal: AbortSignal.timeout(2000)
-            });
-            const local = bundled.ok ? parseAnnouncement(await bundled.json()) : null;
-            if (local && !announcement) {
-              announcement = local;
-              refreshEntry();
-            }
-          } catch {}
-        }
-      } finally {
-        checking = null;
+      const [remote, storeVersion] = await Promise.allSettled([checkRemoteNotice(), checkStoreVersion()]);
+      const connected = remote.status === 'fulfilled' || (storeVersion.status === 'fulfilled' && publishedVersion);
+      nextCheck = Date.now() + (connected ? 5 : 1) * 60 * 1000;
+      if (remote.status === 'rejected' && !remoteNotice && !publishedVersion) {
+        try {
+          const bundled = await fetch(new URL('data/app-update-notice.json', document.baseURI), {
+            signal: AbortSignal.timeout(2000)
+          });
+          if (bundled.ok) remoteNotice = parseAnnouncement(await bundled.json());
+        } catch {}
       }
-    })();
+      selectAnnouncement();
+      refreshEntry();
+      if (dialog.open) refreshUpdateAction();
+    })().finally(() => {
+      checking = null;
+    });
     return checking;
   }
 
@@ -135,22 +167,30 @@
     event.stopPropagation();
     openNotice();
   });
-  store.addEventListener('click', async event => {
+  async function openStore(event, status) {
     if (!native) return;
     event.preventDefault();
     try {
       const { opened } = await native.openAppStore();
       if (opened) return;
     } catch {}
-    select('status').textContent = 'App Storeを開けませんでした。App Storeで「ARSÈNE REMIX」を検索してください。';
-  });
+    status.textContent = 'App Storeで「ARSÈNE REMIX」を検索してください。';
+  }
+
+  store.addEventListener('click', event => openStore(event, select('status')));
 
   if (native) {
     native.getVersion().then(({ version }) => {
       installedVersion = versionParts(version);
+      refreshEntry();
       if (dialog.open) refreshUpdateAction();
     }).catch(() => {});
+    setInterval(() => { if (!document.hidden) checkNotice(); }, 60 * 1000);
   }
+  document.addEventListener('arsene:title-shown', () => {
+    refreshEntry();
+    checkNotice();
+  });
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) checkNotice();
   });

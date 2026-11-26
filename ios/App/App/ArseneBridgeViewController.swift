@@ -11,10 +11,19 @@ class ArseneBridgeViewController: CAPBridgeViewController {
 
 @objc(ArseneAppInfoPlugin)
 public class ArseneAppInfoPlugin: CAPPlugin, CAPBridgedPlugin {
+    private struct StoreLookup: Decodable {
+        struct App: Decodable {
+            let trackId: Int
+            let version: String
+        }
+        let results: [App]
+    }
+
     public let identifier = "ArseneAppInfoPlugin"
     public let jsName = "ArseneAppInfo"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "getVersion", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getStoreVersion", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "openAppStore", returnType: CAPPluginReturnPromise)
     ]
 
@@ -24,6 +33,24 @@ public class ArseneAppInfoPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
         call.resolve(["version": version])
+    }
+
+    @objc func getStoreVersion(_ call: CAPPluginCall) {
+        let appID = 6806899939
+        guard let url = URL(string: "https://itunes.apple.com/lookup?id=\(appID)&country=jp") else {
+            call.reject("Invalid App Store lookup URL")
+            return
+        }
+        let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 5)
+        URLSession.shared.dataTask(with: request) { data, response, _ in
+            guard let data, (response as? HTTPURLResponse)?.statusCode == 200,
+                  let lookup = try? JSONDecoder().decode(StoreLookup.self, from: data),
+                  let app = lookup.results.first(where: { $0.trackId == appID }) else {
+                call.reject("App Store version unavailable")
+                return
+            }
+            call.resolve(["version": app.version])
+        }.resume()
     }
 
     @objc func openAppStore(_ call: CAPPluginCall) {

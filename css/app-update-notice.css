@@ -63,3 +63,30 @@ button.app-update-entry:not([hidden]) {
 button.app-update-entry:not([hidden]) { margin: 5px auto; }
 .app-update-actions a:not([hidden]) { background: #62213c; }
 .app-update-badge[hidden], .app-update-entry[hidden], .app-update-actions [hidden] { display: none !important; }
+.title-update {
+  box-sizing: border-box;
+  flex: none;
+  width: min(100%, 350px);
+  padding: 5px 12px;
+  border: 1px solid #7572aa;
+  border-radius: 6px;
+  background: #080d24f2;
+  color: #f2eaff;
+  font: 600 clamp(12px, 2svh, 15px)/1.35 system-ui, sans-serif;
+}
+
+.title-update[hidden], .title-update [role="status"]:empty { display: none; }
+.title-update p { margin: 0; }
+.title-update [data-title-update-version] { margin-inline-start: .35em; color: #d5c7f2; }
+.title-update a {
+  display: inline-grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 0 .45em;
+  color: #d0e6ff;
+  text-decoration: underline;
+  text-underline-offset: .2em;
+}
+
+.title-update a:focus-visible { outline: 2px solid #e5d8ff; outline-offset: 2px; }
+.title-update [role="status"] { font-size: .85em; }
