@@ -34,7 +34,7 @@
       expUp: '獲得経験値UP', jobExpUp: 'JOB経験値UP', masteryExpUp: '武器学経験値UP', goldUp: '獲得GOLD UP',
       materialDropUp: '素材ドロップ率UP', gearDropUp: '装備ドロップ率UP', rareDropUp: 'レアドロップ率UP',
       physicalDamagePercent: '物理与ダメージ', magicDamagePercent: '魔法与ダメージ', damageReductionPercent: '被ダメージ軽減',
-      hpDrain: 'HP吸収', mpCostDown: '消費MP軽減', repeatChance: '追加発動率',
+      hpDrain: 'HP吸収', mpCostDown: '消費MP軽減', repeatChance: '追加行動率',
       treasureUp: '宝箱出現率UP', rareEnemyUp: 'レア敵出現率UP', returnUp: '帰還札出現率UP', stairUp: '階段発見率UP', bagPlus: 'バッグ枠追加'
     },
     eventWeights: { encounter: 42, treasure: 18, trap: 10, item: 10, gold: 10, shop: 7, workshop: 3, rare: 3 },

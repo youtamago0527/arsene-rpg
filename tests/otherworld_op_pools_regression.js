@@ -8,7 +8,7 @@ const data = {
   infiniteScore:{bagLimit:30, rarity:{}, opLabels:{}, opRanks:{}}
 };
 const battleElement = {classList:{add(){}, remove(){}}};
-const document = {addEventListener(){}, querySelector(selector){return selector === '#ren' ? battleElement : null;}, getElementById(){return battleElement;}};
+const document = {addEventListener(){}, querySelector(selector){return ['#ren','#phase-label'].includes(selector) ? battleElement : null;}, getElementById(){return battleElement;}};
 const context = {window:{ARSENE_DATA:data}, document, addEventListener(){}};
 vm.createContext(context);
 vm.runInContext(fs.readFileSync('js/game.js','utf8'), context);
@@ -188,4 +188,60 @@ test('reflection uses actual HP lost, targets the attacker, and grants a reflect
   assert.equal(g.player.hp, 0);
   assert.equal(hazardousAttacker.hp, 25);
   assert.equal(rewards.length, 2);
+});
+
+test('additional actions carry at 100% and roll only the remainder', () => {
+  const g = fixture();
+  const sword = gear(g, 'sword', {repeatChance:.5});
+  const charm = gear(g, 'accessory_might', {repeatChance:0});
+  Object.assign(g.isRun().equipment,{rightHand:sword.uid,accessory:charm.uid});
+  const unexpectedDraw = () => {throw Error('guaranteed repeats must not draw');};
+  assert.equal(g.owgExtraActionCount(() => .49),1);
+  assert.equal(g.owgExtraActionCount(() => .50),0);
+  charm.ops[0].value = .5;
+  assert.equal(g.owgExtraActionCount(unexpectedDraw),1);
+  charm.ops[0].value = 1;
+  assert.equal(g.owgExtraActionCount(() => .49),2);
+  assert.equal(g.owgExtraActionCount(() => .50),1);
+  charm.ops[0].value = 1.5;
+  assert.equal(g.owgExtraActionCount(unexpectedDraw),2);
+  charm.ops[0].value = 1.75;
+  assert.equal(g.owgExtraActionCount(() => .24),3);
+  assert.equal(g.owgExtraActionCount(() => .25),2);
+  charm.ops[0].value = .4999999999999999;
+  assert.equal(g.owgExtraActionCount(unexpectedDraw),1);
+});
+
+test('one attack command repeats without paying MP again and stops when the last enemy falls', async () => {
+  const g = fixture();
+  const sword = gear(g, 'sword', {repeatChance:4});
+  g.isRun().equipment.rightHand = sword.uid;
+  const spell = {id:'testSpell',name:'検証魔法',kind:'magical',target:'single',mp:3};
+  data.skills.testSpell = spell;
+  g.enemies = [{alive:true,stats:{spd:1}}];
+  g.activeSetEffects = () => ({});
+  g.cooldownRemaining = () => 0;
+  g.canPaySkillCosts = g.skillEquipmentReady = g.skillBuffReady = () => true;
+  g.skillMpCost = skill => skill.mp;
+  g.playerCombatStats = () => ({agi:100});
+  g.clearTargets = g.keepAutoControlVisible = g.flashTitle = g.setLog = () => {};
+  g.battleSleep = async () => {};
+  g.enemyAttack = async () => {throw Error('defeated enemy should not act');};
+  g.isPendingBossTransform = () => false;
+  let actions = 0, started = 0, victories = 0;
+  g.beginPlayerTurn = async () => {started++;};
+  g.victory = async () => {victories++;};
+  g.playerAttack = async skill => {
+    assert.equal(skill,spell);
+    if (++actions === 4) g.enemies[0].alive = false;
+  };
+  g.playerActionWithSpark = async (skill, target) => g.playerAttack(skill, target);
+  await g.executeRound(spell.id,0);
+  assert.equal(actions,4);
+  assert.equal(g.player.mp,7);
+  assert.equal(started,1);
+  assert.equal(victories,1);
+  g.enemies[0].alive = true;
+  await g.owgRepeatAttacks({target:'self', kind:'support'},0);
+  assert.equal(actions,4);
 });
