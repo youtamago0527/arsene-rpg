@@ -13,6 +13,7 @@
     currencyMode: 'dungeon', enemyBaseScale: 1.25, enemyScalePerFloor: .16, returnMinFloor: 20,
     cardRate: .45, treasureRate: .18, shopRate: .02, trapRate: .10, gearDropRate: .14, rareGearDropMultiplier: 2, rareEnemyArcanaCount: 7, currencyMultiplier: 1,
     rareEnemyRate: .035, returnItemRate: .008, recoveryDropRate: .05, sublimationRate: .02,
+    forgeDrops: { shards: 2, rareShards: 5, rareCores: 1 },
     chestRates: { wood: 70, silver: 25, gold: 5 },
     rarityRates: { common: 55, rare: 27, epic: 12, legendary: 5, mythic: 1 },
     rarity: {

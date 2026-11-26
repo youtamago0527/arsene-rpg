@@ -7,14 +7,14 @@ class Game {}
 const stats=['arcanaChaos','arcanaMight','arcanaGuard','arcanaMagic','arcanaSpirit','arcanaGale','arcanaDext'];
 const arcana=[...stats,'rebirthArcana','protectionArcana','blessedProtectionArcana'];
 const data={
-  items:Object.fromEntries([...arcana,'testGear','infiniteReturn'].map(id=>[id,{name:id}])),
+  items:Object.fromEntries([...arcana,'testGear','infiniteReturn','otherworldShard','otherworldCore'].map(id=>[id,{name:id}])),
   arcana:{weekly:stats.map(id=>({id}))},
   infiniteScore:{rareEnemyArcanaCount:7}
 };
 const document = { addEventListener(){}, querySelector(){return null;}, getElementById(){return null;} };
 vm.runInNewContext(fs.readFileSync('js/infinite_score.js','utf8'),{window:{BattleGame:Game,ARSENE_DATA:data},document});
 
-function makeGame({rare=true,escaped=false,arcanaDrop=false,full=false,random=()=>.5}={}) {
+function makeGame({rare=true,escaped=false,arcanaDrop=false,full=false,forgeDrops,random=()=>.5}={}) {
   const game=new Game();
   let run={
     floor:45,seed:1,buffs:{rareBonus:.20,treasureBonus:.10},
@@ -28,7 +28,7 @@ function makeGame({rare=true,escaped=false,arcanaDrop=false,full=false,random=()
   game.totalStats=()=>({maxHp:100,maxMp:40});
   game.profile={};
   game.isRun=()=>run;
-  game.isEffectiveCfg=()=>({gearDropRate:.14,rareGearDropMultiplier:2,recoveryDropRate:0,returnItemRate:0,cardRate:0,currencyMultiplier:1});
+  game.isEffectiveCfg=()=>({gearDropRate:.14,rareGearDropMultiplier:2,recoveryDropRate:0,returnItemRate:0,cardRate:0,currencyMultiplier:1,forgeDrops});
   game.isRand=random;
   game.isRecoverRelicVitals=()=>null;
   game.isEarnRelicCoins=(_,gold)=>gold;
@@ -107,4 +107,35 @@ test('normal encounters and escaped rare enemies use the ordinary Arcana roll an
     assert.equal(run.lootBag[0].itemId,'protectionArcana');
     assert.equal(run.buffs.rareBonus,.20);
   }
+});
+
+test('ordinary and rare victories drop forge materials that stack within a run', async () => {
+  const forgeDrops = {shards:2, rareShards:5, rareCores:1};
+  const normal = makeGame({rare:false, forgeDrops});
+  await normal.game.victory();
+  await normal.game.victory();
+  const shards = normal.game.reloadRun().lootBag.filter(item => item.itemId === 'otherworldShard');
+  assert.equal(shards.length, 1);
+  assert.equal(shards[0].count, 4);
+
+  const rare = makeGame({forgeDrops});
+  await rare.game.victory();
+  const bag = rare.game.reloadRun().lootBag;
+  assert.equal(bag.find(item => item.itemId === 'otherworldShard').count, 5);
+  assert.equal(bag.find(item => item.itemId === 'otherworldCore').count, 1);
+  assert.equal(bag.filter(item => arcana.includes(item.itemId)).length, 7);
+});
+
+test('a full bag still accepts forge materials that already have a stack', async () => {
+  const {game,run} = makeGame({full:true,rare:false,forgeDrops:{shards:2,rareShards:5,rareCores:1}});
+  run.lootBag[0] = {uid:'old-shards',itemId:'otherworldShard',count:8};
+  await game.victory();
+  const loaded = game.reloadRun();
+  assert.equal(loaded.lootBag.length, 30);
+  assert.equal(loaded.lootBag[0].count, 10);
+  assert.equal(loaded.pendingLoot, undefined);
+  loaded.lootBag[1] = {uid:'old-single',itemId:'otherworldShard',count:1};
+  game.isEnsureRunShape(loaded);
+  assert.equal(loaded.lootBag.length, 29);
+  assert.equal(loaded.lootBag[0].count, 11);
 });
