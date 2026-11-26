@@ -922,7 +922,8 @@
     };
     const milestone=r.floor>=returnFloor&&!this.isHasReturn()&&!r.returnMilestoneClaimed;
     if(milestone&&award({uid:this.isUid('return'),kind:'item',itemId:'infiniteReturn',count:1}))r.returnMilestoneClaimed=true;
-    const gearRate=(Math.max(0,Number(cfg.gearDropRate)||0)+r.floor*.004)*(rareDefeated?cfg.rareGearDropMultiplier:1);
+    const rareGearMultiplier = rareDefeated ? cfg.rareGearDropMultiplier * (1 + (this.owgEffects?.().rareDropUp || 0)) : 1;
+    const gearRate=(Math.max(0,Number(cfg.gearDropRate)||0)+r.floor*.004)*rareGearMultiplier;
     if((!milestone||rareDefeated)&&this.isRand()<Math.min(.95,gearRate)){
       award(this.isGenerateGear(rareDefeated?{rareDrop:true}:undefined));
     }else if(!milestone&&r.floor>=returnFloor&&this.isRand()<cfg.returnItemRate){
@@ -969,16 +970,24 @@
     this.isPlayExploreMusic();this.renderMenuPanel('infinite-score');window.scrollTo({top:0,behavior:'instant'});
   };
   P.isResolveChoice=function(index){const r=this.isRun(),choice=r.pendingChoices?.[index];this.isDismissRouteOverlay();if(!choice){this.isRenderExplore($('#menu-panel'));return;}const node=choice.nodeId&&this.isMapNode(choice.nodeId);if(node){this.isFloorMap().currentId=node.id;node.visited=true;r.stairsFound=!!node.stairs;this.isStairPromptDismissed=null;}const forced=r.forcedEvent;if(forced){choice.type=forced;r.forcedEvent=null;if(node)node.type=forced;}else if(['card','returnCard','sublime'].includes(choice.type)){choice.type='encounter';if(node)node.type='encounter';}if(node&&!['encounter','rare'].includes(choice.type))node.cleared=true;const direction=this.isDirectionLabel(node,index).name;this.isShowRouteTransition(direction,node);this.isLog(`${direction}の道へ進む → ${choice.type}`);this.isResolveEvent(choice.type);};
-  P.isResolveEvent=function(type){const r=this.isRun();this.isDismissRouteOverlay();if(type==='encounter'){this.isStartBattle(false);return;}if(type==='rare'){this.isStartBattle(true);return;}if(type==='treasure'){this.isTreasure();return;}if(type==='workshop'){this.isRenderWorkshop($('#menu-panel'));return;}if(type==='item'){const id=this.isCfg().consumablePool[Math.floor(this.isRand()*this.isCfg().consumablePool.length)];this.isAddLoot({uid:this.isUid('item'),kind:'item',itemId:id,count:1});}else if(type==='gold'){const g=this.isEarnRelicCoins(r,Math.max(1,Math.round((1+Math.floor(this.isRand()*5))*(1+r.buffs.goldBonus))));r.dungeonGold+=g;this.isLog(`奏貨 +${g}`);}else if(type==='trap'){const stats=this.totalStats(),dmg=Math.max(1,Math.round(stats.maxHp*(.08+this.isRand()*.17)));r.hp=Math.max(1,r.hp-dmg);this.isLog(`罠：HP -${dmg}`);}else if(type==='shop'){this.isRenderShop($('#menu-panel'),false);return;}else if(type==='merchant'){this.isRenderShop($('#menu-panel'),true);return;}else if(type==='card'||type==='returnCard'||type==='sublime'){this.isShowCards(type);return;}this.isRollStairs();this.isRenderExplore($('#menu-panel'));};
+  P.isResolveEvent=function(type){const r=this.isRun();this.isDismissRouteOverlay();if(type==='encounter'){this.isStartBattle(false);return;}if(type==='rare'){this.isStartBattle(true);return;}if(type==='treasure'){this.isTreasure();return;}if(type==='workshop'){this.isRenderWorkshop($('#menu-panel'));return;}if(type==='item'){const id=this.isCfg().consumablePool[Math.floor(this.isRand()*this.isCfg().consumablePool.length)];this.isAddLoot({uid:this.isUid('item'),kind:'item',itemId:id,count:1});}else if(type==='gold'){const g=this.isEarnRelicCoins(r,Math.max(1,Math.round((1+Math.floor(this.isRand()*5))*(1+r.buffs.goldBonus))));r.dungeonGold+=g;this.isLog(`奏貨 +${g}`);}else if(type==='trap'){const stats=this.totalStats(),rawDamage=Math.max(1,Math.round(stats.maxHp*(.08+this.isRand()*.17))),dmg=this.owgTrapDamage?.(rawDamage)??rawDamage;r.hp=Math.max(1,r.hp-dmg);this.isLog(`罠：HP -${dmg}`);}else if(type==='shop'){this.isRenderShop($('#menu-panel'),false);return;}else if(type==='merchant'){this.isRenderShop($('#menu-panel'),true);return;}else if(type==='card'||type==='returnCard'||type==='sublime'){this.isShowCards(type);return;}this.isRollStairs();this.isRenderExplore($('#menu-panel'));};
   P.isTreasure=function(){const cfg=this.isCfg(),r=this.isRun(),ch=this.isPickWeighted(Object.entries(cfg.chestRates).map(([id,weight])=>({id,weight}))).id,bonus=ch==='gold'?3:ch==='silver'?1:0,gear=this.isGenerateGear({opRank:bonus||undefined}),name=this.owgName?.(gear)||D().items[gear.itemId]?.name||gear.itemId;this.isAddLoot(gear);r.buffs.treasureBonus=0;this.isLog(`宝箱(${ch})`,{rarity:gear.rarity,item:gear.itemId,ops:gear.ops});this.isRollStairs();this.isSave();this.isRenderRoomResult(`${name}を拾いました`,'LOOT BAGへ収めた。','item');};
 
   // ── CARD / SHOP / RETURN ───────────────────────────────────
   P.isCardPicks=function(force=null){const returnUnlocked=(this.isRun()?.floor||1)>=Math.max(1,Number(this.isEffectiveCfg().returnMinFloor)||20);let pool=this.isCfg().cards.filter(x=>x.id!=='return'||returnUnlocked);if(force==='returnCard'&&returnUnlocked)pool=[pool.find(x=>x.id==='return'),...pool.filter(x=>x.id!=='return')];if(force==='sublime')pool=[pool.find(x=>x.id==='sublime'),...pool.filter(x=>x.id!=='sublime')];const out=[];while(out.length<3&&pool.length){const pick=(force&&out.length===0)?pool[0]:this.isPickWeighted(pool);out.push(pick);pool=pool.filter(x=>x.id!==pick.id);}return out;};
   P.isShowCards=function(force=null){const picks=this.isCardPicks(force);this.isRun().pendingCards=picks;this.saveProfile();this.showResult('ENCHANT CARD','3枚から1枚を選ぶ。選ばなかったカードは消滅する。','INFINITE SCORE',`<div class="is-cards">${picks.map((c,i)=>`<button class="is-card" data-is-card="${i}"><b>《${esc(c.name)}》</b><span>${esc(c.text)}</span></button>`).join('')}</div>`);this.isHideDefaultResultMenu();};
   P.isChooseGear=async function(title,predicate=()=>true){const list=this.isRun().lootBag.filter(x=>x.kind==='equipment'&&predicate(x));if(!list.length)return null;const n=await this.isChoose(title,list.map(x=>({label:D().items[x.itemId]?.name||x.itemId,note:`+${x.plus||0}`})),{kicker:'GEAR SELECT'});return n===null?null:list[n];};
-  P.isApplyCard=function(index){const r=this.isRun(),c=r.pendingCards?.[index];if(!c)return;r.pendingCards=null;const stats=this.totalStats();if(c.id==='heal')r.hp=Math.min(stats.maxHp,r.hp+Math.ceil(stats.maxHp*.2));else if(c.id==='mana')r.mp=Math.min(stats.maxMp,r.mp+Math.ceil(stats.maxMp*.2));else if(c.id==='treasure')r.buffs.treasureBonus=Math.min(1,(r.buffs.treasureBonus||0)+.1);else if(c.id==='hunt')r.buffs.rareBonus=Math.min(1,(r.buffs.rareBonus||0)+.05);else if(c.id==='stairs'){if(this.isStairDistanceLimit(r)>1){const node=this.isMapNode(this.isFloorMap().currentId);node.stairs=true;r.stairsFound=true;this.saveProfile();this.isAfterBattle();}else{this.isAfterBattle();this.isDescend();}return;}else if(c.id==='return'){this.isReturnRun();return;}else if(c.id==='gold')r.buffs.goldBonus=(r.buffs.goldBonus||0)+.2;else if(c.id==='quality')r.buffs.qualityBattles=3;else if(c.id==='merchant'){this.isAfterBattle();this.isRenderShop($('#menu-panel'),true);return;}else if(c.id==='forge'){const x=this.isChooseGear('鍛造する装備を選択');if(x)x.plus=(x.plus||0)+1;}else if(c.id==='sublime'){const x=this.isChooseGear('昇華する装備を選択',x=>x.ops?.some(o=>o.rank<4));if(x){const candidates=x.ops.filter(o=>o.rank<4),n=Number(prompt(`強化するOPを選択\n${candidates.map((o,i)=>`${i+1}: ${this.isCfg().opLabels[o.key]||o.key} R${o.rank}`).join('\n')}`))-1,op=candidates[n];if(op){op.rank++;op.value=this.isCfg().opRanks[op.key][op.rank-1];}}}this.isLog(`CARD《${c.name}》`);this.saveProfile();this.isAfterBattle();};
+  P.isApplyCard=function(index){const r=this.isRun(),c=r.pendingCards?.[index];if(!c)return;r.pendingCards=null;const stats=this.totalStats();if(c.id==='heal')r.hp=Math.min(stats.maxHp,r.hp+Math.ceil(stats.maxHp*.2));else if(c.id==='mana')r.mp=Math.min(stats.maxMp,r.mp+Math.ceil(stats.maxMp*.2));else if(c.id==='treasure')r.buffs.treasureBonus=Math.min(1,(r.buffs.treasureBonus||0)+.1);else if(c.id==='hunt')r.buffs.rareBonus=Math.min(1,(r.buffs.rareBonus||0)+.05);else if(c.id==='stairs'){if(this.isStairDistanceLimit(r)>1){const node=this.isMapNode(this.isFloorMap().currentId);node.stairs=true;r.stairsFound=true;this.saveProfile();this.isAfterBattle();}else{this.isAfterBattle();this.isDescend();}return;}else if(c.id==='return'){this.isReturnRun();return;}else if(c.id==='gold')r.buffs.goldBonus=(r.buffs.goldBonus||0)+.2;else if(c.id==='quality')r.buffs.qualityBattles=3;else if(c.id==='merchant'){this.isAfterBattle();this.isRenderShop($('#menu-panel'),true);return;}else if(c.id==='forge'){const x=this.isChooseGear('鍛造する装備を選択');if(x)x.plus=(x.plus||0)+1;}else if(c.id==='sublime'){const x=this.isChooseGear('昇華する装備を選択',x=>x.ops?.some(o=>o.rank<4));if(x){const candidates=x.ops.filter(o=>o.rank<4),n=Number(prompt(`強化するOPを選択\n${candidates.map((o,i)=>`${i+1}: ${this.isCfg().opLabels[o.key]||o.key} R${o.rank}`).join('\n')}`))-1,op=candidates[n];this.isSublimeOp(op);}}this.isLog(`CARD《${c.name}》`);this.saveProfile();this.isAfterBattle();};
+  P.isSublimeOp = function (op) {
+    if (!op) return;
+    const ranks = this.owgOpDefinition?.(op.key)?.values || this.isCfg().opRanks[op.key];
+    const next = ranks?.[op.rank];
+    if (!Number.isFinite(next)) return;
+    op.rank++;
+    op.value = Math.max(op.value || 0, next);
+  };
   const isApplyCardNative=P.isApplyCard;
-  P.isApplyCard=async function(index){const c=this.isRun()?.pendingCards?.[index];if(!c||!['forge','sublime'].includes(c.id))return isApplyCardNative.call(this,index);this.isRun().pendingCards=null;const x=await this.isChooseGear(c.id==='forge'?'鍛造する装備を選択':'昇華する装備を選択',c.id==='sublime'?x=>x.ops?.some(o=>o.rank<4):()=>true);if(x&&c.id==='forge')x.plus=(x.plus||0)+1;if(x&&c.id==='sublime'){const candidates=x.ops.filter(o=>o.rank<4),n=await this.isChoose('強化するOPを選択',candidates.map(o=>({label:this.isCfg().opLabels[o.key]||o.key,note:`RANK ${o.rank} → ${o.rank+1}`})),{kicker:'SUBLIMATION'}),op=n===null?null:candidates[n];if(op){op.rank++;op.value=this.isCfg().opRanks[op.key][op.rank-1];}}this.isLog(`CARD《${c.name}》`);this.saveProfile();this.isAfterBattle();};
+  P.isApplyCard=async function(index){const c=this.isRun()?.pendingCards?.[index];if(!c||!['forge','sublime'].includes(c.id))return isApplyCardNative.call(this,index);this.isRun().pendingCards=null;const x=await this.isChooseGear(c.id==='forge'?'鍛造する装備を選択':'昇華する装備を選択',c.id==='sublime'?x=>x.ops?.some(o=>o.rank<4):()=>true);if(x&&c.id==='forge')x.plus=(x.plus||0)+1;if(x&&c.id==='sublime'){const candidates=x.ops.filter(o=>o.rank<4),n=await this.isChoose('強化するOPを選択',candidates.map(o=>({label:this.isCfg().opLabels[o.key]||o.key,note:`RANK ${o.rank} → ${o.rank+1}`})),{kicker:'SUBLIMATION'}),op=n===null?null:candidates[n];this.isSublimeOp(op);}this.isLog(`CARD《${c.name}》`);this.saveProfile();this.isAfterBattle();};
   P.isRenderShop=function(panel,merchant=false){
     const r=this.isRun(),floor=r.floor||1,returnUnlocked=floor>=Math.max(1,Number(this.isEffectiveCfg().returnMinFloor)||20),hasReturn=returnUnlocked&&merchant&&this.isRand()<.12;
     const product=(id,name,en,price,mark)=>`<button class="is-shop-product" data-is-buy="${id}" data-price="${price}"><i>${mark}</i><span><small>${en}</small><b>${name}</b></span><strong>${price}<em>奏貨</em></strong></button>`;
@@ -1145,7 +1154,7 @@
   };
   P.isRoomResultHtml=function(){const result=this.isRoomResult;if(!result)return'';return `<section class="is-room-result ${result.tone||'normal'}"><small>ROOM EVENT // FLOOR ${this.isRun()?.floor||1}</small><h2>${esc(result.title)}</h2><p>${esc(result.text)}</p><button class="is-primary" data-is-action="${esc(result.action||'room-result-close')}">${esc(result.label||'探索を続ける')}</button></section>`;};
   P.isRenderRoomResult=function(title,text,tone='normal',options={}){this.isRoomResult={title,text,tone,...options};this.isExploreOverlayMode=null;this.isRenderExplore($('#menu-panel'));};
-  P.isResolveEvent=function(type){const r=this.isRun();this.isDismissRouteOverlay();if(type==='encounter'){this.isStartBattle(false);return;}if(type==='rare'){this.isStartBattle(true);return;}if(type==='treasure'){this.isTreasure();return;}if(type==='workshop'){this.isRenderWorkshop($('#menu-panel'));return;}if(type==='shop'){this.isRenderShop($('#menu-panel'),false);return;}if(type==='merchant'){this.isRenderShop($('#menu-panel'),true);return;}if(type==='card'||type==='returnCard'||type==='sublime'){this.isShowCards(type);return;}let title='何もない',message='周囲を調べたが、何も見つからなかった。',tone='empty';if(type==='item'){const id=this.isCfg().consumablePool[Math.floor(this.isRand()*this.isCfg().consumablePool.length)],name=D().items[id]?.name||id;this.isAddLoot({uid:this.isUid('item'),kind:'item',itemId:id,count:1});title=`${name}を発見`;message='バッグへ収めた。';tone='item';}else if(type==='gold'){const gold=this.isEarnRelicCoins(r,Math.max(1,Math.round((1+Math.floor(this.isRand()*5))*(1+r.buffs.goldBonus))));r.dungeonGold+=gold;this.isLog(`奏貨 +${gold}`);title=`奏貨 ${gold}枚を発見`;message='奏廊内で使用できる奏貨を入手した。';tone='gold';}else if(type==='trap'){const stats=this.totalStats(),dmg=Math.max(1,Math.round(stats.maxHp*(.08+this.isRand()*.17)));r.hp=Math.max(1,r.hp-dmg);this.isLog(`罠：HP -${dmg}`);title='罠が作動';message=`仕掛けを受け、HPが${dmg}減少した。`;tone='trap';}this.isRollStairs();this.isSave();this.isRenderRoomResult(title,message,tone);};
+  P.isResolveEvent=function(type){const r=this.isRun();this.isDismissRouteOverlay();if(type==='encounter'){this.isStartBattle(false);return;}if(type==='rare'){this.isStartBattle(true);return;}if(type==='treasure'){this.isTreasure();return;}if(type==='workshop'){this.isRenderWorkshop($('#menu-panel'));return;}if(type==='shop'){this.isRenderShop($('#menu-panel'),false);return;}if(type==='merchant'){this.isRenderShop($('#menu-panel'),true);return;}if(type==='card'||type==='returnCard'||type==='sublime'){this.isShowCards(type);return;}let title='何もない',message='周囲を調べたが、何も見つからなかった。',tone='empty';if(type==='item'){const id=this.isCfg().consumablePool[Math.floor(this.isRand()*this.isCfg().consumablePool.length)],name=D().items[id]?.name||id;this.isAddLoot({uid:this.isUid('item'),kind:'item',itemId:id,count:1});title=`${name}を発見`;message='バッグへ収めた。';tone='item';}else if(type==='gold'){const gold=this.isEarnRelicCoins(r,Math.max(1,Math.round((1+Math.floor(this.isRand()*5))*(1+r.buffs.goldBonus))));r.dungeonGold+=gold;this.isLog(`奏貨 +${gold}`);title=`奏貨 ${gold}枚を発見`;message='奏廊内で使用できる奏貨を入手した。';tone='gold';}else if(type==='trap'){const stats=this.totalStats(),rawDamage=Math.max(1,Math.round(stats.maxHp*(.08+this.isRand()*.17))),dmg=this.owgTrapDamage?.(rawDamage)??rawDamage;r.hp=Math.max(1,r.hp-dmg);this.isLog(`罠：HP -${dmg}`);title='罠が作動';message=`仕掛けを受け、HPが${dmg}減少した。`;tone='trap';}this.isRollStairs();this.isSave();this.isRenderRoomResult(title,message,tone);};
 
   const forgeModes = {
     enhance: {label:'強化', target:'強化する装備を選ぶ', empty:'強化できる装備がありません。装備と必要な欠片・核を確認してください。'},
@@ -1184,6 +1193,7 @@
   P.isForgeEnhanceBonuses = function (target, material) {
     const sourceValues = new Map((material.ops || []).map(op => [op.key, Number(op.value)]));
     return (target.ops || []).flatMap(op => {
+      if (this.owgOpFitsItem?.(op.key, target.itemId) === false) return [];
       const after = strengthenForgeOp(op, sourceValues.get(op.key));
       return after ? [{before:op, after}] : [];
     });
@@ -1197,10 +1207,17 @@
     })).filter(({options}) => options.length > 0);
   };
 
+  P.isForgeSourcesForTarget = function (sources, target) {
+    return sources.filter(({item}) => item.uid !== target.uid).map(({item, options}) => ({
+      item,
+      options:options.filter(({op}) => this.owgOpFitsItem?.(op.key, target.itemId) !== false)
+    })).filter(({options}) => options.length > 0);
+  };
+
   P.isForgeEligibleTargets = function (mode, gear, sources) {
     if (mode === 'enhance') return gear.filter(item => this.isForgeHasMaterials(this.isForgeEnhanceCost(item)) ||
       this.isForgeEnhanceMaterials(item, gear).length > 0);
-    if (mode === 'transfer') return gear.filter(item => sources.some(({item:source}) => source.uid !== item.uid));
+    if (mode === 'transfer') return gear.filter(item => this.isForgeSourcesForTarget(sources, item).length > 0);
     return this.isForgeHasMaterials(this.isForgeOpCost()) ? gear.filter(item => item.ops?.length) : [];
   };
 
@@ -1298,7 +1315,7 @@
           material ? null : cost, '強化する', advance, warning)}</section>`;
     }
     if (state.mode === 'transfer') {
-      const candidates = sources.filter(({item}) => item.uid !== gear.uid);
+      const candidates = this.isForgeSourcesForTarget(sources, gear);
       const source = candidates.find(({item}) => item.uid === state.sourceUid);
       if (!source) {
         return `<section class="is-forge-stage"><h3>素材装備を選ぶ</h3><div class="is-forge-material-list">${candidates.map(({item,options}) =>
@@ -1458,7 +1475,9 @@
     const run = this.isRun(), source = this.isBagEntry(sourceUid), target = this.isBagEntry(targetUid);
     const chosen = source?.ops?.[opIndex];
     if (!run || !source?.otherWorldGear || !target?.otherWorldGear || source.uid === target.uid || source.locked || !chosen) return;
-    const targetOps = target.ops || [], {same, moved, strengthened, needsReplace} = this.isForgeTransferPreview(target, chosen);
+    if (this.owgOpFitsItem?.(chosen.key, target.itemId) === false) return;
+    const targetOps = target.ops || [], targetOpCount = targetOps.length;
+    const {same, moved, strengthened, needsReplace} = this.isForgeTransferPreview(target, chosen);
     if (same >= 0 && sameOpMode !== 'enhance' && sameOpMode !== 'transfer') return;
     const enhancing = same >= 0 && sameOpMode === 'enhance';
     const result = enhancing ? strengthened : moved;
@@ -1484,7 +1503,8 @@
     ].join('\n');
     if (!await this.isConfirm(`OPを${enhancing ? '強化' : '移植'}しますか？`, details, {kicker:'OPTION TRANSPLANT', confirmLabel:verb, danger:true})) return;
     if (this.isRun() !== run || this.isBagEntry(sourceUid) !== source || source.locked || source.ops[opIndex] !== chosen ||
-        this.isBagEntry(targetUid) !== target || (previous && target.ops?.[slot] !== previous) || !this.isForgeSpendMaterials(cost)) return;
+        this.isBagEntry(targetUid) !== target || (target.ops?.length || 0) !== targetOpCount ||
+        (previous && target.ops?.[slot] !== previous) || !this.isForgeSpendMaterials(cost)) return;
     target.ops ||= [];
     if (previous) target.ops[slot] = result;
     else target.ops.push(result);

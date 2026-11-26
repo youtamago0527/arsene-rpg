@@ -18,6 +18,19 @@
     { id:'feet', slot:'feet', names:['境界の靴','深界の影靴','幻奏脚《ミラージュ》','無限脚《ホライゾン》'] },
     { id:'accessory', slot:'accessory', names:['境界の指環','深界の黒環','幻奏環《アルカナ》','無限環《ゼロ》'] }
   ];
+  const accessoryVariants = [
+    {id:'accessory_life', name:'生命の護符', bonuses:{maxHp:.85}, focus:'HP型'},
+    {id:'accessory_mana', name:'魔泉の耳飾り', bonuses:{maxMp:.32}, focus:'MP型'},
+    {id:'accessory_might', name:'猛攻の腕輪', bonuses:{str:.11}, focus:'力型'},
+    {id:'accessory_sorcery', name:'魔導の首飾り', bonuses:{mag:.11}, focus:'魔力型'},
+    {id:'accessory_guard', name:'守護の勲章', bonuses:{vit:.065,mnd:.065}, focus:'防御型'},
+    {id:'accessory_haste', name:'疾風のピアス', bonuses:{agi:.065,dex:.065}, focus:'速度・命中型'},
+    {id:'accessory_fortune', name:'幸運の指輪', bonuses:{luk:.10}, focus:'運型'},
+    {id:'accessory_harmony', name:'万象の印章', bonuses:{str:.026,vit:.026,mag:.026,mnd:.026,agi:.026,dex:.026,luk:.026}, focus:'全能力型'}
+  ].map(part => ({...part, slot:'accessory'}));
+  const gearParts = [...slots, ...accessoryVariants];
+  const partsById = new Map(gearParts.map(part => [part.id, part]));
+
   const series = [
     { stars:3, id:'boundary', name:'境界', power:34, armor:18, color:'#62c5e8' },
     { stars:4, id:'deep', name:'深界', power:52, armor:29, color:'#8d70ff' },
@@ -26,11 +39,12 @@
   ];
   D.otherWorldGearSeries = series;
   D.otherWorldGearIds = [];
-  for (const s of series) for (const part of slots) {
-    const id = `owg_${s.id}_${part.id}`, name = part.names[s.stars - 3];
-    const item = { id, name, nameEn:`${s.id.toUpperCase()} ${part.id.toUpperCase()}`, category:'equipment', slot:part.slot, rarity:s.stars >= 6 ? 'mythic' : s.stars === 5 ? 'legendary' : s.stars === 4 ? 'epic' : 'rare', stars:s.stars, otherWorldGear:true, otherWorldSeriesId:s.id, description:`無限奏廊で発見された★${s.stars}異世界装備。個体品質とOPを持つ。` };
+  for (const s of series) for (const part of gearParts) {
+    const id = `owg_${s.id}_${part.id}`, name = part.names?.[s.stars - 3] || `${s.name}・${part.name}`;
+    const item = { id, name, nameEn:`${s.id.toUpperCase()} ${part.id.toUpperCase()}`, category:'equipment', slot:part.slot, rarity:s.stars >= 6 ? 'mythic' : s.stars === 5 ? 'legendary' : s.stars === 4 ? 'epic' : 'rare', stars:s.stars, otherWorldGear:true, otherWorldSeriesId:s.id, opFamily:part.slot === 'accessory' ? 'accessory' : part.slot === 'arms' || (part.weaponType && part.weaponType !== 'shield') ? 'attack' : 'support', description:`無限奏廊で発見された★${s.stars}異世界装備。${part.focus ? '特化：' + part.focus + '。' : ''}` };
     D.items[id] = item; D.otherWorldGearIds.push(id);
-    const def = { ...item, bonuses:{} };
+    const bonuses = Object.fromEntries(Object.entries(part.bonuses || {}).map(([key, rate]) => [key, Math.max(1, Math.round(s.armor * rate))]));
+    const def = { ...item, bonuses };
     if (part.weaponType) {
       def.weaponType = part.weaponType;
       if (part.weaponType === 'staff' || part.weaponType === 'instrument') def.magicAttackPower = s.power;
@@ -38,23 +52,124 @@
       else def.attackPower = s.power;
       D.weapons[id] = def;
     } else {
-      const rate = { head:.72, body:1.25, arms:.66, feet:.66, accessory:.52 }[part.slot] || 1;
+      const rate = part.focus ? .38 : ({head:.72, body:1.25, arms:.66, feet:.66, accessory:.52}[part.slot] || 1);
       def.defensePower = Math.round(s.armor * rate); def.magicDefensePower = Math.round(s.armor * rate * .82);
       (D.armors ||= {})[id] = def;
     }
   }
 
-  const op = (key, label, values, weight=10, kind='normal') => ({ key,label,values,weight,kind });
+  const damageCurve = [.03,.06,.10,.15,.22,.32];
+  const conditionalCurve = [.04,.08,.13,.20,.30,.45];
+  const defenseCurve = [.02,.04,.07,.10,.14,.20];
+  const statCurve = [.02,.04,.07,.11,.16,.23];
+  const dualStatCurve = [.01,.025,.045,.07,.10,.15];
+  const op = (key, label, values, family, weight = 10, stats = null) => ({key, label, values, family, weight, stats});
+  const attack = (key, label, values, weight) => op(key,label,values,'attack',weight);
+  const support = (key, label, values, weight) => op(key,label,values,'support',weight);
+  const statOp = (key,label,stats,family,values = statCurve) => op(key,label,values,family,6,stats);
+  const baseStats = ['str','vit','mag','mnd','agi','dex','luk'];
+  const combatKeys = ['attackPower','magicAttackPower','defensePower','magicDefensePower'];
+
   D.otherWorldGearOps = [
-    op('attackPower','攻撃力',[4,8,14,22,34,50]), op('defensePower','防御力',[4,8,14,22,34,50]), op('magicAttackPower','魔法攻撃力',[4,8,14,22,34,50]), op('magicDefensePower','魔法防御力',[4,8,14,22,34,50]),
-    ...['str:力','vit:体力','mag:魔力','mnd:精神','agi:素早さ','dex:器用さ','luk:運'].map(x=>{const [k,l]=x.split(':');return op(k,l,[1,2,4,7,11,16]);}),
-    op('maxHp','最大HP',[10,22,40,70,110,170]), op('maxMp','最大MP',[5,11,20,34,52,78]), op('critBonus','会心率',[.01,.02,.035,.05,.075,.10],7),
-    op('expUp','EXP UP',[.03,.06,.10,.16,.24,.35],7,'growth'), op('jobExpUp','JOB EXP UP',[.03,.06,.10,.16,.24,.35],7,'growth'), op('masteryExpUp','武器学EXP UP',[.03,.06,.10,.16,.24,.35],7,'growth'),
-    op('goldUp','GOLD UP',[.04,.08,.13,.20,.30,.45],7,'loot'), op('materialDropUp','素材ドロップUP',[.02,.04,.07,.11,.17,.25],6,'loot'), op('gearDropUp','装備ドロップUP',[.01,.02,.035,.055,.08,.12],5,'loot'), op('rareDropUp','レアドロップUP',[.005,.01,.018,.028,.04,.06],4,'loot'),
-    op('physicalDamagePercent','物理与ダメージ',[.03,.06,.10,.15,.22,.32],6), op('magicDamagePercent','魔法与ダメージ',[.03,.06,.10,.15,.22,.32],6), op('damageReductionPercent','被ダメージ軽減',[.02,.04,.07,.10,.14,.20],5),
-    op('hpDrain','HP吸収',[.01,.02,.03,.045,.06,.08],4), op('mpCostDown','消費MP軽減',[.02,.04,.07,.10,.15,.22],5), op('repeatChance','追加発動',[.01,.02,.035,.05,.075,.10],3),
-    op('treasureUp','宝箱率UP',[.01,.02,.035,.05,.08,.12],5,'infinite'), op('rareEnemyUp','レア敵率UP',[.005,.01,.018,.028,.04,.06],4,'infinite'), op('returnUp','RETURN率UP',[.001,.002,.004,.007,.011,.018],2,'infinite'), op('stairUp','階段発見率UP',[.01,.02,.04,.06,.09,.13],4,'infinite'), op('bagPlus','バッグ枠',[1,1,2,2,3,5],3,'infinite')
+    attack('attackPower','攻撃力',[4,8,14,22,34,50]),
+    attack('magicAttackPower','魔法攻撃力',[4,8,14,22,34,50]),
+    attack('str','力',[1,2,4,7,11,16]),
+    attack('mag','魔力',[1,2,4,7,11,16]),
+    attack('dex','器用さ',[1,2,4,7,11,16]),
+    attack('critBonus','会心率',[.01,.02,.035,.05,.075,.10],7),
+    attack('physicalDamagePercent','物理与ダメージ',damageCurve,6),
+    attack('magicDamagePercent','魔法与ダメージ',damageCurve,6),
+    attack('hpDrain','HP吸収',[.003,.005,.008,.012,.018,.025],2),
+    attack('repeatChance','追加発動',[.01,.02,.035,.05,.075,.10],3),
+    attack('normalAttackDamageBonus','通常攻撃ダメージ',damageCurve,6),
+    attack('skillDamageBonus','技・魔法ダメージ',damageCurve,6),
+    attack('singleDamageBonus','単体攻撃ダメージ',damageCurve,5),
+    attack('allDamageBonus','全体攻撃ダメージ',damageCurve,5),
+    attack('openingDamageBonus','初ターンの与ダメージ',conditionalCurve,5),
+    attack('healthyDamageBonus','HP80％以上で与ダメージ',conditionalCurve,5),
+    attack('lowHpDamageBonus','HP35％以下で与ダメージ',conditionalCurve,5),
+    attack('finisherDamageBonus','HP30％以下の敵に与ダメージ',conditionalCurve,5),
+    attack('firstStrikeDamageBonus','HP満タンの敵に与ダメージ',conditionalCurve,5),
+    attack('rareBossDamageBonus','レア敵・ボスへのダメージ',conditionalCurve,5),
+    attack('criticalDamageBonus','会心ダメージ',conditionalCurve,5),
+    attack('opFollowupDamage','追加ダメージ',[.04,.08,.15,.24,.38,.55],3),
+    attack('accuracyUp','命中率',[.01,.02,.035,.05,.075,.10],6),
+    attack('fireDamagePercent','火属性ダメージ',conditionalCurve,4),
+    attack('elementalDamageBonus','属性付きの技のダメージ',damageCurve,5),
+    statOp('attackPowerRate','攻撃力上昇',['attackPower'],'attack'),
+    statOp('magicAttackPowerRate','魔法攻撃力上昇',['magicAttackPower'],'attack'),
+    statOp('strRate','力上昇',['str'],'attack'),
+    statOp('magRate','魔力上昇',['mag'],'attack'),
+    statOp('dexRate','器用さ上昇',['dex'],'attack'),
+    statOp('mightTechniqueRate','武技の素質',['str','dex'],'attack',dualStatCurve),
+    statOp('magicTechniqueRate','魔技の素質',['mag','dex'],'attack',dualStatCurve),
+
+    support('defensePower','防御力',[4,8,14,22,34,50]),
+    support('magicDefensePower','魔法防御力',[4,8,14,22,34,50]),
+    support('vit','体力',[1,2,4,7,11,16]),
+    support('mnd','精神',[1,2,4,7,11,16]),
+    support('agi','素早さ',[1,2,4,7,11,16]),
+    support('luk','運',[1,2,4,7,11,16]),
+    support('maxHp','最大HP',[10,22,40,70,110,170]),
+    support('maxMp','最大MP',[5,11,20,34,52,78]),
+    support('expUp','獲得経験値UP',[.03,.06,.10,.16,.24,.35],7),
+    support('jobExpUp','JOB経験値UP',[.03,.06,.10,.16,.24,.35],7),
+    support('masteryExpUp','武器学経験値UP',[.03,.06,.10,.16,.24,.35],7),
+    support('goldUp','獲得GOLD UP',[.04,.08,.13,.20,.30,.45],7),
+    support('materialDropUp','素材ドロップ率UP',[.02,.04,.07,.11,.17,.25],6),
+    support('gearDropUp','装備ドロップ率UP',[.01,.02,.035,.055,.08,.12],5),
+    support('rareDropUp','レア装備ドロップ倍率',[.005,.01,.018,.028,.04,.06],4),
+    support('damageReductionPercent','被ダメージ軽減',defenseCurve,5),
+    support('mpCostDown','消費MP軽減',[.02,.04,.07,.10,.15,.22],5),
+    support('treasureUp','宝箱出現率UP',[.01,.02,.035,.05,.08,.12],5),
+    support('rareEnemyUp','レア敵出現率UP',[.01,.02,.035,.055,.08,.12],4),
+    support('returnUp','帰還札出現率UP',[.001,.002,.004,.007,.011,.018],2),
+    support('stairUp','階段発見率UP',[.01,.02,.04,.06,.09,.13],4),
+    support('bagPlus','バッグ枠追加',[1,1,2,2,3,5],3),
+    support('physicalDamageReductionPercent','物理被ダメージ軽減',defenseCurve,6),
+    support('magicDamageReductionPercent','魔法被ダメージ軽減',defenseCurve,6),
+    support('receivedCriticalDamageReductionPercent','被会心ダメージ軽減',defenseCurve,5),
+    support('receivedHealingPercent','受けるHP回復量',damageCurve,6),
+    support('healingPowerPercent','回復技の効果',damageCurve,6),
+    support('mpRestoreOnDamage','被ダメージの一部をMP回復',[.003,.006,.01,.015,.022,.032],2),
+    support('turnHpRegenRate','行動開始時HP再生',[.003,.007,.012,.020,.03,.045],3),
+    support('turnMpRegenRate','行動開始時MP再生',[.003,.007,.012,.020,.03,.045],3),
+    support('evadeBonus','回避率',[.01,.02,.035,.05,.075,.10],5),
+    support('trapDamageDown','罠ダメージ軽減',conditionalCurve,5),
+    support('extraPotionHpRate','HP回復薬の効果',damageCurve,5),
+    support('extraPotionMpRate','MP回復薬の効果',damageCurve,5),
+    support('firstTurnGuard','初ターンの被ダメージ軽減',defenseCurve,5),
+    support('lowHpGuard','HP35％以下で被ダメージ軽減',defenseCurve,5),
+    support('healthyGuard','HP80％以上で被ダメージ軽減',defenseCurve,5),
+    statOp('defensePowerRate','防御力上昇',['defensePower'],'support'),
+    statOp('magicDefensePowerRate','魔法防御力上昇',['magicDefensePower'],'support'),
+    statOp('vitRate','体力上昇',['vit'],'support'),
+    statOp('mndRate','精神上昇',['mnd'],'support'),
+    statOp('agiRate','素早さ上昇',['agi'],'support'),
+    statOp('lukRate','運上昇',['luk'],'support'),
+    statOp('maxHpRate','最大HP上昇',['maxHp'],'support'),
+    statOp('maxMpRate','最大MP上昇',['maxMp'],'support'),
+    statOp('defensesRate','堅守の素質',['vit','mnd'],'support',dualStatCurve),
+    statOp('vitalsRate','生気の素質',['maxHp','maxMp'],'support',dualStatCurve),
+    statOp('balancedStatsRate','全基礎能力上昇',baseStats,'accessory',[.01,.02,.03,.045,.065,.09])
   ];
+  const opDefinitions = new Map(D.otherWorldGearOps.map(entry => [entry.key, entry]));
+  if (D.infiniteScore?.opLabels) {
+    for (const entry of D.otherWorldGearOps) D.infiniteScore.opLabels[entry.key] ||= entry.label;
+    D.infiniteScore.opLabels.rareDropUp = opDefinitions.get('rareDropUp').label;
+  }
+
+  P.owgOpDefinition = function (key) {
+    return opDefinitions.get(key);
+  };
+
+  P.owgOpFitsItem = function (key, itemId) {
+    const item = D.items[itemId], family = opDefinitions.get(key)?.family;
+    if (!item?.otherWorldGear || !family) return true;
+    if (item.slot === 'accessory') return true;
+    return family === item.opFamily;
+  };
+
   D.otherWorldGearUniqueSkills = {
     sword:{ id:'owgBoundarySlash', name:'境界断ち', nameEn:'RIFT BREAK', type:'ACTIVE', kind:'physical', target:'single', mp:8, power:1.8, powerText:'攻撃力×1.8', effectText:'敵HP30%以下で威力上昇', description:'世界の継ぎ目ごと敵を断つ固有奏技。' },
     martial:{ id:'owgSilentBeat', name:'無拍子', nameEn:'SILENT BEAT', type:'ACTIVE', kind:'physical', target:'single', mp:0, power:.55, hits:3, powerText:'攻撃力×0.55×3', effectText:'MP消費なし', description:'拍子を捨てた三連撃。' },
@@ -72,7 +187,7 @@
   P.owgEquipped=function(){const run=this.profile?.infiniteScore?.active?this.isRun?.():null;if(run)return Object.values(run.equipment||{}).map(uid=>this.owgEntry(uid)).filter(x=>x?.otherWorldGear);return Object.values(this.profile.otherWorldEquipment||{}).map(uid=>(this.profile.otherWorldGear||[]).find(x=>x.uid===uid)).filter(Boolean);};
   P.owgDefinition=function(x){return this.equipmentDefinition?.(x?.itemId)||{};};
   P.owgOpValueText = function (op) {
-    const firstValue = D.otherWorldGearOps.find(item => item.key === op.key)?.values[0];
+    const firstValue = this.owgOpDefinition(op.key)?.values[0];
     const isPercent = firstValue > 0 && firstValue < 1;
     const value = Number(op.value) * (isPercent ? 100 : 1);
     return value.toLocaleString('ja-JP', {maximumFractionDigits:4}) + (isPercent ? '%' : '');
@@ -94,8 +209,45 @@
     return 5;
   };
   P.owgQuality=function(floor){const range=floor>=150?[100,120]:floor>=100?[97,118]:floor>=50?[94,115]:floor>=25?[90,110]:[87,105];return range[0]+Math.floor(this.isRand()*(range[1]-range[0]+1));};
-  P.owgRollOp=function(maxRank,used=[],rareDrop=false){const pool=D.otherWorldGearOps.filter(x=>!used.includes(x.key)),sum=pool.reduce((n,x)=>n+x.weight,0);let r=this.isRand()*sum,pick=pool[0];for(const x of pool){r-=x.weight;if(r<=0){pick=x;break;}}const rankRoll=rareDrop?Math.max(this.isRand(),this.isRand()):this.isRand(),rank=1+Math.floor(rankRoll*maxRank),base=pick.values[rank-1],valueRoll=rareDrop?Math.max(this.isRand(),this.isRand()):this.isRand(),value=typeof base==='number'&&base<1?+(base*(.9+valueRoll*.2)).toFixed(4):Math.max(1,Math.round(base*(.9+valueRoll*.2)));return {key:pick.key,rank,value};};
-  P.owgGenerate=function(force={}){normalize(this.profile);const floor=force.floor||this.isRun?.()?.floor||1,stars=force.stars||this.owgRollStar(floor),s=series[stars-3],parts=slots,part=force.part||parts[Math.floor(this.isRand()*parts.length)],itemId=`owg_${s.id}_${part.id}`,quality=this.owgQuality(floor),maxRank=stars===6&&floor>=150&&this.isRand()<.01?6:Math.min(5,stars-1),countRoll=force.rareDrop?Math.max(this.isRand(),this.isRand()):this.isRand(),count=stars-3+Math.floor(countRoll*2),ops=[];while(ops.length<count)ops.push(this.owgRollOp(maxRank,ops.map(x=>x.key),force.rareDrop));const skillRate={3:0,4:.005,5:.03,6:.08}[stars],uniqueSkillId=part.weaponType&&this.isRand()<skillRate?D.otherWorldGearUniqueSkills[part.id]?.id:null,rarity=stars===6?'mythic':stars===5?'legendary':stars===4?'epic':'rare';return {uid:`owg-${Date.now()}-${++this.profile.otherWorldGearUid}`,kind:'equipment',itemId,count:1,generated:true,otherWorldGear:true,stars,rarity,quality,multiplier:quality/100,plus:0,tuneLevel:0,ops,uniqueSkillId,obtainedFloor:floor,locked:false};};
+  P.owgRollOp = function (maxRank, used = [], rareDrop = false, itemId) {
+    const pool = D.otherWorldGearOps.filter(entry => !used.includes(entry.key) && this.owgOpFitsItem(entry.key, itemId));
+    if (!pool.length) return null;
+    const total = pool.reduce((sum, entry) => sum + entry.weight, 0);
+    let roll = this.isRand() * total;
+    const pick = pool.find(entry => (roll -= entry.weight) < 0) || pool[pool.length - 1];
+    const rollValue = () => rareDrop ? Math.max(this.isRand(), this.isRand()) : this.isRand();
+    const rank = 1 + Math.floor(rollValue() * maxRank), base = pick.values[rank - 1];
+    const value = base * (.9 + rollValue() * .2);
+    return {key:pick.key, rank, value:base < 1 ? Number(value.toFixed(4)) : Math.max(1, Math.round(value))};
+  };
+
+  P.owgGenerate = function (force = {}) {
+    normalize(this.profile);
+    const floor = force.floor || this.isRun?.()?.floor || 1;
+    const stars = force.stars || this.owgRollStar(floor), s = series[stars - 3];
+    let part = partsById.get(force.part?.id);
+    if (!part) {
+      part = slots[Math.floor(this.isRand() * slots.length)];
+      if (part.id === 'accessory') {
+        part = [part, ...accessoryVariants][Math.floor(this.isRand() * (accessoryVariants.length + 1))];
+      }
+    }
+    const itemId = `owg_${s.id}_${part.id}`, quality = this.owgQuality(floor);
+    const maxRank = stars === 6 && floor >= 150 && this.isRand() < .01 ? 6 : Math.min(5, stars - 1);
+    const countRoll = force.rareDrop ? Math.max(this.isRand(), this.isRand()) : this.isRand();
+    const count = stars - 3 + Math.floor(countRoll * 2), ops = [];
+    for (let i = 0; i < count; i++) {
+      const op = this.owgRollOp(maxRank, ops.map(row => row.key), force.rareDrop, itemId);
+      if (!op) break;
+      ops.push(op);
+    }
+    const skillRate = {3:0,4:.005,5:.03,6:.08}[stars];
+    const uniqueSkillId = part.weaponType && this.isRand() < skillRate ? D.otherWorldGearUniqueSkills[part.id]?.id : null;
+    return {uid:`owg-${Date.now()}-${++this.profile.otherWorldGearUid}`, kind:'equipment', itemId, count:1,
+      generated:true, otherWorldGear:true, stars, rarity:D.items[itemId].rarity, quality, multiplier:quality / 100,
+      plus:0, tuneLevel:0, ops, uniqueSkillId, obtainedFloor:floor, locked:false};
+  };
+
   P.isGenerateGear=function(force={}){return this.owgGenerate({floor:this.isRun()?.floor||1,...force});};
   const oldItemHtml=P.isItemHtml; P.isItemHtml=function(x){let html=oldItemHtml.call(this,x);if(x?.otherWorldGear)html=html.replace(/<button data-is-merge="[^"]+">合体<\/button>/,'').replace(D.items[x.itemId]?.name||x.itemId,this.owgName(x));return html;};
   P.isOpenMerge=function(){return this.isNotify?.('同名合体は廃止されました','帰還後に《異界の欠片》で調律できます。');};
@@ -107,8 +259,104 @@
   };
   P.owgEffectiveStats=function(x,level=x?.tuneLevel||0){const d=this.owgDefinition(x),quality=(x?.quality||100)/100,tune=1+Math.max(0,Number(level)||0)*.08,out={};for(const k of ['attackPower','defensePower','magicAttackPower','magicDefensePower']){const base=Number(d[k])||0,op=(x?.ops||[]).filter(o=>o.key===k).reduce((n,o)=>n+(Number(o.value)||0),0);if(base||op)out[k]={base,quality:Math.round(base*quality),tune:Math.round(base*quality*tune),op,total:Math.round(base*quality*tune)+op};}return out;};
   P.owgBaseEquipment=function(source=this.profile.equipment){if(this.isRun?.())return {};const equipment={...(source||{})};for(const x of this.owgEquipped()){const slot=D.items[x.itemId]?.slot;if(slot)delete equipment[slot];}return equipment;};
-  const oldTotal=P.totalStats; P.totalStats=function(...args){const filterBase=!this.isRun?.()&&(!args.length||args[0]===this.profile.equipment),baseArgs=this.isRun?.()||filterBase?[this.owgBaseEquipment(args[0])]:args,total=oldTotal.apply(this,baseArgs),fx=this.owgEffects();for(const x of this.owgEquipped()){const d=this.owgDefinition(x),mult=(x.quality||100)/100*(1+(x.tuneLevel||0)*.08);for(const [k,v] of Object.entries(d.bonuses||{}))if(['str','vit','mag','mnd','agi','dex','luk','maxHp','maxMp','critBonus'].includes(k))total[k]=(total[k]||0)+Math.round(v*mult);}for(const k of ['str','vit','mag','mnd','agi','dex','luk','maxHp','maxMp','critBonus'])total[k]=(total[k]||0)+(fx[k]||0);if(this.isRun?.())this.isApplyRelicStats(total);total.def=total.vit;return total;};
-  const oldCombat=P.equipmentCombatStats; P.equipmentCombatStats=function(...args){const filterBase=!this.isRun?.()&&(!args.length||args[0]===this.profile.equipment),out=oldCombat.apply(this,this.isRun?.()||filterBase?[this.owgBaseEquipment(args[0])]:args);for(const x of this.owgEquipped()){const values=this.owgEffectiveStats(x);for(const k of ['attackPower','defensePower','magicAttackPower','magicDefensePower'])out[k]=(out[k]||0)+(values[k]?.total||0);}return out;};
+
+  function applyStatOps(stats, keys, effects) {
+    const rates = {};
+    for (const [key, value] of Object.entries(effects)) {
+      for (const stat of opDefinitions.get(key)?.stats || []) rates[stat] = (rates[stat] || 0) + value;
+    }
+    for (const key of keys) if (rates[key]) stats[key] = Math.round((stats[key] || 0) * (1 + rates[key]));
+  }
+
+  const characterKeys = [...baseStats, 'maxHp', 'maxMp', 'critBonus'];
+  const oldTotal = P.totalStats;
+  P.totalStats = function (...args) {
+    const run = this.isRun?.();
+    const filterBase = !run && (!args.length || args[0] === this.profile.equipment);
+    const total = oldTotal.apply(this, run || filterBase ? [this.owgBaseEquipment(args[0])] : args);
+    const effects = this.owgEffects();
+    for (const item of this.owgEquipped()) {
+      const definition = this.owgDefinition(item);
+      const multiplier = (item.quality || 100) / 100 * (1 + (item.tuneLevel || 0) * .08);
+      for (const [key, value] of Object.entries(definition.bonuses || {})) {
+        if (characterKeys.includes(key)) total[key] = (total[key] || 0) + Math.round(value * multiplier);
+      }
+    }
+    for (const key of characterKeys) total[key] = (total[key] || 0) + (effects[key] || 0);
+    applyStatOps(total, characterKeys, effects);
+    if (run) this.isApplyRelicStats(total);
+    total.def = total.vit;
+    return total;
+  };
+
+  const oldCombat = P.equipmentCombatStats;
+  P.equipmentCombatStats = function (...args) {
+    const run = this.isRun?.();
+    const filterBase = !run && (!args.length || args[0] === this.profile.equipment);
+    const total = oldCombat.apply(this, run || filterBase ? [this.owgBaseEquipment(args[0])] : args);
+    for (const item of this.owgEquipped()) {
+      const stats = this.owgEffectiveStats(item);
+      for (const key of combatKeys) total[key] = (total[key] || 0) + (stats[key]?.total || 0);
+    }
+    applyStatOps(total, combatKeys, this.owgEffects());
+    return total;
+  };
+
+  P.owgDamageWithOps = function (value, skill, enemy, critical) {
+    const fx = this.owgEffects();
+    const playerHp = this.player.hp / this.player.stats.maxHp;
+    const enemyHp = enemy.hp / enemy.stats?.maxHp;
+    const normal = skill.kind === 'weapon' || skill.id === 'attack' ||
+      (skill.id && skill.id === this.basicAttackSkill?.()?.id);
+    const allTargets = skill.target === 'all';
+    const rareOrBoss = enemy.rareRun || enemy.rare || this.battleMode === 'owBoss' ||
+      (enemy.id && ((this.battleMode !== 'slime' && enemy.id === this.battleMode) || (D.dungeons || []).some(d => d.bossId === enemy.id || d.midBossId === enemy.id)));
+    const bonus = (fx[normal ? 'normalAttackDamageBonus' : 'skillDamageBonus'] || 0) +
+      (fx[allTargets ? 'allDamageBonus' : 'singleDamageBonus'] || 0) +
+      (this.turn === 1 ? fx.openingDamageBonus || 0 : 0) +
+      (playerHp >= .8 ? fx.healthyDamageBonus || 0 : 0) +
+      (playerHp <= .35 ? fx.lowHpDamageBonus || 0 : 0) +
+      (enemyHp <= .3 ? fx.finisherDamageBonus || 0 : 0) +
+      (enemyHp >= 1 ? fx.firstStrikeDamageBonus || 0 : 0) +
+      (rareOrBoss ? fx.rareBossDamageBonus || 0 : 0) +
+      (critical ? fx.criticalDamageBonus || 0 : 0) +
+      (skill.element ? fx.elementalDamageBonus || 0 : 0);
+    const damage = bonus ? Math.max(1, Math.round(value * (1 + bonus))) : value;
+    return damage + Math.floor(damage * (fx.opFollowupDamage || 0));
+  };
+
+  P.owgGuardDamage = function (amount, fx = this.owgEffects()) {
+    const hp = this.player.hp / this.player.stats.maxHp;
+    const rate = (this.turn === 1 ? fx.firstTurnGuard || 0 : 0) +
+      (hp <= .35 ? fx.lowHpGuard || 0 : 0) +
+      (hp >= .8 ? fx.healthyGuard || 0 : 0);
+    return rate ? Math.round(amount * (1 - Math.min(.8, rate))) : amount;
+  };
+
+  P.owgRestoreCombatResource = function (key, amount) {
+    if (!(amount > 0) || !(this.player?.hp > 0)) return false;
+    const max = this.player.stats[key === 'hp' ? 'maxHp' : 'maxMp'];
+    const gain = Math.min(max - this.player[key], Math.floor(amount));
+    if (!(gain > 0)) return false;
+    this.player[key] += gain;
+    return true;
+  };
+
+  P.owgRecoverFromDamageDealt = function (damage) {
+    if (damage > 0 && this.owgRestoreCombatResource('hp', damage * (this.owgEffects().hpDrain || 0))) this.persistVitals();
+  };
+
+  P.owgTurnRecovery = function () {
+    const {turnHpRegenRate = 0, turnMpRegenRate = 0} = this.owgEffects();
+    if (!(turnHpRegenRate || turnMpRegenRate)) return;
+    const hp = this.owgRestoreCombatResource('hp', this.player.stats.maxHp * turnHpRegenRate);
+    const mp = this.owgRestoreCombatResource('mp', this.player.stats.maxMp * turnMpRegenRate);
+    if (hp || mp) { this.persistVitals(); this.updateHUD(); }
+  };
+
+  P.owgTrapDamage = function (amount) {
+    return Math.round(amount * (1 - Math.min(.9, this.owgEffects().trapDamageDown || 0)));
+  };
   const oldWeapon=P.equippedWeapon; P.equippedWeapon=function(){const run=this.isRun?.(),uid=run?.equipment?.rightHand||this.profile.otherWorldEquipment?.rightHand,x=this.owgEntry(uid);if(x)return D.weapons[x.itemId]||oldWeapon.call(this);return oldWeapon.call(this);};
   const oldSkills=P.availableSkills; P.availableSkills=function(){const list=oldSkills.call(this),skills=this.owgEquipped().map(x=>D.skills[x.uniqueSkillId]).filter(Boolean);return [...new Map([...list,...skills].map(x=>[x.id,x])).values()];};
   // Combat reads these two individual OPs through the existing boss-set effect API.
@@ -135,7 +383,7 @@
   P.owgTuneRate=function(next){return next<=3?1:({4:.85,5:.70,6:.55,7:.42,8:.32,9:.24,10:.18}[next]??Math.max(.05,.18-(next-10)*.02));};
   P.owgTune=function(uid){const x=this.owgEntry(uid);if(!x)return;const c=this.owgTuneCost(x),next=(x.tuneLevel||0)+1,rate=this.owgTuneRate(next),inv=this.profile.inventory;if((inv.otherworldShard||0)<c.shard||(inv.otherworldCore||0)<c.core){alert('異界素材が足りません。');return;}if(!confirm(`${this.owgName(x)} +${x.tuneLevel||0} → +${next}\n欠片 ${c.shard}${c.core?` / 核 ${c.core}`:''}\n成功率 ${Math.round(rate*100)}%${next>=4?'（失敗時ロスト）':''}`))return;inv.otherworldShard-=c.shard;inv.otherworldCore-=c.core;if(Math.random()<rate){x.tuneLevel=next;x.plus=next;this.saveProfile();this.audio?.sfx?.('confirm');this.owgRenderVault(document.querySelector('#menu-panel'));return;}const backup=copy(x),i=this.profile.otherWorldGear.indexOf(x);if(i>=0)this.profile.otherWorldGear.splice(i,1);for(const s of Object.keys(this.profile.otherWorldEquipment))if(this.profile.otherWorldEquipment[s]===uid)delete this.profile.otherWorldEquipment[s];this.saveProfile();const restore=()=>{this.profile.otherWorldGear.push(backup);this.saveProfile();this.owgRenderVault(document.querySelector('#menu-panel'));};const shown=window.arseneQOffer?.show?.('protect',{title:'保護のアルカナ',copy:`${this.owgName(backup)} +${backup.tuneLevel||0}をロストから保護する。`,onGrant:restore,onClose:()=>this.owgRenderVault(document.querySelector('#menu-panel'))});if(!shown){alert('調律失敗。装備は無限奏廊へ消えた……');this.owgRenderVault(document.querySelector('#menu-panel'));}};
   P.owgEquip=function(uid){const x=this.owgEntry(uid),item=D.items[x?.itemId];if(!x||!item)return;this.profile.otherWorldEquipment[item.slot]=uid;this.saveProfile();this.owgRenderVault(document.querySelector('#menu-panel'));};
-  P.owgTransfer=function(sourceUid){const src=this.owgEntry(sourceUid);if(!src?.ops?.length)return;const weapon=!!D.weapons[src.itemId],targets=this.profile.otherWorldGear.filter(x=>x.uid!==src.uid&&!!D.weapons[x.itemId]===weapon);if(!targets.length){alert('移植できる異世界装備がありません。');return;}const oi=Number(prompt(`移植するOP\n${src.ops.map((o,i)=>`${i+1}: ${D.otherWorldGearOps.find(d=>d.key===o.key)?.label||o.key} R${o.rank}`).join('\n')}`))-1,opv=src.ops[oi];if(!opv)return;const ti=Number(prompt(`移植先\n${targets.map((x,i)=>`${i+1}: ${this.owgName(x)} +${x.tuneLevel||0}`).join('\n')}`))-1,target=targets[ti];if(!target)return;const cost={shard:20+opv.rank*10,core:Math.max(1,opv.rank-2)},inv=this.profile.inventory;if((inv.otherworldShard||0)<cost.shard||(inv.otherworldCore||0)<cost.core){alert('移植素材が足りません。');return;}if(!confirm(`${this.owgName(src)}を消滅させ、OPを${this.owgName(target)}へ移植しますか？\n欠片 ${cost.shard} / 核 ${cost.core}`))return;inv.otherworldShard-=cost.shard;inv.otherworldCore-=cost.core;const same=target.ops.findIndex(o=>o.key===opv.key);if(same>=0)target.ops[same]=copy(opv);else if(target.ops.length<4)target.ops.push(copy(opv));else{const replace=clamp((Number(prompt(`上書きするOP 1～${target.ops.length}`))||1)-1,0,target.ops.length-1);target.ops[replace]=copy(opv);}this.profile.otherWorldGear.splice(this.profile.otherWorldGear.indexOf(src),1);for(const s of Object.keys(this.profile.otherWorldEquipment))if(this.profile.otherWorldEquipment[s]===src.uid)delete this.profile.otherWorldEquipment[s];this.saveProfile();this.owgRenderVault(document.querySelector('#menu-panel'));};
+  P.owgTransfer=function(sourceUid){const src=this.owgEntry(sourceUid);if(!src?.ops?.length)return;const weapon=!!D.weapons[src.itemId],targets=this.profile.otherWorldGear.filter(x=>x.uid!==src.uid&&!!D.weapons[x.itemId]===weapon);if(!targets.length){alert('移植できる異世界装備がありません。');return;}const oi=Number(prompt(`移植するOP\n${src.ops.map((o,i)=>`${i+1}: ${D.otherWorldGearOps.find(d=>d.key===o.key)?.label||o.key} R${o.rank}`).join('\n')}`))-1,opv=src.ops[oi];if(!opv)return;const ti=Number(prompt(`移植先\n${targets.map((x,i)=>`${i+1}: ${this.owgName(x)} +${x.tuneLevel||0}`).join('\n')}`))-1,target=targets[ti];if(!target)return;if(!this.owgOpFitsItem(opv.key,target.itemId)){alert('その装備に移植できるOPではありません。');return;}const cost={shard:20+opv.rank*10,core:Math.max(1,opv.rank-2)},inv=this.profile.inventory;if((inv.otherworldShard||0)<cost.shard||(inv.otherworldCore||0)<cost.core){alert('移植素材が足りません。');return;}if(!confirm(`${this.owgName(src)}を消滅させ、OPを${this.owgName(target)}へ移植しますか？\n欠片 ${cost.shard} / 核 ${cost.core}`))return;inv.otherworldShard-=cost.shard;inv.otherworldCore-=cost.core;const same=target.ops.findIndex(o=>o.key===opv.key);if(same>=0)target.ops[same]=copy(opv);else if(target.ops.length<4)target.ops.push(copy(opv));else{const replace=clamp((Number(prompt(`上書きするOP 1～${target.ops.length}`))||1)-1,0,target.ops.length-1);target.ops[replace]=copy(opv);}this.profile.otherWorldGear.splice(this.profile.otherWorldGear.indexOf(src),1);for(const s of Object.keys(this.profile.otherWorldEquipment))if(this.profile.otherWorldEquipment[s]===src.uid)delete this.profile.otherWorldEquipment[s];this.saveProfile();this.owgRenderVault(document.querySelector('#menu-panel'));};
   P.owgRenderVault=function(panel){normalize(this.profile);const rows=this.profile.otherWorldGear.map(x=>{const eq=Object.values(this.profile.otherWorldEquipment).includes(x.uid);return `<article class="owg-card stars-${x.stars}${eq?' equipped':''}"><header><small>${'★'.repeat(x.stars)} / 品質 ${x.quality}</small><b>${esc(this.owgName(x))}</b><em>+${x.tuneLevel||0}</em></header><p>${(x.ops||[]).map(o=>`${esc(D.otherWorldGearOps.find(d=>d.key===o.key)?.label||o.key)} +${this.owgOpValueText(o)} R${o.rank}`).join(' / ')||'OPなし'}</p>${x.uniqueSkillId?`<strong>固有奏技《${esc(D.skills[x.uniqueSkillId]?.name)}》</strong>`:''}<footer><button data-owg-equip="${x.uid}">${eq?'装備中':'装備'}</button></footer></article>`;}).join('');panel.dataset.panel='otherworld-gear';panel.innerHTML=`<button class="panel-home" data-lenny="otherworld">異世界へ戻る</button><small>OTHER WORLD ARSENAL</small><h2>異世界装備庫</h2><div class="owg-res"><b>異界の欠片 ${(this.profile.inventory.otherworldShard||0)}</b><b>異界の核 ${(this.profile.inventory.otherworldCore||0)}</b></div><p class="ow-rule">持ち帰った異世界装備の閲覧・装備変更専用。加工は無限奏廊で遭遇する《異世界工房》だけで行えます。</p><div class="owg-list">${rows||'<p class="item-empty">持ち帰った異世界装備はありません。</p>'}</div>`;};
   const oldPanel=P.renderMenuPanel;P.renderMenuPanel=function(name){if(name==='otherworld-gear'){this.owgRenderVault(document.querySelector('#menu-panel'));return;}return oldPanel.call(this,name);};
   const oldOw=P.renderOtherWorldPanel;P.renderOtherWorldPanel=function(panel){oldOw.call(this,panel);panel.querySelector('.ow-mode-guide')?.insertAdjacentHTML('beforebegin','<button class="ow-ability-link owg-vault-link" data-menu="otherworld-gear"><b>異世界装備庫</b><span>個体装備の閲覧・装備変更</span></button>');};
