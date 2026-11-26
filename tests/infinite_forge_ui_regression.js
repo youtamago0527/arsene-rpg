@@ -32,6 +32,7 @@ function fixture() {
   ]}};
   g.owgTuneCost = item => ({shard:5 + item.tuneLevel * 3, core:item.tuneLevel >= 5 ? 1 : 0});
   g.owgEffectiveStats = (item, level = item.tuneLevel || 0) => ({attackPower:{total:200 + level * 16}});
+  g.isShowForgeSuccess = async result => {g.forgeSuccess = result;};
   return {g, panel:{dataset:{}, scrollTop:0, querySelector(){return null;}}};
 }
 
@@ -118,6 +119,12 @@ test('an identical weapon guarantees a high enhancement and contributes half of 
   await g.isForgeEnhance(base.uid, material.uid);
   assert.equal(base.plus,6);
   assert.equal(base.tuneLevel,6);
+  assert.equal(g.forgeSuccess.current,5);
+  assert.equal(g.forgeSuccess.next,6);
+  assert.equal(g.forgeSuccess.beforeStats.attackPower,280);
+  assert.equal(g.forgeSuccess.afterStats.attackPower,296);
+  assert.equal(g.forgeSuccess.changedOps[0].before.value,3);
+  assert.equal(g.forgeSuccess.changedOps[0].after.value,5.5);
   assert.equal(base.ops[0].value,5.5);
   assert.equal(base.ops[0].rank,2);
   assert.equal(base.ops[1].value,.02 + .035 / 2);
@@ -151,6 +158,7 @@ test('shard enhancement from +3 can fail while preserving the gear, OPs, and pro
   assert.equal(run.equipment.rightHand,base.uid);
   assert.equal(base.plus,3);
   assert.equal(base.tuneLevel,3);
+  assert.equal(g.forgeSuccess,undefined);
   assert.equal(JSON.stringify(base.ops),originalOps);
   assert.equal(g.isForgeMaterialCount('otherworldShard'),31);
   assert.equal(g.isForgeMaterialCount('otherworldCore'),1);
